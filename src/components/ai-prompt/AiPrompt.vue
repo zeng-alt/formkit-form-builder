@@ -102,9 +102,9 @@ const isFocused = () => {
     </n-button>
   </div>
 
-  <n-popover v-model:show="isOpen" trigger="click" :show-arrow="false" placement="bottom">
+  <n-popover v-if="isMobile" v-model:show="isOpen" trigger="click" :show-arrow="false" placement="bottom">
     <template #trigger>
-      <n-tooltip v-if="isMobile" trigger="hover">
+      <n-tooltip trigger="hover">
         <template #trigger>
           <n-button
             id="form-dialog-portal"
