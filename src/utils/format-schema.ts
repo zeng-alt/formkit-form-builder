@@ -1,11 +1,9 @@
-import { computed, type Ref } from "vue";
-import type { FormKitSchemaFormKit } from "@formkit/core";
+import { computed, type Ref } from 'vue'
+import type { FormKitSchemaFormKit } from '@formkit/core'
 
-export default function createFormattedSchema(
-  fields: Ref<FormKitSchemaFormKit[]> | undefined,
-) {
+export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]> | undefined) {
   return computed(() => {
-    if (!fields) return [];
+    if (!fields) return []
     // Transform fields to remove unwanted elements and update IDs
     return fields?.value.map((field, index) => {
       const {
@@ -24,7 +22,7 @@ export default function createFormattedSchema(
         __raw__sectionsSchema,
         step,
         multiple,
-      } = field;
+      } = field
 
       // Create a clean field object with only necessary properties
       const cleanField: FormKitSchemaFormKit = {
@@ -45,14 +43,14 @@ export default function createFormattedSchema(
         __raw__sectionsSchema,
         step,
         multiple,
-      };
+      }
 
       // Add options if they exist (for select, radio, etc.)
       if (options) {
-        cleanField.options = options;
+        cleanField.options = options
       }
 
-      return cleanField;
-    });
-  });
+      return cleanField
+    })
+  })
 }

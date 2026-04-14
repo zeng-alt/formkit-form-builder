@@ -1,106 +1,105 @@
 <script setup lang="ts">
-import { NButton, NSpin } from "naive-ui";
-import { FormKitSchema } from "@formkit/vue";
-import { Trash2, ChevronsLeftRight } from "lucide-vue-next";
-import { customInsertPlugin } from "../utils/custom-insert-plugin";
-import { formSchema, selectedIndex } from "../utils/default-form-elements";
-import { useDragAndDrop } from "@formkit/drag-and-drop/vue";
-import type { FormKitSchemaFormKit } from "@formkit/core";
-import { isLoading } from "../composables/form-fields";
-import { cn } from "../utils/utils";
-import { useFormField } from "../composables/form-fields";
+import { NButton, NSpin } from 'naive-ui'
+import { FormKitSchema } from '@formkit/vue'
+import { Trash2, ChevronsLeftRight } from 'lucide-vue-next'
+import { customInsertPlugin } from '../utils/custom-insert-plugin'
+import { formSchema, selectedIndex } from '../utils/default-form-elements'
+import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
+import type { FormKitSchemaFormKit } from '@formkit/core'
+import { isLoading } from '../composables/form-fields'
+import { cn } from '../utils/utils'
+import { useFormField } from '../composables/form-fields'
 
-const { validationStringLength } = useFormField();
+const { validationStringLength } = useFormField()
 
 const deleteField = (index: number) => {
-  formSchema.value = formSchema.value.filter(
-    (_: unknown, i: number) => i !== index,
-  );
-  fields.value = fields.value.filter((_, i) => i !== index);
-};
+  formSchema.value = formSchema.value.filter((_: unknown, i: number) => i !== index)
+  fields.value = fields.value.filter((_, i) => i !== index)
+}
 
 const changeColSpan = async (index: number) => {
-  const schemaItem = formSchema.value[index];
-  if (!schemaItem) return;
+  const schemaItem = formSchema.value[index]
+  if (!schemaItem) return
 
-  const classValue = schemaItem.outerClass;
-  if (classValue === "!col-span-2") {
-    schemaItem.outerClass = "!col-span-1";
+  const classValue = schemaItem.outerClass
+  if (classValue === '!col-span-2') {
+    schemaItem.outerClass = '!col-span-1'
   } else {
-    schemaItem.outerClass = "!col-span-2";
+    schemaItem.outerClass = '!col-span-2'
   }
 
   if (fields.value[index]) {
-    fields.value[index].outerClass = schemaItem.outerClass;
+    fields.value[index].outerClass = schemaItem.outerClass
   }
-};
+}
 
 const clickedField = (index: number) => {
-  selectedIndex.value = index;
-};
+  selectedIndex.value = index
+}
 
-const pluralize = (count: number, noun: string, suffix = "s") => {
-  return count === 1 ? noun : noun + suffix;
-};
+const pluralize = (count: number, noun: string, suffix = 's') => {
+  return count === 1 ? noun : noun + suffix
+}
 
 const insertPointClasses = [
-  "absolute",
-  "bg-green-500",
-  "z-[2000]",
-  "rounded-full",
-  "duration-[5ms]",
-  "before:block",
+  'absolute',
+  'bg-green-500',
+  'z-[2000]',
+  'rounded-full',
+  'duration-[5ms]',
+  'before:block',
   'before:content-["Drop_here"]',
-  "before:whitespace-nowrap",
-  "before:bg-green-900",
-  "before:py-1",
-  "before:h-6",
-  "before:px-3",
-  "before:rounded-lg",
-  "before:text-xs",
-  "before:font-medium",
-  "before:absolute",
-  "before:top-1/2",
-  "before:left-1/2",
-  "before:-translate-y-1/2",
-  "before:-translate-x-1/2",
-  "before:text-white",
-  "before:shadow-sm",
-  "before:transition-all",
-  "before:border",
-  "before:border-green-400/20",
-];
+  'before:whitespace-nowrap',
+  'before:bg-green-900',
+  'before:py-1',
+  'before:h-6',
+  'before:px-3',
+  'before:rounded-lg',
+  'before:text-xs',
+  'before:font-medium',
+  'before:absolute',
+  'before:top-1/2',
+  'before:left-1/2',
+  'before:-translate-y-1/2',
+  'before:-translate-x-1/2',
+  'before:text-white',
+  'before:shadow-sm',
+  'before:transition-all',
+  'before:border',
+  'before:border-green-400/20',
+]
 
-const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(
-  formSchema.value,
-  {
-    group: "form-builder",
-    nativeDrag: true,
-    draggingClass: "opacity-5 bg-green-400/50",
-    accepts: () => true,
-    sortable: true,
-    draggable: () => true,
-    handleNodePointerup(data) {
-      data.targetData.node.el.setAttribute("draggable", "true");
-    },
-    plugins: [
-      customInsertPlugin({
-        insertPoint: () => {
-          const div = document.createElement("div");
-          for (const cls of insertPointClasses) div.classList.add(cls);
-          return div;
-        },
-      }),
-    ],
+const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.value, {
+  group: 'form-builder',
+  nativeDrag: true,
+  draggingClass: 'opacity-5 bg-green-400/50',
+  accepts: () => true,
+  sortable: true,
+  draggable: () => true,
+  handleNodePointerup(data) {
+    data.targetData.node.el.setAttribute('draggable', 'true')
   },
-);
+  plugins: [
+    customInsertPlugin({
+      insertPoint: () => {
+        const div = document.createElement('div')
+        for (const cls of insertPointClasses) div.classList.add(cls)
+        return div
+      },
+    }),
+  ],
+})
 </script>
 
 <template>
   <div class="flex flex-1 flex-col justify-start mb-15">
     <div v-if="isLoading" class="absolute inset-0 mb-30 flex items-center justify-center z-50">
-      <div class="flex flex-col items-center bg-white dark:bg-neutral-600 justify-center gap-3 p-4 rounded-lg shadow-md">
-        <span class="font-medium text-sm text-zinc-700 dark:text-zinc-300">Creating your new form...</span>
+      <div
+        class="flex flex-col items-center bg-white dark:bg-neutral-600 justify-center gap-3 p-4 rounded-lg shadow-md"
+      >
+        <span class="font-medium text-sm text-zinc-700 dark:text-zinc-300"
+          >Creating your new form...</span
+        >
         <n-spin size="medium" />
       </div>
     </div>
@@ -145,8 +144,7 @@ const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(
               v-if="selectedIndex === index"
             >
               <span class="text-xs"
-                >{{ validationStringLength }}
-                {{ pluralize(validationStringLength, "rule") }}</span
+                >{{ validationStringLength }} {{ pluralize(validationStringLength, 'rule') }}</span
               >
             </div>
             <n-button
@@ -157,9 +155,7 @@ const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(
               :class="
                 cn(
                   'h-4 w-4 md:h-5 md:w-5 hover:!bg-ring/90 hover:text-white',
-                  formSchema[index]?.$formkit === 'submit'
-                    ? 'hidden'
-                    : 'visible',
+                  formSchema[index]?.$formkit === 'submit' ? 'hidden' : 'visible',
                 )
               "
             >

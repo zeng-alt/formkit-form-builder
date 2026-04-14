@@ -1,6 +1,12 @@
 <!-- src/components/form-builder/BuilderPreview.vue -->
 <template>
-  <n-modal v-model:show="isOpen" preset="card" class="max-h-[90vh] overflow-y-auto sm:max-w-[500px] border-none" title="Form Preview" size="small">
+  <n-modal
+    v-model:show="isOpen"
+    preset="card"
+    class="max-h-[90vh] overflow-y-auto sm:max-w-[500px] border-none"
+    title="Form Preview"
+    size="small"
+  >
     <template #header-extra>
       <div class="text-[11px] text-muted-foreground">
         Preview your form and test its functionality.
@@ -17,49 +23,45 @@
         <FormKitSchema :schema="formattedSchema" />
       </FormKit>
       <div class="mt-4 p-3 bg-muted/30 rounded border border-border/50">
-        <h3 class="text-[11px] font-medium mb-2 text-foreground/80">
-          Form Data:
-        </h3>
+        <h3 class="text-[11px] font-medium mb-2 text-foreground/80">Form Data:</h3>
 
-        <pre class="text-[11px] text-muted-foreground">{{
-          JSON.stringify(data, null, 2)
-        }}</pre>
+        <pre class="text-[11px] text-muted-foreground">{{ JSON.stringify(data, null, 2) }}</pre>
       </div>
     </div>
   </n-modal>
 </template>
 
 <script setup lang="ts">
-import { provide, ref } from "vue";
-import { NModal } from "naive-ui";
-import { formSchema } from "../utils/default-form-elements";
-import createFormattedSchema from "../utils/format-schema";
+import { provide, ref } from 'vue'
+import { NModal } from 'naive-ui'
+import { formSchema } from '../utils/default-form-elements'
+import createFormattedSchema from '../utils/format-schema'
 
-const isOpen = ref(false);
-const data = ref({});
-const formattedSchema = createFormattedSchema(formSchema);
+const isOpen = ref(false)
+const data = ref({})
+const formattedSchema = createFormattedSchema(formSchema)
 
-provide("isPreviewOpen", isOpen);
+provide('isPreviewOpen', isOpen)
 
 const handleSubmit = async (formData: Record<string, unknown>) => {
-  console.log("Form submitted:", formData);
-  await new Promise((r) => setTimeout(r, 1000));
-  alert("Form submitted!");
-  data.value = {};
-};
+  console.log('Form submitted:', formData)
+  await new Promise((r) => setTimeout(r, 1000))
+  alert('Form submitted!')
+  data.value = {}
+}
 
 const open = () => {
-  isOpen.value = true;
-  data.value = {};
-};
+  isOpen.value = true
+  data.value = {}
+}
 
 const close = () => {
-  isOpen.value = false;
-  data.value = {};
-};
+  isOpen.value = false
+  data.value = {}
+}
 
 defineExpose({
   open,
   close,
-});
+})
 </script>

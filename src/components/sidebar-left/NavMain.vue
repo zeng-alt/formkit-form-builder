@@ -12,15 +12,13 @@ const filteredFormElements = computed(() => {
   }
 
   const query = searchInput.value.toLowerCase()
-  return defaultFormElements.filter(element =>
+  return defaultFormElements.filter(
+    (element) =>
       element.name.toLowerCase().includes(query) ||
       element.description.toLowerCase().includes(query) ||
-      element.$formkit.toLowerCase().includes(query)
+      element.$formkit.toLowerCase().includes(query),
   )
 })
-
-
-
 </script>
 
 <template>
@@ -28,13 +26,16 @@ const filteredFormElements = computed(() => {
     <div class="p-2 font-medium text-sm text-gray-500">Form Inputs</div>
     <div class="flex flex-col gap-1 p-2">
       <div
-          v-for="item in filteredFormElements"
-          :key="item.name"
-          :class="['p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer flex items-center', item.name.trim().replace(/\s+/g, '-').toLowerCase()]"
+        v-for="item in filteredFormElements"
+        :key="item.name"
+        :class="[
+          'p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer flex items-center',
+          item.name.trim().replace(/\s+/g, '-').toLowerCase(),
+        ]"
       >
         <component
-            :is="fieldProps.find((prop) => prop.name === item.$formkit)?.icon"
-            class="h-4 w-4 shrink-0"
+          :is="fieldProps.find((prop) => prop.name === item.$formkit)?.icon"
+          class="h-4 w-4 shrink-0"
         />
         <div class="ml-3 flex flex-col justify-center overflow-hidden">
           <span class="text-[11px] text-secondary-foreground/80 font-medium">{{ item.name }}</span>

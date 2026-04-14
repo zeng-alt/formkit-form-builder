@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { NDivider } from "naive-ui";
-import ValidationSection from "./validations/ValidationSection.vue";
-import { useFormField } from "../../composables/form-fields";
-import EditsSection from "./edits/EditsSection.vue";
+import { NDivider } from 'naive-ui'
+import ValidationSection from './validations/ValidationSection.vue'
+import { useFormField } from '../../composables/form-fields'
+import EditsSection from './edits/EditsSection.vue'
 
-const { hasField } = useFormField();
+const { hasField } = useFormField()
 </script>
 
 <template>
-  <div
-    v-if="!hasField"
-    class="flex p-2 h-full text-[11px] md:text-xs text-muted-foreground"
-  >
+  <div v-if="!hasField" class="flex p-2 h-full text-[11px] md:text-xs text-muted-foreground">
     Select a field to edit its properties
   </div>
   <template v-else>

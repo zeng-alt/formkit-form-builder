@@ -1,5 +1,5 @@
 import { inject, provide, type InjectionKey } from 'vue'
-import type { FormBuilderConfig } from "../types/env";
+import type { FormBuilderConfig } from '../types/env'
 
 export const CONFIG_KEY: InjectionKey<FormBuilderConfig> = Symbol('configKey')
 

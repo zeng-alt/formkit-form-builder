@@ -1,20 +1,19 @@
 <script setup lang="ts">
-import { useFormField } from "../../../composables/form-fields";
-import { ValidationCard, ValidationSwitch } from "../../ui/validation-card"
+import { useFormField } from '../../../composables/form-fields'
+import { ValidationCard, ValidationSwitch } from '../../ui/validation-card'
 
 const props = defineProps<{
-  value: string;
-  tooltip?: string;
-  label: string;
+  value: string
+  tooltip?: string
+  label: string
 }>()
 
-const { isActive, updateValidationString, isValidationChecked } =
-  useFormField();
+const { isActive, updateValidationString, isValidationChecked } = useFormField()
 
-const active = isActive(isValidationChecked, props.value);
+const active = isActive(isValidationChecked, props.value)
 
 function toggleSwitch() {
-  updateValidationString(props.value);
+  updateValidationString(props.value)
 }
 </script>
 

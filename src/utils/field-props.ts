@@ -1,16 +1,21 @@
 import {
   Calendar,
   CalendarClock,
-  CircleDot, Clock,
-  Hash, LetterText, Link2, List,
+  CircleDot,
+  Clock,
+  Hash,
+  LetterText,
+  Link2,
+  List,
   Lock,
   Mail,
-  Paperclip, Phone,
+  Paperclip,
+  Phone,
   SlidersHorizontal,
   SquareCheck,
   Type,
   Pipette,
-  SendHorizonal
+  SendHorizonal,
 } from 'lucide-vue-next'
 
 export { defaultFormElements } from './default-form-elements'
@@ -31,7 +36,7 @@ export const fieldProps = [
   {
     name: 'color',
     tooltip: 'Allows user to select color',
-    icon: Pipette
+    icon: Pipette,
   },
   {
     name: 'number',
@@ -102,5 +107,5 @@ export const fieldProps = [
     name: 'submit',
     tooltip: 'Allows user to submit form',
     icon: SendHorizonal,
-  }
+  },
 ]
