@@ -1,14 +1,8 @@
 <script setup lang="ts">
-import {
-  TagsInput,
-  TagsInputInput,
-  TagsInputItem,
-  TagsInputItemDelete,
-  TagsInputItemText,
-} from "../../ui/tags-input";
-import { Label } from "../../ui/label";
+import { NDynamicTags } from "naive-ui";
 import EditsLayout from "./EditsLayout.vue";
-import { computed, WritableComputedRef } from "vue";
+import { computed } from "vue";
+import type { WritableComputedRef } from "vue";
 
 const props = defineProps<{
   model: WritableComputedRef<any, string[]>;
@@ -17,7 +11,7 @@ const props = defineProps<{
 }>();
 
 const modelValue = computed({
-  get: () => props.model.value,
+  get: () => props.model.value || [],
   set: (value: string[]) => {
     props.model.value = value;
   }
@@ -27,21 +21,14 @@ const modelValue = computed({
 <template>
   <EditsLayout>
     <div>
-      <Label
+      <label
         for="selectTags"
         class="text-[11px] text-foreground/80 font-medium"
-        >{{ props.label }}</Label
+        >{{ props.label }}</label
       >
     </div>
     <div>
-      <TagsInput v-model="modelValue" id="selectTags">
-        <TagsInputItem v-for="item in modelValue" :key="item" :value="item">
-          <TagsInputItemText />
-          <TagsInputItemDelete />
-        </TagsInputItem>
-
-        <TagsInputInput :placeholder="props.placeholder" />
-      </TagsInput>
+      <n-dynamic-tags v-model:value="modelValue" id="selectTags" />
     </div>
   </EditsLayout>
 </template>

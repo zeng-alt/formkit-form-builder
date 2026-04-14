@@ -1,0 +1,61 @@
+{
+  "name": "@formkit/vue",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Build industry leading Vue forms 10x faster.",
+  "main": "dist/index.cjs",
+  "types": "dist/index.d.cts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "iife": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.iife.js"
+      },
+      "import": {
+        "types": "./dist/index.d.mts",
+        "development": "./dist/index.dev.mjs",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "keywords": [
+    "vue",
+    "forms",
+    "inputs",
+    "validation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/formkit/formkit.git",
+    "directory": "packages/rules"
+  },
+  "contributors": [
+    "Justin Schroeder <justin@formkit.com>"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@formkit/dev": "^2.0.0",
+    "@formkit/i18n": "^2.0.0",
+    "@formkit/core": "^2.0.0",
+    "@formkit/inputs": "^2.0.0",
+    "@formkit/rules": "^2.0.0",
+    "@formkit/observer": "^2.0.0",
+    "@formkit/themes": "^2.0.0",
+    "@formkit/utils": "^2.0.0",
+    "@formkit/validation": "^2.0.0"
+  },
+  "peerDependencies": {
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@formkit/icons": "^2.0.0"
+  },
+  "scripts": {
+    "test": "jest"
+  }
+}

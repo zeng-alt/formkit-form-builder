@@ -1,26 +1,18 @@
 <script setup lang="ts">
-import { useSidebar } from "../ui/sidebar";
 import { BotMessageSquare, SendHorizonal } from "lucide-vue-next";
 import OpenAI from "openai";
 import instructions from "./Instructions.txt?raw";
-import { Button } from "../ui/button";
 import { ref } from "vue";
 import { toast } from "vue-sonner";
 import { formSchema } from "../../utils/default-form-elements";
 import type { FormKitSchemaFormKit } from "@formkit/core";
 import { isLoading } from "../../composables/form-fields";
 import { cn } from "../../utils/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
-import { Textarea } from "../ui/textarea";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { NButton, NInput, NPopover, NTooltip } from "naive-ui";
 import { useFormBuilderConfig } from "../../composables/use-config";
+import { useMediaQuery } from "@vueuse/core";
 
-const { isMobile } = useSidebar();
+const isMobile = useMediaQuery('(max-width: 768px)');
 
 const config = useFormBuilderConfig();
 const inputRef = ref("");
@@ -94,76 +86,81 @@ const isFocused = () => {
     <span class="start-0 inset-y-0 flex items-center justify-center px-2">
       <BotMessageSquare :class="cn('size-6 text-muted-foreground')" />
     </span>
-    <Textarea
-      @focusin="isFocused"
-      @focusout="isFocused"
-      class="border-none shadow-none focus-visible:border-none focus-visible:ring-0"
+    <n-input
+      type="textarea"
+      @focus="isFocused"
+      @blur="isFocused"
+      class="border-none shadow-none bg-transparent"
+      :autosize="{ minRows: 1, maxRows: 4 }"
       placeholder="AI Assistant"
-      v-model="inputRef"
+      v-model:value="inputRef"
     />
-    <Button
-      variant="ghost"
+    <n-button
+      quaternary
       class="hover:bg-green-500 dark:hover:bg-green-500/30 hover:text-white w-7 h-7 mr-2"
       @click="handleClick()"
       :disabled="isLoading"
     >
-      <SendHorizonal />
-    </Button>
+      <template #icon>
+        <SendHorizonal />
+      </template>
+    </n-button>
   </div>
 
-  <Popover>
-    <PopoverTrigger>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger v-if="isMobile">
-            <Button
-              id="form-dialog-portal"
-              variant="secondary"
-              size="icon"
-              class="h-6 w-6 !p-3"
-              @click="isOpen = !isOpen"
-            >
+  <n-popover v-model:show="isOpen" trigger="click" :show-arrow="false" placement="bottom">
+    <template #trigger>
+      <n-tooltip v-if="isMobile" trigger="hover">
+        <template #trigger>
+          <n-button
+            id="form-dialog-portal"
+            secondary
+            circle
+            class="h-6 w-6 !p-3"
+            @click="isOpen = !isOpen"
+          >
+            <template #icon>
               <BotMessageSquare />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>AI Assistant</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </PopoverTrigger>
-    <PopoverContent>
-      <div
-        :class="
-          cn(
-            'flex rounded-lg w-[50vw] card relative items-center justify-center',
-            'bg-gradient-to-br from-secondary to-emerald-100/50 dark:from-secondary dark:to-emerald-800/30',
-            isFocusedVal ? 'border ring ring-ring' : 'border border-primary/10',
-            isLoading
-              ? 'bg-primary/5 shadow-inner animate-pulse transition-colors duration-300'
-              : '',
-          )
-        "
+            </template>
+          </n-button>
+        </template>
+        AI Assistant
+      </n-tooltip>
+    </template>
+    
+    <div
+      :class="
+        cn(
+          'flex rounded-lg w-[80vw] max-w-[400px] card relative items-center justify-center',
+          'bg-gradient-to-br from-secondary to-emerald-100/50 dark:from-secondary dark:to-emerald-800/30',
+          isFocusedVal ? 'border ring ring-ring' : 'border border-primary/10',
+          isLoading
+            ? 'bg-primary/5 shadow-inner animate-pulse transition-colors duration-300'
+            : '',
+        )
+      "
+    >
+      <span class="start-0 inset-y-0 flex items-center justify-center px-2">
+        <BotMessageSquare :class="cn('size-6 text-muted-foreground')" />
+      </span>
+      <n-input
+        type="textarea"
+        @focus="isFocused"
+        @blur="isFocused"
+        class="border-none shadow-none bg-transparent"
+        :autosize="{ minRows: 1, maxRows: 4 }"
+        placeholder="Prompt AI"
+        v-model:value="inputRef"
+      />
+      <n-button
+        quaternary
+        class="hover:bg-green-500 dark:hover:bg-green-500 hover:text-white dark:hover:text-black w-7 h-7 mr-2"
+        @click="handleClick()"
+        :disabled="isLoading"
       >
-        <span class="start-0 inset-y-0 flex items-center justify-center px-2">
-          <BotMessageSquare :class="cn('size-6 text-muted-foreground')" />
-        </span>
-        <Textarea
-          @focusin="isFocused"
-          @focusout="isFocused"
-          class="border-none shadow-none focus-visible:border-none focus-visible:ring-0 h-fit"
-          placeholder="Prompt AI"
-          v-model="inputRef"
-        />
-        <Button
-          variant="ghost"
-          class="hover:bg-green-500 dark:hover:bg-green-500 hover:text-white dark:hover:text-black w-7 h-7 mr-2"
-          @click="handleClick()"
-          :disabled="isLoading"
-        >
+        <template #icon>
           <SendHorizonal />
-        </Button>
-      </div>
-    </PopoverContent>
-  </Popover>
+        </template>
+      </n-button>
+    </div>
+  </n-popover>
 </template>
