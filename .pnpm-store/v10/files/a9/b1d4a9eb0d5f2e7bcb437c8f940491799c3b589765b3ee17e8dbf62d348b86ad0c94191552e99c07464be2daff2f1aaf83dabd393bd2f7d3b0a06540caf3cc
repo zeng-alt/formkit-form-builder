@@ -1,0 +1,9 @@
+'use strict';
+
+// packages/themes/src/css/genesis/index.ts
+var index_default = () => {
+};
+
+module.exports = index_default;
+//# sourceMappingURL=index.cjs.map
+//# sourceMappingURL=index.cjs.map

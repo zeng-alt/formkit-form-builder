@@ -1,0 +1,9 @@
+import * as node_modules_tailwindcss_dist_types_CJYAW1ql_mjs from 'node_modules/tailwindcss/dist/types-CJYAW1ql.mjs';
+
+/**
+ * The FormKit plugin for Tailwind
+ * @public
+ */
+declare const FormKitVariants: node_modules_tailwindcss_dist_types_CJYAW1ql_mjs.b;
+
+export { FormKitVariants as default };

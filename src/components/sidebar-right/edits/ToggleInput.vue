@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ToggleGroup, ToggleGroupItem } from "../../ui/toggle-group";
+import { NRadioGroup, NRadioButton } from "naive-ui";
 import EditsLayout from "./EditsLayout.vue";
-import { Label } from "../../ui/label";
 import type { WritableComputedRef } from "vue";
 import { computed } from "vue";
 
@@ -25,27 +24,21 @@ const modelValue = computed({
 
 <template>
   <EditsLayout>
-    <Label for="tgroup" class="text-xs text-foreground/80">{{
+    <label for="tgroup" class="text-xs text-foreground/80">{{
       props.label
-    }}</Label>
-    <ToggleGroup
+    }}</label>
+    <n-radio-group
       id="tgroup"
-      :type="props.type"
-      :default-value="modelValue.value"
-      v-model="modelValue"
-      variant="outline"
-      size="sm"
+      v-model:value="modelValue"
+      size="small"
+      name="tgroup"
     >
-      <ToggleGroupItem
-        :value="props.valueOne"
-        class="hover:bg-ring/30 active:bg-ring/40"
-        >{{ props.itemLabelOne }}</ToggleGroupItem
-      >
-      <ToggleGroupItem
-        :value="props.valueTwo"
-        class="hover:bg-ring/30 active:bg-ring/40"
-        >{{ props.itemLabelTwo }}</ToggleGroupItem
-      >
-    </ToggleGroup>
+      <n-radio-button :value="props.valueOne">
+        {{ props.itemLabelOne }}
+      </n-radio-button>
+      <n-radio-button :value="props.valueTwo">
+        {{ props.itemLabelTwo }}
+      </n-radio-button>
+    </n-radio-group>
   </EditsLayout>
 </template>

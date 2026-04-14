@@ -9,9 +9,8 @@
 *   **核心技术栈**：基于 Vue 3 (Composition API) + Vite + TypeScript 构建。
 *   **表单引擎**：深度集成 **FormKit**（包含 `@formkit/vue`, `@formkit/core`）作为底层表单渲染和数据收集引擎。通过 `@formkit/drag-and-drop` 实现了表单元素的拖拽排序与构建功能。
 *   **UI 体系**：
-    *   采用了类似 `shadcn-vue` 的无头组件设计模式，底层无头组件使用了 **Reka UI**。
+    *   采用了类似 `shadcn-vue` 的设计模式，现已全面重构，底层组件主要使用 **Naive UI**。
     *   样式由 **Tailwind CSS v4** 驱动（结合 `clsx` 和 `tailwind-merge` 管理动态类名）。
-    *   部分复杂的布局和即用型组件（如侧边栏布局、弹窗、提示框等）混用了 **Naive UI**。
 *   **状态管理**：未使用 Pinia 等重量级状态管理库，而是直接利用 Vue 自身的响应式 API (`ref`, `computed`)，将状态提取到独立的文件中（如 `default-form-elements.ts`）作为全局共享状态。
 
 ## 2. 主要模块职责
@@ -35,7 +34,7 @@
 *   **`validations/` 目录**：处理表单校验规则的配置，支持为不同字段动态挂载 FormKit 内置的校验规则（如 email、url、min、max、date_before 等）。
 
 ### 2.4 `src/components/ui` (通用 UI 组件库)
-*   基于 Reka UI 和 Tailwind 封装的大量基础原子组件（Button, Input, Select, Dialog, Tooltip 等），主要供构建器自身界面使用，保证了高可定制性和一致的设计语言。
+*   基于 Tailwind 和 Naive UI 封装的基础 UI 组件（例如 ThemeSwitcher、ValidationCard 等），主要供构建器自身界面使用，保证了高可定制性和一致的设计语言。
 
 ### 2.5 `src/composables` (组合式函数)
 *   **`form-fields.ts`**：负责连接“右侧属性面板”和“全局表单 Schema”，封装了大量的 `computed` 属性（如 `label`, `placeholder`, `validationString` 等），实现属性修改时的双向数据绑定。
@@ -61,8 +60,7 @@
 *   **UI 与表单框架**：
     *   `vue` (^3.5.31)
     *   `@formkit/vue`, `@formkit/core`, `@formkit/drag-and-drop`（表单引擎与拖拽核心）
-    *   `naive-ui` (^2.44.1)（辅助 UI 库）
-    *   `reka-ui` (^2.9.5)（无头 UI 库）
+    *   `naive-ui` (^2.44.1)（主力 UI 库）
 *   **样式体系**：
     *   `tailwindcss` (^4.2.2) 及 `@tailwindcss/vite`
     *   `tailwind-merge`, `clsx`, `class-variance-authority` (用于构建原子组件)

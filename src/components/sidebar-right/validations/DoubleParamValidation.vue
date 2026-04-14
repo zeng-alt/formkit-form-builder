@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { useFormField } from "../../../composables/form-fields";
 import { getValueParts } from "../../../utils/utils";
-import { Input } from "../../ui/input";
+import { NInput, NDatePicker } from "naive-ui";
 import { computed } from "vue";
 import { MoveRight } from "lucide-vue-next";
 import { ValidationCard, ValidationSwitch } from "../../ui/validation-card";
-import { DatePicker } from "../../ui/date-picker";
 
 const props = defineProps<{
   value: string;
@@ -28,23 +27,23 @@ const active = isActive(isValidationChecked, props.value);
 const validation = createValidationValue(props.value);
 
 const min = computed({
-  get: () => getValueParts(validation.value)[0],
-  set: (value) => {
-    const [_, maxVal] = getValueParts(validation.value);
+  get: () => getValueParts(validation.value || "")[0] || "",
+  set: (value: string) => {
+    const [_, maxVal] = getValueParts(validation.value || "");
 
     validation.value =
       props.value === "between" || props.value === "date_between"
         ? `${value},${maxVal}`
         : maxVal
           ? `${value || "0"},${maxVal}`
-          : value;
+          : value || "";
   },
 });
 
 const max = computed({
-  get: () => getValueParts(validation.value)[1],
-  set: (value) => {
-    const [minVal, _] = getValueParts(validation.value);
+  get: () => getValueParts(validation.value || "")[1] || "",
+  set: (value: string) => {
+    const [minVal, _] = getValueParts(validation.value || "");
 
     validation.value =
       props.value === "between" || props.value === "date_between"
@@ -53,6 +52,28 @@ const max = computed({
           ? minVal || ""
           : `${minVal || "0"},${value}`;
   },
+});
+
+const minDate = computed({
+  get: () => min.value ? new Date(min.value).getTime() : null,
+  set: (val: number | null) => {
+    if (val) {
+      min.value = new Date(val).toISOString().split('T')[0];
+    } else {
+      min.value = '';
+    }
+  }
+});
+
+const maxDate = computed({
+  get: () => max.value ? new Date(max.value).getTime() : null,
+  set: (val: number | null) => {
+    if (val) {
+      max.value = new Date(val).toISOString().split('T')[0];
+    } else {
+      max.value = '';
+    }
+  }
 });
 
 const toggleSwitch = () => {
@@ -98,19 +119,21 @@ const toggleSwitch = () => {
     >
       <div class="flex flex-col gap-1">
         <span class="text-xs">{{ props.labelOne }}</span>
-        <Input
-          v-model="min"
+        <n-input
+          size="small"
+          v-model:value="min"
           :placeholder="props.placeholderOne"
-          class="h-7 rounded-md px-2 py-1 text-[10px]"
+          class="text-[10px]"
         />
       </div>
       <MoveRight class="mt-5" />
       <div class="flex flex-col gap-1">
         <span class="text-xs">{{ props.labelTwo }}</span>
-        <Input
-          v-model="max"
+        <n-input
+          size="small"
+          v-model:value="max"
           :placeholder="props.placeholderTwo"
-          class="h-7 rounded-md px-2 py-1 text-[10px]"
+          class="text-[10px]"
         />
       </div>
     </div>
@@ -120,11 +143,11 @@ const toggleSwitch = () => {
     >
       <div class="flex flex-col gap-1">
         <span class="text-xs">{{ props.labelOne }}</span>
-        <DatePicker v-model="min" />
+        <n-date-picker size="small" type="date" v-model:value="minDate" />
       </div>
       <div class="flex flex-col gap-1">
         <span class="text-xs">{{ props.labelTwo }}</span>
-        <DatePicker v-model="max" />
+        <n-date-picker size="small" type="date" v-model:value="maxDate" />
       </div>
     </div>
     <span
