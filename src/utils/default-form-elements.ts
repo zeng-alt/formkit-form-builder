@@ -221,4 +221,20 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
     description: 'Allows form submission',
     label: 'Submit',
   },
+  {
+    $formkit: 'group',
+    name: 'Group',
+    label: 'Group',
+    id: 'group_field',
+    outerClass: '!col-span-2',
+    description: 'Object grouping of fields',
+  },
+  {
+    $formkit: 'list',
+    name: 'List',
+    label: 'List',
+    id: 'list_field',
+    outerClass: '!col-span-2',
+    description: 'Array grouping of fields',
+  },
 ]
