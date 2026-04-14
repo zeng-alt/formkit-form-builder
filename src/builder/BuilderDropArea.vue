@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NButton } from "naive-ui";
+import { NButton, NSpin } from "naive-ui";
 import { FormKitSchema } from "@formkit/vue";
 import { Trash2, ChevronsLeftRight } from "lucide-vue-next";
 import { customInsertPlugin } from "../utils/custom-insert-plugin";
@@ -7,7 +7,6 @@ import { formSchema, selectedIndex } from "../utils/default-form-elements";
 import { useDragAndDrop } from "@formkit/drag-and-drop/vue";
 import type { FormKitSchemaFormKit } from "@formkit/core";
 import { isLoading } from "../composables/form-fields";
-import { Loader } from "../components/ui/loader";
 import { cn } from "../utils/utils";
 import { useFormField } from "../composables/form-fields";
 
@@ -99,7 +98,12 @@ const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(
 
 <template>
   <div class="flex flex-1 flex-col justify-start mb-15">
-    <Loader v-if="isLoading" />
+    <div v-if="isLoading" class="absolute inset-0 mb-30 flex items-center justify-center z-50">
+      <div class="flex flex-col items-center bg-white dark:bg-neutral-600 justify-center gap-3 p-4 rounded-lg shadow-md">
+        <span class="font-medium text-sm text-zinc-700 dark:text-zinc-300">Creating your new form...</span>
+        <n-spin size="medium" />
+      </div>
+    </div>
     <div
       class="border-1 border-ring/5 dark:border-none relative mx-auto md:top-10 min-h-[80%] p-4 !h-fit w-[90%] lg:w-[70%] rounded-xl bg-ring/5 dark:bg-neutral-800/70 shadow-md"
     >
