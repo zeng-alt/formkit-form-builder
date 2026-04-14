@@ -728,12 +728,12 @@ function insertItemsIntoParentFromOutside<T>(
       if (val.$formkit === 'submit') {
         return {
           ...value,
-          outerClass: '!col-span-2 pt-2',
+          outerClass: '!col-span-12 pt-2',
         }
       }
       return {
         ...value,
-        outerClass: '!col-span-2', // Force default col-span-2
+        outerClass: '!col-span-12', // Force default col-span-12
       }
     }
     return value
