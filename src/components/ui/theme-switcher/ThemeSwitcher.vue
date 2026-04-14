@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { NButton, NDropdown } from "naive-ui";
-import { useColorMode } from "@vueuse/core";
-import { Sun, Moon } from "lucide-vue-next";
+import { NButton, NDropdown } from 'naive-ui'
+import { useColorMode } from '@vueuse/core'
+import { Sun, Moon } from 'lucide-vue-next'
 
 const colorModeOptions = {
   disableTransition: false,
-};
-const mode = useColorMode(colorModeOptions);
+}
+const mode = useColorMode(colorModeOptions)
 
 const options = [
   { label: 'Light', key: 'light' },
   { label: 'Dark', key: 'dark' },
-  { label: 'System', key: 'auto' }
-];
+  { label: 'System', key: 'auto' },
+]
 
 const handleSelect = (key: string) => {
-  mode.value = key as any;
-};
+  mode.value = key as any
+}
 </script>
 
 <template>

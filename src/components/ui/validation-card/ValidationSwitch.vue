@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import { cn } from "../../../utils/utils";
-import type { HTMLAttributes } from "vue";
-import { computed } from "vue";
-import { NSwitch, NTooltip } from "naive-ui";
-import { CircleHelp } from "lucide-vue-next";
+import { cn } from '../../../utils/utils'
+import type { HTMLAttributes } from 'vue'
+import { computed } from 'vue'
+import { NSwitch, NTooltip } from 'naive-ui'
+import { CircleHelp } from 'lucide-vue-next'
 
 const props = defineProps<{
-  class?: HTMLAttributes["class"];
-  isActive?: boolean;
-  label?: string;
-  showSwitch?: boolean;
-  tooltip?: string;
-}>();
+  class?: HTMLAttributes['class']
+  isActive?: boolean
+  label?: string
+  showSwitch?: boolean
+  tooltip?: string
+}>()
 
 const emit = defineEmits<{
-  "update:isActive": [value: boolean];
-}>();
+  'update:isActive': [value: boolean]
+}>()
 
 const delegatedProps = computed(() => {
-  const { class: _, ...delegated } = props;
+  const { class: _, ...delegated } = props
 
-  return delegated;
-});
+  return delegated
+})
 
 function updateValue(value: boolean) {
-  emit("update:isActive", value);
+  emit('update:isActive', value)
 }
 </script>
 

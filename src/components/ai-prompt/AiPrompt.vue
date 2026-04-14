@@ -1,70 +1,67 @@
 <script setup lang="ts">
-import { BotMessageSquare, SendHorizonal } from "lucide-vue-next";
-import OpenAI from "openai";
-import instructions from "./Instructions.txt?raw";
-import { ref } from "vue";
-import { toast } from "vue-sonner";
-import { formSchema } from "../../utils/default-form-elements";
-import type { FormKitSchemaFormKit } from "@formkit/core";
-import { isLoading } from "../../composables/form-fields";
-import { cn } from "../../utils/utils";
-import { NButton, NInput, NPopover, NTooltip } from "naive-ui";
-import { useFormBuilderConfig } from "../../composables/use-config";
-import { useMediaQuery } from "@vueuse/core";
+import { BotMessageSquare, SendHorizonal } from 'lucide-vue-next'
+import OpenAI from 'openai'
+import instructions from './Instructions.txt?raw'
+import { ref } from 'vue'
+import { toast } from 'vue-sonner'
+import { formSchema } from '../../utils/default-form-elements'
+import type { FormKitSchemaFormKit } from '@formkit/core'
+import { isLoading } from '../../composables/form-fields'
+import { cn } from '../../utils/utils'
+import { NButton, NInput, NPopover, NTooltip } from 'naive-ui'
+import { useFormBuilderConfig } from '../../composables/use-config'
+import { useMediaQuery } from '@vueuse/core'
 
-const isMobile = useMediaQuery('(max-width: 768px)');
+const isMobile = useMediaQuery('(max-width: 768px)')
 
-const config = useFormBuilderConfig();
-const inputRef = ref("");
-const isFocusedVal = ref(false);
-const isOpen = ref(false);
+const config = useFormBuilderConfig()
+const inputRef = ref('')
+const isFocusedVal = ref(false)
+const isOpen = ref(false)
 
 const parseFormSchema = (jsonString: string): FormKitSchemaFormKit[] => {
   try {
     // Parse JSON string into a JavaScript array
-    return JSON.parse(jsonString) as FormKitSchemaFormKit[];
+    return JSON.parse(jsonString) as FormKitSchemaFormKit[]
   } catch (error) {
-    console.error("Error parsing form schema JSON:", error);
-    return [];
+    console.error('Error parsing form schema JSON:', error)
+    return []
   }
-};
+}
 
 const handleClick = async () => {
-  if (inputRef.value === "") {
-    toast("Empty chat prompt!", {
-      description: "Please enter a prompt to generate a form.",
+  if (inputRef.value === '') {
+    toast('Empty chat prompt!', {
+      description: 'Please enter a prompt to generate a form.',
       action: {
-        label: "Close",
+        label: 'Close',
       },
-    });
-    return;
+    })
+    return
   }
 
-  isLoading.value = true;
+  isLoading.value = true
   const client = new OpenAI({
     apiKey: config.apiKey,
     dangerouslyAllowBrowser: true,
-  });
+  })
 
-  const defaultInstructions =
-    "Generate a FormKit schema based on the user's description";
+  const defaultInstructions = "Generate a FormKit schema based on the user's description"
 
   const response = await client.responses.create({
-    model: "gpt-4.1-mini",
+    model: 'gpt-4.1-mini',
     instructions: instructions || defaultInstructions,
     input: inputRef.value,
-  });
+  })
 
-  formSchema.value = parseFormSchema(
-    response.output_text,
-  ) as FormKitSchemaFormKit[];
-  isLoading.value = false;
-  inputRef.value = "";
-};
+  formSchema.value = parseFormSchema(response.output_text) as FormKitSchemaFormKit[]
+  isLoading.value = false
+  inputRef.value = ''
+}
 
 const isFocused = () => {
-  isFocusedVal.value = !isFocusedVal.value;
-};
+  isFocusedVal.value = !isFocusedVal.value
+}
 </script>
 
 <template>
@@ -77,9 +74,7 @@ const isFocused = () => {
         isFocusedVal
           ? 'ring-2 ring-ring transition-all duration-300'
           : 'border border-ring/20 dark:border-ring/10 transition-all duration-300',
-        isLoading
-          ? 'bg-primary/5 shadow-inner animate-pulse transition-colors duration-300'
-          : '',
+        isLoading ? 'bg-primary/5 shadow-inner animate-pulse transition-colors duration-300' : '',
       )
     "
   >
@@ -107,9 +102,9 @@ const isFocused = () => {
     </n-button>
   </div>
 
-  <n-popover v-model:show="isOpen" trigger="click" :show-arrow="false" placement="bottom">
+  <n-popover v-if="isMobile" v-model:show="isOpen" trigger="click" :show-arrow="false" placement="bottom">
     <template #trigger>
-      <n-tooltip v-if="isMobile" trigger="hover">
+      <n-tooltip trigger="hover">
         <template #trigger>
           <n-button
             id="form-dialog-portal"
@@ -126,16 +121,14 @@ const isFocused = () => {
         AI Assistant
       </n-tooltip>
     </template>
-    
+
     <div
       :class="
         cn(
           'flex rounded-lg w-[80vw] max-w-[400px] card relative items-center justify-center',
           'bg-gradient-to-br from-secondary to-emerald-100/50 dark:from-secondary dark:to-emerald-800/30',
           isFocusedVal ? 'border ring ring-ring' : 'border border-primary/10',
-          isLoading
-            ? 'bg-primary/5 shadow-inner animate-pulse transition-colors duration-300'
-            : '',
+          isLoading ? 'bg-primary/5 shadow-inner animate-pulse transition-colors duration-300' : '',
         )
       "
     >

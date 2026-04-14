@@ -4,7 +4,7 @@ import { NLayoutSider, NInput } from 'naive-ui'
 import NavMain from './NavMain.vue'
 
 const searchInput = ref('')
-provide("searchInput", searchInput)
+provide('searchInput', searchInput)
 </script>
 
 <template>

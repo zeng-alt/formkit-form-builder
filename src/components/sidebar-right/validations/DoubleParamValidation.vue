@@ -1,95 +1,90 @@
 <script setup lang="ts">
-import { useFormField } from "../../../composables/form-fields";
-import { getValueParts } from "../../../utils/utils";
-import { NInput, NDatePicker } from "naive-ui";
-import { computed } from "vue";
-import { MoveRight } from "lucide-vue-next";
-import { ValidationCard, ValidationSwitch } from "../../ui/validation-card";
+import { useFormField } from '../../../composables/form-fields'
+import { getValueParts } from '../../../utils/utils'
+import { NInput, NDatePicker } from 'naive-ui'
+import { computed } from 'vue'
+import { MoveRight } from 'lucide-vue-next'
+import { ValidationCard, ValidationSwitch } from '../../ui/validation-card'
 
 const props = defineProps<{
-  value: string;
-  tooltip: string;
-  switchLabel: string;
-  labelOne: string;
-  labelTwo: string;
-  placeholderOne: string;
-  placeholderTwo: string;
-}>();
+  value: string
+  tooltip: string
+  switchLabel: string
+  labelOne: string
+  labelTwo: string
+  placeholderOne: string
+  placeholderTwo: string
+}>()
 
-const {
-  updateValidationString,
-  isValidationChecked,
-  isActive,
-  createValidationValue,
-} = useFormField();
+const { updateValidationString, isValidationChecked, isActive, createValidationValue } =
+  useFormField()
 
-const active = isActive(isValidationChecked, props.value);
-const validation = createValidationValue(props.value);
+const active = isActive(isValidationChecked, props.value)
+const validation = createValidationValue(props.value)
 
 const min = computed({
-  get: () => getValueParts(validation.value || "")[0] || "",
-  set: (value: string) => {
-    const [_, maxVal] = getValueParts(validation.value || "");
+  get: () => getValueParts(validation.value || '')[0] || '',
+  set: (value: string | null) => {
+    const val = value || ''
+    const [_, maxVal] = getValueParts(validation.value || '')
 
     validation.value =
-      props.value === "between" || props.value === "date_between"
-        ? `${value},${maxVal}`
+      props.value === 'between' || props.value === 'date_between'
+        ? `${val},${maxVal}`
         : maxVal
-          ? `${value || "0"},${maxVal}`
-          : value || "";
+          ? `${val || '0'},${maxVal}`
+          : val
   },
-});
+})
 
 const max = computed({
-  get: () => getValueParts(validation.value || "")[1] || "",
-  set: (value: string) => {
-    const [minVal, _] = getValueParts(validation.value || "");
+  get: () => getValueParts(validation.value || '')[1] || '',
+  set: (value: string | null) => {
+    const val = value || ''
+    const [minVal, _] = getValueParts(validation.value || '')
 
     validation.value =
-      props.value === "between" || props.value === "date_between"
-        ? `${minVal},${value}`
-        : value === ""
-          ? minVal || ""
-          : `${minVal || "0"},${value}`;
+      props.value === 'between' || props.value === 'date_between'
+        ? `${minVal},${val}`
+        : val === ''
+          ? minVal || ''
+          : `${minVal || '0'},${val}`
   },
-});
+})
 
 const minDate = computed({
-  get: () => min.value ? new Date(min.value).getTime() : null,
+  get: () => (min.value ? new Date(min.value).getTime() : null),
   set: (val: number | null) => {
     if (val) {
-      min.value = new Date(val).toISOString().split('T')[0];
+      min.value = new Date(val).toISOString().split('T')[0] || ''
     } else {
-      min.value = '';
+      min.value = ''
     }
-  }
-});
+  },
+})
 
 const maxDate = computed({
-  get: () => max.value ? new Date(max.value).getTime() : null,
+  get: () => (max.value ? new Date(max.value).getTime() : null),
   set: (val: number | null) => {
     if (val) {
-      max.value = new Date(val).toISOString().split('T')[0];
+      max.value = new Date(val).toISOString().split('T')[0] || ''
     } else {
-      max.value = '';
+      max.value = ''
     }
-  }
-});
+  },
+})
 
 const toggleSwitch = () => {
-  if (props.value === "between") {
-    updateValidationString(`between:${min.value},${max.value}`, !active.value);
-  } else if (props.value === "date_between") {
+  if (props.value === 'between') {
+    updateValidationString(`between:${min.value},${max.value}`, !active.value)
+  } else if (props.value === 'date_between') {
     if (!min.value || !max.value) {
       updateValidationString(
         `date_between:01/01/2002,01/01/2003`, // date between needs a valid range to be toggled
         !active.value,
-      );
+      )
     } else {
-      updateValidationString(
-        `date_between:${min.value},${max.value}`,
-        !active.value,
-      );
+      updateValidationString(`date_between:${min.value},${max.value}`, !active.value)
     }
   } else {
     updateValidationString(
@@ -99,9 +94,9 @@ const toggleSwitch = () => {
           ? `length:0,${max.value}`
           : `length:${min.value},${max.value}`,
       !active.value,
-    );
+    )
   }
-};
+}
 </script>
 
 <template>
@@ -113,10 +108,7 @@ const toggleSwitch = () => {
       :tooltip="props.tooltip"
       :show-switch="true"
     />
-    <div
-      class="flex flex-row gap-2"
-      v-if="active && props.value !== 'date_between'"
-    >
+    <div class="flex flex-row gap-2" v-if="active && props.value !== 'date_between'">
       <div class="flex flex-col gap-1">
         <span class="text-xs">{{ props.labelOne }}</span>
         <n-input
@@ -137,10 +129,7 @@ const toggleSwitch = () => {
         />
       </div>
     </div>
-    <div
-      class="flex flex-col gap-2"
-      v-if="active && props.value === 'date_between'"
-    >
+    <div class="flex flex-col gap-2" v-if="active && props.value === 'date_between'">
       <div class="flex flex-col gap-1">
         <span class="text-xs">{{ props.labelOne }}</span>
         <n-date-picker size="small" type="date" v-model:value="minDate" />
@@ -152,9 +141,7 @@ const toggleSwitch = () => {
     </div>
     <span
       v-if="
-        (!max || !min) &&
-        (props.value === 'between' || props.value === 'date_between') &&
-        active
+        (!max || !min) && (props.value === 'between' || props.value === 'date_between') && active
       "
       class="text-xs text-destructive"
       >Both values must be set</span

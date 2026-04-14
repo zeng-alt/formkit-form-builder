@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 @config "../tailwind.config.js";
@@ -50,9 +50,9 @@
    #2080f0 info-blue accent, neutral grays.
    ───────────────────────────────────────────── */
 :root {
-  --background: oklch(1 0 0);                        /* #ffffff */
-  --foreground: oklch(0.2 0.005 264);                /* #1f2937-ish, near-black */
-  --card: oklch(1 0 0);                              /* white card */
+  --background: oklch(1 0 0); /* #ffffff */
+  --foreground: oklch(0.2 0.005 264); /* #1f2937-ish, near-black */
+  --card: oklch(1 0 0); /* white card */
   --card-foreground: oklch(0.2 0.005 264);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2 0.005 264);
@@ -67,7 +67,7 @@
 
   /* Muted — #fafafa */
   --muted: oklch(0.982 0 0);
-  --muted-foreground: oklch(0.55 0.01 264);         /* #6b7280 */
+  --muted-foreground: oklch(0.55 0.01 264); /* #6b7280 */
 
   /* Accent — Naive UI info blue #2080f0 */
   --accent: oklch(0.598 0.2 250);
@@ -76,26 +76,26 @@
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(1 0 0);
 
-  --border: oklch(0.9 0.002 264);                   /* #e0e0e6 */
+  --border: oklch(0.9 0.002 264); /* #e0e0e6 */
   --border-red: oklch(0.5493 0.131 26.86);
   --input: oklch(0.9 0.002 264);
-  --ring: oklch(0.588 0.165 155);                   /* green focus ring */
+  --ring: oklch(0.588 0.165 155); /* green focus ring */
 
-  --radius: 0.375rem;                               /* Naive UI uses tighter 3px radius */
+  --radius: 0.375rem; /* Naive UI uses tighter 3px radius */
 
   /* Charts */
-  --chart-1: oklch(0.588 0.165 155);               /* green */
-  --chart-2: oklch(0.598 0.2 250);                 /* blue */
-  --chart-3: oklch(0.65 0.18 32);                  /* orange */
-  --chart-4: oklch(0.55 0.18 295);                 /* purple */
-  --chart-5: oklch(0.6 0.2 15);                    /* red */
+  --chart-1: oklch(0.588 0.165 155); /* green */
+  --chart-2: oklch(0.598 0.2 250); /* blue */
+  --chart-3: oklch(0.65 0.18 32); /* orange */
+  --chart-4: oklch(0.55 0.18 295); /* purple */
+  --chart-5: oklch(0.6 0.2 15); /* red */
 
   /* Sidebar — #fafafa with green left rail */
   --sidebar: oklch(0.982 0 0);
   --sidebar-foreground: oklch(0.2 0.005 264);
   --sidebar-primary: oklch(0.588 0.165 155);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.945 0.01 155);          /* light green tint on hover */
+  --sidebar-accent: oklch(0.945 0.01 155); /* light green tint on hover */
   --sidebar-accent-foreground: oklch(0.588 0.165 155);
   --sidebar-border: oklch(0.9 0.002 264);
   --sidebar-ring: oklch(0.588 0.165 155);
@@ -108,10 +108,10 @@
    foreground #a9b7c6.
    ───────────────────────────────────────────── */
 .dark {
-  --background: oklch(0.22 0.005 264);              /* #2b2b2b */
-  --foreground: oklch(0.73 0.03 220);               /* #a9b7c6 */
+  --background: oklch(0.22 0.005 264); /* #2b2b2b */
+  --foreground: oklch(0.73 0.03 220); /* #a9b7c6 */
 
-  --card: oklch(0.24 0.005 264);                    /* #313335 editor bg */
+  --card: oklch(0.24 0.005 264); /* #313335 editor bg */
   --card-foreground: oklch(0.73 0.03 220);
 
   --popover: oklch(0.24 0.005 264);
@@ -127,7 +127,7 @@
 
   /* Muted — #393b40 */
   --muted: oklch(0.26 0.005 264);
-  --muted-foreground: oklch(0.58 0.015 220);        /* dim text */
+  --muted-foreground: oklch(0.58 0.015 220); /* dim text */
 
   /* Accent — Darcula string green #6a8759 */
   --accent: oklch(0.56 0.1 145);
@@ -136,26 +136,26 @@
   --destructive: oklch(0.45 0.18 25);
   --destructive-foreground: oklch(0.85 0.05 25);
 
-  --border: oklch(0.32 0.005 264);                  /* #4b4b4b */
+  --border: oklch(0.32 0.005 264); /* #4b4b4b */
   --border-red: oklch(0.5493 0.131 26.86);
   --input: oklch(0.32 0.005 264);
-  --ring: oklch(0.68 0.14 55);                      /* orange focus ring */
+  --ring: oklch(0.68 0.14 55); /* orange focus ring */
 
   --radius: 0.375rem;
 
   /* Charts */
-  --chart-1: oklch(0.68 0.14 55);                  /* orange */
-  --chart-2: oklch(0.56 0.1 145);                  /* green */
-  --chart-3: oklch(0.6 0.15 250);                  /* blue */
-  --chart-4: oklch(0.62 0.16 295);                 /* purple */
-  --chart-5: oklch(0.65 0.15 15);                  /* red */
+  --chart-1: oklch(0.68 0.14 55); /* orange */
+  --chart-2: oklch(0.56 0.1 145); /* green */
+  --chart-3: oklch(0.6 0.15 250); /* blue */
+  --chart-4: oklch(0.62 0.16 295); /* purple */
+  --chart-5: oklch(0.65 0.15 15); /* red */
 
   /* Sidebar — #3c3f41 */
   --sidebar: oklch(0.26 0.005 264);
   --sidebar-foreground: oklch(0.73 0.03 220);
   --sidebar-primary: oklch(0.68 0.14 55);
   --sidebar-primary-foreground: oklch(0.18 0.005 264);
-  --sidebar-accent: oklch(0.3 0.01 264);            /* subtle hover */
+  --sidebar-accent: oklch(0.3 0.01 264); /* subtle hover */
   --sidebar-accent-foreground: oklch(0.73 0.03 220);
   --sidebar-border: oklch(0.32 0.005 264);
   --sidebar-ring: oklch(0.68 0.14 55);
