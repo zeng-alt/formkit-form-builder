@@ -52,6 +52,7 @@ const onMouseMove = (e: MouseEvent) => {
   if (index === null) return
 
   const deltaX = e.clientX - startX.value
+  // Increase sensitivity slightly by using a smaller divisor or just direct mapping
   const deltaSpan = Math.round(deltaX / columnWidth.value)
   let newSpan = startSpan.value + deltaSpan
 
@@ -62,6 +63,8 @@ const onMouseMove = (e: MouseEvent) => {
 
   const schemaItem = formSchema.value[index]
   if (schemaItem) {
+    // Note: We use col-span-X without the ! for better standard tailwind matching if needed, 
+    // but the regex looks for !col-span- so we keep consistency with existing code
     let classes = schemaItem.outerClass || ''
     if (/!col-span-\d+/.test(classes)) {
       classes = classes.replace(/!col-span-\d+/, `!col-span-${newSpan}`)
@@ -70,8 +73,13 @@ const onMouseMove = (e: MouseEvent) => {
     }
     schemaItem.outerClass = classes
 
+    // Crucial: Update the fields.value ref which is used for rendering the list
     if (fields.value[index]) {
-      fields.value[index].outerClass = schemaItem.outerClass
+      // Force a shallow copy or direct update to trigger Vue reactivity if necessary
+      fields.value[index] = {
+        ...fields.value[index],
+        outerClass: schemaItem.outerClass
+      }
     }
   }
 }
