@@ -29,7 +29,7 @@ const inputType = computed(() => {
   return 'text'
 })
 
-const value = computed(() => (props.context._value?.value ?? '') as string)
+const value = computed(() => (props.context._value ?? '') as string)
 const placeholder = computed(() => props.context.placeholder as string | undefined)
 
 function handleUpdateValue(next: string) {
