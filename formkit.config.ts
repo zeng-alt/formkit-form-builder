@@ -8,6 +8,6 @@ export default defaultConfig({
     rootClasses,
   },
   inputs: {
-    naiveButton: createInput(CustomButton, { props: ['buttonProps'] }),
+    naiveButton: createInput(CustomButton, { family: 'button', props: ['buttonProps'] }),
   },
 })
