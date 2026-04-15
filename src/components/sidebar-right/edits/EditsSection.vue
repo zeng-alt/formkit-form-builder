@@ -41,6 +41,7 @@ const naiveDisabled = createNaiveProp<boolean>('disabled', false)
 const naiveClearable = createNaiveProp<boolean>('clearable', true)
 const naiveFilterable = createNaiveProp<boolean>('filterable', false)
 const naiveMultiple = createNaiveProp<boolean>('multiple', false)
+const naiveDateTimeValueFormat = createNaiveProp<string>('valueFormat', 'yyyy.MM.dd HH:mm:ss')
 
 const edits = {
   universalTextInputs: [
@@ -115,6 +116,13 @@ const edits = {
         { label: 'medium', value: 'medium' },
         { label: 'large', value: 'large' },
       ],
+    },
+  ],
+  naiveDateTimeTextInputs: [
+    {
+      label: 'value-format',
+      placeholder: 'yyyy.MM.dd HH:mm:ss',
+      model: naiveDateTimeValueFormat,
     },
   ],
   selectSwitchInputs: [
@@ -224,6 +232,7 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
     rangeInputs: ['range'],
     naiveSwitchInputs: naiveFields,
     naiveSelectInputs: naiveFields,
+    naiveDateTimeTextInputs: ['date-time'],
     selectSwitchInputs: ['select'],
     buttonSwitchInputs: ['naiveButton'],
     buttonSelectInputs: ['naiveButton'],
@@ -255,6 +264,9 @@ const visibleEdits = computed(() => {
       : [],
     naiveSelectInputs: showForFieldType('naiveSelectInputs', currentFieldType.value)
       ? edits.naiveSelectInputs
+      : [],
+    naiveDateTimeTextInputs: showForFieldType('naiveDateTimeTextInputs', currentFieldType.value)
+      ? edits.naiveDateTimeTextInputs
       : [],
     selectSwitchInputs: showForFieldType('selectSwitchInputs', currentFieldType.value)
       ? edits.selectSwitchInputs
@@ -387,6 +399,18 @@ const visibleEdits = computed(() => {
             :label="switchInput.label"
             :value="switchInput.model.value"
             @update:value="(v) => (switchInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(textInput, index) in visibleEdits.naiveDateTimeTextInputs"
+          :key="`naive-datetime-text-${index}`"
+        >
+          <TextInput
+            :label="textInput.label"
+            :placeholder="textInput.placeholder"
+            :value="textInput.model.value"
+            @update:value="(v) => (textInput.model.value = v)"
           />
         </template>
 

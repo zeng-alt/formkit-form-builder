@@ -32,6 +32,8 @@ const pickerType = computed<DatePickerProps['type']>(() =>
 )
 
 const valueFormat = computed(() => {
+  const configured = naiveProps.value.valueFormat
+  if (typeof configured === 'string' && configured.trim()) return configured
   if (props.context.type === 'datetime-local' || props.context.type === 'date-time')
     return 'yyyy-MM-dd HH:mm'
   return 'yyyy-MM-dd'

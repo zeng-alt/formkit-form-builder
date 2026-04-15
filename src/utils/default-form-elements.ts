@@ -161,7 +161,7 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
     label: 'Date Time Field',
     help: 'This is help text',
     outerClass: 'col-span-12',
-    naiveProps: { size: 'medium', disabled: false, clearable: true },
+    naiveProps: { size: 'medium', disabled: false, clearable: true, valueFormat: 'yyyy.MM.dd HH:mm:ss' },
     name: 'Date-Time',
     id: 'date_time_field',
     validation: '',

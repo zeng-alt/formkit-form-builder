@@ -34,10 +34,13 @@ function handleUpdateValue(next: string) {
 </script>
 
 <template>
-  <NColorPicker
-    :value="value"
-    :size="size"
-    :disabled="disabled"
-    @update:value="handleUpdateValue"
-  />
+  <div class="w-full">
+    <NColorPicker
+      style="width: 100%;"
+      :value="value"
+      :size="size"
+      :disabled="disabled"
+      @update:value="handleUpdateValue"
+    />
+  </div>
 </template>
