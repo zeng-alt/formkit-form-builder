@@ -48,7 +48,7 @@ const handleDownload = () => {
   try {
     // Validate JSON before downloading
     JSON.parse(jsonContent.value)
-    
+
     const blob = new Blob([jsonContent.value], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -69,7 +69,7 @@ const handleDownload = () => {
   <n-modal
     :show="show"
     @update:show="(val) => emit('update:show', val)"
-    class="w-[800px]"
+    class="w-70%"
     preset="card"
     title="Import / Export Schema"
     :bordered="false"
@@ -88,7 +88,7 @@ const handleDownload = () => {
         class="font-mono text-sm"
       />
     </div>
-    
+
     <template #footer>
       <n-space justify="end">
         <n-button @click="handleClose">Cancel</n-button>

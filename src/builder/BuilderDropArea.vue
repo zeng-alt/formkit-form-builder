@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
 import { Trash2, Monitor, Tablet, Smartphone, CodeXml } from 'lucide-vue-next'
@@ -16,6 +16,45 @@ import ImportExportModal from './ImportExportModal.vue'
 const { validationStringLength } = useFormField()
 
 const showImportExportModal = ref(false)
+
+// 列数 -> Tailwind class 映射
+const spanClassMap: Record<number, string> = {
+  3:  'w-1/4',
+  6:  'w-1/2',
+  9:  'w-3/4',
+  12: 'w-full',
+}
+
+// Tailwind class -> 列数 映射
+const classToSpan: Record<string, number> = {
+  'w-1/4': 3,
+  'w-1/2': 6,
+  'w-3/4': 9,
+  'w-full': 12,
+}
+
+// 从 outerClass 获取宽度 class，兼容旧的 !col-span-X 格式
+const getWidthClass = (field: unknown, index: number): string => {
+  const outerClass =
+    (field as FormKitSchemaFormKit)?.outerClass ||
+    formSchema.value[index]?.outerClass ||
+    'w-full'
+
+  // 兼容旧数据格式 !col-span-X
+  const legacyMatch = outerClass.match(/!col-span-(\d+)/)
+  if (legacyMatch) {
+    return spanClassMap[parseInt(legacyMatch[1], 10)] || 'w-full'
+  }
+
+  return spanClassMap[parseInt(outerClass, 10)] || outerClass || 'w-full'
+}
+
+// 从宽度 class 获取百分比，用于 resize 遮罩显示
+const getWidthPercent = (field: unknown, index: number): number => {
+  const cls = getWidthClass(field, index)
+  const span = classToSpan[cls] || 12
+  return Math.round((span / 12) * 100)
+}
 
 const deleteField = (index: number) => {
   const nextSchema = formSchema.value.filter((_: unknown, i: number) => i !== index)
@@ -35,8 +74,12 @@ const startResize = (e: MouseEvent, index: number) => {
   const schemaItem = formSchema.value[index]
   if (!schemaItem) return
 
-  const match = schemaItem.outerClass?.match(/!col-span-(\d+)/)
-  startSpan.value = match ? parseInt(match[1], 10) : 12
+  const outerClass = schemaItem.outerClass || 'w-full'
+  // 兼容旧格式
+  const legacyMatch = outerClass.match(/!col-span-(\d+)/)
+  startSpan.value = legacyMatch
+    ? parseInt(legacyMatch[1], 10)
+    : classToSpan[outerClass] || 12
 
   if (formFields.value) {
     const ul = formFields.value as unknown as HTMLElement
@@ -52,33 +95,21 @@ const onMouseMove = (e: MouseEvent) => {
   if (index === null) return
 
   const deltaX = e.clientX - startX.value
-  // Increase sensitivity slightly by using a smaller divisor or just direct mapping
   const deltaSpan = Math.round(deltaX / columnWidth.value)
   let newSpan = startSpan.value + deltaSpan
 
-  // Clamp newSpan to allowed values: 3, 6, 9, 12
   newSpan = Math.max(3, Math.min(12, newSpan))
-  // Round to nearest multiple of 3
   newSpan = Math.round(newSpan / 3) * 3
 
+  const newClass = spanClassMap[newSpan] || 'w-full'
   const schemaItem = formSchema.value[index]
-  if (schemaItem) {
-    // Note: We use col-span-X without the ! for better standard tailwind matching if needed, 
-    // but the regex looks for !col-span- so we keep consistency with existing code
-    let classes = schemaItem.outerClass || ''
-    if (/!col-span-\d+/.test(classes)) {
-      classes = classes.replace(/!col-span-\d+/, `!col-span-${newSpan}`)
-    } else {
-      classes = `${classes} !col-span-${newSpan}`.trim()
-    }
-    schemaItem.outerClass = classes
 
-    // Crucial: Update the fields.value ref which is used for rendering the list
+  if (schemaItem) {
+    schemaItem.outerClass = newClass
     if (fields.value[index]) {
-      // Force a shallow copy or direct update to trigger Vue reactivity if necessary
       fields.value[index] = {
         ...fields.value[index],
-        outerClass: schemaItem.outerClass
+        outerClass: newClass,
       }
     }
   }
@@ -162,7 +193,7 @@ watch(
 
 <template>
   <div class="flex flex-1 flex-row justify-start mb-15 pt-10">
-    
+
     <!-- Left side controls -->
     <div class="w-16 shrink-0 flex flex-col items-center">
       <n-button-group vertical class="sticky top-20 bg-card shadow-sm rounded-lg border border-border/50">
@@ -216,91 +247,95 @@ watch(
           <n-spin size="medium" />
         </div>
       </div>
-      
+
       <n-card
         :class="cn(
           'relative min-h-[80%] !h-fit rounded-xl shadow-md transition-all duration-300',
           canvasView === 'desktop' ? 'w-full lg:w-[80%]' : '',
           canvasView === 'tablet' ? 'w-[768px]' : '',
-          canvasView === 'mobile' ? 'w-[375px]' : ''
+          canvasView === 'mobile' ? 'w-[375px]' : '',
         )"
         content-style="padding: 16px;"
       >
-      <ul
-        ref="formFields"
-        :class="
-          cn(
-            'w-full grid grid-cols-12 gap-x-4 gap-y-2',
-            fields.length === 0 ? 'h-full' : 'h-fit', // this feels jank but it works i guess
-          )
-        "
-        data-testid="drop-area"
-      >
-        <li
-          v-for="(field, index) in fields"
-          :key="(field as FormKitSchemaFormKit)?.$formkit + index"
-          :class="
-            cn(
+        <!-- flex wrap 容器，替代 grid grid-cols-12 -->
+        <ul
+          ref="formFields"
+          :class="cn(
+            'w-full flex flex-wrap gap-y-2 list-none p-0 m-0',
+            fields.length === 0 ? 'h-full' : 'h-fit',
+          )"
+          data-testid="drop-area"
+        >
+          <li
+            v-for="(field, index) in fields"
+            :key="(field as FormKitSchemaFormKit)?.$formkit + index"
+            :class="cn(
               'group rounded-lg transition-all duration-200 p-1 !cursor-grab h-full !z-20 relative',
+              'box-border',
+              // 偶数 index 加左 padding，奇数 index 加右 padding，实现 gap 效果
+              // 改为统一用 px-2 模拟 gap，避免 flex 换行时边距问题
               selectedIndex === index
                 ? 'border border-ring/30 bg-ring/20 dark:bg-accent/20 dark:border-ring/5 transition-all duration-300'
                 : 'border bg-ring/5 border-transparent hover:border-ring/30 dark:bg-ring/3 dark:hover:border-ring/10 transition-all duration-200',
-              (field as FormKitSchemaFormKit)?.outerClass || formSchema[index]?.outerClass,
-            )
-          "
-          @click="clickedField(index)"
-        >
-          <div class="flex gap-1.5 p-1 w-full pb-2">
-            <div class="flex-1 w-full">
-              <FormKitSchema
-                :schema="[field as FormKitSchemaFormKit]"
-                :key="`form-item-${index}`"
-              />
+              getWidthClass(field, index),
+            )"
+            @click="clickedField(index)"
+          >
+            <!-- Field content -->
+            <div class="flex gap-1.5 p-1 w-full pb-2">
+              <div class="flex-1 w-full">
+                <FormKitSchema
+                  :schema="[field as FormKitSchemaFormKit]"
+                  :key="`form-item-${index}`"
+                />
+              </div>
             </div>
-          </div>
-          <div class="absolute bottom-1 right-1 flex flex-row z-10">
-            <div
-              class="px-2 mr-1 border-1 border-ring/40 dark:border-ring/20 rounded-md flex items-center justify-center"
-              v-if="selectedIndex === index"
-            >
-              <span class="text-xs"
-                >{{ validationStringLength }} {{ pluralize(validationStringLength, 'rule') }}</span
+
+            <!-- Bottom controls: validation rules count + delete button -->
+            <div class="absolute bottom-1 right-1 flex flex-row z-10">
+              <div
+                v-if="selectedIndex === index"
+                class="px-2 mr-1 border-1 border-ring/40 dark:border-ring/20 rounded-md flex items-center justify-center"
               >
+                <span class="text-xs">
+                  {{ validationStringLength }} {{ pluralize(validationStringLength, 'rule') }}
+                </span>
+              </div>
+              <n-button
+                quaternary
+                circle
+                size="small"
+                @click.stop="deleteField(index)"
+                class="h-4 w-4 md:h-5 md:w-5 hover:!bg-destructive/90 hover:text-white"
+              >
+                <template #icon><Trash2 class="!h-3 !w-3" /></template>
+              </n-button>
             </div>
-            <n-button
-              quaternary
-              circle
-              size="small"
-              @click.stop="deleteField(index)"
-              class="h-4 w-4 md:h-5 md:w-5 hover:!bg-destructive/90 hover:text-white"
+
+            <!-- Resize handle（submit 字段不允许调整宽度） -->
+            <div
+              v-if="formSchema[index]?.$formkit !== 'submit'"
+              class="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ring/10 rounded-r-lg"
+              @mousedown.stop.prevent="startResize($event, index)"
             >
-              <template #icon><Trash2 class="!h-3 !w-3" /></template>
-            </n-button>
-          </div>
-          
-          <div
-            v-if="formSchema[index]?.$formkit !== 'submit'"
-            class="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ring/10 rounded-r-lg"
-            @mousedown.stop.prevent="startResize($event, index)"
-          >
-            <div class="flex flex-row gap-[1px]">
-              <div class="w-[2px] h-6 bg-ring/30 dark:bg-ring/50 rounded-full"></div>
-              <div class="w-[2px] h-6 bg-ring/30 dark:bg-ring/50 rounded-full"></div>
+              <div class="flex flex-row gap-[1px]">
+                <div class="w-[2px] h-6 bg-ring/30 dark:bg-ring/50 rounded-full"></div>
+                <div class="w-[2px] h-6 bg-ring/30 dark:bg-ring/50 rounded-full"></div>
+              </div>
             </div>
-          </div>
-          
-          <!-- Show current width percentage while resizing -->
-          <div
-            v-if="resizingIndex === index"
-            class="absolute inset-0 z-40 bg-background/50 backdrop-blur-[1px] flex items-center justify-center rounded-lg border-2 border-primary/50"
-          >
-            <span class="bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded shadow-md">
-              {{ (parseInt(formSchema[index]?.outerClass?.match(/!col-span-(\d+)/)?.[1] || '12') / 12 * 100).toFixed(0) }}%
-            </span>
-          </div>
-        </li>
-      </ul>
-    </n-card>
+
+            <!-- 拖拽调整宽度时的遮罩，显示当前百分比 -->
+            <div
+              v-if="resizingIndex === index"
+              class="absolute inset-0 z-40 bg-background/50 backdrop-blur-[1px] flex items-center justify-center rounded-lg border-2 border-primary/50"
+            >
+              <span class="bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded shadow-md">
+                {{ getWidthPercent(field, index) }}%
+              </span>
+            </div>
+          </li>
+        </ul>
+      </n-card>
     </div>
 
     <!-- Right side controls -->
