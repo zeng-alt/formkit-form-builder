@@ -157,6 +157,13 @@ const classes: Record<string, Record<string, boolean>> = {
     "!px-0": true,
     "!py-0": true,
   },
+  naiveDivider__inner: {
+    "!border-none": true,
+    "!shadow-none": true,
+    "!bg-transparent": true,
+    "!px-0": true,
+    "!py-0": true,
+  },
   naiveRate__inner: {
     "!border-none": true,
     "!shadow-none": true,

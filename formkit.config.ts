@@ -29,6 +29,7 @@ import NaiveTypographyHeader from './src/components/ui/formkit/NaiveTypographyHe
 import NaiveTypographyUl from './src/components/ui/formkit/NaiveTypographyUl.vue'
 import NaiveTypographyOl from './src/components/ui/formkit/NaiveTypographyOl.vue'
 import NaiveTypographyLi from './src/components/ui/formkit/NaiveTypographyLi.vue'
+import NaiveDivider from './src/components/ui/formkit/NaiveDivider.vue'
 
 const sharedObservedProps = [
   'naiveProps',
@@ -109,5 +110,6 @@ export default defaultConfig({
     naiveUl: createNaiveInput('NaiveTypographyUl', NaiveTypographyUl, { family: 'text' }),
     naiveOl: createNaiveInput('NaiveTypographyOl', NaiveTypographyOl, { family: 'text' }),
     naiveLi: createNaiveInput('NaiveTypographyLi', NaiveTypographyLi, { family: 'text' }),
+    naiveDivider: createNaiveInput('NaiveDivider', NaiveDivider, { family: 'text' }),
   },
 })

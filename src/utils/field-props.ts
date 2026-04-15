@@ -267,6 +267,12 @@ export const fieldProps = [
     category: 'static',
   },
   {
+    name: 'naiveDivider',
+    tooltip: 'Naive UI divider',
+    icon: SlidersHorizontal,
+    category: 'static',
+  },
+  {
     name: 'group',
     tooltip: 'Allows user to group fields together',
     icon: Group,

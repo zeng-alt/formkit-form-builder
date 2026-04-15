@@ -492,6 +492,19 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
     id: 'naive_li_static',
   },
   {
+    $formkit: 'naiveDivider',
+    outerClass: 'col-span-12',
+    naiveProps: {
+      titlePlacement: 'center',
+      dashed: false,
+      vertical: false,
+    },
+    value: 'Divider',
+    name: 'Naive Divider',
+    description: 'Naive UI divider',
+    id: 'naive_divider_static',
+  },
+  {
     $formkit: 'tel',
     label: 'Tel Field',
     placeholder: '(+XX) XXXXXXXXXX',

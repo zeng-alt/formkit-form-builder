@@ -101,6 +101,10 @@ const typoAlign = createNaiveProp<string>('align', 'start')
 const linkHref = createNaiveProp<string>('href', 'https://www.example.com')
 const linkTarget = createNaiveProp<string>('target', '_blank')
 
+const dividerTitlePlacement = createNaiveProp<string>('titlePlacement', 'center')
+const dividerDashed = createNaiveProp<boolean>('dashed', false)
+const dividerVertical = createNaiveProp<boolean>('vertical', false)
+
 const hasField = computed(() => !!formSchema.value[selectedIndex.value])
 
 const currentFieldType = computed(() =>
@@ -241,6 +245,21 @@ const edits = {
         { label: '_self', value: '_self' },
       ],
     },
+  ],
+  dividerSelectInputs: [
+    {
+      label: 'title-placement',
+      model: dividerTitlePlacement,
+      options: [
+        { label: 'left', value: 'left' },
+        { label: 'center', value: 'center' },
+        { label: 'right', value: 'right' },
+      ],
+    },
+  ],
+  dividerSwitchInputs: [
+    { label: 'dashed', model: dividerDashed },
+    { label: 'vertical', model: dividerVertical },
   ],
   treeOptionsJsonInputs: [
     {
@@ -480,6 +499,7 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
       'naiveP',
       'naiveA',
       'naiveBlockquote',
+      'naiveDivider',
       'naiveH1',
       'naiveH2',
       'naiveH3',
@@ -504,6 +524,8 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
     typographyAlignSelectInputs: ['naiveP'],
     linkTextInputs: ['naiveA'],
     linkTargetSelectInputs: ['naiveA'],
+    dividerSelectInputs: ['naiveDivider'],
+    dividerSwitchInputs: ['naiveDivider'],
     treeOptionsJsonInputs: ['naiveCascader', 'naiveTreeSelect'],
     numberToggleInputs: ['number'],
     fileToggleInputs: ['file'],
@@ -553,6 +575,12 @@ const visibleEdits = computed(() => {
     linkTextInputs: showForFieldType('linkTextInputs', currentFieldType.value) ? edits.linkTextInputs : [],
     linkTargetSelectInputs: showForFieldType('linkTargetSelectInputs', currentFieldType.value)
       ? edits.linkTargetSelectInputs
+      : [],
+    dividerSelectInputs: showForFieldType('dividerSelectInputs', currentFieldType.value)
+      ? edits.dividerSelectInputs
+      : [],
+    dividerSwitchInputs: showForFieldType('dividerSwitchInputs', currentFieldType.value)
+      ? edits.dividerSwitchInputs
       : [],
     treeOptionsJsonInputs: showForFieldType('treeOptionsJsonInputs', currentFieldType.value)
       ? edits.treeOptionsJsonInputs
@@ -707,6 +735,29 @@ const visibleEdits = computed(() => {
             :value="selectInput.model.value"
             :options="selectInput.options"
             @update:value="(v) => (selectInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(selectInput, index) in visibleEdits.dividerSelectInputs"
+          :key="`divider-select-${index}`"
+        >
+          <SelectInput
+            :label="selectInput.label"
+            :value="selectInput.model.value"
+            :options="selectInput.options"
+            @update:value="(v) => (selectInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(switchInput, index) in visibleEdits.dividerSwitchInputs"
+          :key="`divider-switch-${index}`"
+        >
+          <SwitchInput
+            :label="switchInput.label"
+            :value="switchInput.model.value"
+            @update:value="(v) => (switchInput.model.value = v)"
           />
         </template>
 
