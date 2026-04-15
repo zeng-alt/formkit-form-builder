@@ -18,6 +18,8 @@ const buttonCircle = createButtonProp<boolean>('circle', false)
 const buttonDashed = createButtonProp<boolean>('dashed', false)
 const buttonDisabled = createButtonProp<boolean>('disabled', false)
 const buttonFocusable = createButtonProp<boolean>('focusable', true)
+const buttonFullWidth = createButtonProp<boolean>('fullWidth', false)
+const buttonAlign = createButtonProp<string>('align', 'left')
 const buttonGhost = createButtonProp<boolean>('ghost', false)
 const buttonRound = createButtonProp<boolean>('round', false)
 const buttonSecondary = createButtonProp<boolean>('secondary', false)
@@ -90,11 +92,21 @@ const edits = {
     { label: 'dashed', model: buttonDashed },
     { label: 'disabled', model: buttonDisabled },
     { label: 'focusable', model: buttonFocusable },
+    { label: 'full width', model: buttonFullWidth },
     { label: 'ghost', model: buttonGhost },
     { label: 'round', model: buttonRound },
     { label: 'secondary', model: buttonSecondary },
   ],
   buttonSelectInputs: [
+    {
+      label: 'align',
+      model: buttonAlign,
+      options: [
+        { label: 'left', value: 'left' },
+        { label: 'center', value: 'center' },
+        { label: 'right', value: 'right' },
+      ],
+    },
     {
       label: 'size',
       model: buttonSize,

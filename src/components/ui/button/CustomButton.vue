@@ -23,6 +23,8 @@ const attrType = computed(() => {
 
 const size = computed(() => buttonProps.value?.size || 'medium')
 
+const align = computed(() => buttonProps.value?.align || 'left')
+
 const booleans = computed(() => ({
   block: !!buttonProps.value?.block,
   bordered: buttonProps.value?.bordered ?? true,
@@ -30,6 +32,7 @@ const booleans = computed(() => ({
   dashed: !!buttonProps.value?.dashed,
   disabled: buttonProps.value?.disabled ?? props.context?.disabled ?? false,
   focusable: buttonProps.value?.focusable ?? true,
+  fullWidth: !!buttonProps.value?.fullWidth,
   ghost: !!buttonProps.value?.ghost,
   round: !!buttonProps.value?.round,
   secondary: !!buttonProps.value?.secondary,
@@ -41,21 +44,24 @@ function handleClick(e: MouseEvent) {
 </script>
 
 <template>
-  <NButton
-    :type="type"
-    :size="size"
-    :attr-type="attrType"
-    :block="booleans.block"
-    :bordered="booleans.bordered"
-    :circle="booleans.circle"
-    :dashed="booleans.dashed"
-    :disabled="booleans.disabled"
-    :focusable="booleans.focusable"
-    :ghost="booleans.ghost"
-    :round="booleans.round"
-    :secondary="booleans.secondary"
-    @click="handleClick"
-  >
-    {{ context.label }}
-  </NButton>
+  <div :class="['flex', booleans.fullWidth ? 'w-full' : '', `justify-${align === 'center' ? 'center' : align === 'right' ? 'end' : 'start'}`]">
+    <NButton
+      :class="[booleans.fullWidth ? 'w-full' : '']"
+      :type="type"
+      :size="size"
+      :attr-type="attrType"
+      :block="booleans.block"
+      :bordered="booleans.bordered"
+      :circle="booleans.circle"
+      :dashed="booleans.dashed"
+      :disabled="booleans.disabled"
+      :focusable="booleans.focusable"
+      :ghost="booleans.ghost"
+      :round="booleans.round"
+      :secondary="booleans.secondary"
+      @click="handleClick"
+    >
+      {{ context.label }}
+    </NButton>
+  </div>
 </template>
