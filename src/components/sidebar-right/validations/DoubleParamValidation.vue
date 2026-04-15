@@ -26,7 +26,7 @@ const min = computed({
   get: () => getValueParts(validation.value || '')[0] || '',
   set: (value: string | null) => {
     const val = value || ''
-    const [_, maxVal] = getValueParts(validation.value || '')
+    const [, maxVal] = getValueParts(validation.value || '')
 
     validation.value =
       props.value === 'between' || props.value === 'date_between'
@@ -41,7 +41,7 @@ const max = computed({
   get: () => getValueParts(validation.value || '')[1] || '',
   set: (value: string | null) => {
     const val = value || ''
-    const [minVal, _] = getValueParts(validation.value || '')
+    const [minVal] = getValueParts(validation.value || '')
 
     validation.value =
       props.value === 'between' || props.value === 'date_between'

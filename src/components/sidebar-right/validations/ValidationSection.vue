@@ -155,7 +155,7 @@ const currentFieldType = computed(() => {
 })
 
 const showForFieldType = (validationType: string, fieldType: string | null) => {
-  const validationMap: any = {
+  const validationMap: Record<string, string[]> = {
     required: [
       'text',
       'textarea',

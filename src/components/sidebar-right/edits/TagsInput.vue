@@ -2,18 +2,21 @@
 import { NDynamicTags } from 'naive-ui'
 import EditsLayout from './EditsLayout.vue'
 import { computed } from 'vue'
-import type { WritableComputedRef } from 'vue'
 
 const props = defineProps<{
-  model: WritableComputedRef<any, string[]>
+  value: string[]
   label: string
   placeholder: string
 }>()
 
+const emit = defineEmits<{
+  'update:value': [value: string[]]
+}>()
+
 const modelValue = computed({
-  get: () => props.model.value || [],
+  get: () => props.value || [],
   set: (value: string[]) => {
-    props.model.value = value
+    emit('update:value', value)
   },
 })
 </script>

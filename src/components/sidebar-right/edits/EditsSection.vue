@@ -140,7 +140,7 @@ const currentFieldType = computed(() =>
 )
 
 const showForFieldType = (editType: string, fieldType: string | null) => {
-  const editMap: any = {
+  const editMap: Record<string, string[]> = {
     universalTextInputs: [
       'text',
       'textarea',
@@ -158,6 +158,7 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
       'select',
       'radio',
       'checkbox',
+      'naiveButton',
       'submit',
     ],
     placeholderTextInputs: ['text', 'textarea', 'email', 'password', 'url', 'tel', 'number'],
@@ -165,8 +166,8 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
     numberToggleInputs: ['number'],
     fileToggleInputs: ['file'],
     rangeInputs: ['range'],
-    buttonSwitchInputs: ['submit', 'button'],
-    buttonSelectInputs: ['submit', 'button'],
+    buttonSwitchInputs: ['naiveButton'],
+    buttonSelectInputs: ['naiveButton'],
   }
 
   return !fieldType || editMap[editType]?.includes(fieldType) || false
@@ -215,7 +216,8 @@ const visibleEdits = computed(() => {
           <TextInput
             :label="textInput.label"
             :placeholder="textInput.placeholder"
-            :model="textInput.model"
+            :value="textInput.model.value"
+            @update:value="(v) => (textInput.model.value = v)"
           />
         </template>
 
@@ -227,7 +229,8 @@ const visibleEdits = computed(() => {
           <TextInput
             :label="textInput.label"
             :placeholder="textInput.placeholder"
-            :model="textInput.model"
+            :value="textInput.model.value"
+            @update:value="(v) => (textInput.model.value = v)"
           />
         </template>
 
@@ -239,7 +242,8 @@ const visibleEdits = computed(() => {
           <TagsInput
             :label="tagsInput.label"
             :placeholder="tagsInput.placeholder"
-            :model="tagsInput.model"
+            :value="tagsInput.model.value"
+            @update:value="(v) => (tagsInput.model.value = v)"
           />
         </template>
 
@@ -255,7 +259,8 @@ const visibleEdits = computed(() => {
             :value-one="toggleInput.valueOne"
             :value-two="toggleInput.valueTwo"
             :type="toggleInput.type"
-            :model="toggleInput.model"
+            :value="toggleInput.model.value"
+            @update:value="(v) => (toggleInput.model.value = v)"
           />
         </template>
 
@@ -271,7 +276,8 @@ const visibleEdits = computed(() => {
             :value-one="toggleInput.valueOne"
             :value-two="toggleInput.valueTwo"
             :type="toggleInput.type"
-            :model="toggleInput.model"
+            :value="toggleInput.model.value"
+            @update:value="(v) => (toggleInput.model.value = v)"
           />
         </template>
 
@@ -282,8 +288,14 @@ const visibleEdits = computed(() => {
             :label-two="rangeInput.labelTwo"
             :placeholder-one="rangeInput.placeholderOne"
             :placeholder-two="rangeInput.placeholderTwo"
-            :model-one="rangeInput.modelOne"
-            :model-two="rangeInput.modelTwo"
+            :value-one="rangeInput.modelOne.value ?? null"
+            :value-two="rangeInput.modelTwo.value ?? null"
+            @update:valueOne="(v) => {
+              if (v !== null) rangeInput.modelOne.value = v
+            }"
+            @update:valueTwo="(v) => {
+              if (v !== null) rangeInput.modelTwo.value = v
+            }"
           />
         </template>
 

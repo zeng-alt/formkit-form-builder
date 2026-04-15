@@ -1,23 +1,19 @@
 <script setup lang="ts">
 import { NInput } from 'naive-ui'
 import EditsLayout from './EditsLayout.vue'
-import { computed } from 'vue'
-import type { HTMLAttributes, WritableComputedRef } from 'vue'
+import type { HTMLAttributes } from 'vue'
 import { cn } from '../../../utils/utils'
 
 const props = defineProps<{
   class?: HTMLAttributes['class']
-  model: WritableComputedRef<any, string>
+  value: string
   placeholder: string
   label: string
 }>()
 
-const modelValue = computed({
-  get: () => props.model.value,
-  set: (value: string) => {
-    props.model.value = value
-  },
-})
+const emit = defineEmits<{
+  'update:value': [value: string]
+}>()
 </script>
 
 <template>
@@ -27,7 +23,8 @@ const modelValue = computed({
     }}</label>
     <n-input
       id="myInput"
-      v-model:value="modelValue"
+      :value="props.value"
+      @update:value="(v) => emit('update:value', v)"
       :placeholder="props.placeholder"
       :class="cn('h-8 rounded-md text-xs', props.class)"
     />

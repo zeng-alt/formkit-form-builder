@@ -7,11 +7,14 @@ const props = defineProps<{
   context: any
 }>()
 
-const buttonProps = computed(() => props.context?.node?.props?.buttonProps || {})
+const buttonProps = computed(() => {
+  // Try getting from node.props directly or node.props.buttonProps
+  return props.context?.node?.props?.buttonProps || props.context?.buttonProps || props.context?.node?.props || {}
+})
 
 const type = computed(() => {
   const configuredType = buttonProps.value?.type
-  if (configuredType) return configuredType
+  if (configuredType && configuredType !== 'submit' && configuredType !== 'button') return configuredType
   const formkitType = props.context.node.props.type
   return formkitType === 'submit' ? 'primary' : 'default'
 })
