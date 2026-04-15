@@ -14,6 +14,19 @@ const [parentRef, items] = useDragAndDrop(props.elements, {
   draggable: () => true,
   handleNodePointerup(data) {
     data.targetData.node.el.setAttribute('draggable', 'true')
+  },
+  // @ts-ignore - We only need dynamicValues, ignoring missing insertPoint
+  insertConfig: {
+    dynamicValues: (data: any) => {
+      // Deep clone the elements so that modifying the canvas elements 
+      // doesn't affect the sidebar source elements.
+      return data.draggedNodes.map((node: any) => JSON.parse(JSON.stringify(node.data.value)))
+    }
+  },
+  onTransfer() {
+    // When an item is transferred out of this list, the drag-and-drop library removes it from `items.value`.
+    // We want to act like a "clone" source, so we immediately restore the original items.
+    items.value = [...props.elements]
   }
 })
 
@@ -24,7 +37,7 @@ watch(() => props.elements, (newElements) => {
 </script>
 
 <template>
-  <div ref="parentRef" class="flex flex-col gap-1 p-2 min-h-[50px]">
+  <div ref="parentRef" data-is-source="true" class="flex flex-col gap-1 p-2 min-h-[50px]">
     <div
       v-for="item in items"
       :key="item.name"
