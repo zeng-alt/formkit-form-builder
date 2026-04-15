@@ -61,7 +61,7 @@ function handleClick(e: MouseEvent) {
       :secondary="booleans.secondary"
       @click="handleClick"
     >
-      {{ context.label }}
+      [CUSTOM] {{ context.label }}
     </NButton>
   </div>
 </template>

@@ -4,4 +4,4 @@ import { plugin, defaultConfig } from '@formkit/vue'
 import App from './App.vue'
 import config from '../formkit.config.ts'
 
-createApp(App).use(plugin, defaultConfig(config)).mount('#app')
+createApp(App).use(plugin, config).mount('#app')
