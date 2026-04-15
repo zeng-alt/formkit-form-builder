@@ -1,16 +1,24 @@
 <script setup lang="ts">
-import { NConfigProvider, NLayout, type ConfigProviderProps } from 'naive-ui'
+import { computed } from 'vue'
+import { NConfigProvider, NLayout, darkTheme, type ConfigProviderProps } from 'naive-ui'
+import { useColorMode } from '@vueuse/core'
 import SidebarLeft from '../components/sidebar-left/SidebarLeft.vue'
 import SidebarRight from '../components/sidebar-right/SidebarRight.vue'
 import BuilderDropArea from './BuilderDropArea.vue'
 import BuilderHeader from './BuilderHeader.vue'
 
-defineProps<ConfigProviderProps>()
+const props = defineProps<ConfigProviderProps>()
+
+const colorMode = useColorMode()
+const activeTheme = computed(() => {
+  if (props.theme !== undefined) return props.theme
+  return colorMode.value === 'dark' ? darkTheme : null
+})
 </script>
 
 <template>
   <n-config-provider
-    :theme="theme"
+    :theme="activeTheme"
     :theme-overrides="themeOverrides"
     :locale="locale"
     :date-locale="dateLocale"
@@ -23,7 +31,7 @@ defineProps<ConfigProviderProps>()
     <n-layout has-sider class="h-screen w-full">
       <SidebarLeft />
       <n-layout
-        class="relative bg-gradient-to-br from-secondary to-emerald-100/50 dark:from-secondary dark:to-emerald-800/20"
+        class="relative"
         :native-scrollbar="false"
       >
         <div class="p-4 h-full flex flex-col">
