@@ -143,9 +143,10 @@ const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.val
             <n-button
               :type="canvasView === 'desktop' ? 'primary' : 'default'"
               @click="canvasView = 'desktop'"
-              class="w-10 h-10"
+              size="small"
+              class="w-8 h-8"
             >
-              <template #icon><Monitor class="h-4 w-4" /></template>
+              <template #icon><Monitor class="h-3.5 w-3.5" /></template>
             </n-button>
           </template>
           Desktop View
@@ -155,9 +156,10 @@ const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.val
             <n-button
               :type="canvasView === 'tablet' ? 'primary' : 'default'"
               @click="canvasView = 'tablet'"
-              class="w-10 h-10"
+              size="small"
+              class="w-8 h-8"
             >
-              <template #icon><Tablet class="h-4 w-4" /></template>
+              <template #icon><Tablet class="h-3.5 w-3.5" /></template>
             </n-button>
           </template>
           Tablet View
@@ -167,9 +169,10 @@ const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.val
             <n-button
               :type="canvasView === 'mobile' ? 'primary' : 'default'"
               @click="canvasView = 'mobile'"
-              class="w-10 h-10"
+              size="small"
+              class="w-8 h-8"
             >
-              <template #icon><Smartphone class="h-4 w-4" /></template>
+              <template #icon><Smartphone class="h-3.5 w-3.5" /></template>
             </n-button>
           </template>
           Mobile View
