@@ -13,6 +13,13 @@ import NaiveCheckboxGroup from './src/components/ui/formkit/NaiveCheckboxGroup.v
 import NaiveRadioGroup from './src/components/ui/formkit/NaiveRadioGroup.vue'
 import NaiveSlider from './src/components/ui/formkit/NaiveSlider.vue'
 import NaiveColorPicker from './src/components/ui/formkit/NaiveColorPicker.vue'
+import NaiveAvatar from './src/components/ui/formkit/NaiveAvatar.vue'
+import NaiveCascader from './src/components/ui/formkit/NaiveCascader.vue'
+import NaiveCheckbox from './src/components/ui/formkit/NaiveCheckbox.vue'
+import NaiveMention from './src/components/ui/formkit/NaiveMention.vue'
+import NaiveRate from './src/components/ui/formkit/NaiveRate.vue'
+import NaiveSwitch from './src/components/ui/formkit/NaiveSwitch.vue'
+import NaiveTreeSelect from './src/components/ui/formkit/NaiveTreeSelect.vue'
 
 const sharedObservedProps = [
   'naiveProps',
@@ -72,5 +79,12 @@ export default defaultConfig({
     time: createNaiveInput('NaiveTimePicker', NaiveTimePicker, { family: 'text' }),
     file: createNaiveInput('NaiveUpload', NaiveUpload, { family: 'text' }),
     color: createNaiveInput('NaiveColorPicker', NaiveColorPicker, { family: 'text' }),
+    naiveAvatar: createNaiveInput('NaiveAvatar', NaiveAvatar, { family: 'text' }),
+    naiveCascader: createNaiveInput('NaiveCascader', NaiveCascader, { family: 'dropdown' }),
+    naiveCheckbox: createNaiveInput('NaiveCheckbox', NaiveCheckbox, { family: 'box' }),
+    naiveMention: createNaiveInput('NaiveMention', NaiveMention, { family: 'text' }),
+    naiveRate: createNaiveInput('NaiveRate', NaiveRate, { family: 'text' }),
+    naiveSwitch: createNaiveInput('NaiveSwitch', NaiveSwitch, { family: 'text' }),
+    naiveTreeSelect: createNaiveInput('NaiveTreeSelect', NaiveTreeSelect, { family: 'dropdown' }),
   },
 })

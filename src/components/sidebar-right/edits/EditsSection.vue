@@ -42,6 +42,37 @@ const naiveClearable = createNaiveProp<boolean>('clearable', true)
 const naiveFilterable = createNaiveProp<boolean>('filterable', false)
 const naiveMultiple = createNaiveProp<boolean>('multiple', false)
 const naiveDateTimeValueFormat = createNaiveProp<string>('valueFormat', 'yyyy.MM.dd HH:mm:ss')
+const naiveRateAllowHalf = createNaiveProp<boolean>('allowHalf', false)
+const naiveRateCountRaw = createNaiveProp<unknown>('count', 5)
+const naiveRateCount = computed({
+  get: () => {
+    const value = naiveRateCountRaw.value
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+    if (typeof value === 'string') return value
+    return '5'
+  },
+  set: (value: string) => {
+    const parsed = Number(value)
+    naiveRateCountRaw.value = Number.isFinite(parsed) ? parsed : value
+  },
+})
+const avatarSrc = createNaiveProp<string>('src', '')
+const avatarSizeRaw = createNaiveProp<unknown>('avatarSize', 48)
+const avatarSize = computed({
+  get: () => {
+    const value = avatarSizeRaw.value
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+    if (typeof value === 'string') return value
+    return '48'
+  },
+  set: (value: string) => {
+    const parsed = Number(value)
+    avatarSizeRaw.value = Number.isFinite(parsed) ? parsed : value
+  },
+})
+const avatarRound = createNaiveProp<boolean>('round', true)
+const avatarBordered = createNaiveProp<boolean>('bordered', false)
+const avatarFallbackText = createNaiveProp<string>('fallbackText', 'A')
 
 const edits = {
   universalTextInputs: [
@@ -102,11 +133,7 @@ const edits = {
       modelTwo: max,
     },
   ],
-  naiveSwitchInputs: [
-    { label: 'disabled', model: naiveDisabled },
-    { label: 'clearable', model: naiveClearable },
-  ],
-  naiveSelectInputs: [
+  naiveSizeSelectInputs: [
     {
       label: 'size',
       model: naiveSize,
@@ -118,6 +145,8 @@ const edits = {
       ],
     },
   ],
+  naiveDisabledSwitchInputs: [{ label: 'disabled', model: naiveDisabled }],
+  naiveClearableSwitchInputs: [{ label: 'clearable', model: naiveClearable }],
   naiveDateTimeTextInputs: [
     {
       label: 'value-format',
@@ -128,6 +157,35 @@ const edits = {
   selectSwitchInputs: [
     { label: 'filterable', model: naiveFilterable },
     { label: 'multiple', model: naiveMultiple },
+  ],
+  rateTextInputs: [
+    {
+      label: 'count',
+      placeholder: '5',
+      model: naiveRateCount,
+    },
+  ],
+  rateSwitchInputs: [{ label: 'allow-half', model: naiveRateAllowHalf }],
+  avatarTextInputs: [
+    {
+      label: 'src',
+      placeholder: 'https://...',
+      model: avatarSrc,
+    },
+    {
+      label: 'size',
+      placeholder: '48',
+      model: avatarSize,
+    },
+    {
+      label: 'fallback-text',
+      placeholder: 'A',
+      model: avatarFallbackText,
+    },
+  ],
+  avatarSwitchInputs: [
+    { label: 'round', model: avatarRound },
+    { label: 'bordered', model: avatarBordered },
   ],
   buttonSwitchInputs: [
     { label: 'block', model: buttonBlock },
@@ -184,7 +242,7 @@ const currentFieldType = computed(() =>
 )
 
 const showForFieldType = (editType: string, fieldType: string | null) => {
-  const naiveFields = [
+  const naiveSizeFields = [
     'text',
     'textarea',
     'email',
@@ -202,6 +260,34 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
     'select',
     'radio',
     'checkbox',
+    'naiveCascader',
+    'naiveTreeSelect',
+    'naiveMention',
+    'naiveSwitch',
+    'naiveCheckbox',
+  ]
+  const naiveDisabledFields = [
+    ...naiveSizeFields,
+    'naiveRate',
+  ]
+  const naiveClearableFields = [
+    'text',
+    'textarea',
+    'email',
+    'password',
+    'url',
+    'tel',
+    'number',
+    'date',
+    'datetime-local',
+    'date-time',
+    'time',
+    'color',
+    'file',
+    'select',
+    'naiveCascader',
+    'naiveTreeSelect',
+    'naiveRate',
   ]
   const editMap: Record<string, string[]> = {
     universalTextInputs: [
@@ -222,18 +308,41 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
       'select',
       'radio',
       'checkbox',
+      'naiveCascader',
+      'naiveTreeSelect',
+      'naiveMention',
+      'naiveRate',
+      'naiveSwitch',
+      'naiveCheckbox',
+      'naiveAvatar',
       'naiveButton',
       'submit',
     ],
-    placeholderTextInputs: ['text', 'textarea', 'email', 'password', 'url', 'tel', 'number'],
-    listItemsTagsInputs: ['checkbox', 'radio', 'select'],
+    placeholderTextInputs: [
+      'text',
+      'textarea',
+      'email',
+      'password',
+      'url',
+      'tel',
+      'number',
+      'naiveCascader',
+      'naiveTreeSelect',
+      'naiveMention',
+    ],
+    listItemsTagsInputs: ['checkbox', 'radio', 'select', 'naiveCascader', 'naiveTreeSelect', 'naiveMention'],
     numberToggleInputs: ['number'],
     fileToggleInputs: ['file'],
     rangeInputs: ['range'],
-    naiveSwitchInputs: naiveFields,
-    naiveSelectInputs: naiveFields,
+    naiveDisabledSwitchInputs: naiveDisabledFields,
+    naiveClearableSwitchInputs: naiveClearableFields,
+    naiveSizeSelectInputs: naiveSizeFields,
     naiveDateTimeTextInputs: ['date-time'],
-    selectSwitchInputs: ['select'],
+    selectSwitchInputs: ['select', 'naiveCascader', 'naiveTreeSelect'],
+    rateTextInputs: ['naiveRate'],
+    rateSwitchInputs: ['naiveRate'],
+    avatarTextInputs: ['naiveAvatar'],
+    avatarSwitchInputs: ['naiveAvatar'],
     buttonSwitchInputs: ['naiveButton'],
     buttonSelectInputs: ['naiveButton'],
   }
@@ -259,17 +368,28 @@ const visibleEdits = computed(() => {
       ? edits.fileToggleInputs
       : [],
     rangeInputs: showForFieldType('rangeInputs', currentFieldType.value) ? edits.rangeInputs : [],
-    naiveSwitchInputs: showForFieldType('naiveSwitchInputs', currentFieldType.value)
-      ? edits.naiveSwitchInputs
+    naiveSizeSelectInputs: showForFieldType('naiveSizeSelectInputs', currentFieldType.value)
+      ? edits.naiveSizeSelectInputs
       : [],
-    naiveSelectInputs: showForFieldType('naiveSelectInputs', currentFieldType.value)
-      ? edits.naiveSelectInputs
+    naiveDisabledSwitchInputs: showForFieldType('naiveDisabledSwitchInputs', currentFieldType.value)
+      ? edits.naiveDisabledSwitchInputs
+      : [],
+    naiveClearableSwitchInputs: showForFieldType('naiveClearableSwitchInputs', currentFieldType.value)
+      ? edits.naiveClearableSwitchInputs
       : [],
     naiveDateTimeTextInputs: showForFieldType('naiveDateTimeTextInputs', currentFieldType.value)
       ? edits.naiveDateTimeTextInputs
       : [],
     selectSwitchInputs: showForFieldType('selectSwitchInputs', currentFieldType.value)
       ? edits.selectSwitchInputs
+      : [],
+    rateTextInputs: showForFieldType('rateTextInputs', currentFieldType.value) ? edits.rateTextInputs : [],
+    rateSwitchInputs: showForFieldType('rateSwitchInputs', currentFieldType.value)
+      ? edits.rateSwitchInputs
+      : [],
+    avatarTextInputs: showForFieldType('avatarTextInputs', currentFieldType.value) ? edits.avatarTextInputs : [],
+    avatarSwitchInputs: showForFieldType('avatarSwitchInputs', currentFieldType.value)
+      ? edits.avatarSwitchInputs
       : [],
     buttonSwitchInputs: showForFieldType('buttonSwitchInputs', currentFieldType.value)
       ? edits.buttonSwitchInputs
@@ -380,8 +500,8 @@ const visibleEdits = computed(() => {
         </template>
 
         <template
-          v-for="(selectInput, index) in visibleEdits.naiveSelectInputs"
-          :key="`naive-select-${index}`"
+          v-for="(selectInput, index) in visibleEdits.naiveSizeSelectInputs"
+          :key="`naive-size-select-${index}`"
         >
           <SelectInput
             :label="selectInput.label"
@@ -392,8 +512,19 @@ const visibleEdits = computed(() => {
         </template>
 
         <template
-          v-for="(switchInput, index) in visibleEdits.naiveSwitchInputs"
-          :key="`naive-switch-${index}`"
+          v-for="(switchInput, index) in visibleEdits.naiveDisabledSwitchInputs"
+          :key="`naive-disabled-switch-${index}`"
+        >
+          <SwitchInput
+            :label="switchInput.label"
+            :value="switchInput.model.value"
+            @update:value="(v) => (switchInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(switchInput, index) in visibleEdits.naiveClearableSwitchInputs"
+          :key="`naive-clearable-switch-${index}`"
         >
           <SwitchInput
             :label="switchInput.label"
@@ -417,6 +548,52 @@ const visibleEdits = computed(() => {
         <template
           v-for="(switchInput, index) in visibleEdits.selectSwitchInputs"
           :key="`select-switch-${index}`"
+        >
+          <SwitchInput
+            :label="switchInput.label"
+            :value="switchInput.model.value"
+            @update:value="(v) => (switchInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(textInput, index) in visibleEdits.rateTextInputs"
+          :key="`rate-text-${index}`"
+        >
+          <TextInput
+            :label="textInput.label"
+            :placeholder="textInput.placeholder"
+            :value="textInput.model.value"
+            @update:value="(v) => (textInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(switchInput, index) in visibleEdits.rateSwitchInputs"
+          :key="`rate-switch-${index}`"
+        >
+          <SwitchInput
+            :label="switchInput.label"
+            :value="switchInput.model.value"
+            @update:value="(v) => (switchInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(textInput, index) in visibleEdits.avatarTextInputs"
+          :key="`avatar-text-${index}`"
+        >
+          <TextInput
+            :label="textInput.label"
+            :placeholder="textInput.placeholder"
+            :value="textInput.model.value"
+            @update:value="(v) => (textInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(switchInput, index) in visibleEdits.avatarSwitchInputs"
+          :key="`avatar-switch-${index}`"
         >
           <SwitchInput
             :label="switchInput.label"

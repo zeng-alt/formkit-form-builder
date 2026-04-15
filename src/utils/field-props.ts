@@ -105,6 +105,48 @@ export const fieldProps = [
     category: 'fields',
   },
   {
+    name: 'naiveCascader',
+    tooltip: 'Allows user to select from a cascader',
+    icon: List,
+    category: 'fields',
+  },
+  {
+    name: 'naiveTreeSelect',
+    tooltip: 'Allows user to select from a tree',
+    icon: ListTree,
+    category: 'fields',
+  },
+  {
+    name: 'naiveMention',
+    tooltip: 'Allows user to mention options',
+    icon: LetterText,
+    category: 'fields',
+  },
+  {
+    name: 'naiveRate',
+    tooltip: 'Allows user to rate with stars',
+    icon: SlidersHorizontal,
+    category: 'fields',
+  },
+  {
+    name: 'naiveSwitch',
+    tooltip: 'Allows user to toggle a boolean value',
+    icon: SquareCheck,
+    category: 'fields',
+  },
+  {
+    name: 'naiveCheckbox',
+    tooltip: 'Allows user to toggle a checkbox value',
+    icon: SquareCheck,
+    category: 'fields',
+  },
+  {
+    name: 'naiveAvatar',
+    tooltip: 'Avatar display',
+    icon: SquareMousePointer,
+    category: 'fields',
+  },
+  {
     name: 'tel',
     tooltip: 'Allows user to enter telephone number',
     icon: Phone,
