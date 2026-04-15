@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FormKitFrameworkContext } from '@formkit/core'
+import { Upload } from 'lucide-vue-next'
 import type { UploadCustomRequestOptions, UploadFileInfo } from 'naive-ui'
 import { NUpload } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
@@ -91,10 +92,21 @@ function customRequest(options: UploadCustomRequestOptions) {
     :custom-request="customRequest"
     :show-download-button="false"
     :show-preview-button="false"
-    :file-list-style="{ width: '100%' }"
-    :list-type="'text'"
-    :abstract="false"
     :class="size === 'small' ? 'text-xs' : ''"
     @update:file-list="handleUpdateFileList"
-  />
+  >
+    <n-upload-dragger>
+      <div class="flex justify-center mb-3">
+        <n-icon size="48" :depth="3" class="">
+          <Upload />
+        </n-icon>
+      </div>
+      <n-text style="font-size: 16px">
+        点击或者拖动文件到该区域来上传
+      </n-text>
+      <n-p depth="3" style="margin: 8px 0 0 0">
+        请不要上传敏感数据，比如你的银行卡号和密码，信用卡号有效期和安全码
+      </n-p>
+    </n-upload-dragger>
+  </NUpload>
 </template>
