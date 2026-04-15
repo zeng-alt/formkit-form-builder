@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type {
   DragState,
   NodeDragEventData,
@@ -35,7 +36,7 @@ import { eq, pd, eventCoordinates } from './utils'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { watch } from 'vue'
 
-export const insertState: InsertState<unknown> = {
+export const insertState: InsertState<unknown> & { verticalInsert?: boolean } = {
   draggedOverNodes: [],
   draggedOverParent: null,
   targetIndex: 0,
@@ -50,7 +51,7 @@ let documentController: AbortController | undefined
  * Safari does not like the fast updates moveBetween() tries to do, so this
  * delay will throttle the number of calls it is allowed in milliseconds
  */
-const throttle = (fn: Function) => {
+const throttle = (fn: (...args: any[]) => void) => {
   const delay = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ? 100 : 0
   let timerFlag: ReturnType<typeof setTimeout> | null = null // Variable to keep track of the timer
   // Returning a throttled version
@@ -231,98 +232,7 @@ function checkPosition(e: DragEvent | PointerEvent) {
   // Other event handlers will manage the insertion point positioning.
 }
 
-interface Range {
-  x: [number, number]
-  y: [number, number]
-  vertical: boolean
-}
-
-function createVerticalRange(
-  nodeCoords: Coordinates,
-  otherCoords: Coordinates | undefined,
-  isAscending: boolean,
-): Range {
-  const center = nodeCoords.top + nodeCoords.height / 2
-
-  if (!otherCoords) {
-    const offset = nodeCoords.height / 2 + 10
-    return {
-      y: isAscending ? [center, center + offset] : [center - offset, center],
-      x: [nodeCoords.left, nodeCoords.right],
-      vertical: true,
-    }
-  }
-
-  const otherEdge = isAscending ? otherCoords.top : otherCoords.bottom
-  const nodeEdge = isAscending ? nodeCoords.bottom : nodeCoords.top
-
-  let midpoint: number
-  let range: [number, number]
-
-  if (isAscending) {
-    // Midpoint between current node's bottom and the next node's top
-    midpoint = nodeEdge + (otherEdge - nodeEdge) / 2 // nodeCoords.bottom + (otherCoords.top - nodeCoords.bottom) / 2
-    range = [center, midpoint] // Range from the node center down to midpoint
-  } else {
-    // Midpoint between previous node's bottom and the current node's top
-    midpoint = otherEdge + (nodeEdge - otherEdge) / 2 // otherCoords.bottom + (nodeCoords.top - otherCoords.bottom) / 2
-    range = [midpoint, center] // Range from midpoint down to the node center
-  }
-
-  return {
-    y: range,
-    x: [nodeCoords.left, nodeCoords.right],
-    vertical: true,
-  }
-}
-
-function createHorizontalRange(
-  nodeCoords: Coordinates,
-  otherCoords: Coordinates | undefined,
-  isAscending: boolean,
-  lastInRow = false,
-): Range {
-  const center = nodeCoords.left + nodeCoords.width / 2
-
-  if (!otherCoords) {
-    if (isAscending) {
-      return {
-        x: [center, center + nodeCoords.width - 150],
-        y: [nodeCoords.top, nodeCoords.bottom],
-        vertical: false,
-      }
-    } else {
-      return {
-        x: [nodeCoords.left - 10, center],
-        y: [nodeCoords.top, nodeCoords.bottom],
-        vertical: false,
-      }
-    }
-  }
-
-  if (isAscending && lastInRow) {
-    return {
-      x: [center, nodeCoords.right + 10],
-      y: [nodeCoords.top, nodeCoords.bottom],
-      vertical: false,
-    }
-  }
-
-  if (isAscending) {
-    const nextNodeCenter = otherCoords.left + otherCoords.width / 2
-    return {
-      x: [center, center + Math.abs(center - nextNodeCenter) / 2],
-      y: [nodeCoords.top, nodeCoords.bottom],
-      vertical: false,
-    }
-  } else {
-    return {
-      x: [otherCoords.right + Math.abs(otherCoords.right - nodeCoords.left) / 2, center],
-      y: [nodeCoords.top, nodeCoords.bottom],
-      vertical: false,
-    }
-  }
-}
+// Removed Range interface
 
 function getRealCoords(el: HTMLElement): Coordinates {
   const { top, bottom, left, right, height, width } = el.getBoundingClientRect()
@@ -348,39 +258,44 @@ function defineRanges(parent: HTMLElement) {
 
   const enabledNodes = parentData.enabledNodes
 
-  enabledNodes.forEach((node, index) => {
+  enabledNodes.forEach((node) => {
     node.data.range = {}
 
-    const prevNode = enabledNodes[index - 1]
-    const nextNode = enabledNodes[index + 1]
     const nodeCoords = getRealCoords(node.el)
-    const prevNodeCoords = prevNode ? getRealCoords(prevNode.el) : undefined
-    const nextNodeCoords = nextNode ? getRealCoords(nextNode.el) : undefined
 
-    const aboveOrBelowPrevious =
-      prevNodeCoords &&
-      (nodeCoords.top > prevNodeCoords.bottom || nodeCoords.bottom < prevNodeCoords.top)
+    const top = nodeCoords.top
+    const bottom = nodeCoords.bottom
+    const left = nodeCoords.left
+    const right = nodeCoords.right
+    const width = nodeCoords.width
+    const height = nodeCoords.height
 
-    const aboveOrBelowAfter =
-      nextNodeCoords &&
-      (nodeCoords.top > nextNodeCoords.bottom || nodeCoords.bottom < nextNodeCoords.top)
+    const horizontalThreshold = width * 0.25
 
-    const fullishWidth = parent.getBoundingClientRect().width * 0.8 < nodeCoords.width
+    const rangeData = node.data.range as any
 
-    if (fullishWidth) {
-      node.data.range.ascending = createVerticalRange(nodeCoords, nextNodeCoords, true)
-      node.data.range.descending = createVerticalRange(nodeCoords, prevNodeCoords, false)
-    } else if (aboveOrBelowAfter && !aboveOrBelowPrevious) {
-      node.data.range.ascending = createHorizontalRange(nodeCoords, nextNodeCoords, true, true)
-      node.data.range.descending = createHorizontalRange(nodeCoords, prevNodeCoords, false)
-    } else if (!aboveOrBelowPrevious && !aboveOrBelowAfter) {
-      node.data.range.ascending = createHorizontalRange(nodeCoords, nextNodeCoords, true)
-      node.data.range.descending = createHorizontalRange(nodeCoords, prevNodeCoords, false)
-    } else if (aboveOrBelowPrevious && !nextNodeCoords) {
-      node.data.range.ascending = createHorizontalRange(nodeCoords, undefined, true)
-    } else if (aboveOrBelowPrevious && !aboveOrBelowAfter) {
-      node.data.range.ascending = createHorizontalRange(nodeCoords, nextNodeCoords, true)
-      node.data.range.descending = createHorizontalRange(nodeCoords, undefined, false)
+    rangeData.left = {
+      x: [left, left + horizontalThreshold],
+      y: [top, bottom],
+      vertical: false, // vertical line
+    }
+
+    rangeData.right = {
+      x: [right - horizontalThreshold, right],
+      y: [top, bottom],
+      vertical: false, // vertical line
+    }
+
+    rangeData.top = {
+      x: [left + horizontalThreshold, right - horizontalThreshold],
+      y: [top, top + height / 2],
+      vertical: true, // horizontal line
+    }
+
+    rangeData.bottom = {
+      x: [left + horizontalThreshold, right - horizontalThreshold],
+      y: [top + height / 2, bottom],
+      vertical: true, // horizontal line
     }
   })
 }
@@ -459,16 +374,18 @@ function handleInsertBasedOnRange<T>(
     return
   }
 
-  const key = foundRange[1] as 'ascending' | 'descending'
+  const key = foundRange[1] as 'left' | 'right' | 'top' | 'bottom'
 
   if (foundRange) {
-    const position = foundRange[0].data.range ? foundRange[0].data.range[key] : undefined
+    const position = foundRange[0].data.range ? (foundRange[0].data.range as any)[key] : undefined
 
     if (position) {
+      insertState.verticalInsert = key === 'top' || key === 'bottom'
+      
       positionInsertPoint(
         data,
         position,
-        foundRange[1] === 'ascending',
+        key === 'right' || key === 'bottom',
         foundRange[0],
         insertState as InsertState<T>,
       )
@@ -594,32 +511,36 @@ function findClosest<T>(enabledNodes: NodeRecord<T>[], state: DragState<T>) {
     const node = enabledNodes[x]
     if (!state || !node || !node.data.range) continue
 
-    const nodeRange = node.data.range
+    const nodeRange = node.data.range as any
 
-    // Check ascending range
-    if (nodeRange?.ascending) {
-      if (
-        state.coordinates.y > nodeRange.ascending.y[0]! &&
-        state.coordinates.y < nodeRange.ascending.y[1]! &&
-        state.coordinates.x > nodeRange.ascending.x[0]! &&
-        state.coordinates.x < nodeRange.ascending.x[1]!
-      ) {
-        foundRange = [node, 'ascending']
-        break
-      }
+    // Helper to check if coordinate is in range
+    const inRange = (range: any) => {
+      return (
+        state.coordinates.y > range.y[0]! &&
+        state.coordinates.y < range.y[1]! &&
+        state.coordinates.x > range.x[0]! &&
+        state.coordinates.x < range.x[1]!
+      )
     }
 
-    // Check descending range
-    if (nodeRange?.descending) {
-      if (
-        state.coordinates.y > nodeRange.descending.y[0]! &&
-        state.coordinates.y < nodeRange.descending.y[1]! &&
-        state.coordinates.x > nodeRange.descending.x[0]! &&
-        state.coordinates.x < nodeRange.descending.x[1]!
-      ) {
-        foundRange = [node, 'descending']
-        break
-      }
+    if (nodeRange?.left && inRange(nodeRange.left)) {
+      foundRange = [node, 'left']
+      break
+    }
+
+    if (nodeRange?.right && inRange(nodeRange.right)) {
+      foundRange = [node, 'right']
+      break
+    }
+
+    if (nodeRange?.top && inRange(nodeRange.top)) {
+      foundRange = [node, 'top']
+      break
+    }
+
+    if (nodeRange?.bottom && inRange(nodeRange.bottom)) {
+      foundRange = [node, 'bottom']
+      break
     }
   }
 
@@ -684,7 +605,7 @@ function positionInsertPoint<T>(
   insertState.insertPoint.el.style.display = 'block'
 
   if (position.vertical) {
-    const insertPointHeight = insertState.insertPoint.el.getBoundingClientRect().height
+    const insertPointHeight = insertState.insertPoint.el.getBoundingClientRect().height || 4
     const targetY = position.y[ascending ? 1 : 0]!
     const topPosition = targetY - insertPointHeight / 2
 
@@ -693,16 +614,21 @@ function positionInsertPoint<T>(
       left: `${position.x[0]!}px`,
       right: `${position.x[1]!}px`,
       width: `${position.x[1]! - position.x[0]!}px`,
+      height: '4px',
+      bottom: '',
     })
   } else {
-    const leftPosition =
-      position.x[ascending ? 1 : 0]! - insertState.insertPoint.el.getBoundingClientRect().width / 2
-    insertState.insertPoint.el.style.left = `${leftPosition}px`
+    const insertPointWidth = insertState.insertPoint.el.getBoundingClientRect().width || 4
+    const targetX = position.x[ascending ? 1 : 0]!
+    const leftPosition = targetX - insertPointWidth / 2
 
     Object.assign(insertState.insertPoint.el.style, {
+      left: `${leftPosition}px`,
       top: `${position.y[0]!}px`,
       bottom: `${position.y[1]!}px`,
       height: `${position.y[1]! - position.y[0]!}px`,
+      width: '4px',
+      right: '',
     })
   }
 
@@ -711,11 +637,83 @@ function positionInsertPoint<T>(
   insertState.ascending = ascending
 }
 
+function getColSpan(item: any): number {
+  if (!item || !item.outerClass) return 12
+  const match = item.outerClass.match(/col-span-(\d+)/)
+  return match ? parseInt(match[1], 10) : 12
+}
+
+function setColSpan(item: any, span: number) {
+  if (!item) return
+  let classes = item.outerClass || ''
+  if (/col-span-\d+/.test(classes)) {
+    classes = classes.replace(/col-span-\d+/, `col-span-${span}`)
+  } else {
+    classes = `${classes} col-span-${span}`.trim()
+  }
+  item.outerClass = classes
+}
+
+function getVisualRows(values: any[]) {
+  const rows: { startIndex: number; endIndex: number; items: any[]; totalSpan: number }[] = []
+  let currentRow: { startIndex: number; endIndex: number; items: any[]; totalSpan: number } = { startIndex: 0, endIndex: 0, items: [], totalSpan: 0 }
+
+  for (let i = 0; i < values.length; i++) {
+    const item = values[i]
+    const span = getColSpan(item)
+    if (currentRow.totalSpan + span > 12 && currentRow.items.length > 0) {
+      rows.push(currentRow)
+      currentRow = { startIndex: i, endIndex: i, items: [item], totalSpan: span }
+    } else {
+      currentRow.items.push(item)
+      currentRow.endIndex = i
+      currentRow.totalSpan += span
+    }
+  }
+  if (currentRow.items.length > 0) {
+    rows.push(currentRow)
+  }
+  return rows
+}
+
+function adjustColSpansForInsert(
+  targetParentValues: any[],
+  draggedOverValue: any,
+  insertValues: any[],
+  isVertical: boolean
+) {
+  if (isVertical) {
+    insertValues.forEach(val => setColSpan(val, 12))
+    return
+  }
+
+  const rows = getVisualRows(targetParentValues)
+  const targetRow = rows.find(r => r.items.includes(draggedOverValue))
+
+  if (!targetRow) {
+    insertValues.forEach(val => setColSpan(val, 12))
+    return
+  }
+
+  const currentCount = targetRow.items.length
+  const addedCount = insertValues.length
+  const totalCount = currentCount + addedCount
+
+  if (totalCount <= 4) {
+    const newSpan = 12 / totalCount
+    targetRow.items.forEach(item => setColSpan(item, newSpan))
+    insertValues.forEach(val => setColSpan(val, newSpan))
+  } else {
+    insertValues.forEach(val => setColSpan(val, 3))
+  }
+}
+
 function insertItemsIntoParentFromOutside<T>(
   state: DragStateProps<T> & BaseDragState<T>,
   newParentValues: T[],
   index: number,
   insertValues: Array<T>,
+  draggedOverNode?: NodeRecord<T>,
 ) {
   const isSource = state.initialParent.el.getAttribute('data-is-source') === 'true'
   if (!isSource) {
@@ -725,25 +723,30 @@ function insertItemsIntoParentFromOutside<T>(
   // Now get the target parent values.
   const targetParentValues = parentValues(state.currentParent.el, state.currentParent.data)
 
-  // Ensure new elements have col-span-2 by default
+  // Clone values if they come from the source panel
   const processedInsertValues = insertValues.map((value) => {
-      // Deep clone if it's from source
-      const valObj = isSource ? JSON.parse(JSON.stringify(value)) : value
-      if (typeof valObj === 'object' && valObj !== null) {
-        const val = valObj as any
-        if (val.$formkit === 'submit') {
-          return {
-            ...valObj,
-            outerClass: 'col-span-12 pt-2',
-          }
-        }
-        return {
-          ...valObj,
-          outerClass: 'col-span-12', // Force default col-span-12
-        }
+    const valObj = isSource ? JSON.parse(JSON.stringify(value)) : value
+    if (typeof valObj === 'object' && valObj !== null) {
+      const val = valObj as any
+      if (val.$formkit === 'submit') {
+        return { ...valObj, outerClass: 'col-span-12 pt-2' }
       }
-      return valObj
-    })
+      return { ...valObj, outerClass: val.outerClass || 'col-span-12' }
+    }
+    return valObj
+  })
+
+  if (draggedOverNode) {
+    adjustColSpansForInsert(
+      targetParentValues,
+      draggedOverNode.data.value,
+      processedInsertValues,
+      insertState.verticalInsert ?? false
+    )
+  } else {
+    // Drop into empty parent
+    processedInsertValues.forEach((val) => setColSpan(val, 12))
+  }
 
   // Insert the processed values
   targetParentValues.splice(index, 0, ...processedInsertValues)
@@ -795,6 +798,13 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
         index++
       }
 
+      adjustColSpansForInsert(
+        newParentValues,
+        draggedOverNode.data.value,
+        draggedValues,
+        insertState.verticalInsert ?? false
+      )
+
       newParentValues.splice(index, 0, ...draggedValues)
 
       commitSchema([...(newParentValues as FormKitSchemaFormKit[])], { reason: 'dnd' })
@@ -843,9 +853,9 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
       )
 
       if (state.currentParent.el.contains(state.initialParent.el)) {
-        insertItemsIntoParentFromOutside(state, newParentValues, index, insertValues)
+        insertItemsIntoParentFromOutside(state as any, newParentValues, index, insertValues, draggedOverNode)
       } else {
-        insertItemsIntoParentFromOutside(state, newParentValues, index, insertValues)
+        insertItemsIntoParentFromOutside(state as any, newParentValues, index, insertValues, draggedOverNode)
       }
 
       const data = {
@@ -889,6 +899,8 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
           })
         : draggedValues
 
+      insertValues.forEach((val: any) => setColSpan(val, 12))
+
       draggedOverParentValues.push(...insertValues)
 
       setParentValues(insertState.draggedOverParent.el, insertState.draggedOverParent.data, [
@@ -919,18 +931,14 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
         if (typeof valObj === 'object' && valObj !== null) {
           const val = valObj as any
           if (val.$formkit === 'submit') {
-            return {
-              ...valObj,
-              outerClass: 'col-span-12 pt-2',
-            }
+            return { ...valObj, outerClass: 'col-span-12 pt-2' }
           }
-          return {
-            ...valObj,
-            outerClass: 'col-span-12', // Force default col-span-12
-          }
+          return { ...valObj, outerClass: val.outerClass || 'col-span-12' }
         }
         return valObj
       })
+      
+      processedInsertValues.forEach((val) => setColSpan(val, 12))
 
       draggedOverParentValues.push(...processedInsertValues)
 
