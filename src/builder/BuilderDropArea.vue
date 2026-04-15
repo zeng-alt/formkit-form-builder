@@ -27,7 +27,7 @@ const deleteField = (index: number) => {
 const getColSpan = (field: unknown, index: number): number => {
   const outerClass =
     (field as FormKitSchemaFormKit)?.outerClass || formSchema.value[index]?.outerClass || ''
-  const match = outerClass.match(/!col-span-(\d+)/)
+  const match = outerClass.match(/col-span-(\d+)/)
   return match ? parseInt(match[1], 10) : 12
 }
 
@@ -39,9 +39,6 @@ const columnWidth = ref(0)
 // Safelist for Tailwind JIT to properly generate classes for dynamic column spans
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const safelistClasses = [
-  '!col-span-1', '!col-span-2', '!col-span-3', '!col-span-4',
-  '!col-span-5', '!col-span-6', '!col-span-7', '!col-span-8',
-  '!col-span-9', '!col-span-10', '!col-span-11', '!col-span-12',
   'col-span-1', 'col-span-2', 'col-span-3', 'col-span-4',
   'col-span-5', 'col-span-6', 'col-span-7', 'col-span-8',
   'col-span-9', 'col-span-10', 'col-span-11', 'col-span-12'
@@ -54,7 +51,7 @@ const startResize = (e: MouseEvent, index: number) => {
   const schemaItem = formSchema.value[index]
   if (!schemaItem) return
 
-  const match = schemaItem.outerClass?.match(/!col-span-(\d+)/)
+  const match = schemaItem.outerClass?.match(/col-span-(\d+)/)
   startSpan.value = match ? parseInt(match[1], 10) : 12
 
   if (formFields.value) {
@@ -80,10 +77,10 @@ const onMouseMove = (e: MouseEvent) => {
   const schemaItem = formSchema.value[index]
   if (schemaItem) {
     let classes = schemaItem.outerClass || ''
-    if (/!col-span-\d+/.test(classes)) {
-      classes = classes.replace(/!col-span-\d+/, `!col-span-${newSpan}`)
+    if (/col-span-\d+/.test(classes)) {
+      classes = classes.replace(/col-span-\d+/, `col-span-${newSpan}`)
     } else {
-      classes = `${classes} !col-span-${newSpan}`.trim()
+      classes = `${classes} col-span-${newSpan}`.trim()
     }
     schemaItem.outerClass = classes
 

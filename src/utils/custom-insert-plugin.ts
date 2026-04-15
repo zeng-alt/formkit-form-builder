@@ -727,23 +727,23 @@ function insertItemsIntoParentFromOutside<T>(
 
   // Ensure new elements have col-span-2 by default
   const processedInsertValues = insertValues.map((value) => {
-    // Deep clone if it's from source
-    const valObj = isSource ? JSON.parse(JSON.stringify(value)) : value
-    if (typeof valObj === 'object' && valObj !== null) {
-      const val = valObj as any
-      if (val.$formkit === 'submit') {
+      // Deep clone if it's from source
+      const valObj = isSource ? JSON.parse(JSON.stringify(value)) : value
+      if (typeof valObj === 'object' && valObj !== null) {
+        const val = valObj as any
+        if (val.$formkit === 'submit') {
+          return {
+            ...valObj,
+            outerClass: 'col-span-12 pt-2',
+          }
+        }
         return {
           ...valObj,
-          outerClass: '!col-span-12 pt-2',
+          outerClass: 'col-span-12', // Force default col-span-12
         }
       }
-      return {
-        ...valObj,
-        outerClass: '!col-span-12', // Force default col-span-12
-      }
-    }
-    return valObj
-  })
+      return valObj
+    })
 
   // Insert the processed values
   targetParentValues.splice(index, 0, ...processedInsertValues)
@@ -921,12 +921,12 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
           if (val.$formkit === 'submit') {
             return {
               ...valObj,
-              outerClass: '!col-span-12 pt-2',
+              outerClass: 'col-span-12 pt-2',
             }
           }
           return {
             ...valObj,
-            outerClass: '!col-span-12', // Force default col-span-12
+            outerClass: 'col-span-12', // Force default col-span-12
           }
         }
         return valObj
