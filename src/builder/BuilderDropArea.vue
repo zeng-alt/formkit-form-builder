@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
 import { Trash2, Monitor, Tablet, Smartphone, CodeXml } from 'lucide-vue-next'
@@ -17,49 +17,18 @@ const { validationStringLength } = useFormField()
 
 const showImportExportModal = ref(false)
 
-// 列数 -> Tailwind class 映射
-const spanClassMap: Record<number, string> = {
-  3:  'w-1/4',
-  6:  'w-1/2',
-  9:  'w-3/4',
-  12: 'w-full',
-}
-
-// Tailwind class -> 列数 映射
-const classToSpan: Record<string, number> = {
-  'w-1/4': 3,
-  'w-1/2': 6,
-  'w-3/4': 9,
-  'w-full': 12,
-}
-
-// 从 outerClass 获取宽度 class，兼容旧的 !col-span-X 格式
-const getWidthClass = (field: unknown, index: number): string => {
-  const outerClass =
-    (field as FormKitSchemaFormKit)?.outerClass ||
-    formSchema.value[index]?.outerClass ||
-    'w-full'
-
-  // 兼容旧数据格式 !col-span-X
-  const legacyMatch = outerClass.match(/!col-span-(\d+)/)
-  if (legacyMatch) {
-    return spanClassMap[parseInt(legacyMatch[1], 10)] || 'w-full'
-  }
-
-  return spanClassMap[parseInt(outerClass, 10)] || outerClass || 'w-full'
-}
-
-// 从宽度 class 获取百分比，用于 resize 遮罩显示
-const getWidthPercent = (field: unknown, index: number): number => {
-  const cls = getWidthClass(field, index)
-  const span = classToSpan[cls] || 12
-  return Math.round((span / 12) * 100)
-}
-
 const deleteField = (index: number) => {
   const nextSchema = formSchema.value.filter((_: unknown, i: number) => i !== index)
   commitSchema(nextSchema as FormKitSchemaFormKit[], { reason: 'delete' })
   fields.value = fields.value.filter((_, i) => i !== index)
+}
+
+// 从 outerClass 中提取 col-span 数值，默认 12
+const getColSpan = (field: unknown, index: number): number => {
+  const outerClass =
+    (field as FormKitSchemaFormKit)?.outerClass || formSchema.value[index]?.outerClass || ''
+  const match = outerClass.match(/!col-span-(\d+)/)
+  return match ? parseInt(match[1], 10) : 12
 }
 
 const resizingIndex = ref<number | null>(null)
@@ -74,12 +43,8 @@ const startResize = (e: MouseEvent, index: number) => {
   const schemaItem = formSchema.value[index]
   if (!schemaItem) return
 
-  const outerClass = schemaItem.outerClass || 'w-full'
-  // 兼容旧格式
-  const legacyMatch = outerClass.match(/!col-span-(\d+)/)
-  startSpan.value = legacyMatch
-    ? parseInt(legacyMatch[1], 10)
-    : classToSpan[outerClass] || 12
+  const match = schemaItem.outerClass?.match(/!col-span-(\d+)/)
+  startSpan.value = match ? parseInt(match[1], 10) : 12
 
   if (formFields.value) {
     const ul = formFields.value as unknown as HTMLElement
@@ -101,15 +66,20 @@ const onMouseMove = (e: MouseEvent) => {
   newSpan = Math.max(3, Math.min(12, newSpan))
   newSpan = Math.round(newSpan / 3) * 3
 
-  const newClass = spanClassMap[newSpan] || 'w-full'
   const schemaItem = formSchema.value[index]
-
   if (schemaItem) {
-    schemaItem.outerClass = newClass
+    let classes = schemaItem.outerClass || ''
+    if (/!col-span-\d+/.test(classes)) {
+      classes = classes.replace(/!col-span-\d+/, `!col-span-${newSpan}`)
+    } else {
+      classes = `${classes} !col-span-${newSpan}`.trim()
+    }
+    schemaItem.outerClass = classes
+
     if (fields.value[index]) {
       fields.value[index] = {
         ...fields.value[index],
-        outerClass: newClass,
+        outerClass: schemaItem.outerClass
       }
     }
   }
@@ -253,15 +223,15 @@ watch(
           'relative min-h-[80%] !h-fit rounded-xl shadow-md transition-all duration-300',
           canvasView === 'desktop' ? 'w-full lg:w-[80%]' : '',
           canvasView === 'tablet' ? 'w-[768px]' : '',
-          canvasView === 'mobile' ? 'w-[375px]' : '',
+          canvasView === 'mobile' ? 'w-[375px]' : ''
         )"
         content-style="padding: 16px;"
       >
-        <!-- flex wrap 容器，替代 grid grid-cols-12 -->
+        <!-- 保留原生 ul 以确保 useDragAndDrop ref 绑定正常工作 -->
         <ul
           ref="formFields"
           :class="cn(
-            'w-full flex flex-wrap gap-y-2 list-none p-0 m-0',
+            'w-full grid grid-cols-12 gap-x-4 gap-y-2 list-none p-0 m-0',
             fields.length === 0 ? 'h-full' : 'h-fit',
           )"
           data-testid="drop-area"
@@ -271,14 +241,13 @@ watch(
             :key="(field as FormKitSchemaFormKit)?.$formkit + index"
             :class="cn(
               'group rounded-lg transition-all duration-200 p-1 !cursor-grab h-full !z-20 relative',
-              'box-border',
-              // 偶数 index 加左 padding，奇数 index 加右 padding，实现 gap 效果
-              // 改为统一用 px-2 模拟 gap，避免 flex 换行时边距问题
               selectedIndex === index
                 ? 'border border-ring/30 bg-ring/20 dark:bg-accent/20 dark:border-ring/5 transition-all duration-300'
                 : 'border bg-ring/5 border-transparent hover:border-ring/30 dark:bg-ring/3 dark:hover:border-ring/10 transition-all duration-200',
-              getWidthClass(field, index),
             )"
+            :style="{
+              gridColumn: `span ${getColSpan(field, index)} / span ${getColSpan(field, index)}`
+            }"
             @click="clickedField(index)"
           >
             <!-- Field content -->
@@ -294,8 +263,8 @@ watch(
             <!-- Bottom controls: validation rules count + delete button -->
             <div class="absolute bottom-1 right-1 flex flex-row z-10">
               <div
-                v-if="selectedIndex === index"
                 class="px-2 mr-1 border-1 border-ring/40 dark:border-ring/20 rounded-md flex items-center justify-center"
+                v-if="selectedIndex === index"
               >
                 <span class="text-xs">
                   {{ validationStringLength }} {{ pluralize(validationStringLength, 'rule') }}
@@ -314,7 +283,6 @@ watch(
 
             <!-- Resize handle（submit 字段不允许调整宽度） -->
             <div
-              v-if="formSchema[index]?.$formkit !== 'submit'"
               class="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ring/10 rounded-r-lg"
               @mousedown.stop.prevent="startResize($event, index)"
             >
@@ -330,7 +298,7 @@ watch(
               class="absolute inset-0 z-40 bg-background/50 backdrop-blur-[1px] flex items-center justify-center rounded-lg border-2 border-primary/50"
             >
               <span class="bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded shadow-md">
-                {{ getWidthPercent(field, index) }}%
+                {{ (getColSpan(field, index) / 12 * 100).toFixed(0) }}%
               </span>
             </div>
           </li>
