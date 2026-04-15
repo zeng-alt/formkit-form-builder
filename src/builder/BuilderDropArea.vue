@@ -245,7 +245,7 @@ watch(
               selectedIndex === index
                 ? 'border border-ring/30 bg-ring/20 dark:bg-accent/20 dark:border-ring/5 transition-all duration-300'
                 : 'border bg-ring/5 border-transparent hover:border-ring/30 dark:bg-ring/3 dark:hover:border-ring/10 transition-all duration-200',
-              formSchema[index]?.outerClass,
+              (field as FormKitSchemaFormKit)?.outerClass || formSchema[index]?.outerClass,
             )
           "
           @click="clickedField(index)"
