@@ -15,6 +15,7 @@ const {
   max,
   modelValue,
   optionsRaw,
+  fieldValue,
   label,
   placeholder,
   numOfFiles,
@@ -75,6 +76,30 @@ const avatarSize = computed({
 const avatarRound = createNaiveProp<boolean>('round', true)
 const avatarBordered = createNaiveProp<boolean>('bordered', false)
 const avatarFallbackText = createNaiveProp<string>('fallbackText', 'A')
+
+const typoType = createNaiveProp<string>('type', 'default')
+const typoDepthRaw = createNaiveProp<unknown>('depth', 1)
+const typoDepth = computed({
+  get: () => {
+    const value = typoDepthRaw.value
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+    if (typeof value === 'string') return value
+    return '1'
+  },
+  set: (value: string) => {
+    const parsed = Number(value)
+    typoDepthRaw.value = Number.isFinite(parsed) ? parsed : value
+  },
+})
+const typoStrong = createNaiveProp<boolean>('strong', false)
+const typoItalic = createNaiveProp<boolean>('italic', false)
+const typoUnderline = createNaiveProp<boolean>('underline', false)
+const typoDelete = createNaiveProp<boolean>('delete', false)
+const typoCode = createNaiveProp<boolean>('code', false)
+const typoAlign = createNaiveProp<string>('align', 'start')
+
+const linkHref = createNaiveProp<string>('href', 'https://www.example.com')
+const linkTarget = createNaiveProp<string>('target', '_blank')
 
 const hasField = computed(() => !!formSchema.value[selectedIndex.value])
 
@@ -147,6 +172,74 @@ const edits = {
       label: 'Add Items to List',
       placeholder: 'Add Items...',
       model: modelValue,
+    },
+  ],
+  typographyContentTextInputs: [
+    {
+      label: 'Content',
+      placeholder: 'Enter content',
+      model: fieldValue,
+    },
+  ],
+  typographyTypeSelectInputs: [
+    {
+      label: 'type',
+      model: typoType,
+      options: [
+        { label: 'default', value: 'default' },
+        { label: 'primary', value: 'primary' },
+        { label: 'info', value: 'info' },
+        { label: 'success', value: 'success' },
+        { label: 'warning', value: 'warning' },
+        { label: 'error', value: 'error' },
+      ],
+    },
+  ],
+  typographyDepthSelectInputs: [
+    {
+      label: 'depth',
+      model: typoDepth,
+      options: [
+        { label: '1', value: '1' },
+        { label: '2', value: '2' },
+        { label: '3', value: '3' },
+      ],
+    },
+  ],
+  typographyTextStyleSwitchInputs: [
+    { label: 'strong', model: typoStrong },
+    { label: 'italic', model: typoItalic },
+    { label: 'underline', model: typoUnderline },
+    { label: 'delete', model: typoDelete },
+    { label: 'code', model: typoCode },
+  ],
+  typographyAlignSelectInputs: [
+    {
+      label: 'align',
+      model: typoAlign,
+      options: [
+        { label: 'start', value: 'start' },
+        { label: 'center', value: 'center' },
+        { label: 'end', value: 'end' },
+        { label: 'justify', value: 'justify' },
+      ],
+    },
+  ],
+  linkTextInputs: [
+    {
+      label: 'href',
+      placeholder: 'https://...',
+      model: linkHref,
+    },
+  ],
+  linkTargetSelectInputs: [
+    {
+      label: 'target',
+      model: linkTarget,
+      options: [
+        { label: '_blank', value: '_blank' },
+        { label: '_self', value: '_self' },
+      ],
     },
   ],
   treeOptionsJsonInputs: [
@@ -381,7 +474,36 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
       'naiveTreeSelect',
       'naiveMention',
     ],
-    listItemsTagsInputs: ['checkbox', 'radio', 'select', 'naiveMention'],
+    listItemsTagsInputs: ['checkbox', 'radio', 'select', 'naiveMention', 'naiveUl', 'naiveOl'],
+    typographyContentTextInputs: [
+      'naiveText',
+      'naiveP',
+      'naiveA',
+      'naiveBlockquote',
+      'naiveH1',
+      'naiveH2',
+      'naiveH3',
+      'naiveH4',
+      'naiveH5',
+      'naiveH6',
+      'naiveLi',
+    ],
+    typographyTypeSelectInputs: [
+      'naiveText',
+      'naiveP',
+      'naiveBlockquote',
+      'naiveH1',
+      'naiveH2',
+      'naiveH3',
+      'naiveH4',
+      'naiveH5',
+      'naiveH6',
+    ],
+    typographyDepthSelectInputs: ['naiveText', 'naiveP'],
+    typographyTextStyleSwitchInputs: ['naiveText'],
+    typographyAlignSelectInputs: ['naiveP'],
+    linkTextInputs: ['naiveA'],
+    linkTargetSelectInputs: ['naiveA'],
     treeOptionsJsonInputs: ['naiveCascader', 'naiveTreeSelect'],
     numberToggleInputs: ['number'],
     fileToggleInputs: ['file'],
@@ -412,6 +534,25 @@ const visibleEdits = computed(() => {
       : [],
     listItemsTagsInputs: showForFieldType('listItemsTagsInputs', currentFieldType.value)
       ? edits.listItemsTagsInputs
+      : [],
+    typographyContentTextInputs: showForFieldType('typographyContentTextInputs', currentFieldType.value)
+      ? edits.typographyContentTextInputs
+      : [],
+    typographyTypeSelectInputs: showForFieldType('typographyTypeSelectInputs', currentFieldType.value)
+      ? edits.typographyTypeSelectInputs
+      : [],
+    typographyDepthSelectInputs: showForFieldType('typographyDepthSelectInputs', currentFieldType.value)
+      ? edits.typographyDepthSelectInputs
+      : [],
+    typographyTextStyleSwitchInputs: showForFieldType('typographyTextStyleSwitchInputs', currentFieldType.value)
+      ? edits.typographyTextStyleSwitchInputs
+      : [],
+    typographyAlignSelectInputs: showForFieldType('typographyAlignSelectInputs', currentFieldType.value)
+      ? edits.typographyAlignSelectInputs
+      : [],
+    linkTextInputs: showForFieldType('linkTextInputs', currentFieldType.value) ? edits.linkTextInputs : [],
+    linkTargetSelectInputs: showForFieldType('linkTargetSelectInputs', currentFieldType.value)
+      ? edits.linkTargetSelectInputs
       : [],
     treeOptionsJsonInputs: showForFieldType('treeOptionsJsonInputs', currentFieldType.value)
       ? edits.treeOptionsJsonInputs
@@ -486,6 +627,86 @@ const visibleEdits = computed(() => {
             :placeholder="textInput.placeholder"
             :value="textInput.model.value"
             @update:value="(v) => (textInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(textInput, index) in visibleEdits.typographyContentTextInputs"
+          :key="`typography-content-${index}`"
+        >
+          <TextInput
+            :label="textInput.label"
+            :placeholder="textInput.placeholder"
+            :value="textInput.model.value"
+            @update:value="(v) => (textInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(selectInput, index) in visibleEdits.typographyTypeSelectInputs"
+          :key="`typography-type-${index}`"
+        >
+          <SelectInput
+            :label="selectInput.label"
+            :value="selectInput.model.value"
+            :options="selectInput.options"
+            @update:value="(v) => (selectInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(selectInput, index) in visibleEdits.typographyDepthSelectInputs"
+          :key="`typography-depth-${index}`"
+        >
+          <SelectInput
+            :label="selectInput.label"
+            :value="selectInput.model.value"
+            :options="selectInput.options"
+            @update:value="(v) => (selectInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(switchInput, index) in visibleEdits.typographyTextStyleSwitchInputs"
+          :key="`typography-style-${index}`"
+        >
+          <SwitchInput
+            :label="switchInput.label"
+            :value="switchInput.model.value"
+            @update:value="(v) => (switchInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(selectInput, index) in visibleEdits.typographyAlignSelectInputs"
+          :key="`typography-align-${index}`"
+        >
+          <SelectInput
+            :label="selectInput.label"
+            :value="selectInput.model.value"
+            :options="selectInput.options"
+            @update:value="(v) => (selectInput.model.value = v)"
+          />
+        </template>
+
+        <template v-for="(textInput, index) in visibleEdits.linkTextInputs" :key="`link-${index}`">
+          <TextInput
+            :label="textInput.label"
+            :placeholder="textInput.placeholder"
+            :value="textInput.model.value"
+            @update:value="(v) => (textInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(selectInput, index) in visibleEdits.linkTargetSelectInputs"
+          :key="`link-target-${index}`"
+        >
+          <SelectInput
+            :label="selectInput.label"
+            :value="selectInput.model.value"
+            :options="selectInput.options"
+            @update:value="(v) => (selectInput.model.value = v)"
           />
         </template>
 

@@ -110,6 +110,25 @@ export function useFormField() {
     },
   })
 
+  const fieldValue = computed<string>({
+    get: () => {
+      const current = selectedField.value as unknown as { value?: unknown }
+      const value = current?.value
+      if (value === null || value === undefined) return ''
+      return String(value)
+    },
+    set: (newValue: string) => {
+      if (formSchema.value.length > 0) {
+        const updatedSchema = [...formSchema.value]
+        updatedSchema[selectedIndex.value] = {
+          ...updatedSchema[selectedIndex.value],
+          value: newValue,
+        } as FormKitSchemaFormKit
+        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
+      }
+    },
+  })
+
   const validationString = computed({
     get: () => selectedField.value?.validation || '',
     set: (value: string) => {
@@ -313,6 +332,7 @@ export function useFormField() {
   return {
     label,
     placeholder,
+    fieldValue,
     updateValidationString,
     isActive,
     createValidationValue,
