@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { NButton, NSpin, NCard } from 'naive-ui'
+import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
-import { Trash2 } from 'lucide-vue-next'
+import { Trash2, Monitor, Tablet, Smartphone } from 'lucide-vue-next'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
@@ -133,26 +133,68 @@ const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.val
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col justify-start mb-15">
-    <div v-if="isLoading" class="absolute inset-0 mb-30 flex items-center justify-center z-50">
-      <div
-        class="flex flex-col items-center bg-white dark:bg-neutral-600 justify-center gap-3 p-4 rounded-lg shadow-md"
-      >
-        <span class="font-medium text-sm text-zinc-700 dark:text-zinc-300"
-          >Creating your new form...</span
-        >
-        <n-spin size="medium" />
-      </div>
+  <div class="flex flex-1 flex-row justify-start mb-15 pt-10">
+    
+    <!-- Left side controls -->
+    <div class="w-16 shrink-0 flex flex-col items-center">
+      <n-button-group vertical class="sticky top-20 bg-card shadow-sm rounded-lg border border-border/50">
+        <n-tooltip placement="right">
+          <template #trigger>
+            <n-button
+              :type="canvasView === 'desktop' ? 'primary' : 'default'"
+              @click="canvasView = 'desktop'"
+              class="w-10 h-10"
+            >
+              <template #icon><Monitor class="h-4 w-4" /></template>
+            </n-button>
+          </template>
+          Desktop View
+        </n-tooltip>
+        <n-tooltip placement="right">
+          <template #trigger>
+            <n-button
+              :type="canvasView === 'tablet' ? 'primary' : 'default'"
+              @click="canvasView = 'tablet'"
+              class="w-10 h-10"
+            >
+              <template #icon><Tablet class="h-4 w-4" /></template>
+            </n-button>
+          </template>
+          Tablet View
+        </n-tooltip>
+        <n-tooltip placement="right">
+          <template #trigger>
+            <n-button
+              :type="canvasView === 'mobile' ? 'primary' : 'default'"
+              @click="canvasView = 'mobile'"
+              class="w-10 h-10"
+            >
+              <template #icon><Smartphone class="h-4 w-4" /></template>
+            </n-button>
+          </template>
+          Mobile View
+        </n-tooltip>
+      </n-button-group>
     </div>
-    <n-card
-      :class="cn(
-        'relative mx-auto md:top-10 min-h-[80%] !h-fit rounded-xl shadow-md transition-all duration-300',
-        canvasView === 'desktop' ? 'w-[90%] lg:w-[70%]' : '',
-        canvasView === 'tablet' ? 'w-[768px]' : '',
-        canvasView === 'mobile' ? 'w-[375px]' : ''
-      )"
-      content-style="padding: 16px;"
-    >
+
+    <!-- Center Canvas Area -->
+    <div class="flex-1 flex justify-center px-4 relative">
+      <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center z-50">
+        <div class="flex flex-col items-center bg-white dark:bg-neutral-600 justify-center gap-3 p-4 rounded-lg shadow-md">
+          <span class="font-medium text-sm text-zinc-700 dark:text-zinc-300">Creating your new form...</span>
+          <n-spin size="medium" />
+        </div>
+      </div>
+      
+      <n-card
+        :class="cn(
+          'relative min-h-[80%] !h-fit rounded-xl shadow-md transition-all duration-300',
+          canvasView === 'desktop' ? 'w-full lg:w-[80%]' : '',
+          canvasView === 'tablet' ? 'w-[768px]' : '',
+          canvasView === 'mobile' ? 'w-[375px]' : ''
+        )"
+        content-style="padding: 16px;"
+      >
       <ul
         ref="formFields"
         :class="
@@ -215,5 +257,9 @@ const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.val
         </li>
       </ul>
     </n-card>
+    </div>
+
+    <!-- Right side empty space for balance -->
+    <div class="w-16 shrink-0 hidden md:block"></div>
   </div>
 </template>
