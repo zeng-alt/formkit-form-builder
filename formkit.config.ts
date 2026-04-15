@@ -68,6 +68,7 @@ export default defaultConfig({
     range: createNaiveInput('NaiveSlider', NaiveSlider, { family: 'text' }),
     date: createNaiveInput('NaiveDatePicker', NaiveDatePicker, { family: 'text' }),
     'datetime-local': createNaiveInput('NaiveDatePicker', NaiveDatePicker, { family: 'text' }),
+    'date-time': createNaiveInput('NaiveDatePicker', NaiveDatePicker, { family: 'text' }),
     time: createNaiveInput('NaiveTimePicker', NaiveTimePicker, { family: 'text' }),
     file: createNaiveInput('NaiveUpload', NaiveUpload, { family: 'text' }),
     color: createNaiveInput('NaiveColorPicker', NaiveColorPicker, { family: 'text' }),

@@ -142,6 +142,18 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
     description: 'Date and time input',
   },
   {
+    $formkit: 'date-time',
+    label: 'Date Time Field',
+    help: 'This is help text',
+    outerClass: 'col-span-12',
+    naiveProps: { size: 'medium', disabled: false, clearable: true, valueFormat: 'yyyy.MM.dd HH:mm:ss' },
+    name: 'Date-Time',
+    id: 'date_time_field',
+    validation: '',
+    validationVisibility: 'live',
+    description: 'Date and time input',
+  },
+  {
     $formkit: 'file',
     label: 'File Field',
     help: 'Accepts .pdf, .doc, .docx, .xml, .md, .csv, .jpg, .png, .webp',
