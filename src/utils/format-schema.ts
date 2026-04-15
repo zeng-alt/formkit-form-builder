@@ -18,12 +18,14 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
         outerClass,
         type,
         buttonProps,
+        naiveProps,
         min,
         max,
         validationVisibility,
         __raw__sectionsSchema,
         step,
         multiple,
+        accept,
       } = field
 
       // Create a clean field object with only necessary properties
@@ -40,6 +42,7 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
         outerClass,
         type,
         buttonProps,
+        naiveProps,
         number,
         min,
         max,
@@ -47,6 +50,7 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
         __raw__sectionsSchema,
         step,
         multiple,
+        accept,
       }
 
       // Add options if they exist (for select, radio, etc.)
