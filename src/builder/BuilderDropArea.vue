@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
-import { Trash2, Monitor, Tablet, Smartphone } from 'lucide-vue-next'
+import { Trash2, Monitor, Tablet, Smartphone, CodeXml } from 'lucide-vue-next'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
@@ -11,8 +11,11 @@ import { isLoading, canvasView } from '../composables/form-fields'
 import { cn } from '../utils/utils'
 import { useFormField } from '../composables/form-fields'
 import { commitSchema } from '../composables/schema-history'
+import ImportExportModal from './ImportExportModal.vue'
 
 const { validationStringLength } = useFormField()
+
+const showImportExportModal = ref(false)
 
 const deleteField = (index: number) => {
   const nextSchema = formSchema.value.filter((_: unknown, i: number) => i !== index)
@@ -273,7 +276,24 @@ watch(
     </n-card>
     </div>
 
-    <!-- Right side empty space for balance -->
-    <div class="w-16 shrink-0 hidden md:block"></div>
+    <!-- Right side controls -->
+    <div class="w-16 shrink-0 hidden md:flex flex-col items-center">
+      <n-button-group vertical class="sticky top-20 bg-card shadow-sm rounded-lg border border-border/50">
+        <n-tooltip placement="left">
+          <template #trigger>
+            <n-button
+              @click="showImportExportModal = true"
+              size="small"
+              class="w-8 h-8"
+            >
+              <template #icon><CodeXml class="h-3.5 w-3.5" /></template>
+            </n-button>
+          </template>
+          Import / Export Schema
+        </n-tooltip>
+      </n-button-group>
+    </div>
+
+    <ImportExportModal v-model:show="showImportExportModal" />
   </div>
 </template>
