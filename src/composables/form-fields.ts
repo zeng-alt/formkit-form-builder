@@ -11,6 +11,33 @@ export type CanvasView = 'desktop' | 'tablet' | 'mobile'
 export const canvasView = ref<CanvasView>('desktop')
 
 export function useFormField() {
+  const setButtonProp = (key: string, value: unknown) => {
+    if (formSchema.value.length > 0) {
+      const updatedSchema = [...formSchema.value]
+      const current = updatedSchema[selectedIndex.value] as any
+      const nextButtonProps = {
+        ...current?.buttonProps,
+        [key]: value,
+      }
+      updatedSchema[selectedIndex.value] = {
+        ...current,
+        buttonProps: nextButtonProps,
+      } as FormKitSchemaFormKit
+      commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
+    }
+  }
+
+  const createButtonProp = <T>(key: string, defaultValue: T): WritableComputedRef<any, T> => {
+    return computed({
+      get: () => {
+        const current = selectedField.value as any
+        const value = current?.buttonProps?.[key]
+        return (value ?? defaultValue) as T
+      },
+      set: (value: T) => setButtonProp(key, value),
+    })
+  }
+
   const createValidationValue = (validationType: string, active: boolean = true) => {
     return computed({
       get: () => getParameterizedValidation(validationType),
@@ -251,5 +278,6 @@ export function useFormField() {
     min,
     max,
     isValidationChecked,
+    createButtonProp,
   }
 }
