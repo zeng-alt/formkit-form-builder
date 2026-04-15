@@ -6,6 +6,9 @@ import { formSchema, selectedIndex } from '../utils/default-form-elements'
 export const isLoading = ref(false)
 export const selectedField = computed(() => formSchema.value[selectedIndex.value])
 
+export type CanvasView = 'desktop' | 'tablet' | 'mobile'
+export const canvasView = ref<CanvasView>('desktop')
+
 export function useFormField() {
   const createValidationValue = (validationType: string, active: boolean = true) => {
     return computed({
