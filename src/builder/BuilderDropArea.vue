@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
 import { Trash2, Monitor, Tablet, Smartphone } from 'lucide-vue-next'
@@ -10,11 +10,13 @@ import type { FormKitSchemaFormKit } from '@formkit/core'
 import { isLoading, canvasView } from '../composables/form-fields'
 import { cn } from '../utils/utils'
 import { useFormField } from '../composables/form-fields'
+import { commitSchema } from '../composables/schema-history'
 
 const { validationStringLength } = useFormField()
 
 const deleteField = (index: number) => {
-  formSchema.value = formSchema.value.filter((_: unknown, i: number) => i !== index)
+  const nextSchema = formSchema.value.filter((_: unknown, i: number) => i !== index)
+  commitSchema(nextSchema as FormKitSchemaFormKit[], { reason: 'delete' })
   fields.value = fields.value.filter((_, i) => i !== index)
 }
 
@@ -130,6 +132,15 @@ const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.val
     }),
   ],
 })
+
+watch(
+  () => formSchema.value,
+  (nextSchema) => {
+    if (nextSchema !== fields.value) {
+      fields.value = [...nextSchema]
+    }
+  },
+)
 </script>
 
 <template>

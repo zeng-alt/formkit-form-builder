@@ -4,13 +4,13 @@ import OpenAI from 'openai'
 import instructions from './Instructions.txt?raw'
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
-import { formSchema } from '../../utils/default-form-elements'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { isLoading } from '../../composables/form-fields'
 import { cn } from '../../utils/utils'
 import { NButton, NInput, NPopover, NTooltip } from 'naive-ui'
 import { useFormBuilderConfig } from '../../composables/use-config'
 import { useMediaQuery } from '@vueuse/core'
+import { commitSchema } from '../../composables/schema-history'
 
 const isMobile = useMediaQuery('(max-width: 768px)')
 
@@ -54,7 +54,7 @@ const handleClick = async () => {
     input: inputRef.value,
   })
 
-  formSchema.value = parseFormSchema(response.output_text) as FormKitSchemaFormKit[]
+  commitSchema(parseFormSchema(response.output_text) as FormKitSchemaFormKit[], { reason: 'ai' })
   isLoading.value = false
   inputRef.value = ''
 }
