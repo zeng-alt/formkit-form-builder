@@ -44,7 +44,7 @@ function handleClick(e: MouseEvent) {
 </script>
 
 <template>
-  <div :class="['flex', booleans.fullWidth ? 'w-full' : '', `justify-${align === 'center' ? 'center' : align === 'right' ? 'end' : 'start'}`]">
+  <div :class="['flex', booleans.fullWidth ? 'w-full' : '', align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start']">
     <NButton
       :class="[booleans.fullWidth ? 'w-full' : '']"
       :type="type"
