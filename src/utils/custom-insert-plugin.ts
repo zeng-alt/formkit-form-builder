@@ -716,27 +716,32 @@ function insertItemsIntoParentFromOutside<T>(
   index: number,
   insertValues: Array<T>,
 ) {
-  setParentValues(state.initialParent.el, state.initialParent.data, [...newParentValues])
+  const isSource = state.initialParent.el.getAttribute('data-is-source') === 'true'
+  if (!isSource) {
+    setParentValues(state.initialParent.el, state.initialParent.data, [...newParentValues])
+  }
 
   // Now get the target parent values.
   const targetParentValues = parentValues(state.currentParent.el, state.currentParent.data)
 
   // Ensure new elements have col-span-2 by default
   const processedInsertValues = insertValues.map((value) => {
-    if (typeof value === 'object' && value !== null) {
-      const val = value as any
+    // Deep clone if it's from source
+    const valObj = isSource ? JSON.parse(JSON.stringify(value)) : value
+    if (typeof valObj === 'object' && valObj !== null) {
+      const val = valObj as any
       if (val.$formkit === 'submit') {
         return {
-          ...value,
+          ...valObj,
           outerClass: '!col-span-12 pt-2',
         }
       }
       return {
-        ...value,
+        ...valObj,
         outerClass: '!col-span-12', // Force default col-span-12
       }
     }
-    return value
+    return valObj
   })
 
   // Insert the processed values
@@ -907,19 +912,40 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
           })
         : draggedValues
 
-      draggedOverParentValues.push(...insertValues)
+      const isSource = state.initialParent.el.getAttribute('data-is-source') === 'true'
+      const processedInsertValues = insertValues.map((value) => {
+        const valObj = isSource ? JSON.parse(JSON.stringify(value)) : value
+        if (typeof valObj === 'object' && valObj !== null) {
+          const val = valObj as any
+          if (val.$formkit === 'submit') {
+            return {
+              ...valObj,
+              outerClass: '!col-span-12 pt-2',
+            }
+          }
+          return {
+            ...valObj,
+            outerClass: '!col-span-12', // Force default col-span-12
+          }
+        }
+        return valObj
+      })
+
+      draggedOverParentValues.push(...processedInsertValues)
 
       setParentValues(insertState.draggedOverParent.el, insertState.draggedOverParent.data, [
         ...draggedOverParentValues,
       ])
 
-      const draggedParentValues = parentValues(state.initialParent.el, state.initialParent.data)
+      if (!isSource) {
+        const draggedParentValues = parentValues(state.initialParent.el, state.initialParent.data)
 
-      const newParentValues = draggedParentValues.filter(
-        (x) => !draggedValues.some((y) => eq(x, y)),
-      )
+        const newParentValues = draggedParentValues.filter(
+          (x) => !draggedValues.some((y) => eq(x, y)),
+        )
 
-      setParentValues(state.initialParent.el, state.initialParent.data, [...newParentValues])
+        setParentValues(state.initialParent.el, state.initialParent.data, [...newParentValues])
+      }
 
       formSchema.value = [...(draggedOverParentValues as FormKitSchemaFormKit[])]
     }
