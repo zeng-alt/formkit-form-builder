@@ -2,6 +2,7 @@ import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { WritableComputedRef } from 'vue'
 import { computed, ref } from 'vue'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
+import { commitSchema } from './schema-history'
 
 export const isLoading = ref(false)
 export const selectedField = computed(() => formSchema.value[selectedIndex.value])
@@ -28,7 +29,7 @@ export function useFormField() {
           ...updatedSchema[selectedIndex.value],
           label: newLabel,
         } as FormKitSchemaFormKit
-        formSchema.value = updatedSchema
+        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
       }
     },
   })
@@ -42,7 +43,7 @@ export function useFormField() {
           ...updatedSchema[selectedIndex.value],
           placeholder: newPlaceholder,
         } as FormKitSchemaFormKit
-        formSchema.value = updatedSchema
+        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
       }
     },
   })
@@ -56,7 +57,7 @@ export function useFormField() {
           ...updatedSchema[selectedIndex.value],
           validation: value,
         } as FormKitSchemaFormKit
-        formSchema.value = updatedSchema
+        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
       }
     },
   })
@@ -127,7 +128,7 @@ export function useFormField() {
           ...updatedSchema[selectedIndex.value],
           help: newHelp,
         } as FormKitSchemaFormKit
-        formSchema.value = updatedSchema
+        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
       }
     },
   })
@@ -143,7 +144,7 @@ export function useFormField() {
             number: value,
             step: '1',
           } as FormKitSchemaFormKit
-          formSchema.value = updatedSchema
+          commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
         }
       } else {
         if (formSchema.value.length > 0) {
@@ -153,7 +154,7 @@ export function useFormField() {
             number: value,
             step: '0.1',
           } as FormKitSchemaFormKit
-          formSchema.value = updatedSchema
+          commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
         }
       }
     },
@@ -168,7 +169,7 @@ export function useFormField() {
           ...updatedSchema[selectedIndex.value],
           multiple: value,
         } as FormKitSchemaFormKit
-        formSchema.value = updatedSchema
+        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
       }
     },
   })
@@ -182,7 +183,7 @@ export function useFormField() {
           ...updatedSchema[selectedIndex.value],
           options: newOptions,
         } as FormKitSchemaFormKit
-        formSchema.value = updatedSchema
+        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
       }
     },
   })
@@ -196,7 +197,7 @@ export function useFormField() {
           ...updatedSchema[selectedIndex.value],
           min: newMin,
         } as FormKitSchemaFormKit
-        formSchema.value = updatedSchema
+        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
       }
     },
   })
@@ -210,7 +211,7 @@ export function useFormField() {
           ...updatedSchema[selectedIndex.value],
           max: newMax,
         } as FormKitSchemaFormKit
-        formSchema.value = updatedSchema
+        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
       }
     },
   })

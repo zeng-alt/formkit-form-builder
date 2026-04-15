@@ -16,6 +16,7 @@ import type {
 } from '@formkit/drag-and-drop'
 
 import { formSchema } from './default-form-elements'
+import { commitSchema } from '../composables/schema-history'
 
 import {
   parents,
@@ -749,7 +750,7 @@ function insertItemsIntoParentFromOutside<T>(
 
   setParentValues(state.currentParent.el, state.currentParent.data, [...targetParentValues])
 
-  formSchema.value = [...(targetParentValues as FormKitSchemaFormKit[])]
+  commitSchema([...(targetParentValues as FormKitSchemaFormKit[])], { reason: 'dnd' })
 }
 
 /**
@@ -796,7 +797,7 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
 
       newParentValues.splice(index, 0, ...draggedValues)
 
-      formSchema.value = [...(newParentValues as FormKitSchemaFormKit[])]
+      commitSchema([...(newParentValues as FormKitSchemaFormKit[])], { reason: 'dnd' })
 
       setParentValues(state.initialParent.el, state.initialParent.data, [...newParentValues])
 
@@ -894,7 +895,7 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
         ...draggedOverParentValues,
       ])
 
-      formSchema.value = [...(draggedOverParentValues as FormKitSchemaFormKit[])]
+      commitSchema([...(draggedOverParentValues as FormKitSchemaFormKit[])], { reason: 'dnd' })
     } else {
       const draggedValues = state.draggedNodes.map((node) => node.data.value)
 
@@ -947,7 +948,7 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
         setParentValues(state.initialParent.el, state.initialParent.data, [...newParentValues])
       }
 
-      formSchema.value = [...(draggedOverParentValues as FormKitSchemaFormKit[])]
+      commitSchema([...(draggedOverParentValues as FormKitSchemaFormKit[])], { reason: 'dnd' })
     }
 
     const data: InsertEvent<T> = {

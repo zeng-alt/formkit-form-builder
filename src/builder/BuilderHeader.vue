@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { NButton, NTooltip, NPopconfirm } from 'naive-ui'
-import { Eye, Trash2 } from 'lucide-vue-next'
+import { NButton, NButtonGroup, NTooltip, NPopconfirm } from 'naive-ui'
+import { Eye, Trash2, Undo2, Redo2 } from 'lucide-vue-next'
 import BuilderPreview from './BuilderPreview.vue'
 import AiPrompt from '../components/ai-prompt/AiPrompt.vue'
 import ThemeSwitcher from '../components/ui/theme-switcher/ThemeSwitcher.vue'
-import { formSchema } from '../utils/default-form-elements'
+import { canRedo, canUndo, commitSchema, redo, undo } from '../composables/schema-history'
 
 const clearForm = () => {
-  formSchema.value = []
+  commitSchema([], { reason: 'clear' })
 }
 const previewRef = ref<InstanceType<typeof BuilderPreview>>()
 </script>
@@ -28,8 +28,7 @@ const previewRef = ref<InstanceType<typeof BuilderPreview>>()
               Clear form
             </n-tooltip>
           </template>
-          Are you absolutely sure? This action cannot be undone. This will permanently delete the
-          form you have created.
+          Are you absolutely sure? This will permanently delete the form you have created.
         </n-popconfirm>
 
         <n-tooltip>
@@ -56,6 +55,38 @@ const previewRef = ref<InstanceType<typeof BuilderPreview>>()
       </div>
 
       <div class="flex items-center gap-2 justify-end">
+        <n-button-group class="bg-card shadow-sm rounded-lg border border-border/50">
+          <n-tooltip placement="bottom">
+            <template #trigger>
+              <n-button
+                secondary
+                circle
+                size="small"
+                class="h-5 w-5 !p-2"
+                :disabled="!canUndo"
+                @click="undo"
+              >
+                <template #icon><Undo2 class="dark:text-green-200" /></template>
+              </n-button>
+            </template>
+            Undo
+          </n-tooltip>
+          <n-tooltip placement="bottom">
+            <template #trigger>
+              <n-button
+                secondary
+                circle
+                size="small"
+                class="h-5 w-5 !p-2"
+                :disabled="!canRedo"
+                @click="redo"
+              >
+                <template #icon><Redo2 class="dark:text-green-200" /></template>
+              </n-button>
+            </template>
+            Redo
+          </n-tooltip>
+        </n-button-group>
         <ThemeSwitcher />
       </div>
     </div>
