@@ -69,7 +69,7 @@ const isFocused = () => {
     v-if="!isMobile"
     :class="
       cn(
-        'flex rounded-lg max-md:w-[80%] !w-[50%] card relative items-center justify-center',
+        'flex w-full min-w-0 rounded-lg card relative items-center justify-center',
         'bg-gradient-to-br from-secondary to-emerald-100/80 dark:from-secondary dark:to-emerald-800/80 dark:border-ring/5',
         isFocusedVal
           ? 'ring-2 ring-ring transition-all duration-300'
@@ -85,14 +85,16 @@ const isFocused = () => {
       type="textarea"
       @focus="isFocused"
       @blur="isFocused"
-      class="border-none shadow-none bg-transparent"
+      class="border-none shadow-none bg-transparent flex-1"
       :autosize="{ minRows: 1, maxRows: 4 }"
       placeholder="AI Assistant"
       v-model:value="inputRef"
     />
     <n-button
       quaternary
-      class="hover:bg-green-500 dark:hover:bg-green-500/30 hover:text-white w-7 h-7 mr-2"
+      circle
+      size="small"
+      class="hover:bg-green-500 dark:hover:bg-green-500/30 hover:text-white h-6 w-6 mr-2"
       @click="handleClick()"
       :disabled="isLoading"
     >
@@ -110,7 +112,8 @@ const isFocused = () => {
             id="form-dialog-portal"
             secondary
             circle
-            class="h-6 w-6 !p-3"
+            size="small"
+            class="h-5 w-5 !p-2"
             @click="isOpen = !isOpen"
           >
             <template #icon>
@@ -139,14 +142,16 @@ const isFocused = () => {
         type="textarea"
         @focus="isFocused"
         @blur="isFocused"
-        class="border-none shadow-none bg-transparent"
+        class="border-none shadow-none bg-transparent flex-1"
         :autosize="{ minRows: 1, maxRows: 4 }"
         placeholder="Prompt AI"
         v-model:value="inputRef"
       />
       <n-button
         quaternary
-        class="hover:bg-green-500 dark:hover:bg-green-500 hover:text-white dark:hover:text-black w-7 h-7 mr-2"
+        circle
+        size="small"
+        class="hover:bg-green-500 dark:hover:bg-green-500 hover:text-white dark:hover:text-black h-6 w-6 mr-2"
         @click="handleClick()"
         :disabled="isLoading"
       >

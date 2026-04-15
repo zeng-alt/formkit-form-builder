@@ -21,7 +21,7 @@ const handleSelect = (key: string) => {
 
 <template>
   <n-dropdown trigger="click" :options="options" @select="handleSelect">
-    <n-button secondary circle class="h-6 w-6 !p-3">
+    <n-button secondary circle size="small" class="h-5 w-5 !p-2">
       <template #icon>
         <div class="relative flex items-center justify-center">
           <Sun
