@@ -39,7 +39,7 @@ const step = computed(() => {
 })
 
 const value = computed(() => {
-  const raw = props.context._value?.value as unknown
+  const raw = props.context._value as unknown
   if (raw === null || raw === undefined || raw === '') return null
   const parsed = typeof raw === 'number' ? raw : Number(raw)
   return Number.isFinite(parsed) ? parsed : null

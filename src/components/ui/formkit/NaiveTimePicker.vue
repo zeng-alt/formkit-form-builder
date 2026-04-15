@@ -31,7 +31,7 @@ const placeholder = computed(() => props.context.placeholder as string | undefin
 
 const formattedValue = computed<string | null>({
   get: () => {
-    const raw = props.context._value?.value as unknown
+    const raw = props.context._value as unknown
     if (raw === null || raw === undefined || raw === '') return null
     return String(raw)
   },

@@ -47,7 +47,7 @@ const options = computed(() => {
 })
 
 const value = computed(() => {
-  const raw = props.context._value?.value as unknown
+  const raw = props.context._value as unknown
   if (Array.isArray(raw)) return raw
   if (raw === null || raw === undefined || raw === '') return []
   return [raw]

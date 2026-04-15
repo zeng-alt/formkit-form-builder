@@ -23,7 +23,7 @@ const disabled = computed<boolean>(() =>
   Boolean((naiveProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
 )
 
-const value = computed(() => (props.context._value?.value ?? '') as string)
+const value = computed(() => (props.context._value ?? '') as string)
 const placeholder = computed(() => props.context.placeholder as string | undefined)
 
 function handleUpdateValue(next: string) {

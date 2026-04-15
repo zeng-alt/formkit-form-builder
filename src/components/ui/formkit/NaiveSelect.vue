@@ -50,7 +50,7 @@ const options = computed<SelectOption[]>(() => {
 })
 
 const value = computed<SelectValue>(() => {
-  const raw = props.context._value?.value as unknown
+  const raw = props.context._value as unknown
   if (multiple.value) {
     if (Array.isArray(raw)) return raw.filter((v): v is Primitive => typeof v === 'string' || typeof v === 'number')
     if (typeof raw === 'string' || typeof raw === 'number') return [raw]

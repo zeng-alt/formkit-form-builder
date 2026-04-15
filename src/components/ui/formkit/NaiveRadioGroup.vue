@@ -46,7 +46,7 @@ const options = computed(() => {
     .filter((v): v is { label: string; value: string | number } => v !== null)
 })
 
-const value = computed(() => props.context._value?.value as string | number | null | undefined)
+const value = computed(() => props.context._value as string | number | null | undefined)
 
 function handleUpdateValue(next: string | number) {
   props.context.node.input(next)

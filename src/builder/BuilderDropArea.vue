@@ -256,7 +256,7 @@ watch(
             :style="{
               gridColumn: `span ${getColSpan(field, index)} / span ${getColSpan(field, index)}`
             }"
-            @click="clickedField(index)"
+            @pointerdown.capture="clickedField(index)"
           >
             <!-- Field content -->
             <div class="flex gap-1.5 p-1 w-full pb-2">

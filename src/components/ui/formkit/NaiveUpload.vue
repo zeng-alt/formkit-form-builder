@@ -62,7 +62,7 @@ function normalizeValue(raw: unknown): UploadFileInfo[] {
 const fileList = ref<UploadFileInfo[]>([])
 
 watch(
-  () => props.context._value?.value as unknown,
+  () => props.context._value as unknown,
   (raw) => {
     fileList.value = normalizeValue(raw)
   },
