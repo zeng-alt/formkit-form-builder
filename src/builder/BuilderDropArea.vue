@@ -55,7 +55,10 @@ const onMouseMove = (e: MouseEvent) => {
   const deltaSpan = Math.round(deltaX / columnWidth.value)
   let newSpan = startSpan.value + deltaSpan
 
-  newSpan = Math.max(1, Math.min(12, newSpan))
+  // Clamp newSpan to allowed values: 3, 6, 9, 12
+  newSpan = Math.max(3, Math.min(12, newSpan))
+  // Round to nearest multiple of 3
+  newSpan = Math.round(newSpan / 3) * 3
 
   const schemaItem = formSchema.value[index]
   if (schemaItem) {
@@ -74,6 +77,9 @@ const onMouseMove = (e: MouseEvent) => {
 }
 
 const onMouseUp = () => {
+  if (resizingIndex.value !== null) {
+    commitSchema(formSchema.value, { reason: 'resize' })
+  }
   resizingIndex.value = null
   window.removeEventListener('mousemove', onMouseMove)
   window.removeEventListener('mouseup', onMouseUp)
@@ -266,10 +272,23 @@ watch(
           
           <div
             v-if="formSchema[index]?.$formkit !== 'submit'"
-            class="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-opacity"
+            class="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ring/10 rounded-r-lg"
             @mousedown.stop.prevent="startResize($event, index)"
           >
-            <div class="w-1 h-6 bg-ring/30 dark:bg-ring/50 rounded-full"></div>
+            <div class="flex flex-row gap-[1px]">
+              <div class="w-[2px] h-6 bg-ring/30 dark:bg-ring/50 rounded-full"></div>
+              <div class="w-[2px] h-6 bg-ring/30 dark:bg-ring/50 rounded-full"></div>
+            </div>
+          </div>
+          
+          <!-- Show current width percentage while resizing -->
+          <div
+            v-if="resizingIndex === index"
+            class="absolute inset-0 z-40 bg-background/50 backdrop-blur-[1px] flex items-center justify-center rounded-lg border-2 border-primary/50"
+          >
+            <span class="bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded shadow-md">
+              {{ (parseInt(formSchema[index]?.outerClass?.match(/!col-span-(\d+)/)?.[1] || '12') / 12 * 100).toFixed(0) }}%
+            </span>
           </div>
         </li>
       </ul>
