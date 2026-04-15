@@ -69,6 +69,12 @@ export const fieldProps = [
     category: 'fields',
   },
   {
+    name: 'date-time',
+    tooltip: 'Allows user to select date and time',
+    icon: CalendarClock,
+    category: 'fields',
+  },
+  {
     name: 'file',
     tooltip: 'Allows user to upload file',
     icon: Paperclip,

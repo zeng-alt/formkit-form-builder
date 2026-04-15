@@ -28,11 +28,12 @@ const disabled = computed<boolean>(() =>
 )
 
 const pickerType = computed<DatePickerProps['type']>(() =>
-  props.context.type === 'datetime-local' ? 'datetime' : 'date',
+  props.context.type === 'datetime-local' || props.context.type === 'date-time' ? 'datetime' : 'date',
 )
 
 const valueFormat = computed(() => {
-  if (props.context.type === 'datetime-local') return 'yyyy-MM-dd HH:mm'
+  if (props.context.type === 'datetime-local' || props.context.type === 'date-time')
+    return 'yyyy-MM-dd HH:mm'
   return 'yyyy-MM-dd'
 })
 
