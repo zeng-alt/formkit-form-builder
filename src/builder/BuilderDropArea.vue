@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
 import { Trash2, Monitor, Tablet, Smartphone, CodeXml } from 'lucide-vue-next'
@@ -35,6 +35,17 @@ const resizingIndex = ref<number | null>(null)
 const startX = ref(0)
 const startSpan = ref(12)
 const columnWidth = ref(0)
+
+// Safelist for Tailwind JIT to properly generate classes for dynamic column spans
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const safelistClasses = [
+  '!col-span-1', '!col-span-2', '!col-span-3', '!col-span-4',
+  '!col-span-5', '!col-span-6', '!col-span-7', '!col-span-8',
+  '!col-span-9', '!col-span-10', '!col-span-11', '!col-span-12',
+  'col-span-1', 'col-span-2', 'col-span-3', 'col-span-4',
+  'col-span-5', 'col-span-6', 'col-span-7', 'col-span-8',
+  'col-span-9', 'col-span-10', 'col-span-11', 'col-span-12'
+]
 
 const startResize = (e: MouseEvent, index: number) => {
   resizingIndex.value = index

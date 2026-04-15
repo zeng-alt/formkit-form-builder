@@ -170,10 +170,4 @@
   }
 }
 
-/* Ensure safelist for dynamic column spans used in canvas dragging */
-@layer utilities {
-  .col-span-3 { grid-column: span 3 / span 3; }
-  .col-span-6 { grid-column: span 6 / span 6; }
-  .col-span-9 { grid-column: span 9 / span 9; }
-  .col-span-12 { grid-column: span 12 / span 12; }
-}
+
