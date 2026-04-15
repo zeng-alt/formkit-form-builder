@@ -278,8 +278,8 @@ function defineRanges(parent: HTMLElement) {
     const horizontalThreshold = Math.min(width * 0.25, maxHorizontalThreshold)
 
     // Similar logic for vertical threshold if needed, though usually height is smaller
-    const maxVerticalThreshold = 40
-    const verticalThreshold = Math.min(height * 0.25, maxVerticalThreshold)
+    // const maxVerticalThreshold = 40
+    // const _verticalThreshold = Math.min(height * 0.25, maxVerticalThreshold)
 
     const rangeData = node.data.range as any
 
