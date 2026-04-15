@@ -68,6 +68,7 @@ function handleUpdateValue(next: unknown) {
     :multiple="multiple"
     :placeholder="placeholder"
     :input-props="{ id: context.id }"
+    :bordered="false"
     @update:value="handleUpdateValue"
     @blur="context.handlers.blur"
   />

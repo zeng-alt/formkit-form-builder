@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { selectedIndex, formSchema } from '../../../utils/default-form-elements'
 import { useFormField } from '../../../composables/form-fields'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import TextInput from './TextInput.vue'
 import TagsInput from './TagsInput.vue'
 import ToggleInput from './ToggleInput.vue'
 import RangeInputs from './RangeInputs.vue'
 import SwitchInput from './SwitchInput.vue'
 import SelectInput from './SelectInput.vue'
+import JsonTextarea from './JsonTextarea.vue'
 
 const {
   min,
   max,
   modelValue,
+  optionsRaw,
   label,
   placeholder,
   numOfFiles,
@@ -74,6 +76,52 @@ const avatarRound = createNaiveProp<boolean>('round', true)
 const avatarBordered = createNaiveProp<boolean>('bordered', false)
 const avatarFallbackText = createNaiveProp<string>('fallbackText', 'A')
 
+const hasField = computed(() => !!formSchema.value[selectedIndex.value])
+
+const currentFieldType = computed(() =>
+  hasField.value ? formSchema?.value[selectedIndex.value]?.$formkit || null : null,
+)
+
+const treeOptionsJsonDraft = ref('')
+const treeOptionsJsonError = ref('')
+
+const treeOptionsJsonModel = computed({
+  get: () => treeOptionsJsonDraft.value,
+  set: (value: string) => {
+    treeOptionsJsonDraft.value = value
+    if (!value.trim()) {
+      optionsRaw.value = []
+      treeOptionsJsonError.value = ''
+      return
+    }
+    try {
+      const parsed = JSON.parse(value) as unknown
+      if (!Array.isArray(parsed)) {
+        treeOptionsJsonError.value = 'Options 必须是数组 JSON'
+        return
+      }
+      optionsRaw.value = parsed
+      treeOptionsJsonError.value = ''
+    } catch {
+      treeOptionsJsonError.value = 'JSON 格式错误'
+    }
+  },
+})
+
+watch(
+  () => [selectedIndex.value, currentFieldType.value],
+  () => {
+    if (currentFieldType.value === 'naiveCascader' || currentFieldType.value === 'naiveTreeSelect') {
+      treeOptionsJsonDraft.value = JSON.stringify(optionsRaw.value ?? [], null, 2)
+      treeOptionsJsonError.value = ''
+    } else {
+      treeOptionsJsonDraft.value = ''
+      treeOptionsJsonError.value = ''
+    }
+  },
+  { immediate: true },
+)
+
 const edits = {
   universalTextInputs: [
     {
@@ -99,6 +147,15 @@ const edits = {
       label: 'Add Items to List',
       placeholder: 'Add Items...',
       model: modelValue,
+    },
+  ],
+  treeOptionsJsonInputs: [
+    {
+      label: 'Options (JSON)',
+      placeholder:
+        '[{"label":"Option 1","value":"1","children":[{"label":"Option 1-1","value":"1-1"}]}]',
+      model: treeOptionsJsonModel,
+      error: treeOptionsJsonError,
     },
   ],
   numberToggleInputs: [
@@ -235,12 +292,6 @@ const edits = {
   ],
 }
 
-const hasField = computed(() => !!formSchema.value[selectedIndex.value])
-
-const currentFieldType = computed(() =>
-  hasField.value ? formSchema?.value[selectedIndex.value]?.$formkit || null : null,
-)
-
 const showForFieldType = (editType: string, fieldType: string | null) => {
   const naiveSizeFields = [
     'text',
@@ -330,7 +381,8 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
       'naiveTreeSelect',
       'naiveMention',
     ],
-    listItemsTagsInputs: ['checkbox', 'radio', 'select', 'naiveCascader', 'naiveTreeSelect', 'naiveMention'],
+    listItemsTagsInputs: ['checkbox', 'radio', 'select', 'naiveMention'],
+    treeOptionsJsonInputs: ['naiveCascader', 'naiveTreeSelect'],
     numberToggleInputs: ['number'],
     fileToggleInputs: ['file'],
     rangeInputs: ['range'],
@@ -360,6 +412,9 @@ const visibleEdits = computed(() => {
       : [],
     listItemsTagsInputs: showForFieldType('listItemsTagsInputs', currentFieldType.value)
       ? edits.listItemsTagsInputs
+      : [],
+    treeOptionsJsonInputs: showForFieldType('treeOptionsJsonInputs', currentFieldType.value)
+      ? edits.treeOptionsJsonInputs
       : [],
     numberToggleInputs: showForFieldType('numberToggleInputs', currentFieldType.value)
       ? edits.numberToggleInputs
@@ -444,6 +499,19 @@ const visibleEdits = computed(() => {
             :placeholder="tagsInput.placeholder"
             :value="tagsInput.model.value"
             @update:value="(v) => (tagsInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(jsonInput, index) in visibleEdits.treeOptionsJsonInputs"
+          :key="`tree-options-json-${index}`"
+        >
+          <JsonTextarea
+            :label="jsonInput.label"
+            :placeholder="jsonInput.placeholder"
+            :value="jsonInput.model.value"
+            :error="jsonInput.error.value"
+            @update:value="(v) => (jsonInput.model.value = v)"
           />
         </template>
 
