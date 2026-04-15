@@ -71,8 +71,8 @@ const onMouseMove = (e: MouseEvent) => {
   const deltaSpan = Math.round(deltaX / columnWidth.value)
   let newSpan = startSpan.value + deltaSpan
 
-  newSpan = Math.max(3, Math.min(12, newSpan))
-  newSpan = Math.round(newSpan / 3) * 3
+  newSpan = Math.max(2, Math.min(12, newSpan))
+  newSpan = Math.round(newSpan / 2) * 2
 
   const schemaItem = formSchema.value[index]
   if (schemaItem) {
