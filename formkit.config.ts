@@ -8,9 +8,7 @@ export default defaultConfig({
         rootClasses,
     },
     inputs: {
-        // @ts-expect-error type button is not in FormKitNodeType
-        button: createInput(CustomButton, { type: 'button', props: ['buttonProps'] }),
-        // @ts-expect-error type button is not in FormKitNodeType
-        submit: createInput(CustomButton, { type: 'button', props: ['buttonProps'] }),
+        button: createInput(CustomButton, { props: ['buttonProps'] }),
+        submit: createInput(CustomButton, { props: ['buttonProps'] }),
     }
 })
