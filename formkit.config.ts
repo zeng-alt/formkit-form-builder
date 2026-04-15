@@ -20,6 +20,16 @@ import NaiveMention from './src/components/ui/formkit/NaiveMention.vue'
 import NaiveRate from './src/components/ui/formkit/NaiveRate.vue'
 import NaiveSwitch from './src/components/ui/formkit/NaiveSwitch.vue'
 import NaiveTreeSelect from './src/components/ui/formkit/NaiveTreeSelect.vue'
+import NaiveTypographyText from './src/components/ui/formkit/NaiveTypographyText.vue'
+import NaiveTypographyP from './src/components/ui/formkit/NaiveTypographyP.vue'
+import NaiveTypographyA from './src/components/ui/formkit/NaiveTypographyA.vue'
+import NaiveTypographyBlockquote from './src/components/ui/formkit/NaiveTypographyBlockquote.vue'
+import NaiveTypographyHr from './src/components/ui/formkit/NaiveTypographyHr.vue'
+import NaiveTypographyHeader from './src/components/ui/formkit/NaiveTypographyHeader.vue'
+import NaiveTypographyUl from './src/components/ui/formkit/NaiveTypographyUl.vue'
+import NaiveTypographyOl from './src/components/ui/formkit/NaiveTypographyOl.vue'
+import NaiveTypographyLi from './src/components/ui/formkit/NaiveTypographyLi.vue'
+import NaiveDivider from './src/components/ui/formkit/NaiveDivider.vue'
 
 const sharedObservedProps = [
   'naiveProps',
@@ -86,5 +96,20 @@ export default defaultConfig({
     naiveRate: createNaiveInput('NaiveRate', NaiveRate, { family: 'text' }),
     naiveSwitch: createNaiveInput('NaiveSwitch', NaiveSwitch, { family: 'text' }),
     naiveTreeSelect: createNaiveInput('NaiveTreeSelect', NaiveTreeSelect, { family: 'dropdown' }),
+    naiveText: createNaiveInput('NaiveTypographyText', NaiveTypographyText, { family: 'text' }),
+    naiveP: createNaiveInput('NaiveTypographyP', NaiveTypographyP, { family: 'text' }),
+    naiveA: createNaiveInput('NaiveTypographyA', NaiveTypographyA, { family: 'text' }),
+    naiveBlockquote: createNaiveInput('NaiveTypographyBlockquote', NaiveTypographyBlockquote, { family: 'text' }),
+    naiveHr: createNaiveInput('NaiveTypographyHr', NaiveTypographyHr, { family: 'text' }),
+    naiveH1: createNaiveInput('NaiveTypographyHeader', NaiveTypographyHeader, { family: 'text' }),
+    naiveH2: createNaiveInput('NaiveTypographyHeader', NaiveTypographyHeader, { family: 'text' }),
+    naiveH3: createNaiveInput('NaiveTypographyHeader', NaiveTypographyHeader, { family: 'text' }),
+    naiveH4: createNaiveInput('NaiveTypographyHeader', NaiveTypographyHeader, { family: 'text' }),
+    naiveH5: createNaiveInput('NaiveTypographyHeader', NaiveTypographyHeader, { family: 'text' }),
+    naiveH6: createNaiveInput('NaiveTypographyHeader', NaiveTypographyHeader, { family: 'text' }),
+    naiveUl: createNaiveInput('NaiveTypographyUl', NaiveTypographyUl, { family: 'text' }),
+    naiveOl: createNaiveInput('NaiveTypographyOl', NaiveTypographyOl, { family: 'text' }),
+    naiveLi: createNaiveInput('NaiveTypographyLi', NaiveTypographyLi, { family: 'text' }),
+    naiveDivider: createNaiveInput('NaiveDivider', NaiveDivider, { family: 'text' }),
   },
 })
