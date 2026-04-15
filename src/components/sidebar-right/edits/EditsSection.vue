@@ -6,8 +6,23 @@ import TextInput from './TextInput.vue'
 import TagsInput from './TagsInput.vue'
 import ToggleInput from './ToggleInput.vue'
 import RangeInputs from './RangeInputs.vue'
+import SwitchInput from './SwitchInput.vue'
+import SelectInput from './SelectInput.vue'
 
-const { min, max, modelValue, label, placeholder, numOfFiles, whichNumber, help } = useFormField()
+const { min, max, modelValue, label, placeholder, numOfFiles, whichNumber, help, createButtonProp } =
+  useFormField()
+
+const buttonBlock = createButtonProp<boolean>('block', false)
+const buttonBordered = createButtonProp<boolean>('bordered', true)
+const buttonCircle = createButtonProp<boolean>('circle', false)
+const buttonDashed = createButtonProp<boolean>('dashed', false)
+const buttonDisabled = createButtonProp<boolean>('disabled', false)
+const buttonFocusable = createButtonProp<boolean>('focusable', true)
+const buttonGhost = createButtonProp<boolean>('ghost', false)
+const buttonRound = createButtonProp<boolean>('round', false)
+const buttonSecondary = createButtonProp<boolean>('secondary', false)
+const buttonSize = createButtonProp<string>('size', 'medium')
+const buttonType = createButtonProp<string>('type', 'default')
 
 const edits = {
   universalTextInputs: [
@@ -68,6 +83,42 @@ const edits = {
       modelTwo: max,
     },
   ],
+  buttonSwitchInputs: [
+    { label: 'block', model: buttonBlock },
+    { label: 'bordered', model: buttonBordered },
+    { label: 'circle', model: buttonCircle },
+    { label: 'dashed', model: buttonDashed },
+    { label: 'disabled', model: buttonDisabled },
+    { label: 'focusable', model: buttonFocusable },
+    { label: 'ghost', model: buttonGhost },
+    { label: 'round', model: buttonRound },
+    { label: 'secondary', model: buttonSecondary },
+  ],
+  buttonSelectInputs: [
+    {
+      label: 'size',
+      model: buttonSize,
+      options: [
+        { label: 'tiny', value: 'tiny' },
+        { label: 'small', value: 'small' },
+        { label: 'medium', value: 'medium' },
+        { label: 'large', value: 'large' },
+      ],
+    },
+    {
+      label: 'type',
+      model: buttonType,
+      options: [
+        { label: 'default', value: 'default' },
+        { label: 'tertiary', value: 'tertiary' },
+        { label: 'primary', value: 'primary' },
+        { label: 'success', value: 'success' },
+        { label: 'info', value: 'info' },
+        { label: 'warning', value: 'warning' },
+        { label: 'error', value: 'error' },
+      ],
+    },
+  ],
 }
 
 const hasField = computed(() => !!formSchema.value[selectedIndex.value])
@@ -102,6 +153,8 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
     numberToggleInputs: ['number'],
     fileToggleInputs: ['file'],
     rangeInputs: ['range'],
+    buttonSwitchInputs: ['submit', 'button'],
+    buttonSelectInputs: ['submit', 'button'],
   }
 
   return !fieldType || editMap[editType]?.includes(fieldType) || false
@@ -125,6 +178,12 @@ const visibleEdits = computed(() => {
       ? edits.fileToggleInputs
       : [],
     rangeInputs: showForFieldType('rangeInputs', currentFieldType.value) ? edits.rangeInputs : [],
+    buttonSwitchInputs: showForFieldType('buttonSwitchInputs', currentFieldType.value)
+      ? edits.buttonSwitchInputs
+      : [],
+    buttonSelectInputs: showForFieldType('buttonSelectInputs', currentFieldType.value)
+      ? edits.buttonSelectInputs
+      : [],
   }
 })
 </script>
@@ -213,6 +272,29 @@ const visibleEdits = computed(() => {
             :placeholder-two="rangeInput.placeholderTwo"
             :model-one="rangeInput.modelOne"
             :model-two="rangeInput.modelTwo"
+          />
+        </template>
+
+        <template
+          v-for="(selectInput, index) in visibleEdits.buttonSelectInputs"
+          :key="`button-select-${index}`"
+        >
+          <SelectInput
+            :label="selectInput.label"
+            :value="selectInput.model.value"
+            :options="selectInput.options"
+            @update:value="(v) => (selectInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(switchInput, index) in visibleEdits.buttonSwitchInputs"
+          :key="`button-switch-${index}`"
+        >
+          <SwitchInput
+            :label="switchInput.label"
+            :value="switchInput.model.value"
+            @update:value="(v) => (switchInput.model.value = v)"
           />
         </template>
       </div>

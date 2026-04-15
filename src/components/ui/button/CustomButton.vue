@@ -7,7 +7,11 @@ const props = defineProps<{
   context: any
 }>()
 
+const buttonProps = computed(() => props.context?.node?.props?.buttonProps || {})
+
 const type = computed(() => {
+  const configuredType = buttonProps.value?.type
+  if (configuredType) return configuredType
   const formkitType = props.context.node.props.type
   return formkitType === 'submit' ? 'primary' : 'default'
 })
@@ -16,12 +20,41 @@ const attrType = computed(() => {
   const formkitType = props.context.node.props.type
   return formkitType === 'submit' ? 'submit' : 'button'
 })
+
+const size = computed(() => buttonProps.value?.size || 'medium')
+
+const booleans = computed(() => ({
+  block: !!buttonProps.value?.block,
+  bordered: buttonProps.value?.bordered ?? true,
+  circle: !!buttonProps.value?.circle,
+  dashed: !!buttonProps.value?.dashed,
+  disabled: buttonProps.value?.disabled ?? props.context?.disabled ?? false,
+  focusable: buttonProps.value?.focusable ?? true,
+  ghost: !!buttonProps.value?.ghost,
+  round: !!buttonProps.value?.round,
+  secondary: !!buttonProps.value?.secondary,
+}))
+
+function handleClick(e: MouseEvent) {
+  props.context?.handlers?.click?.(e)
+}
 </script>
 
 <template>
   <NButton
     :type="type"
+    :size="size"
     :attr-type="attrType"
+    :block="booleans.block"
+    :bordered="booleans.bordered"
+    :circle="booleans.circle"
+    :dashed="booleans.dashed"
+    :disabled="booleans.disabled"
+    :focusable="booleans.focusable"
+    :ghost="booleans.ghost"
+    :round="booleans.round"
+    :secondary="booleans.secondary"
+    @click="handleClick"
   >
     {{ context.label }}
   </NButton>
