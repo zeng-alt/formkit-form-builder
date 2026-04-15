@@ -2,33 +2,33 @@
 import { NInputNumber } from 'naive-ui'
 import { MoveRight } from 'lucide-vue-next'
 import EditsLayout from './EditsLayout.vue'
-import type { WritableComputedRef } from 'vue'
 import { computed } from 'vue'
 
 const props = defineProps<{
-  modelOne: WritableComputedRef<any, number>
-  modelTwo: WritableComputedRef<any, number>
+  valueOne: number | null
+  valueTwo: number | null
   labelOne: string
   labelTwo: string
   placeholderOne: string
   placeholderTwo: string
 }>()
 
+const emit = defineEmits<{
+  'update:valueOne': [value: number | null]
+  'update:valueTwo': [value: number | null]
+}>()
+
 const modelValue = computed({
-  get: () => props.modelOne.value,
+  get: () => props.valueOne,
   set: (value: number | null) => {
-    if (value !== null) {
-      props.modelOne.value = value
-    }
+    emit('update:valueOne', value)
   },
 })
 
 const modelValueTwo = computed({
-  get: () => props.modelTwo.value,
+  get: () => props.valueTwo,
   set: (value: number | null) => {
-    if (value !== null) {
-      props.modelTwo.value = value
-    }
+    emit('update:valueTwo', value)
   },
 })
 </script>

@@ -4,11 +4,10 @@ import { defaultConfig, createInput } from '@formkit/vue'
 import CustomButton from './src/components/ui/button/CustomButton.vue'
 
 export default defaultConfig({
-    config: {
-        rootClasses,
-    },
-    inputs: {
-        button: createInput(CustomButton, { props: ['buttonProps'] }),
-        submit: createInput(CustomButton, { props: ['buttonProps'] }),
-    }
+  config: {
+    rootClasses,
+  },
+  inputs: {
+    naiveButton: createInput(CustomButton, { props: ['buttonProps'] }),
+  },
 })

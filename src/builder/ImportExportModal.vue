@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { NModal, NCard, NInput, NButton, NSpace } from 'naive-ui'
+import { NModal, NInput, NButton, NSpace } from 'naive-ui'
 import { Download, Save } from 'lucide-vue-next'
 import { formSchema } from '../utils/default-form-elements'
 import { commitSchema } from '../composables/schema-history'
@@ -39,8 +39,9 @@ const handleSaveAndImport = () => {
     commitSchema(parsed as FormKitSchemaFormKit[], { reason: 'import' })
     toast.success('Schema imported successfully')
     handleClose()
-  } catch (error: any) {
-    toast.error(`Failed to parse JSON: ${error.message}`)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    toast.error(`Failed to parse JSON: ${message}`)
   }
 }
 
@@ -59,7 +60,7 @@ const handleDownload = () => {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     toast.success('Schema downloaded successfully')
-  } catch (error: any) {
+  } catch {
     toast.error(`Failed to generate download: Invalid JSON`)
   }
 }

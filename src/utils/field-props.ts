@@ -128,6 +128,12 @@ export const fieldProps = [
     category: 'static',
   },
   {
+    name: 'naiveButton',
+    tooltip: 'Naive UI button',
+    icon: SendHorizonal,
+    category: 'static',
+  },
+  {
     name: 'group',
     tooltip: 'Allows user to group fields together',
     icon: Group,

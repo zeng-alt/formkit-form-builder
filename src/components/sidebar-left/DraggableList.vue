@@ -1,34 +1,38 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { watch, type Ref } from 'vue'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
 import { fieldProps } from '../../utils/field-props'
+import type { FormKitSchemaFormKit } from '@formkit/core'
 
 const props = defineProps<{
-  elements: any[]
+  elements: FormKitSchemaFormKit[]
 }>()
 
-const [parentRef, items] = useDragAndDrop(props.elements, {
+type PointerupData = { targetData: { node: { el: HTMLElement } } }
+type DynamicValuesData = { draggedNodes: Array<{ data: { value: FormKitSchemaFormKit } }> }
+
+const dragConfig = {
   group: 'form-builder',
   sortable: false,
   nativeDrag: true,
   draggable: () => true,
-  handleNodePointerup(data) {
+  handleNodePointerup(data: PointerupData) {
     data.targetData.node.el.setAttribute('draggable', 'true')
   },
-  // @ts-ignore - We only need dynamicValues, ignoring missing insertPoint
   insertConfig: {
-    dynamicValues: (data: any) => {
-      // Deep clone the elements so that modifying the canvas elements 
-      // doesn't affect the sidebar source elements.
-      return data.draggedNodes.map((node: any) => JSON.parse(JSON.stringify(node.data.value)))
-    }
+    dynamicValues: (data: DynamicValuesData) => {
+      return data.draggedNodes.map((node) => JSON.parse(JSON.stringify(node.data.value)))
+    },
   },
   onTransfer() {
-    // When an item is transferred out of this list, the drag-and-drop library removes it from `items.value`.
-    // We want to act like a "clone" source, so we immediately restore the original items.
     items.value = [...props.elements]
-  }
-})
+  },
+}
+
+const [parentRef, items] = useDragAndDrop(
+  props.elements,
+  dragConfig as unknown as Parameters<typeof useDragAndDrop>[1],
+) as unknown as [Ref<HTMLElement | null>, Ref<FormKitSchemaFormKit[]>]
 
 // Sync items when props.elements changes (e.g. during search)
 watch(() => props.elements, (newElements) => {

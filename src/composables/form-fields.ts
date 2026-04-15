@@ -10,11 +10,15 @@ export const selectedField = computed(() => formSchema.value[selectedIndex.value
 export type CanvasView = 'desktop' | 'tablet' | 'mobile'
 export const canvasView = ref<CanvasView>('desktop')
 
+type SchemaWithButtonProps = FormKitSchemaFormKit & {
+  buttonProps?: Record<string, unknown>
+}
+
 export function useFormField() {
   const setButtonProp = (key: string, value: unknown) => {
     if (formSchema.value.length > 0) {
       const updatedSchema = [...formSchema.value]
-      const current = updatedSchema[selectedIndex.value] as any
+      const current = updatedSchema[selectedIndex.value] as SchemaWithButtonProps
       const nextButtonProps = {
         ...current?.buttonProps,
         [key]: value,
@@ -27,10 +31,10 @@ export function useFormField() {
     }
   }
 
-  const createButtonProp = <T>(key: string, defaultValue: T): WritableComputedRef<any, T> => {
+  const createButtonProp = <T>(key: string, defaultValue: T): WritableComputedRef<T, T> => {
     return computed({
       get: () => {
-        const current = selectedField.value as any
+        const current = selectedField.value as SchemaWithButtonProps
         const value = current?.buttonProps?.[key]
         return (value ?? defaultValue) as T
       },
@@ -160,7 +164,7 @@ export function useFormField() {
     },
   })
 
-  const whichNumber: WritableComputedRef<any, string> = computed({
+  const whichNumber = computed<string>({
     get: () => selectedField.value?.number || 'integer',
     set: (value: string) => {
       if (value === 'integer') {
@@ -201,7 +205,7 @@ export function useFormField() {
     },
   })
 
-  const modelValue: WritableComputedRef<any, string[]> = computed({
+  const modelValue = computed<string[]>({
     get: () => selectedField.value?.options || [],
     set: (newOptions: string[]) => {
       if (formSchema.value.length > 0) {
@@ -215,9 +219,9 @@ export function useFormField() {
     },
   })
 
-  const min: WritableComputedRef<any, number> = computed({
+  const min = computed<number | undefined>({
     get: () => selectedField.value?.min,
-    set: (newMin: number) => {
+    set: (newMin: number | undefined) => {
       if (formSchema.value.length > 0) {
         const updatedSchema = [...formSchema.value]
         updatedSchema[selectedIndex.value] = {
@@ -229,9 +233,9 @@ export function useFormField() {
     },
   })
 
-  const max = computed({
+  const max = computed<number | undefined>({
     get: () => selectedField.value?.max,
-    set: (newMax: number) => {
+    set: (newMax: number | undefined) => {
       if (formSchema.value.length > 0) {
         const updatedSchema = [...formSchema.value]
         updatedSchema[selectedIndex.value] = {

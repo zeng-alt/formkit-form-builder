@@ -3,6 +3,8 @@ import { NButton, NDropdown } from 'naive-ui'
 import { useColorMode } from '@vueuse/core'
 import { Sun, Moon } from 'lucide-vue-next'
 
+type ColorMode = 'light' | 'dark' | 'auto'
+
 const colorModeOptions = {
   disableTransition: false,
 }
@@ -15,7 +17,7 @@ const options = [
 ]
 
 const handleSelect = (key: string) => {
-  mode.value = key as any
+  mode.value = key as ColorMode
 }
 </script>
 
