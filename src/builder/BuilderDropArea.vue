@@ -228,19 +228,19 @@ watch(
 
       <n-card
         :class="cn(
-          'relative min-h-[80%] !h-fit rounded-xl shadow-md transition-all duration-300',
+          'relative min-h-[80%] !h-fit rounded-xl shadow-md transition-all duration-300 flex flex-col',
           canvasView === 'desktop' ? 'w-full lg:w-[80%]' : '',
           canvasView === 'tablet' ? 'w-[768px]' : '',
           canvasView === 'mobile' ? 'w-[375px]' : ''
         )"
-        content-style="padding: 16px;"
+        content-style="padding: 16px; flex: 1; display: flex; flex-direction: column;"
       >
         <!-- 保留原生 ul 以确保 useDragAndDrop ref 绑定正常工作 -->
         <ul
           ref="formFields"
           :class="cn(
-            'w-full grid grid-cols-12 gap-x-4 gap-y-2 list-none p-0 m-0',
-            fields.length === 0 ? 'h-full' : 'h-fit',
+            'w-full grid grid-cols-12 gap-x-4 gap-y-2 list-none p-0 m-0 flex-1',
+            fields.length === 0 ? 'min-h-[200px] h-full' : 'h-fit',
           )"
           data-testid="drop-area"
         >
