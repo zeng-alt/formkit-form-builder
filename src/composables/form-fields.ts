@@ -250,6 +250,20 @@ export function useFormField() {
     },
   })
 
+  const optionsRaw = computed<unknown>({
+    get: () => selectedField.value?.options ?? [],
+    set: (newOptions: unknown) => {
+      if (formSchema.value.length > 0) {
+        const updatedSchema = [...formSchema.value]
+        updatedSchema[selectedIndex.value] = {
+          ...updatedSchema[selectedIndex.value],
+          options: newOptions,
+        } as FormKitSchemaFormKit
+        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
+      }
+    },
+  })
+
   const min = computed<number | undefined>({
     get: () => selectedField.value?.min,
     set: (newMin: number | undefined) => {
@@ -310,6 +324,7 @@ export function useFormField() {
     validationString,
     numOfFiles,
     modelValue,
+    optionsRaw,
     min,
     max,
     isValidationChecked,

@@ -52,6 +52,27 @@ export function rootClasses(
  * and are ready to be used directly in the theme.
  **/
 const classes: Record<string, Record<string, boolean>> = {
+  naiveAvatar__inner: {
+    "!border-none": true,
+    "!shadow-none": true,
+    "!bg-transparent": true,
+    "!px-0": true,
+    "!py-0": true,
+  },
+  naiveRate__inner: {
+    "!border-none": true,
+    "!shadow-none": true,
+    "!bg-transparent": true,
+    "!px-0": true,
+    "!py-0": true,
+  },
+  naiveSwitch__inner: {
+    "!border-none": true,
+    "!shadow-none": true,
+    "!bg-transparent": true,
+    "!px-0": true,
+    "!py-0": true,
+  },
   "family:button__wrapper": {
     "group-data-[disabled=true]:grayscale": true,
   },

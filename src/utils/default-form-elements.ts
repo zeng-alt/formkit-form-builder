@@ -251,7 +251,20 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
     id: 'naive_cascader_field',
     validation: '',
     validationVisibility: 'live',
-    options: ['one'],
+    options: [
+      {
+        label: 'Option 1',
+        value: '1',
+        children: [
+          { label: 'Option 1-1', value: '1-1' },
+          { label: 'Option 1-2', value: '1-2' },
+        ],
+      },
+      {
+        label: 'Option 2',
+        value: '2',
+      },
+    ],
     description: 'Cascader selection',
   },
   {
@@ -271,7 +284,17 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
     id: 'naive_tree_select_field',
     validation: '',
     validationVisibility: 'live',
-    options: ['one'],
+    options: [
+      {
+        label: 'Node 1',
+        key: '1',
+        children: [
+          { label: 'Node 1-1', key: '1-1' },
+          { label: 'Node 1-2', key: '1-2' },
+        ],
+      },
+      { label: 'Node 2', key: '2' },
+    ],
     description: 'Tree selection',
   },
   {
