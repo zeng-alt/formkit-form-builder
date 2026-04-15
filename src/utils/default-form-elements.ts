@@ -495,11 +495,11 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
     $formkit: 'naiveDivider',
     outerClass: 'col-span-12',
     naiveProps: {
+      title: 'Divider',
       titlePlacement: 'center',
       dashed: false,
       vertical: false,
     },
-    value: 'Divider',
     name: 'Naive Divider',
     description: 'Naive UI divider',
     id: 'naive_divider_static',

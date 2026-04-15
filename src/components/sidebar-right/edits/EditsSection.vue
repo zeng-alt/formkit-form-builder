@@ -101,6 +101,7 @@ const typoAlign = createNaiveProp<string>('align', 'start')
 const linkHref = createNaiveProp<string>('href', 'https://www.example.com')
 const linkTarget = createNaiveProp<string>('target', '_blank')
 
+const dividerTitle = createNaiveProp<string>('title', 'Divider')
 const dividerTitlePlacement = createNaiveProp<string>('titlePlacement', 'center')
 const dividerDashed = createNaiveProp<boolean>('dashed', false)
 const dividerVertical = createNaiveProp<boolean>('vertical', false)
@@ -244,6 +245,13 @@ const edits = {
         { label: '_blank', value: '_blank' },
         { label: '_self', value: '_self' },
       ],
+    },
+  ],
+  dividerTextInputs: [
+    {
+      label: 'title',
+      placeholder: 'Divider title',
+      model: dividerTitle,
     },
   ],
   dividerSelectInputs: [
@@ -499,7 +507,6 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
       'naiveP',
       'naiveA',
       'naiveBlockquote',
-      'naiveDivider',
       'naiveH1',
       'naiveH2',
       'naiveH3',
@@ -524,6 +531,7 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
     typographyAlignSelectInputs: ['naiveP'],
     linkTextInputs: ['naiveA'],
     linkTargetSelectInputs: ['naiveA'],
+    dividerTextInputs: ['naiveDivider'],
     dividerSelectInputs: ['naiveDivider'],
     dividerSwitchInputs: ['naiveDivider'],
     treeOptionsJsonInputs: ['naiveCascader', 'naiveTreeSelect'],
@@ -575,6 +583,9 @@ const visibleEdits = computed(() => {
     linkTextInputs: showForFieldType('linkTextInputs', currentFieldType.value) ? edits.linkTextInputs : [],
     linkTargetSelectInputs: showForFieldType('linkTargetSelectInputs', currentFieldType.value)
       ? edits.linkTargetSelectInputs
+      : [],
+    dividerTextInputs: showForFieldType('dividerTextInputs', currentFieldType.value)
+      ? edits.dividerTextInputs
       : [],
     dividerSelectInputs: showForFieldType('dividerSelectInputs', currentFieldType.value)
       ? edits.dividerSelectInputs
@@ -735,6 +746,15 @@ const visibleEdits = computed(() => {
             :value="selectInput.model.value"
             :options="selectInput.options"
             @update:value="(v) => (selectInput.model.value = v)"
+          />
+        </template>
+
+        <template v-for="(textInput, index) in visibleEdits.dividerTextInputs" :key="`divider-text-${index}`">
+          <TextInput
+            :label="textInput.label"
+            :placeholder="textInput.placeholder"
+            :value="textInput.model.value"
+            @update:value="(v) => (textInput.model.value = v)"
           />
         </template>
 

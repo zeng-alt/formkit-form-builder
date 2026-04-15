@@ -20,11 +20,15 @@ const titlePlacement = computed(() => naiveProps.value.titlePlacement as any)
 const dashed = computed<boolean>(() => Boolean((naiveProps.value.dashed as boolean | undefined) ?? false))
 const vertical = computed<boolean>(() => Boolean((naiveProps.value.vertical as boolean | undefined) ?? false))
 
-const text = computed(() => String(props.context._value ?? ''))
+const title = computed(() => {
+  const raw = naiveProps.value.title
+  if (typeof raw === 'string') return raw
+  return String(props.context._value ?? '')
+})
 </script>
 
 <template>
   <NDivider :title-placement="titlePlacement" :dashed="dashed" :vertical="vertical">
-    <template v-if="text">{{ text }}</template>
+    <template v-if="title">{{ title }}</template>
   </NDivider>
 </template>
