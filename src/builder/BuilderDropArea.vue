@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { NButton, NSpin } from 'naive-ui'
+import { NButton, NSpin, NCard } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
 import { Trash2 } from 'lucide-vue-next'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
@@ -144,8 +144,9 @@ const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.val
         <n-spin size="medium" />
       </div>
     </div>
-    <div
-      class="border-1 border-ring/5 dark:border-none relative mx-auto md:top-10 min-h-[80%] p-4 !h-fit w-[90%] lg:w-[70%] rounded-xl bg-ring/5 dark:bg-neutral-800/70 shadow-md"
+    <n-card
+      class="relative mx-auto md:top-10 min-h-[80%] !h-fit w-[90%] lg:w-[70%] rounded-xl shadow-md"
+      content-style="padding: 16px;"
     >
       <ul
         ref="formFields"
@@ -208,6 +209,6 @@ const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.val
           </div>
         </li>
       </ul>
-    </div>
+    </n-card>
   </div>
 </template>
