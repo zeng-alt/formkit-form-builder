@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { NButton, NSpin, NCard } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
 import { Trash2 } from 'lucide-vue-next'
@@ -7,7 +7,7 @@ import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { isLoading } from '../composables/form-fields'
+import { isLoading, canvasView } from '../composables/form-fields'
 import { cn } from '../utils/utils'
 import { useFormField } from '../composables/form-fields'
 
@@ -145,7 +145,12 @@ const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.val
       </div>
     </div>
     <n-card
-      class="relative mx-auto md:top-10 min-h-[80%] !h-fit w-[90%] lg:w-[70%] rounded-xl shadow-md"
+      :class="cn(
+        'relative mx-auto md:top-10 min-h-[80%] !h-fit rounded-xl shadow-md transition-all duration-300',
+        canvasView === 'desktop' ? 'w-[90%] lg:w-[70%]' : '',
+        canvasView === 'tablet' ? 'w-[768px]' : '',
+        canvasView === 'mobile' ? 'w-[375px]' : ''
+      )"
       content-style="padding: 16px;"
     >
       <ul
