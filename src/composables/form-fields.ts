@@ -14,6 +14,10 @@ type SchemaWithButtonProps = FormKitSchemaFormKit & {
   buttonProps?: Record<string, unknown>
 }
 
+type SchemaWithNaiveProps = FormKitSchemaFormKit & {
+  naiveProps?: Record<string, unknown>
+}
+
 export function useFormField() {
   const setButtonProp = (key: string, value: unknown) => {
     if (formSchema.value.length > 0) {
@@ -31,6 +35,22 @@ export function useFormField() {
     }
   }
 
+  const setNaiveProp = (key: string, value: unknown) => {
+    if (formSchema.value.length > 0) {
+      const updatedSchema = [...formSchema.value]
+      const current = updatedSchema[selectedIndex.value] as SchemaWithNaiveProps
+      const nextNaiveProps = {
+        ...current?.naiveProps,
+        [key]: value,
+      }
+      updatedSchema[selectedIndex.value] = {
+        ...current,
+        naiveProps: nextNaiveProps,
+      } as FormKitSchemaFormKit
+      commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
+    }
+  }
+
   const createButtonProp = <T>(key: string, defaultValue: T): WritableComputedRef<T, T> => {
     return computed({
       get: () => {
@@ -39,6 +59,17 @@ export function useFormField() {
         return (value ?? defaultValue) as T
       },
       set: (value: T) => setButtonProp(key, value),
+    })
+  }
+
+  const createNaiveProp = <T>(key: string, defaultValue: T): WritableComputedRef<T, T> => {
+    return computed({
+      get: () => {
+        const current = selectedField.value as SchemaWithNaiveProps
+        const value = current?.naiveProps?.[key]
+        return (value ?? defaultValue) as T
+      },
+      set: (value: T) => setNaiveProp(key, value),
     })
   }
 
@@ -283,5 +314,6 @@ export function useFormField() {
     max,
     isValidationChecked,
     createButtonProp,
+    createNaiveProp,
   }
 }

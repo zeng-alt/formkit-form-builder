@@ -9,8 +9,18 @@ import RangeInputs from './RangeInputs.vue'
 import SwitchInput from './SwitchInput.vue'
 import SelectInput from './SelectInput.vue'
 
-const { min, max, modelValue, label, placeholder, numOfFiles, whichNumber, help, createButtonProp } =
-  useFormField()
+const {
+  min,
+  max,
+  modelValue,
+  label,
+  placeholder,
+  numOfFiles,
+  whichNumber,
+  help,
+  createButtonProp,
+  createNaiveProp,
+} = useFormField()
 
 const buttonBlock = createButtonProp<boolean>('block', false)
 const buttonBordered = createButtonProp<boolean>('bordered', true)
@@ -25,6 +35,12 @@ const buttonRound = createButtonProp<boolean>('round', false)
 const buttonSecondary = createButtonProp<boolean>('secondary', false)
 const buttonSize = createButtonProp<string>('size', 'medium')
 const buttonType = createButtonProp<string>('type', 'default')
+
+const naiveSize = createNaiveProp<string>('size', 'medium')
+const naiveDisabled = createNaiveProp<boolean>('disabled', false)
+const naiveClearable = createNaiveProp<boolean>('clearable', true)
+const naiveFilterable = createNaiveProp<boolean>('filterable', false)
+const naiveMultiple = createNaiveProp<boolean>('multiple', false)
 
 const edits = {
   universalTextInputs: [
@@ -85,6 +101,26 @@ const edits = {
       modelTwo: max,
     },
   ],
+  naiveSwitchInputs: [
+    { label: 'disabled', model: naiveDisabled },
+    { label: 'clearable', model: naiveClearable },
+  ],
+  naiveSelectInputs: [
+    {
+      label: 'size',
+      model: naiveSize,
+      options: [
+        { label: 'tiny', value: 'tiny' },
+        { label: 'small', value: 'small' },
+        { label: 'medium', value: 'medium' },
+        { label: 'large', value: 'large' },
+      ],
+    },
+  ],
+  selectSwitchInputs: [
+    { label: 'filterable', model: naiveFilterable },
+    { label: 'multiple', model: naiveMultiple },
+  ],
   buttonSwitchInputs: [
     { label: 'block', model: buttonBlock },
     { label: 'bordered', model: buttonBordered },
@@ -140,6 +176,24 @@ const currentFieldType = computed(() =>
 )
 
 const showForFieldType = (editType: string, fieldType: string | null) => {
+  const naiveFields = [
+    'text',
+    'textarea',
+    'email',
+    'password',
+    'url',
+    'tel',
+    'number',
+    'date',
+    'datetime-local',
+    'time',
+    'color',
+    'file',
+    'range',
+    'select',
+    'radio',
+    'checkbox',
+  ]
   const editMap: Record<string, string[]> = {
     universalTextInputs: [
       'text',
@@ -166,6 +220,9 @@ const showForFieldType = (editType: string, fieldType: string | null) => {
     numberToggleInputs: ['number'],
     fileToggleInputs: ['file'],
     rangeInputs: ['range'],
+    naiveSwitchInputs: naiveFields,
+    naiveSelectInputs: naiveFields,
+    selectSwitchInputs: ['select'],
     buttonSwitchInputs: ['naiveButton'],
     buttonSelectInputs: ['naiveButton'],
   }
@@ -191,6 +248,15 @@ const visibleEdits = computed(() => {
       ? edits.fileToggleInputs
       : [],
     rangeInputs: showForFieldType('rangeInputs', currentFieldType.value) ? edits.rangeInputs : [],
+    naiveSwitchInputs: showForFieldType('naiveSwitchInputs', currentFieldType.value)
+      ? edits.naiveSwitchInputs
+      : [],
+    naiveSelectInputs: showForFieldType('naiveSelectInputs', currentFieldType.value)
+      ? edits.naiveSelectInputs
+      : [],
+    selectSwitchInputs: showForFieldType('selectSwitchInputs', currentFieldType.value)
+      ? edits.selectSwitchInputs
+      : [],
     buttonSwitchInputs: showForFieldType('buttonSwitchInputs', currentFieldType.value)
       ? edits.buttonSwitchInputs
       : [],
@@ -296,6 +362,40 @@ const visibleEdits = computed(() => {
             @update:valueTwo="(v) => {
               if (v !== null) rangeInput.modelTwo.value = v
             }"
+          />
+        </template>
+
+        <template
+          v-for="(selectInput, index) in visibleEdits.naiveSelectInputs"
+          :key="`naive-select-${index}`"
+        >
+          <SelectInput
+            :label="selectInput.label"
+            :value="selectInput.model.value"
+            :options="selectInput.options"
+            @update:value="(v) => (selectInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(switchInput, index) in visibleEdits.naiveSwitchInputs"
+          :key="`naive-switch-${index}`"
+        >
+          <SwitchInput
+            :label="switchInput.label"
+            :value="switchInput.model.value"
+            @update:value="(v) => (switchInput.model.value = v)"
+          />
+        </template>
+
+        <template
+          v-for="(switchInput, index) in visibleEdits.selectSwitchInputs"
+          :key="`select-switch-${index}`"
+        >
+          <SwitchInput
+            :label="switchInput.label"
+            :value="switchInput.model.value"
+            @update:value="(v) => (switchInput.model.value = v)"
           />
         </template>
 

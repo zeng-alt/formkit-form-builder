@@ -16,6 +16,7 @@ import {
   Type,
   Pipette,
   SendHorizonal,
+  SquareMousePointer,
   Group,
   ListTree,
 } from 'lucide-vue-next'
@@ -130,7 +131,7 @@ export const fieldProps = [
   {
     name: 'naiveButton',
     tooltip: 'Naive UI button',
-    icon: SendHorizonal,
+    icon: SquareMousePointer,
     category: 'static',
   },
   {

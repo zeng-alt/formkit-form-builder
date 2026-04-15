@@ -8,8 +8,12 @@ const props = defineProps<{
 }>()
 
 const buttonProps = computed(() => {
-  // Try getting from node.props directly or node.props.buttonProps
-  return props.context?.node?.props?.buttonProps || props.context?.buttonProps || props.context?.node?.props || {}
+  return (
+    props.context?.attrs?.buttonProps ||
+    props.context?.node?.props?.buttonProps ||
+    props.context?.buttonProps ||
+    {}
+  )
 })
 
 const type = computed(() => {
