@@ -270,7 +270,16 @@ function defineRanges(parent: HTMLElement) {
     const width = nodeCoords.width
     const height = nodeCoords.height
 
-    const horizontalThreshold = width * 0.25
+    // Calculate dynamic threshold based on width
+    // If the element is very wide (e.g. 100%), we don't want the left/right drop zones
+    // to be too large (e.g. 25% of 1200px = 300px), which would make it hard to drop above/below.
+    // So we cap the horizontal threshold at a reasonable value (e.g., 60px)
+    const maxHorizontalThreshold = 60
+    const horizontalThreshold = Math.min(width * 0.25, maxHorizontalThreshold)
+
+    // Similar logic for vertical threshold if needed, though usually height is smaller
+    const maxVerticalThreshold = 40
+    const verticalThreshold = Math.min(height * 0.25, maxVerticalThreshold)
 
     const rangeData = node.data.range as any
 
