@@ -3,7 +3,12 @@
   <n-modal
     v-model:show="isOpen"
     preset="card"
-    class="max-h-[90vh] overflow-y-auto sm:max-w-[500px] border-none"
+    :class="[
+      'max-h-[90vh] overflow-y-auto border-none transition-all duration-300',
+      canvasView === 'desktop' ? 'sm:max-w-[800px]' : '',
+      canvasView === 'tablet' ? 'sm:max-w-[768px]' : '',
+      canvasView === 'mobile' ? 'sm:max-w-[375px]' : ''
+    ]"
     title="Form Preview"
     size="small"
   >
@@ -18,7 +23,7 @@
         :actions="false"
         v-model="data"
         @submit="handleSubmit"
-        form-class="w-full !grid !grid-cols-2 gap-x-4"
+        form-class="w-full !grid !grid-cols-12 gap-x-4 gap-y-2"
       >
         <FormKitSchema :schema="formattedSchema" />
       </FormKit>
@@ -36,6 +41,7 @@ import { provide, ref } from 'vue'
 import { NModal } from 'naive-ui'
 import { formSchema } from '../utils/default-form-elements'
 import createFormattedSchema from '../utils/format-schema'
+import { canvasView } from '../composables/form-fields'
 
 const isOpen = ref(false)
 const data = ref({})
