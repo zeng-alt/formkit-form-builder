@@ -16,7 +16,11 @@ const naiveProps = computed<Record<string, unknown>>(() => {
   >
 })
 
-const text = computed(() => String(props.context._value ?? ''))
+const text = computed(() => {
+  const raw = naiveProps.value.text
+  if (typeof raw === 'string') return raw
+  return String(props.context._value ?? '')
+})
 
 const type = computed(() => naiveProps.value.type as any)
 const depth = computed(() => {

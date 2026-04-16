@@ -19,6 +19,12 @@ import {
   SquareMousePointer,
   Group,
   ListTree,
+  Heading1,
+  Heading2,
+  Heading3,
+  Heading4,
+  Heading5,
+  Heading6,
 } from 'lucide-vue-next'
 
 export { defaultFormElements } from './default-form-elements'
@@ -215,37 +221,37 @@ export const fieldProps = [
   {
     name: 'naiveH1',
     tooltip: 'Typography H1',
-    icon: Type,
+    icon: Heading1,
     category: 'static',
   },
   {
     name: 'naiveH2',
     tooltip: 'Typography H2',
-    icon: Type,
+    icon: Heading2,
     category: 'static',
   },
   {
     name: 'naiveH3',
     tooltip: 'Typography H3',
-    icon: Type,
+    icon: Heading3,
     category: 'static',
   },
   {
     name: 'naiveH4',
     tooltip: 'Typography H4',
-    icon: Type,
+    icon: Heading4,
     category: 'static',
   },
   {
     name: 'naiveH5',
     tooltip: 'Typography H5',
-    icon: Type,
+    icon: Heading5,
     category: 'static',
   },
   {
     name: 'naiveH6',
     tooltip: 'Typography H6',
-    icon: Type,
+    icon: Heading6,
     category: 'static',
   },
   {

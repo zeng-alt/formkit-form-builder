@@ -366,6 +366,7 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
     $formkit: 'naiveText',
     outerClass: 'col-span-12',
     naiveProps: {
+      text: 'text',
       type: 'default',
       depth: 1,
       strong: false,
@@ -374,7 +375,6 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
       delete: false,
       code: false,
     },
-    value: 'Typography Text',
     name: 'Naive Text',
     description: 'Naive UI typography text',
     id: 'naive_text_static',
@@ -386,8 +386,8 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
       type: 'default',
       depth: 1,
       align: 'start',
+      text: 'text',
     },
-    value: 'Typography Paragraph',
     name: 'Naive Paragraph',
     description: 'Naive UI typography paragraph',
     id: 'naive_p_static',
@@ -396,10 +396,10 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
     $formkit: 'naiveA',
     outerClass: 'col-span-12',
     naiveProps: {
+      text: 'text',
       href: 'https://www.example.com',
       target: '_blank',
     },
-    value: 'Typography Link',
     name: 'Naive Link',
     description: 'Naive UI typography link',
     id: 'naive_a_static',
@@ -407,7 +407,9 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
   {
     $formkit: 'naiveBlockquote',
     outerClass: 'col-span-12',
-    value: 'Typography Blockquote',
+    naiveProps: {
+      text: 'text',
+    },
     name: 'Naive Blockquote',
     description: 'Naive UI typography blockquote',
     id: 'naive_blockquote_static',
@@ -422,7 +424,9 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
   {
     $formkit: 'naiveH1',
     outerClass: 'col-span-12',
-    value: 'Heading 1',
+    naiveProps: {
+      text: 'text',
+    },
     name: 'Naive H1',
     description: 'Naive UI typography header',
     id: 'naive_h1_static',
@@ -430,7 +434,9 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
   {
     $formkit: 'naiveH2',
     outerClass: 'col-span-12',
-    value: 'Heading 2',
+    naiveProps: {
+      text: 'text',
+    },
     name: 'Naive H2',
     description: 'Naive UI typography header',
     id: 'naive_h2_static',
@@ -438,7 +444,9 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
   {
     $formkit: 'naiveH3',
     outerClass: 'col-span-12',
-    value: 'Heading 3',
+    naiveProps: {
+      text: 'text',
+    },
     name: 'Naive H3',
     description: 'Naive UI typography header',
     id: 'naive_h3_static',
@@ -446,7 +454,9 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
   {
     $formkit: 'naiveH4',
     outerClass: 'col-span-12',
-    value: 'Heading 4',
+    naiveProps: {
+      text: 'text',
+    },
     name: 'Naive H4',
     description: 'Naive UI typography header',
     id: 'naive_h4_static',
@@ -454,7 +464,9 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
   {
     $formkit: 'naiveH5',
     outerClass: 'col-span-12',
-    value: 'Heading 5',
+    naiveProps: {
+      text: 'text',
+    },
     name: 'Naive H5',
     description: 'Naive UI typography header',
     id: 'naive_h5_static',
@@ -462,7 +474,9 @@ export const defaultFormElements: FormKitSchemaFormKit[] = [
   {
     $formkit: 'naiveH6',
     outerClass: 'col-span-12',
-    value: 'Heading 6',
+    naiveProps: {
+      text: 'text',
+    },
     name: 'Naive H6',
     description: 'Naive UI typography header',
     id: 'naive_h6_static',

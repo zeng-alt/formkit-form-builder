@@ -16,7 +16,12 @@ const naiveProps = computed<Record<string, unknown>>(() => {
   >
 })
 
-const text = computed(() => String(props.context._value ?? ''))
+const text = computed(() => {
+  const raw = naiveProps.value.text
+  if (typeof raw === 'string') return raw
+  return String(props.context._value ?? '')
+})
+
 const href = computed(() => (naiveProps.value.href as string | undefined) ?? '#')
 const target = computed(() => naiveProps.value.target as any)
 </script>

@@ -101,6 +101,8 @@ const typoAlign = createNaiveProp<string>('align', 'start')
 const linkHref = createNaiveProp<string>('href', 'https://www.example.com')
 const linkTarget = createNaiveProp<string>('target', '_blank')
 
+const typographyText = createNaiveProp<string>('text', 'text')
+
 const dividerTitle = createNaiveProp<string>('title', 'Divider')
 const dividerTitlePlacement = createNaiveProp<string>('titlePlacement', 'center')
 const dividerDashed = createNaiveProp<boolean>('dashed', false)
@@ -181,9 +183,9 @@ const edits = {
   ],
   typographyContentTextInputs: [
     {
-      label: 'Content',
-      placeholder: 'Enter content',
-      model: fieldValue,
+      label: 'text',
+      placeholder: 'Enter text',
+      model: typographyText,
     },
   ],
   typographyTypeSelectInputs: [

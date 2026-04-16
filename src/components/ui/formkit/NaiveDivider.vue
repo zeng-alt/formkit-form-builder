@@ -29,6 +29,6 @@ const title = computed(() => {
 
 <template>
   <NDivider :title-placement="titlePlacement" :dashed="dashed" :vertical="vertical">
-    <template v-if="title">{{ title }}</template>
+    {{ title }}
   </NDivider>
 </template>
