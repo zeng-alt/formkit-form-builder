@@ -43,14 +43,15 @@ import { formSchema } from '../utils/default-form-elements'
 import createFormattedSchema from '../utils/format-schema'
 import { canvasView } from '../composables/form-fields'
 import type { FormKitSchemaFormKit } from '@formkit/core'
+import { evalExpression } from '../utils/expression-eval'
 
 const isOpen = ref(false)
 const data = ref({})
 const formattedSchema = createFormattedSchema(formSchema)
 
 provide('isPreviewOpen', isOpen)
-
-const variableRegex = /\$([a-zA-Z0-9_]+)/g
+const lastComputedValueByName = ref<Record<string, string>>({})
+const lastDepsSigByName = ref<Record<string, string>>({})
 
 const eachField = (schema: FormKitSchemaFormKit[], fn: (field: any) => void) => {
   for (const field of schema) {
@@ -69,16 +70,29 @@ watchEffect(() => {
     if (typeof field.name !== 'string' || !field.name) return
     if (typeof field.valueExpression !== 'string' || !field.valueExpression.trim()) return
 
-    const result = field.valueExpression.replace(variableRegex, (_m: string, name: string) => {
-      if (name === field.name) return ''
-      const v = currentData[name]
-      if (v === null || v === undefined) return ''
-      return String(v)
-    })
+    const evalResult = evalExpression(field.valueExpression, currentData)
+    const depsSig = evalResult.deps
+      .filter((k) => k !== field.name)
+      .map((k) => `${k}:${String(currentData[k] ?? '')}`)
+      .join('|')
+    if (lastDepsSigByName.value[field.name] === depsSig) return
+    lastDepsSigByName.value = { ...lastDepsSigByName.value, [field.name]: depsSig }
 
-    if (currentData[field.name] !== result) {
+    if (!evalResult.ok) return
+    const result = evalResult.value === null || evalResult.value === undefined ? '' : String(evalResult.value)
+
+    const currentValue = currentData[field.name]
+    const lastComputedValue = lastComputedValueByName.value[field.name]
+    const shouldApply =
+      currentValue === null ||
+      currentValue === undefined ||
+      String(currentValue) === '' ||
+      (lastComputedValue !== undefined && String(currentValue) === lastComputedValue)
+
+    if (shouldApply && String(currentValue ?? '') !== result) {
       if (!nextData) nextData = { ...currentData }
       nextData[field.name] = result
+      lastComputedValueByName.value = { ...lastComputedValueByName.value, [field.name]: result }
     }
   })
 
@@ -95,11 +109,15 @@ const handleSubmit = async (formData: Record<string, unknown>) => {
 const open = () => {
   isOpen.value = true
   data.value = {}
+  lastComputedValueByName.value = {}
+  lastDepsSigByName.value = {}
 }
 
 const close = () => {
   isOpen.value = false
   data.value = {}
+  lastComputedValueByName.value = {}
+  lastDepsSigByName.value = {}
 }
 
 defineExpose({
