@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { NDivider } from 'naive-ui'
+import { useI18n } from 'vue-i18n'
 import ValidationSection from './validations/ValidationSection.vue'
 import { useFormField } from '../../composables/form-fields'
 import EditsSection from './edits/EditsSection.vue'
@@ -8,6 +9,7 @@ import ExpressionEditor from './edits/ExpressionEditor.vue'
 import { fieldProps } from '../../utils/field-props'
 
 const { hasField, currentFieldType } = useFormField()
+const { t } = useI18n()
 
 const isFieldsCategory = computed(() => {
   if (!currentFieldType.value) return false
@@ -18,7 +20,7 @@ const isFieldsCategory = computed(() => {
 
 <template>
   <div v-if="!hasField" class="flex p-2 h-full text-[11px] md:text-xs text-muted-foreground">
-    Select a field to edit its properties
+    {{ t('common.selectFieldToEdit') }}
   </div>
   <template v-else>
     <div class="p-2">
@@ -31,4 +33,3 @@ const isFieldsCategory = computed(() => {
     </div>
   </template>
 </template>
-

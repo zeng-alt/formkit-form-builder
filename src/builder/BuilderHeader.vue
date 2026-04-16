@@ -2,10 +2,13 @@
 import { ref } from 'vue'
 import { NButton, NButtonGroup, NTooltip, NPopconfirm } from 'naive-ui'
 import { Eye, Trash2, Undo2, Redo2 } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import BuilderPreview from './BuilderPreview.vue'
 import AiPrompt from '../components/ai-prompt/AiPrompt.vue'
 import ThemeSwitcher from '../components/ui/theme-switcher/ThemeSwitcher.vue'
 import { canRedo, canUndo, commitSchema, redo, undo } from '../composables/schema-history'
+
+const { t } = useI18n()
 
 const clearForm = () => {
   commitSchema([], { reason: 'clear' })
@@ -25,10 +28,10 @@ const previewRef = ref<InstanceType<typeof BuilderPreview>>()
                   <template #icon><Trash2 class="dark:text-green-200" /></template>
                 </n-button>
               </template>
-              Clear form
+              {{ t('builder.clearForm') }}
             </n-tooltip>
           </template>
-          Are you absolutely sure? This will permanently delete the form you have created.
+          {{ t('builder.clearConfirm') }}
         </n-popconfirm>
 
         <n-tooltip>
@@ -43,7 +46,7 @@ const previewRef = ref<InstanceType<typeof BuilderPreview>>()
               <template #icon><Eye class="dark:text-green-200" /></template>
             </n-button>
           </template>
-          Preview Form
+          {{ t('builder.previewForm') }}
         </n-tooltip>
         <BuilderPreview ref="previewRef" />
       </div>
@@ -69,7 +72,7 @@ const previewRef = ref<InstanceType<typeof BuilderPreview>>()
                 <template #icon><Undo2 class="dark:text-green-200" /></template>
               </n-button>
             </template>
-            Undo
+            {{ t('builder.undo') }}
           </n-tooltip>
           <n-tooltip placement="bottom">
             <template #trigger>
@@ -84,7 +87,7 @@ const previewRef = ref<InstanceType<typeof BuilderPreview>>()
                 <template #icon><Redo2 class="dark:text-green-200" /></template>
               </n-button>
             </template>
-            Redo
+            {{ t('builder.redo') }}
           </n-tooltip>
         </n-button-group>
         <ThemeSwitcher />
