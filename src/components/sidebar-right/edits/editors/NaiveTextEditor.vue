@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
 import { computed } from 'vue'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import TextInput from '../common/TextInput.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 
 const { createNaiveProp } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const typoType = createNaiveProp<string>('type', 'default')
 const typoDepthRaw = createNaiveProp<unknown>('depth', 1)
@@ -30,7 +32,12 @@ const typographyText = createNaiveProp<string>('text', 'text')
 </script>
 
 <template>
-  <TextInput label="text" placeholder="Enter text" :value="typographyText" @update:value="(v) => (typographyText = v)" />
+  <TextInput
+    label="text"
+    :placeholder="t('edits.placeholder.text')"
+    :value="typographyText"
+    @update:value="(v) => (typographyText = v)"
+  />
   <SelectInput
     label="type"
     :value="typoType"
@@ -60,4 +67,3 @@ const typographyText = createNaiveProp<string>('text', 'text')
   <SwitchInput label="delete" :value="typoDelete" @update:value="(v) => (typoDelete = v)" />
   <SwitchInput label="code" :value="typoCode" @update:value="(v) => (typoCode = v)" />
 </template>
-

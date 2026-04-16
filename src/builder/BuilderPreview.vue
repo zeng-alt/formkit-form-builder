@@ -9,12 +9,12 @@
       canvasView === 'tablet' ? 'sm:max-w-[768px]' : '',
       canvasView === 'mobile' ? 'sm:max-w-[375px]' : ''
     ]"
-    title="Form Preview"
+    :title="t('builder.previewTitle')"
     size="small"
   >
     <template #header-extra>
       <div class="text-[11px] text-muted-foreground">
-        Preview your form and test its functionality.
+        {{ t('builder.previewDescription') }}
       </div>
     </template>
     <div class="py-4 px-3">
@@ -28,7 +28,7 @@
         <FormKitSchema :schema="formattedSchema" :data="data" />
       </FormKit>
       <div class="mt-4 p-3 bg-muted/30 rounded border border-border/50">
-        <h3 class="text-[11px] font-medium mb-2 text-foreground/80">Form Data:</h3>
+        <h3 class="text-[11px] font-medium mb-2 text-foreground/80">{{ t('builder.formDataTitle') }}</h3>
 
         <pre class="text-[11px] text-muted-foreground">{{ JSON.stringify(data, null, 2) }}</pre>
       </div>
@@ -44,6 +44,9 @@ import createFormattedSchema from '../utils/format-schema'
 import { canvasView } from '../composables/form-fields'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { evalExpression } from '../utils/expression-eval'
+import { useFormBuilderI18n } from '../i18n/context'
+
+const { t } = useFormBuilderI18n()
 
 const isOpen = ref(false)
 const data = ref({})
@@ -103,7 +106,7 @@ watchEffect(() => {
 const handleSubmit = async (formData: Record<string, unknown>) => {
   console.log('Form submitted:', formData)
   await new Promise((r) => setTimeout(r, 1000))
-  alert('Form submitted!')
+  alert(t('builder.formSubmitted'))
   data.value = {}
 }
 

@@ -22,6 +22,7 @@ export const messages = {
       previewTitle: '表单预览',
       previewDescription: '预览表单并测试其功能。',
       formDataTitle: '表单数据：',
+      formSubmitted: '表单已提交！',
     },
     importExport: {
       title: '导入 / 导出 Schema',
@@ -39,6 +40,15 @@ export const messages = {
       useExpressionValue: '使用表达式值',
       placeholder: '例如：$my_variable + 1',
       variablesNotFound: '未找到变量：{vars}',
+    },
+    ai: {
+      tooltip: 'AI 助手',
+      placeholder: 'AI 助手',
+      promptPlaceholder: '让 AI 生成表单',
+      emptyPrompt: '提示为空！',
+      emptyPromptDescription: '请输入提示词以生成表单。',
+      close: '关闭',
+      defaultInstructions: '根据用户描述生成 FormKit schema',
     },
     validation: {
       rulesTitle: '校验规则',
@@ -80,6 +90,7 @@ export const messages = {
         text: '请输入文本',
         dividerTitle: '请输入分割线标题',
         addItems: '添加条目...',
+        fieldName: '字段名',
       },
       optionsLabel: '添加选项',
     },
@@ -107,6 +118,7 @@ export const messages = {
       previewTitle: 'Form Preview',
       previewDescription: 'Preview your form and test its functionality.',
       formDataTitle: 'Form Data:',
+      formSubmitted: 'Form submitted!',
     },
     importExport: {
       title: 'Import / Export Schema',
@@ -124,6 +136,15 @@ export const messages = {
       useExpressionValue: 'Use expression value',
       placeholder: 'e.g. $my_variable + 1',
       variablesNotFound: 'Variables not found: {vars}',
+    },
+    ai: {
+      tooltip: 'AI Assistant',
+      placeholder: 'AI Assistant',
+      promptPlaceholder: 'Prompt AI',
+      emptyPrompt: 'Empty chat prompt!',
+      emptyPromptDescription: 'Please enter a prompt to generate a form.',
+      close: 'Close',
+      defaultInstructions: "Generate a FormKit schema based on the user's description",
     },
     validation: {
       rulesTitle: 'Validation Rules',
@@ -166,6 +187,7 @@ export const messages = {
         text: 'Enter text',
         dividerTitle: 'Divider title',
         addItems: 'Add Items...',
+        fieldName: 'field_name',
       },
       optionsLabel: 'Add Items to List',
     },
