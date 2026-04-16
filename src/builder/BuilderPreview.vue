@@ -25,7 +25,7 @@
         @submit="handleSubmit"
         form-class="w-full !grid !grid-cols-12 gap-x-4 gap-y-2"
       >
-        <FormKitSchema :schema="formattedSchema" />
+        <FormKitSchema :schema="formattedSchema" :data="data" />
       </FormKit>
       <div class="mt-4 p-3 bg-muted/30 rounded border border-border/50">
         <h3 class="text-[11px] font-medium mb-2 text-foreground/80">Form Data:</h3>
@@ -37,17 +37,53 @@
 </template>
 
 <script setup lang="ts">
-import { provide, ref } from 'vue'
+import { provide, ref, watchEffect } from 'vue'
 import { NModal } from 'naive-ui'
 import { formSchema } from '../utils/default-form-elements'
 import createFormattedSchema from '../utils/format-schema'
 import { canvasView } from '../composables/form-fields'
+import type { FormKitSchemaFormKit } from '@formkit/core'
 
 const isOpen = ref(false)
 const data = ref({})
 const formattedSchema = createFormattedSchema(formSchema)
 
 provide('isPreviewOpen', isOpen)
+
+const variableRegex = /\$([a-zA-Z0-9_]+)/g
+
+const eachField = (schema: FormKitSchemaFormKit[], fn: (field: any) => void) => {
+  for (const field of schema) {
+    fn(field)
+    const children = (field as any)?.children
+    if (Array.isArray(children)) eachField(children as FormKitSchemaFormKit[], fn)
+  }
+}
+
+watchEffect(() => {
+  const currentData = data.value as Record<string, unknown>
+  let nextData: Record<string, unknown> | null = null
+  eachField(formSchema.value as FormKitSchemaFormKit[], (field) => {
+    if (!field || typeof field !== 'object') return
+    if (!field.useExpressionValue) return
+    if (typeof field.name !== 'string' || !field.name) return
+    if (typeof field.valueExpression !== 'string' || !field.valueExpression.trim()) return
+
+    const result = field.valueExpression.replace(variableRegex, (_m: string, name: string) => {
+      if (name === field.name) return ''
+      const v = currentData[name]
+      if (v === null || v === undefined) return ''
+      return String(v)
+    })
+
+    if (currentData[field.name] !== result) {
+      if (!nextData) nextData = { ...currentData }
+      nextData[field.name] = result
+    }
+  })
+
+  if (nextData) data.value = nextData
+})
 
 const handleSubmit = async (formData: Record<string, unknown>) => {
   console.log('Form submitted:', formData)
