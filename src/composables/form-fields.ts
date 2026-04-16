@@ -122,11 +122,14 @@ export function useFormField() {
   const valueExpression = computed<string>({
     get: () => {
       const current = selectedField.value as any
-      const value = current?.valueExpression
+      const value = current?.__raw__valueExpression ?? current?.valueExpression
       if (typeof value !== 'string') return ''
       return value
     },
-    set: (value: string) => setFieldProp('valueExpression', value.trim() ? value : undefined),
+    set: (value: string) => {
+      setFieldProp('__raw__valueExpression', value.trim() ? value : undefined)
+      setFieldProp('valueExpression', undefined)
+    },
   })
 
   const label = computed({
