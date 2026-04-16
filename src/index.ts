@@ -5,3 +5,5 @@ export { useFormBuilderConfig, provideFormBuilderConfig } from './composables/us
 export type { FormBuilderConfig } from './types/env'
 
 export { FormBuilder, BuilderProvider }
+export { FormBuilder as FormKitFormBuilder }
+export { BuilderProvider as FormBuilderProvider }
