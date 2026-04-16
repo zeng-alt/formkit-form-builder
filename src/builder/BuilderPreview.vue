@@ -51,6 +51,8 @@ const formattedSchema = createFormattedSchema(formSchema)
 provide('isPreviewOpen', isOpen)
 
 const variableRegex = /\$([a-zA-Z0-9_]+)/g
+const lastComputedValueByName = ref<Record<string, string>>({})
+const lastDepsSigByName = ref<Record<string, string>>({})
 
 const eachField = (schema: FormKitSchemaFormKit[], fn: (field: any) => void) => {
   for (const field of schema) {
@@ -69,6 +71,14 @@ watchEffect(() => {
     if (typeof field.name !== 'string' || !field.name) return
     if (typeof field.valueExpression !== 'string' || !field.valueExpression.trim()) return
 
+    const matches = Array.from((field.valueExpression as string).matchAll(variableRegex)) as RegExpMatchArray[]
+    const deps = matches
+      .map((m) => m[1])
+      .filter((name: string | undefined) => Boolean(name) && name !== field.name) as string[]
+    const depsSig = deps.map((k) => `${k}:${String(currentData[k] ?? '')}`).join('|')
+    if (lastDepsSigByName.value[field.name] === depsSig) return
+    lastDepsSigByName.value = { ...lastDepsSigByName.value, [field.name]: depsSig }
+
     const result = field.valueExpression.replace(variableRegex, (_m: string, name: string) => {
       if (name === field.name) return ''
       const v = currentData[name]
@@ -76,9 +86,18 @@ watchEffect(() => {
       return String(v)
     })
 
-    if (currentData[field.name] !== result) {
+    const currentValue = currentData[field.name]
+    const lastComputedValue = lastComputedValueByName.value[field.name]
+    const shouldApply =
+      currentValue === null ||
+      currentValue === undefined ||
+      String(currentValue) === '' ||
+      (lastComputedValue !== undefined && String(currentValue) === lastComputedValue)
+
+    if (shouldApply && String(currentValue ?? '') !== result) {
       if (!nextData) nextData = { ...currentData }
       nextData[field.name] = result
+      lastComputedValueByName.value = { ...lastComputedValueByName.value, [field.name]: result }
     }
   })
 
@@ -95,11 +114,15 @@ const handleSubmit = async (formData: Record<string, unknown>) => {
 const open = () => {
   isOpen.value = true
   data.value = {}
+  lastComputedValueByName.value = {}
+  lastDepsSigByName.value = {}
 }
 
 const close = () => {
   isOpen.value = false
   data.value = {}
+  lastComputedValueByName.value = {}
+  lastDepsSigByName.value = {}
 }
 
 defineExpose({
