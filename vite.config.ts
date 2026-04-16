@@ -5,19 +5,68 @@ import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
+import dts from 'vite-plugin-dts'
 
 export default defineConfig(({ command }) => ({
   root: command === 'serve' ? fileURLToPath(new URL('./playground', import.meta.url)) : undefined,
-  publicDir: fileURLToPath(new URL('./public', import.meta.url)),
+  publicDir:
+    command === 'serve' ? fileURLToPath(new URL('./public', import.meta.url)) : false,
   plugins: [
     tailwindcss(),
     vue(),
     vueJsx(),
     vueDevTools(),
-  ],
+    command === 'build'
+      ? dts({
+          tsconfigPath: fileURLToPath(new URL('./tsconfig.build.json', import.meta.url)),
+          entryRoot: fileURLToPath(new URL('./src', import.meta.url)),
+          outDir: fileURLToPath(new URL('./dist', import.meta.url)),
+          insertTypesEntry: true,
+          copyDtsFiles: false,
+          cleanVueFileName: true,
+        })
+      : undefined,
+  ].filter(Boolean),
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build:
+    command === 'build'
+      ? {
+          lib: {
+            entry: {
+              index: fileURLToPath(new URL('./src/index.ts', import.meta.url)),
+              style: fileURLToPath(new URL('./src/style-entry.ts', import.meta.url)),
+            },
+            name: 'FormKitFormBuilder',
+            cssFileName: 'style',
+            formats: ['es', 'cjs'],
+            fileName: (format, entryName) => {
+              if (entryName === 'style') return format === 'es' ? 'style.mjs' : 'style.cjs'
+              return format === 'es' ? 'index.mjs' : 'index.cjs'
+            },
+          },
+          rollupOptions: {
+            external: [
+              'vue',
+              '@formkit/core',
+              '@formkit/vue',
+              '@formkit/drag-and-drop',
+              '@formkit/drag-and-drop/vue',
+              'naive-ui',
+              '@vueuse/core',
+              'lucide-vue-next',
+              'vue-sonner',
+              'openai',
+            ],
+            output: {
+              globals: {
+                vue: 'Vue',
+              },
+            },
+          },
+        }
+      : undefined,
 }))
