@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import TextInput from '../common/TextInput.vue'
 import SelectInput from '../common/SelectInput.vue'
 
 const { createNaiveProp, fieldValue } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const typoType = createNaiveProp<string>('type', 'default')
 const typoDepthRaw = createNaiveProp<unknown>('depth', 1)
@@ -24,7 +26,12 @@ const typoAlign = createNaiveProp<string>('align', 'start')
 </script>
 
 <template>
-  <TextInput label="text" placeholder="Enter text" :value="fieldValue" @update:value="(v) => (fieldValue = v)" />
+  <TextInput
+    label="text"
+    :placeholder="t('edits.placeholder.text')"
+    :value="fieldValue"
+    @update:value="(v) => (fieldValue = v)"
+  />
   <SelectInput
     label="type"
     :value="typoType"

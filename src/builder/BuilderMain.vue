@@ -7,9 +7,7 @@ import SidebarRight from '../components/sidebar-right/SidebarRight.vue'
 import BuilderDropArea from './BuilderDropArea.vue'
 import BuilderHeader from './BuilderHeader.vue'
 import { useFormBuilderConfig } from '../composables/use-config'
-import { createFormBuilderI18n } from '../i18n/provider'
-import { installFormBuilderI18n } from '../i18n/install'
-import { getCurrentInstance } from 'vue'
+import { provideFormBuilderI18n } from '../i18n/context'
 
 const props = defineProps<ConfigProviderProps>()
 
@@ -20,14 +18,10 @@ const activeTheme = computed(() => {
 })
 
 const cfg = useFormBuilderConfig() as any
-const instance = getCurrentInstance()
-if (instance) {
-  const i18n = createFormBuilderI18n({
-    locale: computed(() => cfg?.locale as string | undefined),
-    messages: computed(() => cfg?.messages as Record<string, any> | undefined),
-  })
-  installFormBuilderI18n(instance.appContext.app, i18n as any)
-}
+provideFormBuilderI18n({
+  locale: computed(() => cfg?.locale as string | undefined),
+  messages: computed(() => cfg?.messages as Record<string, any> | undefined),
+})
 </script>
 
 <template>
