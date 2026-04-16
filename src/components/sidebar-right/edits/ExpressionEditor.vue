@@ -8,6 +8,7 @@ import { evalExpression } from '../../../utils/expression-eval'
 const { availableFieldNames, useExpressionValue, valueExpression, fieldValue } = useFormField()
 
 const isExpression = ref(false)
+const expressionDraft = ref('')
 
 // Reset switch state when selecting a different field
 watch(
@@ -20,18 +21,26 @@ watch(
       fieldValue.value = ''
     }
     isExpression.value = Boolean(useExpressionValue.value)
+    expressionDraft.value = valueExpression.value
   },
   { immediate: true }
 )
+
+watch(valueExpression, (v) => {
+  if (!isExpression.value) return
+  if (expressionDraft.value !== v) expressionDraft.value = v
+})
 
 const handleSwitchChange = (val: boolean) => {
   isExpression.value = val
   if (val) {
     useExpressionValue.value = true
     if (!valueExpression.value) valueExpression.value = '$'
+    expressionDraft.value = valueExpression.value
   } else {
     useExpressionValue.value = false
     valueExpression.value = ''
+    expressionDraft.value = ''
     if (fieldValue.value.trim().startsWith('$')) fieldValue.value = ''
   }
 }
@@ -41,9 +50,9 @@ const variableRegex = /\$([a-zA-Z0-9_]+)/g
 
 
 const missingVariables = computed(() => {
-  if (!isExpression.value || !valueExpression.value) return []
+  if (!isExpression.value || !expressionDraft.value) return []
   
-  const matches = [...valueExpression.value.matchAll(variableRegex)]
+  const matches = [...expressionDraft.value.matchAll(variableRegex)]
   const variables = matches.map(match => match[1]).filter(Boolean) as string[]
   
   const missing = variables.filter(v => !availableFieldNames.value.includes(v))
@@ -52,7 +61,7 @@ const missingVariables = computed(() => {
 
 const expressionError = computed(() => {
   if (!isExpression.value) return ''
-  const expr = valueExpression.value
+  const expr = expressionDraft.value
   if (!expr.trim()) return ''
   const res = evalExpression(expr, {})
   if (res.ok) return ''
@@ -69,7 +78,8 @@ const expressionError = computed(() => {
     
     <div v-if="isExpression" class="space-y-2">
       <n-input
-        v-model:value="valueExpression"
+        :value="expressionDraft"
+        @update:value="(v) => { expressionDraft = v; valueExpression = v }"
         type="textarea"
         placeholder="e.g. $my_variable + 1"
         :autosize="{ minRows: 2, maxRows: 5 }"
