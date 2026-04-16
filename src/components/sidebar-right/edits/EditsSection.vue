@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFormField } from '../../../composables/form-fields'
+import { useI18n } from 'vue-i18n'
 import NameInput from './common/NameInput.vue'
 import CheckboxEditor from './editors/CheckboxEditor.vue'
 import ColorEditor from './editors/ColorEditor.vue'
@@ -38,6 +39,7 @@ import SubmitEditor from './editors/SubmitEditor.vue'
 import TextLikeEditor from './editors/TextLikeEditor.vue'
 
 const { hasField, currentFieldType } = useFormField()
+const { t } = useI18n()
 
 const editorComponent = computed(() => {
   const type = currentFieldType.value
@@ -87,7 +89,7 @@ const editorComponent = computed(() => {
 
 <template>
   <div v-if="!hasField" class="flex p-2 h-full text-[11px] md:text-xs text-muted-foreground">
-    Select a field to edit its properties
+    {{ t('common.selectFieldToEdit') }}
   </div>
   <template v-else>
     <div class="p-2">
@@ -98,4 +100,3 @@ const editorComponent = computed(() => {
     </div>
   </template>
 </template>
-

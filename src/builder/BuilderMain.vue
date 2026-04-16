@@ -6,6 +6,8 @@ import SidebarLeft from '../components/sidebar-left/SidebarLeft.vue'
 import SidebarRight from '../components/sidebar-right/SidebarRight.vue'
 import BuilderDropArea from './BuilderDropArea.vue'
 import BuilderHeader from './BuilderHeader.vue'
+import { useFormBuilderConfig } from '../composables/use-config'
+import { provideFormBuilderI18n } from '../i18n/provider'
 
 const props = defineProps<ConfigProviderProps>()
 
@@ -13,6 +15,12 @@ const colorMode = useColorMode()
 const activeTheme = computed(() => {
   if (props.theme !== undefined) return props.theme
   return colorMode.value === 'dark' ? darkTheme : null
+})
+
+const cfg = useFormBuilderConfig() as any
+provideFormBuilderI18n({
+  locale: computed(() => cfg?.locale as string | undefined),
+  messages: computed(() => cfg?.messages as Record<string, any> | undefined),
 })
 </script>
 

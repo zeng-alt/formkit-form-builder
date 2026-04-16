@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
 import { Trash2, Monitor, Tablet, Smartphone, CodeXml } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
@@ -14,6 +15,7 @@ import { commitSchema } from '../composables/schema-history'
 import ImportExportModal from './ImportExportModal.vue'
 
 const { validationStringLength } = useFormField()
+const { t } = useI18n()
 
 const showImportExportModal = ref(false)
 
@@ -186,7 +188,7 @@ watch(
               <template #icon><Monitor class="h-3.5 w-3.5" /></template>
             </n-button>
           </template>
-          Desktop View
+          {{ t('builder.desktopView') }}
         </n-tooltip>
         <n-tooltip placement="right">
           <template #trigger>
@@ -199,7 +201,7 @@ watch(
               <template #icon><Tablet class="h-3.5 w-3.5" /></template>
             </n-button>
           </template>
-          Tablet View
+          {{ t('builder.tabletView') }}
         </n-tooltip>
         <n-tooltip placement="right">
           <template #trigger>
@@ -212,7 +214,7 @@ watch(
               <template #icon><Smartphone class="h-3.5 w-3.5" /></template>
             </n-button>
           </template>
-          Mobile View
+          {{ t('builder.mobileView') }}
         </n-tooltip>
       </n-button-group>
     </div>
@@ -221,7 +223,7 @@ watch(
     <div class="flex-1 flex justify-center px-4 relative">
       <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center z-50">
         <div class="flex flex-col items-center bg-white dark:bg-neutral-600 justify-center gap-3 p-4 rounded-lg shadow-md">
-          <span class="font-medium text-sm text-zinc-700 dark:text-zinc-300">Creating your new form...</span>
+          <span class="font-medium text-sm text-zinc-700 dark:text-zinc-300">{{ t('builder.creatingForm') }}</span>
           <n-spin size="medium" />
         </div>
       </div>
@@ -327,7 +329,7 @@ watch(
               <template #icon><CodeXml class="h-3.5 w-3.5" /></template>
             </n-button>
           </template>
-          Import / Export Schema
+          {{ t('builder.importExportSchema') }}
         </n-tooltip>
       </n-button-group>
     </div>
