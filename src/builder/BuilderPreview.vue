@@ -43,14 +43,13 @@ import { formSchema } from '../utils/default-form-elements'
 import createFormattedSchema from '../utils/format-schema'
 import { canvasView } from '../composables/form-fields'
 import type { FormKitSchemaFormKit } from '@formkit/core'
+import { evalExpression } from '../utils/expression-eval'
 
 const isOpen = ref(false)
 const data = ref({})
 const formattedSchema = createFormattedSchema(formSchema)
 
 provide('isPreviewOpen', isOpen)
-
-const variableRegex = /\$([a-zA-Z0-9_]+)/g
 const lastComputedValueByName = ref<Record<string, string>>({})
 const lastDepsSigByName = ref<Record<string, string>>({})
 
@@ -71,20 +70,16 @@ watchEffect(() => {
     if (typeof field.name !== 'string' || !field.name) return
     if (typeof field.valueExpression !== 'string' || !field.valueExpression.trim()) return
 
-    const matches = Array.from((field.valueExpression as string).matchAll(variableRegex)) as RegExpMatchArray[]
-    const deps = matches
-      .map((m) => m[1])
-      .filter((name: string | undefined) => Boolean(name) && name !== field.name) as string[]
-    const depsSig = deps.map((k) => `${k}:${String(currentData[k] ?? '')}`).join('|')
+    const evalResult = evalExpression(field.valueExpression, currentData)
+    const depsSig = evalResult.deps
+      .filter((k) => k !== field.name)
+      .map((k) => `${k}:${String(currentData[k] ?? '')}`)
+      .join('|')
     if (lastDepsSigByName.value[field.name] === depsSig) return
     lastDepsSigByName.value = { ...lastDepsSigByName.value, [field.name]: depsSig }
 
-    const result = field.valueExpression.replace(variableRegex, (_m: string, name: string) => {
-      if (name === field.name) return ''
-      const v = currentData[name]
-      if (v === null || v === undefined) return ''
-      return String(v)
-    })
+    if (!evalResult.ok) return
+    const result = evalResult.value === null || evalResult.value === undefined ? '' : String(evalResult.value)
 
     const currentValue = currentData[field.name]
     const lastComputedValue = lastComputedValueByName.value[field.name]

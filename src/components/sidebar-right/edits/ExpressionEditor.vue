@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { NSwitch, NInput, NAlert } from 'naive-ui'
 import { useFormField } from '../../../composables/form-fields'
 import { selectedIndex } from '../../../utils/default-form-elements'
+import { evalExpression } from '../../../utils/expression-eval'
 
 const { availableFieldNames, useExpressionValue, valueExpression, fieldValue } = useFormField()
 
@@ -48,6 +49,15 @@ const missingVariables = computed(() => {
   const missing = variables.filter(v => !availableFieldNames.value.includes(v))
   return missing
 })
+
+const expressionError = computed(() => {
+  if (!isExpression.value) return ''
+  const expr = valueExpression.value
+  if (!expr.trim()) return ''
+  const res = evalExpression(expr, {})
+  if (res.ok) return ''
+  return res.error
+})
 </script>
 
 <template>
@@ -64,6 +74,9 @@ const missingVariables = computed(() => {
         placeholder="e.g. $my_variable + 1"
         :autosize="{ minRows: 2, maxRows: 5 }"
       />
+      <n-alert v-if="expressionError" type="error" :show-icon="true" class="mt-2 text-xs">
+        {{ expressionError }}
+      </n-alert>
       <n-alert v-if="missingVariables.length > 0" type="warning" :show-icon="true" class="mt-2 text-xs">
         Variables not found: {{ missingVariables.join(', ') }}
       </n-alert>
