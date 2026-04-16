@@ -6,8 +6,9 @@ import vueJsx from '@vitejs/plugin-vue-jsx'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import tailwindcss from '@tailwindcss/vite'
 
-// https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  root: command === 'serve' ? fileURLToPath(new URL('./playground', import.meta.url)) : undefined,
+  publicDir: fileURLToPath(new URL('./public', import.meta.url)),
   plugins: [
     tailwindcss(),
     vue(),
@@ -16,7 +17,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-})
+}))
