@@ -227,17 +227,17 @@ function evalRpn(rpn: Token[], vars: Record<string, unknown>): EvalRpnResult {
     }
     if (t.type === 'op') {
       if (t.op === 'u-' || t.op === 'u+') {
+        if (stack.length < 1) return { ok: false, error: '表达式不完整' }
         const a = stack.pop()
-        if (a === undefined) return { ok: false, error: '表达式不完整' }
         const n = toNum(a)
         if (!Number.isFinite(n)) return { ok: false, error: '数值运算失败' }
         stack.push(t.op === 'u-' ? -n : n)
         continue
       }
 
+      if (stack.length < 2) return { ok: false, error: '表达式不完整' }
       const b = stack.pop()
       const a = stack.pop()
-      if (a === undefined || b === undefined) return { ok: false, error: '表达式不完整' }
 
       if (t.op === '+') {
         if (typeof a === 'string' || typeof b === 'string') {
