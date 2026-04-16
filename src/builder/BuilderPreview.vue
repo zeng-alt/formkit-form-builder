@@ -68,9 +68,10 @@ watchEffect(() => {
     if (!field || typeof field !== 'object') return
     if (!field.useExpressionValue) return
     if (typeof field.name !== 'string' || !field.name) return
-    if (typeof field.valueExpression !== 'string' || !field.valueExpression.trim()) return
+    const expr = (field as any)?.__raw__valueExpression ?? (field as any)?.valueExpression
+    if (typeof expr !== 'string' || !expr.trim()) return
 
-    const evalResult = evalExpression(field.valueExpression, currentData)
+    const evalResult = evalExpression(expr, currentData)
     const depsSig = evalResult.deps
       .filter((k) => k !== field.name)
       .map((k) => `${k}:${String(currentData[k] ?? '')}`)

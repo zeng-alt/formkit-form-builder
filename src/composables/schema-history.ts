@@ -33,6 +33,20 @@ function clampSelectedIndex(schemaLength: number) {
 export const canUndo = computed(() => past.value.length > 0)
 export const canRedo = computed(() => future.value.length > 0)
 
+function migrateExpressionKeys(schema: SchemaSnapshot) {
+  const visit = (nodes: any[]) => {
+    for (const node of nodes) {
+      if (!node || typeof node !== 'object') continue
+      if (typeof node.valueExpression === 'string' && typeof node.__raw__valueExpression !== 'string') {
+        node.__raw__valueExpression = node.valueExpression
+      }
+      if ('valueExpression' in node) delete node.valueExpression
+      if (Array.isArray(node.children)) visit(node.children)
+    }
+  }
+  visit(schema as any[])
+}
+
 export function commitSchema(
   nextSchema: SchemaSnapshot,
   options?: { reason?: string; merge?: boolean },
@@ -62,6 +76,7 @@ export function commitSchema(
   future.value = []
   lastCommit.value = { at: now, reason: options?.reason }
 
+  migrateExpressionKeys(nextSchema)
   formSchema.value = nextSchema
   if (options?.reason === 'dnd' && selectedKey) {
     const nextIndex = nextSchema.findIndex((field: any) => field?.__key === selectedKey)
