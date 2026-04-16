@@ -1,5 +1,5 @@
-import { createI18n, I18nInjectionKey } from 'vue-i18n'
-import { computed, provide, type ComputedRef } from 'vue'
+import { createI18n } from 'vue-i18n'
+import { computed, type ComputedRef } from 'vue'
 import { messages as defaultMessages } from './messages'
 
 type AnyMessages = Record<string, any>
@@ -12,7 +12,7 @@ function mergeMessages(base: AnyMessages, overrides: AnyMessages) {
   return out
 }
 
-export function provideFormBuilderI18n(options: {
+export function createFormBuilderI18n(options: {
   locale: ComputedRef<string | undefined>
   messages?: ComputedRef<AnyMessages | undefined>
 }) {
@@ -29,9 +29,5 @@ export function provideFormBuilderI18n(options: {
     fallbackLocale: 'en',
   })
 
-  i18n.global.locale.value = locale.value
-  provide(I18nInjectionKey, i18n)
-
   return i18n
 }
-
