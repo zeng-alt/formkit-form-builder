@@ -6,6 +6,7 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
     if (!fields) return []
     // Transform fields to remove unwanted elements and update IDs
     return fields?.value.map((field, index) => {
+      const key = (field as any)?.__key as string | undefined
       const {
         $formkit,
         label,
@@ -31,8 +32,8 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
       // Create a clean field object with only necessary properties
       const cleanField: FormKitSchemaFormKit = {
         $formkit,
-        name: `${field.name}_${index}`,
-        id: `preview_field_${index}`,
+        name: field.name || (key ? `field_${key}` : `field_${index}`),
+        id: field.id || (key ? `preview_field_${key}` : `preview_field_${index}`),
         label,
         validation,
         help,

@@ -19,6 +19,13 @@ type SchemaWithNaiveProps = FormKitSchemaFormKit & {
 }
 
 export function useFormField() {
+  const normalizeName = (value: string) => {
+    let name = value.trim().replace(/[^a-zA-Z0-9_]+/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '')
+    if (!name) return ''
+    if (/^\d/.test(name)) name = `field_${name}`
+    return name
+  }
+
   const setButtonProp = (key: string, value: unknown) => {
     if (formSchema.value.length > 0) {
       const updatedSchema = [...formSchema.value]
@@ -81,6 +88,21 @@ export function useFormField() {
       },
     })
   }
+
+  const fieldName = computed({
+    get: () => selectedField.value?.name || '',
+    set: (newName: string) => {
+      const nextName = normalizeName(newName)
+      if (formSchema.value.length > 0) {
+        const updatedSchema = [...formSchema.value]
+        updatedSchema[selectedIndex.value] = {
+          ...updatedSchema[selectedIndex.value],
+          name: nextName,
+        } as FormKitSchemaFormKit
+        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
+      }
+    },
+  })
 
   const label = computed({
     get: () => selectedField.value?.label || '',
@@ -329,7 +351,24 @@ export function useFormField() {
 
   const currentFieldType = computed(() => (hasField.value ? selectedField.value?.$formkit : null))
 
+  const availableFieldNames = computed(() => {
+    const extractNames = (schema: FormKitSchemaFormKit[]): string[] => {
+      let names: string[] = []
+      for (const field of schema) {
+        if (field.name && typeof field.name === 'string') {
+          names.push(field.name)
+        }
+        if (field.children && Array.isArray(field.children)) {
+          names = names.concat(extractNames(field.children as FormKitSchemaFormKit[]))
+        }
+      }
+      return names
+    }
+    return Array.from(new Set(extractNames(formSchema.value)))
+  })
+
   return {
+    fieldName,
     label,
     placeholder,
     fieldValue,
@@ -338,6 +377,7 @@ export function useFormField() {
     createValidationValue,
     validationStringLength,
     currentFieldType,
+    availableFieldNames,
     hasField,
     help,
     whichNumber,
