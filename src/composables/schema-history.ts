@@ -39,6 +39,8 @@ export function commitSchema(
 ) {
   const now = Date.now()
   const currentSchema = formSchema.value
+  const selectedKey = (formSchema.value[selectedIndex.value] as any)?.__key as string | undefined
+  const selectedRef = formSchema.value[selectedIndex.value]
 
   if (currentSchema === nextSchema) return
 
@@ -61,6 +63,13 @@ export function commitSchema(
   lastCommit.value = { at: now, reason: options?.reason }
 
   formSchema.value = nextSchema
+  if (options?.reason === 'dnd' && selectedKey) {
+    const nextIndex = nextSchema.findIndex((field: any) => field?.__key === selectedKey)
+    if (nextIndex >= 0) selectedIndex.value = nextIndex
+  } else if (options?.reason === 'dnd' && selectedRef) {
+    const nextIndex = nextSchema.findIndex((field) => field === selectedRef)
+    if (nextIndex >= 0) selectedIndex.value = nextIndex
+  }
   clampSelectedIndex(formSchema.value.length)
 }
 
