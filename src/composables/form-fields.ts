@@ -26,6 +26,20 @@ export function useFormField() {
     return name
   }
 
+  const setFieldProp = (key: string, value: unknown) => {
+    if (formSchema.value.length > 0) {
+      const updatedSchema = [...formSchema.value]
+      const current = { ...(updatedSchema[selectedIndex.value] as Record<string, unknown>) }
+      if (value === undefined) {
+        delete (current as any)[key]
+      } else {
+        ;(current as any)[key] = value
+      }
+      updatedSchema[selectedIndex.value] = current as FormKitSchemaFormKit
+      commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
+    }
+  }
+
   const setButtonProp = (key: string, value: unknown) => {
     if (formSchema.value.length > 0) {
       const updatedSchema = [...formSchema.value]
@@ -93,15 +107,26 @@ export function useFormField() {
     get: () => selectedField.value?.name || '',
     set: (newName: string) => {
       const nextName = normalizeName(newName)
-      if (formSchema.value.length > 0) {
-        const updatedSchema = [...formSchema.value]
-        updatedSchema[selectedIndex.value] = {
-          ...updatedSchema[selectedIndex.value],
-          name: nextName,
-        } as FormKitSchemaFormKit
-        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-      }
+      setFieldProp('name', nextName || undefined)
     },
+  })
+
+  const useExpressionValue = computed({
+    get: () => {
+      const current = selectedField.value as any
+      return Boolean(current?.useExpressionValue)
+    },
+    set: (value: boolean) => setFieldProp('useExpressionValue', value ? true : undefined),
+  })
+
+  const valueExpression = computed<string>({
+    get: () => {
+      const current = selectedField.value as any
+      const value = current?.valueExpression
+      if (typeof value !== 'string') return ''
+      return value
+    },
+    set: (value: string) => setFieldProp('valueExpression', value.trim() ? value : undefined),
   })
 
   const label = computed({
@@ -140,14 +165,7 @@ export function useFormField() {
       return String(value)
     },
     set: (newValue: string) => {
-      if (formSchema.value.length > 0) {
-        const updatedSchema = [...formSchema.value]
-        updatedSchema[selectedIndex.value] = {
-          ...updatedSchema[selectedIndex.value],
-          value: newValue,
-        } as FormKitSchemaFormKit
-        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-      }
+      setFieldProp('value', newValue === '' ? undefined : newValue)
     },
   })
 
@@ -369,6 +387,8 @@ export function useFormField() {
 
   return {
     fieldName,
+    useExpressionValue,
+    valueExpression,
     label,
     placeholder,
     fieldValue,

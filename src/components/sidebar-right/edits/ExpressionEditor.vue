@@ -4,35 +4,34 @@ import { NSwitch, NInput, NAlert } from 'naive-ui'
 import { useFormField } from '../../../composables/form-fields'
 import { selectedIndex } from '../../../utils/default-form-elements'
 
-const { fieldValue, availableFieldNames } = useFormField()
+const { availableFieldNames, useExpressionValue, valueExpression, fieldValue } = useFormField()
 
-// Determine if the current value is an expression.
 const isExpression = ref(false)
 
 // Reset switch state when selecting a different field
 watch(
   selectedIndex,
   () => {
-    const val = fieldValue.value
-    if (val && typeof val === 'string' && val.startsWith('$')) {
-      isExpression.value = true
-    } else {
-      isExpression.value = false
+    const legacy = fieldValue.value.trim()
+    if (!useExpressionValue.value && !valueExpression.value && legacy.startsWith('$')) {
+      useExpressionValue.value = true
+      valueExpression.value = legacy
+      fieldValue.value = ''
     }
+    isExpression.value = Boolean(useExpressionValue.value)
   },
   { immediate: true }
 )
 
 const handleSwitchChange = (val: boolean) => {
   isExpression.value = val
-  if (!val) {
-    if (fieldValue.value.startsWith('$')) {
-      fieldValue.value = ''
-    }
+  if (val) {
+    useExpressionValue.value = true
+    if (!valueExpression.value) valueExpression.value = '$'
   } else {
-    if (!fieldValue.value) {
-      fieldValue.value = '$'
-    }
+    useExpressionValue.value = false
+    valueExpression.value = ''
+    if (fieldValue.value.trim().startsWith('$')) fieldValue.value = ''
   }
 }
 
@@ -41,9 +40,9 @@ const variableRegex = /\$([a-zA-Z0-9_]+)/g
 
 
 const missingVariables = computed(() => {
-  if (!isExpression.value || !fieldValue.value) return []
+  if (!isExpression.value || !valueExpression.value) return []
   
-  const matches = [...fieldValue.value.matchAll(variableRegex)]
+  const matches = [...valueExpression.value.matchAll(variableRegex)]
   const variables = matches.map(match => match[1]).filter(Boolean) as string[]
   
   const missing = variables.filter(v => !availableFieldNames.value.includes(v))
@@ -60,7 +59,7 @@ const missingVariables = computed(() => {
     
     <div v-if="isExpression" class="space-y-2">
       <n-input
-        v-model:value="fieldValue"
+        v-model:value="valueExpression"
         type="textarea"
         placeholder="e.g. $my_variable + 1"
         :autosize="{ minRows: 2, maxRows: 5 }"
