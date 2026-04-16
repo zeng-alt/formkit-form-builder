@@ -246,7 +246,7 @@ watch(
         >
           <li
             v-for="(field, index) in fields"
-            :key="(field as FormKitSchemaFormKit)?.$formkit + index"
+            :key="(field as any)?.__key || (field as FormKitSchemaFormKit)?.name || (field as FormKitSchemaFormKit)?.$formkit + index"
             :class="cn(
               'group rounded-lg transition-all duration-200 p-1 !cursor-grab h-full !z-20 relative',
               selectedIndex === index

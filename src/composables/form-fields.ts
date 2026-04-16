@@ -19,6 +19,13 @@ type SchemaWithNaiveProps = FormKitSchemaFormKit & {
 }
 
 export function useFormField() {
+  const normalizeName = (value: string) => {
+    let name = value.trim().replace(/[^a-zA-Z0-9_]+/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '')
+    if (!name) return ''
+    if (/^\d/.test(name)) name = `field_${name}`
+    return name
+  }
+
   const setButtonProp = (key: string, value: unknown) => {
     if (formSchema.value.length > 0) {
       const updatedSchema = [...formSchema.value]
@@ -81,6 +88,21 @@ export function useFormField() {
       },
     })
   }
+
+  const fieldName = computed({
+    get: () => selectedField.value?.name || '',
+    set: (newName: string) => {
+      const nextName = normalizeName(newName)
+      if (formSchema.value.length > 0) {
+        const updatedSchema = [...formSchema.value]
+        updatedSchema[selectedIndex.value] = {
+          ...updatedSchema[selectedIndex.value],
+          name: nextName,
+        } as FormKitSchemaFormKit
+        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
+      }
+    },
+  })
 
   const label = computed({
     get: () => selectedField.value?.label || '',
@@ -346,6 +368,7 @@ export function useFormField() {
   })
 
   return {
+    fieldName,
     label,
     placeholder,
     fieldValue,

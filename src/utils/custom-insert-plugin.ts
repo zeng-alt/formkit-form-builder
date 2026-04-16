@@ -47,6 +47,39 @@ export const insertState: InsertState<unknown> & { verticalInsert?: boolean } = 
 
 let documentController: AbortController | undefined
 
+const generateKey = () => {
+  const uuid = globalThis.crypto?.randomUUID?.()
+  if (uuid) return uuid
+  return `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`
+}
+
+const toSafeName = (input: unknown) => {
+  const raw = typeof input === 'string' ? input : ''
+  let name = raw.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '')
+  if (!name) name = 'field'
+  if (/^\d/.test(name)) name = `field_${name}`
+  return name
+}
+
+const collectSchemaNames = (schema: FormKitSchemaFormKit[], names: Set<string>) => {
+  for (const field of schema) {
+    if (typeof field?.name === 'string' && field.name) names.add(field.name)
+    const children = (field as any)?.children
+    if (Array.isArray(children)) collectSchemaNames(children as FormKitSchemaFormKit[], names)
+  }
+}
+
+const ensureUniqueName = (base: string, existing: Set<string>) => {
+  let name = base
+  let i = 1
+  while (existing.has(name)) {
+    name = `${base}_${i}`
+    i++
+  }
+  existing.add(name)
+  return name
+}
+
 /**
  * Safari does not like the fast updates moveBetween() tries to do, so this
  * delay will throttle the number of calls it is allowed in milliseconds
@@ -731,16 +764,25 @@ function insertItemsIntoParentFromOutside<T>(
 
   // Now get the target parent values.
   const targetParentValues = parentValues(state.currentParent.el, state.currentParent.data)
+  const existingNames = new Set<string>()
+  collectSchemaNames(formSchema.value, existingNames)
 
   // Clone values if they come from the source panel
   const processedInsertValues = insertValues.map((value) => {
     const valObj = isSource ? JSON.parse(JSON.stringify(value)) : value
     if (typeof valObj === 'object' && valObj !== null) {
       const val = valObj as any
+      const nextKey = typeof val.__key === 'string' && val.__key ? val.__key : generateKey()
+      const base = toSafeName(val.name || val.$formkit || 'field')
+      const nextName = val.$formkit === 'submit' ? val.name : ensureUniqueName(base, existingNames)
+      const next: any =
+        val.$formkit === 'submit'
+          ? { ...valObj, __key: nextKey, outerClass: 'col-span-12 pt-2' }
+          : { ...valObj, __key: nextKey, name: nextName, id: `field_${nextKey}`, outerClass: val.outerClass || 'col-span-12' }
       if (val.$formkit === 'submit') {
-        return { ...valObj, outerClass: 'col-span-12 pt-2' }
+        return next
       }
-      return { ...valObj, outerClass: val.outerClass || 'col-span-12' }
+      return next
     }
     return valObj
   })
