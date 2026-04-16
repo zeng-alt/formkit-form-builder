@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { inject, computed, ref } from 'vue'
-import { NTabs, NTabPane } from 'naive-ui'
+import { NTabs, NTabPane, NScrollbar } from 'naive-ui'
 import { fieldProps } from '../../utils/field-props'
 import { defaultFormElements } from '../../utils/default-form-elements'
 import DraggableList from './DraggableList.vue'
@@ -50,14 +50,16 @@ const groupedElements = computed(() => {
 
 <template>
   <div class="h-full flex flex-col overflow-hidden">
-    <n-tabs type="line" justify-content="space-evenly" class="h-full flex flex-col" pane-class="flex-1 overflow-y-auto pb-4 px-2">
+    <n-tabs type="line" justify-content="space-evenly" class="h-full flex flex-col" pane-class="flex-1 overflow-hidden">
       <n-tab-pane
         v-for="category in categories"
         :key="category.id"
         :name="category.id"
         :tab="category.label"
       >
-        <DraggableList :elements="groupedElements[category.id]" />
+        <n-scrollbar class="h-full sidebar-scrollbar" content-class="pb-4 px-2">
+          <DraggableList :elements="groupedElements[category.id]" />
+        </n-scrollbar>
       </n-tab-pane>
     </n-tabs>
   </div>

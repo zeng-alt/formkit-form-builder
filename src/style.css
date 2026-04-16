@@ -170,4 +170,12 @@
   }
 }
 
+.sidebar-scrollbar {
+  --n-scrollbar-width: 8px !important;
+  --n-scrollbar-height: 8px !important;
+  --n-scrollbar-border-radius: 999px !important;
+  --n-scrollbar-color: color-mix(in srgb, var(--foreground) 18%, transparent) !important;
+  --n-scrollbar-color-hover: color-mix(in srgb, var(--foreground) 28%, transparent) !important;
+  --n-scrollbar-rail-color: color-mix(in srgb, var(--foreground) 6%, transparent) !important;
+}
 

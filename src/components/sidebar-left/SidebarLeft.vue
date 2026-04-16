@@ -8,7 +8,7 @@ provide('searchInput', searchInput)
 </script>
 
 <template>
-  <n-layout-sider bordered collapse-mode="width" :collapsed-width="64" :width="240" show-trigger :native-scrollbar="false" content-style="display: flex; flex-direction: column; height: 100%;">
+  <n-layout-sider bordered collapse-mode="width" :collapsed-width="64" :width="240" show-trigger :native-scrollbar="false" content-style="display: flex; flex-direction: column; height: 100%;" class="sidebar-sider">
     <div class="p-4 shrink-0">
       <n-input placeholder="Search..." v-model:value="searchInput" />
     </div>
