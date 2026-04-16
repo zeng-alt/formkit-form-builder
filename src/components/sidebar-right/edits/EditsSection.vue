@@ -683,9 +683,9 @@ const visibleEdits = computed(() => {
           v-if="isFieldsCategory"
           label="Name"
           placeholder="field_name"
-          :value="fieldName.value"
+          :value="fieldName"
           :error="nameError"
-          @update:value="(v) => (fieldName.value = v)"
+          @update:value="(v) => (fieldName = v)"
         />
         <!-- Universal Edits (Label & Help Text) -->
         <template
