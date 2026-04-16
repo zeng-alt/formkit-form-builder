@@ -329,6 +329,22 @@ export function useFormField() {
 
   const currentFieldType = computed(() => (hasField.value ? selectedField.value?.$formkit : null))
 
+  const availableFieldNames = computed(() => {
+    const extractNames = (schema: FormKitSchemaFormKit[]): string[] => {
+      let names: string[] = []
+      for (const field of schema) {
+        if (field.name && typeof field.name === 'string') {
+          names.push(field.name)
+        }
+        if (field.children && Array.isArray(field.children)) {
+          names = names.concat(extractNames(field.children as FormKitSchemaFormKit[]))
+        }
+      }
+      return names
+    }
+    return Array.from(new Set(extractNames(formSchema.value)))
+  })
+
   return {
     label,
     placeholder,
@@ -338,6 +354,7 @@ export function useFormField() {
     createValidationValue,
     validationStringLength,
     currentFieldType,
+    availableFieldNames,
     hasField,
     help,
     whichNumber,
