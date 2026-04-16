@@ -2,13 +2,13 @@
 import { ref } from 'vue'
 import { NButton, NButtonGroup, NTooltip, NPopconfirm } from 'naive-ui'
 import { Eye, Trash2, Undo2, Redo2 } from 'lucide-vue-next'
-import { useI18n } from 'vue-i18n'
+import { useFormBuilderI18n } from '../i18n/context'
 import BuilderPreview from './BuilderPreview.vue'
 import AiPrompt from '../components/ai-prompt/AiPrompt.vue'
 import ThemeSwitcher from '../components/ui/theme-switcher/ThemeSwitcher.vue'
 import { canRedo, canUndo, commitSchema, redo, undo } from '../composables/schema-history'
 
-const { t } = useI18n()
+const { t } = useFormBuilderI18n()
 
 const clearForm = () => {
   commitSchema([], { reason: 'clear' })

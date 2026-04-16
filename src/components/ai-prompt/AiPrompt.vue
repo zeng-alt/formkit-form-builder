@@ -9,12 +9,14 @@ import { isLoading } from '../../composables/form-fields'
 import { cn } from '../../utils/utils'
 import { NButton, NInput, NPopover, NTooltip } from 'naive-ui'
 import { useFormBuilderConfig } from '../../composables/use-config'
+import { useFormBuilderI18n } from '../../i18n/context'
 import { useMediaQuery } from '@vueuse/core'
 import { commitSchema } from '../../composables/schema-history'
 
 const isMobile = useMediaQuery('(max-width: 768px)')
 
 const config = useFormBuilderConfig()
+const { t } = useFormBuilderI18n()
 const inputRef = ref('')
 const isFocusedVal = ref(false)
 const isOpen = ref(false)
@@ -31,10 +33,10 @@ const parseFormSchema = (jsonString: string): FormKitSchemaFormKit[] => {
 
 const handleClick = async () => {
   if (inputRef.value === '') {
-    toast('Empty chat prompt!', {
-      description: 'Please enter a prompt to generate a form.',
+    toast(t('ai.emptyPrompt'), {
+      description: t('ai.emptyPromptDescription'),
       action: {
-        label: 'Close',
+        label: t('ai.close'),
       },
     })
     return
@@ -46,7 +48,7 @@ const handleClick = async () => {
     dangerouslyAllowBrowser: true,
   })
 
-  const defaultInstructions = "Generate a FormKit schema based on the user's description"
+  const defaultInstructions = t('ai.defaultInstructions')
 
   const response = await client.responses.create({
     model: 'gpt-4.1-mini',
@@ -87,7 +89,7 @@ const isFocused = () => {
       @blur="isFocused"
       class="border-none shadow-none bg-transparent flex-1"
       :autosize="{ minRows: 1, maxRows: 4 }"
-      placeholder="AI Assistant"
+      :placeholder="t('ai.placeholder')"
       v-model:value="inputRef"
     />
     <n-button
@@ -121,7 +123,7 @@ const isFocused = () => {
             </template>
           </n-button>
         </template>
-        AI Assistant
+        {{ t('ai.tooltip') }}
       </n-tooltip>
     </template>
 
@@ -144,7 +146,7 @@ const isFocused = () => {
         @blur="isFocused"
         class="border-none shadow-none bg-transparent flex-1"
         :autosize="{ minRows: 1, maxRows: 4 }"
-        placeholder="Prompt AI"
+        :placeholder="t('ai.promptPlaceholder')"
         v-model:value="inputRef"
       />
       <n-button

@@ -6,6 +6,7 @@ import { formSchema } from '../utils/default-form-elements'
 import { commitSchema } from '../composables/schema-history'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { toast } from 'vue-sonner'
+import { useFormBuilderI18n } from '../i18n/context'
 
 const props = defineProps<{
   show: boolean
@@ -14,6 +15,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:show', value: boolean): void
 }>()
+
+const { t } = useFormBuilderI18n()
 
 const jsonContent = ref('')
 
@@ -34,14 +37,14 @@ const handleSaveAndImport = () => {
   try {
     const parsed = JSON.parse(jsonContent.value)
     if (!Array.isArray(parsed)) {
-      throw new Error('Schema must be an array')
+      throw new Error(t('importExport.schemaMustBeArray'))
     }
     commitSchema(parsed as FormKitSchemaFormKit[], { reason: 'import' })
-    toast.success('Schema imported successfully')
+    toast.success(t('importExport.importSuccess'))
     handleClose()
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    toast.error(`Failed to parse JSON: ${message}`)
+    const message = error instanceof Error ? error.message : t('importExport.unknownError')
+    toast.error(t('importExport.failedParseJson', { message }))
   }
 }
 
@@ -59,9 +62,9 @@ const handleDownload = () => {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    toast.success('Schema downloaded successfully')
+    toast.success(t('importExport.downloadedSuccess'))
   } catch {
-    toast.error(`Failed to generate download: Invalid JSON`)
+    toast.error(t('importExport.failedGenerateDownload'))
   }
 }
 </script>
@@ -72,7 +75,7 @@ const handleDownload = () => {
     @update:show="(val) => emit('update:show', val)"
     class="w-70%"
     preset="card"
-    title="Import / Export Schema"
+    :title="t('importExport.title')"
     :bordered="false"
     size="huge"
     :segmented="{
@@ -85,25 +88,25 @@ const handleDownload = () => {
         v-model:value="jsonContent"
         type="textarea"
         :autosize="{ minRows: 15, maxRows: 25 }"
-        placeholder="Paste your form schema JSON here..."
+        :placeholder="t('importExport.placeholder')"
         class="font-mono text-sm"
       />
     </div>
 
     <template #footer>
       <n-space justify="end">
-        <n-button @click="handleClose">Cancel</n-button>
+        <n-button @click="handleClose">{{ t('common.cancel') }}</n-button>
         <n-button type="info" @click="handleDownload">
           <template #icon>
             <Download class="w-4 h-4" />
           </template>
-          Download JSON
+          {{ t('importExport.downloadJson') }}
         </n-button>
         <n-button type="primary" @click="handleSaveAndImport">
           <template #icon>
             <Save class="w-4 h-4" />
           </template>
-          Save & Import
+          {{ t('importExport.saveAndImport') }}
         </n-button>
       </n-space>
     </template>

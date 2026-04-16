@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFormField } from '../../../composables/form-fields'
-import { useI18n } from 'vue-i18n'
+import { useFormBuilderI18n } from '../../../i18n/context'
 import NameInput from './common/NameInput.vue'
 import CheckboxEditor from './editors/CheckboxEditor.vue'
 import ColorEditor from './editors/ColorEditor.vue'
@@ -39,7 +39,7 @@ import SubmitEditor from './editors/SubmitEditor.vue'
 import TextLikeEditor from './editors/TextLikeEditor.vue'
 
 const { hasField, currentFieldType } = useFormField()
-const { t } = useI18n()
+const { t } = useFormBuilderI18n()
 
 const editorComponent = computed(() => {
   const type = currentFieldType.value

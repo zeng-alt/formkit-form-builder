@@ -3,9 +3,11 @@ import { computed } from 'vue'
 import { fieldProps } from '../../../../utils/field-props'
 import { useFormField } from '../../../../composables/form-fields'
 import { formSchema, selectedIndex } from '../../../../utils/default-form-elements'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import TextInput from './TextInput.vue'
 
 const { currentFieldType, fieldName, hasField } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const isFieldsCategory = computed(() => {
   if (!currentFieldType.value) return false
@@ -46,10 +48,9 @@ const nameError = computed(() => {
   <TextInput
     v-if="hasField && isFieldsCategory"
     label="Name"
-    placeholder="field_name"
+    :placeholder="t('edits.placeholder.fieldName')"
     :value="fieldName"
     :error="nameError"
     @update:value="(v) => (fieldName = v)"
   />
 </template>
-

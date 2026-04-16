@@ -4,8 +4,10 @@ import { NSwitch, NInput, NAlert } from 'naive-ui'
 import { useFormField } from '../../../composables/form-fields'
 import { selectedIndex } from '../../../utils/default-form-elements'
 import { evalExpression } from '../../../utils/expression-eval'
+import { useFormBuilderI18n } from '../../../i18n/context'
 
 const { availableFieldNames, useExpressionValue, valueExpression, fieldValue } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const isExpression = ref(false)
 const expressionDraft = ref('')
@@ -72,7 +74,7 @@ const expressionError = computed(() => {
 <template>
   <div class="space-y-2 mt-4 p-3 border border-border rounded-md bg-muted/30">
     <div class="flex items-center justify-between">
-      <label class="text-xs font-medium text-foreground">Use expression value</label>
+      <label class="text-xs font-medium text-foreground">{{ t('expression.useExpressionValue') }}</label>
       <n-switch size="small" :value="isExpression" @update:value="handleSwitchChange" />
     </div>
     
@@ -81,14 +83,14 @@ const expressionError = computed(() => {
         :value="expressionDraft"
         @update:value="(v) => { expressionDraft = v; valueExpression = v }"
         type="textarea"
-        placeholder="e.g. $my_variable + 1"
+        :placeholder="t('expression.placeholder')"
         :autosize="{ minRows: 2, maxRows: 5 }"
       />
       <n-alert v-if="expressionError" type="error" :show-icon="true" class="mt-2 text-xs">
         {{ expressionError }}
       </n-alert>
       <n-alert v-if="missingVariables.length > 0" type="warning" :show-icon="true" class="mt-2 text-xs">
-        Variables not found: {{ missingVariables.join(', ') }}
+        {{ t('expression.variablesNotFound', { vars: missingVariables.join(', ') }) }}
       </n-alert>
     </div>
   </div>

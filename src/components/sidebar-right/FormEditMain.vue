@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { NDivider } from 'naive-ui'
-import { useI18n } from 'vue-i18n'
+import { useFormBuilderI18n } from '../../i18n/context'
 import ValidationSection from './validations/ValidationSection.vue'
 import { useFormField } from '../../composables/form-fields'
 import EditsSection from './edits/EditsSection.vue'
@@ -9,7 +9,7 @@ import ExpressionEditor from './edits/ExpressionEditor.vue'
 import { fieldProps } from '../../utils/field-props'
 
 const { hasField, currentFieldType } = useFormField()
-const { t } = useI18n()
+const { t } = useFormBuilderI18n()
 
 const isFieldsCategory = computed(() => {
   if (!currentFieldType.value) return false

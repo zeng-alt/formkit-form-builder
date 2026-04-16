@@ -7,7 +7,7 @@ import SidebarRight from '../components/sidebar-right/SidebarRight.vue'
 import BuilderDropArea from './BuilderDropArea.vue'
 import BuilderHeader from './BuilderHeader.vue'
 import { useFormBuilderConfig } from '../composables/use-config'
-import { provideFormBuilderI18n } from '../i18n/provider'
+import { provideFormBuilderI18n } from '../i18n/context'
 
 const props = defineProps<ConfigProviderProps>()
 

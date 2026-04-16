@@ -4,148 +4,150 @@ import SingleParamValidation from './SingleParamValidation.vue'
 import DoubleParamValidation from './DoubleParamValidation.vue'
 import { selectedIndex, formSchema } from '../../../utils/default-form-elements'
 import { computed } from 'vue'
+import { useFormBuilderI18n } from '../../../i18n/context'
 
-const validations = {
+const { t } = useFormBuilderI18n()
+
+const validations = computed(() => ({
   singleValue: [
     {
       value: 'required',
-      label: 'Required',
-      tooltip: 'Value is required for completion',
+      label: t('validation.required.label'),
+      tooltip: t('validation.required.tooltip'),
     },
     {
       value: 'email',
-      label: 'Email',
-      tooltip: 'Input must be a valid email address',
+      label: t('validation.email.label'),
+      tooltip: t('validation.email.tooltip'),
     },
     {
       value: 'number',
-      label: 'Number',
-      tooltip: 'Input must be a valid numeric value',
+      label: t('validation.number.label'),
+      tooltip: t('validation.number.tooltip'),
     },
     {
       value: 'lowercase',
-      label: 'Lowercase',
-      tooltip: 'Input must be all lowercase letters',
+      label: t('validation.lowercase.label'),
+      tooltip: t('validation.lowercase.tooltip'),
     },
     {
       value: 'uppercase',
-      label: 'Uppercase',
-      tooltip: 'Input must be all uppercase letters',
+      label: t('validation.uppercase.label'),
+      tooltip: t('validation.uppercase.tooltip'),
     },
     {
       value: 'url',
-      label: 'URL',
-      tooltip: 'Input must be a valid URL',
+      label: t('validation.url.label'),
+      tooltip: t('validation.url.tooltip'),
     },
     {
       value: 'alpha',
-      label: 'Alpha',
-      tooltip: 'Input must only contain letters',
+      label: t('validation.alpha.label'),
+      tooltip: t('validation.alpha.tooltip'),
     },
     {
       value: 'alphanumeric',
-      label: 'Alphanumeric',
-      tooltip: 'Input must only contain letters and numbers',
+      label: t('validation.alphanumeric.label'),
+      tooltip: t('validation.alphanumeric.tooltip'),
     },
     {
       value: 'contains_symbol',
-      label: 'Contains symbol',
-      tooltip: 'Input must contain a symbol',
+      label: t('validation.contains_symbol.label'),
+      tooltip: t('validation.contains_symbol.tooltip'),
     },
     {
       value: 'contains_uppercase',
-      label: 'Contains uppercase',
-      tooltip: 'Input must contain an uppercase letter',
+      label: t('validation.contains_uppercase.label'),
+      tooltip: t('validation.contains_uppercase.tooltip'),
     },
     {
       value: 'contains_lowercase',
-      label: 'Contains lowercase',
-      tooltip: 'Input must contain a lowercase letter',
+      label: t('validation.contains_lowercase.label'),
+      tooltip: t('validation.contains_lowercase.tooltip'),
     },
     {
       value: 'contains_numeric',
-      label: 'Contains numeric',
-      tooltip: 'Input must contain a number',
+      label: t('validation.contains_numeric.label'),
+      tooltip: t('validation.contains_numeric.tooltip'),
     },
   ],
   singleParam: [
     {
       value: 'min',
-      label: 'Minimum',
-      tooltip: 'Number must be greater or equal to the given value',
-      placeholder: '0',
+      label: t('validation.min.label'),
+      tooltip: t('validation.min.tooltip'),
+      placeholder: t('validation.min.placeholder'),
     },
     {
       value: 'max',
-      label: 'Maximum',
-      tooltip: 'Number must be less than or equal to the given value',
-      placeholder: '10',
+      label: t('validation.max.label'),
+      tooltip: t('validation.max.tooltip'),
+      placeholder: t('validation.max.placeholder'),
     },
     {
       value: 'matches',
-      label: 'Matches',
-      tooltip:
-        'Input must match a particular value or pattern. If you pass multiple arguments, it checks each until a match is found',
-      placeholder: 'Value',
+      label: t('validation.matches.label'),
+      tooltip: t('validation.matches.tooltip'),
+      placeholder: t('validation.matches.placeholder'),
     },
     {
       value: 'starts_with',
-      label: 'Starts with',
-      tooltip: 'Value must start with given string',
-      placeholder: 'Value',
+      label: t('validation.starts_with.label'),
+      tooltip: t('validation.starts_with.tooltip'),
+      placeholder: t('validation.starts_with.placeholder'),
     },
     {
       value: 'ends_with',
-      label: 'Ends with',
-      tooltip: 'Value must end with given string',
-      placeholder: 'Value',
+      label: t('validation.ends_with.label'),
+      tooltip: t('validation.ends_with.tooltip'),
+      placeholder: t('validation.ends_with.placeholder'),
     },
     {
       value: 'date_after',
-      label: 'Date after',
-      tooltip: 'Input must be after the given date',
-      placeholder: 'YYYY-MM-DD',
+      label: t('validation.date_after.label'),
+      tooltip: t('validation.date_after.tooltip'),
+      placeholder: t('validation.date_after.placeholder'),
     },
     {
       value: 'date_before',
-      label: 'Date before',
-      tooltip: 'Input must be before the given date',
-      placeholder: 'YYYY-MM-DD',
+      label: t('validation.date_before.label'),
+      tooltip: t('validation.date_before.tooltip'),
+      placeholder: t('validation.date_before.placeholder'),
     },
   ],
   doubleParam: [
     {
       value: 'date_between',
-      label: 'Date between',
-      tooltip: 'Date must be between the given dates',
-      switchLabel: 'Date between',
-      labelOne: 'Min',
-      labelTwo: 'Max',
-      placeholderOne: '0',
-      placeholderTwo: '10',
+      label: t('validation.date_between.label'),
+      tooltip: t('validation.date_between.tooltip'),
+      switchLabel: t('validation.date_between.label'),
+      labelOne: t('validation.minLabel'),
+      labelTwo: t('validation.maxLabel'),
+      placeholderOne: t('validation.min.placeholder'),
+      placeholderTwo: t('validation.max.placeholder'),
     },
     {
       value: 'length',
-      label: 'Length',
-      tooltip: 'Sentence length must be between min and max.',
-      switchLabel: 'Length',
-      labelOne: 'Min',
-      labelTwo: 'Max',
-      placeholderOne: '0',
-      placeholderTwo: '10',
+      label: t('validation.length.label'),
+      tooltip: t('validation.length.tooltip'),
+      switchLabel: t('validation.length.label'),
+      labelOne: t('validation.minLabel'),
+      labelTwo: t('validation.maxLabel'),
+      placeholderOne: t('validation.min.placeholder'),
+      placeholderTwo: t('validation.max.placeholder'),
     },
     {
       value: 'between',
-      label: 'Between',
-      tooltip: 'Number is (inclusively) between two other numbers',
-      switchLabel: 'Between',
-      labelOne: 'Min',
-      labelTwo: 'Max',
-      placeholderOne: '0',
-      placeholderTwo: '10',
+      label: t('validation.between.label'),
+      tooltip: t('validation.between.tooltip'),
+      switchLabel: t('validation.between.label'),
+      labelOne: t('validation.minLabel'),
+      labelTwo: t('validation.maxLabel'),
+      placeholderOne: t('validation.min.placeholder'),
+      placeholderTwo: t('validation.max.placeholder'),
     },
   ],
-}
+}))
 
 const currentFieldType = computed(() => {
   if (selectedIndex.value !== null && formSchema.value[selectedIndex.value]) {
@@ -207,13 +209,13 @@ const showForFieldType = (validationType: string, fieldType: string | null) => {
 
 const visibleValidations = computed(() => {
   return {
-    singleValue: validations.singleValue.filter((validation) =>
+    singleValue: validations.value.singleValue.filter((validation) =>
       showForFieldType(validation.value, currentFieldType.value),
     ),
-    singleParam: validations.singleParam.filter((validation) =>
+    singleParam: validations.value.singleParam.filter((validation) =>
       showForFieldType(validation.value, currentFieldType.value),
     ),
-    doubleParam: validations.doubleParam.filter((validation) =>
+    doubleParam: validations.value.doubleParam.filter((validation) =>
       showForFieldType(validation.value, currentFieldType.value),
     ),
   }
@@ -222,7 +224,7 @@ const visibleValidations = computed(() => {
 
 <template>
   <div v-if="formSchema[selectedIndex]?.$formkit !== 'submit'">
-    <span class="text-sm">Validation Rules</span>
+    <span class="text-sm">{{ t('validation.rulesTitle') }}</span>
   </div>
 
   <template v-for="validation in visibleValidations.singleValue" :key="validation.value">

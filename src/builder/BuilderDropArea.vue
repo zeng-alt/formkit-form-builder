@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
 import { Trash2, Monitor, Tablet, Smartphone, CodeXml } from 'lucide-vue-next'
-import { useI18n } from 'vue-i18n'
+import { useFormBuilderI18n } from '../i18n/context'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
@@ -15,7 +15,7 @@ import { commitSchema } from '../composables/schema-history'
 import ImportExportModal from './ImportExportModal.vue'
 
 const { validationStringLength } = useFormField()
-const { t } = useI18n()
+const { t } = useFormBuilderI18n()
 
 const showImportExportModal = ref(false)
 

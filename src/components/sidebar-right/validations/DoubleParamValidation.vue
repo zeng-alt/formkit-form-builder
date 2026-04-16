@@ -5,6 +5,7 @@ import { NInput, NDatePicker } from 'naive-ui'
 import { computed } from 'vue'
 import { MoveRight } from 'lucide-vue-next'
 import { ValidationCard, ValidationSwitch } from '../../ui/validation-card'
+import { useFormBuilderI18n } from '../../../i18n/context'
 
 const props = defineProps<{
   value: string
@@ -18,6 +19,7 @@ const props = defineProps<{
 
 const { updateValidationString, isValidationChecked, isActive, createValidationValue } =
   useFormField()
+const { t } = useFormBuilderI18n()
 
 const active = isActive(isValidationChecked, props.value)
 const validation = createValidationValue(props.value)
@@ -144,7 +146,7 @@ const toggleSwitch = () => {
         (!max || !min) && (props.value === 'between' || props.value === 'date_between') && active
       "
       class="text-xs text-destructive"
-      >Both values must be set</span
+      >{{ t('validation.bothValuesMustBeSet') }}</span
     >
   </ValidationCard>
 </template>
