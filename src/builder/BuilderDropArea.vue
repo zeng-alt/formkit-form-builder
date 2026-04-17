@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
-import { Trash2, Monitor, Tablet, Smartphone, CodeXml } from 'lucide-vue-next'
+import { Trash2, Monitor, Tablet, Smartphone, CodeXml, MoreVertical } from 'lucide-vue-next'
 import { useFormBuilderI18n } from '../i18n/context'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
@@ -346,9 +346,7 @@ watch(
               @keydown.left.stop.prevent="nudgeResize(index, -2)"
               @keydown.right.stop.prevent="nudgeResize(index, 2)"
             >
-              <span class="w-1 h-1 rounded-full bg-current" />
-              <span class="w-1 h-1 rounded-full bg-current" />
-              <span class="w-1 h-1 rounded-full bg-current" />
+              <MoreVertical class="h-4 w-4" />
             </button>
 
             <!-- 拖拽宽度遮罩 -->
