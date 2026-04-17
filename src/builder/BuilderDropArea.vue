@@ -327,7 +327,7 @@ watch(
 
             <!-- Resize handle -->
             <button
-              class="absolute -right-3 top-1/2 -translate-y-1/2 z-30
+              class="absolute -right-3 inset-y-0 my-auto z-30
                     w-4 h-4 flex items-center justify-center
                     bg-transparent border-0 shadow-none p-0 m-0 appearance-none
                     relative before:content-[''] before:absolute before:inset-[-10px] before:block
@@ -337,7 +337,7 @@ watch(
                     transition-[opacity,transform,color] duration-150
                     text-muted-foreground
                     group-hover:text-[#3355e0]
-                    focus:outline-none focus-visible:outline-none focus-visible:ring-0
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3355e0]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background
                     hover:bg-transparent
                     active:scale-[0.98]"
               :class="resizingIndex === index
