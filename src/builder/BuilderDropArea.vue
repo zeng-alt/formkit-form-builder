@@ -329,7 +329,7 @@ watch(
             >
               <span
                 :class="cn(
-                  'h-2.5 w-2.5 rounded-full border-2 bg-background dark:bg-neutral-900',
+                  'h-2.5 w-2.5 rounded-full border-2 bg-transparent',
                   selectedIndex === index
                     ? 'border-[color:var(--n-primary-color)]'
                     : 'border-[color:var(--n-primary-color-hover,var(--n-primary-color))]',
