@@ -250,10 +250,10 @@ watch(
             v-for="(field, index) in fields"
             :key="(field as any)?.__key || (field as FormKitSchemaFormKit)?.name || (field as FormKitSchemaFormKit)?.$formkit + index"
             :class="cn(
-              'group rounded-lg transition-all duration-200 p-1 !cursor-grab h-full !z-20 relative',
+              'group rounded-lg transition-all duration-200 p-1 !cursor-grab h-full !z-20 relative border-2 border-dashed',
               selectedIndex === index
-                ? 'border border-ring/30 bg-ring/20 dark:bg-accent/20 dark:border-ring/5 transition-all duration-300'
-                : 'border bg-ring/5 border-transparent hover:border-ring/30 dark:bg-ring/3 dark:hover:border-ring/10 transition-all duration-200',
+                ? 'border-ring/40 bg-ring/20 dark:bg-accent/20 dark:border-ring/15 transition-all duration-300'
+                : 'bg-ring/5 border-transparent hover:border-ring/30 dark:bg-ring/3 dark:hover:border-ring/10 transition-all duration-200',
             )"
             :style="{
               gridColumn: `span ${getColSpan(field, index)} / span ${getColSpan(field, index)}`
@@ -262,7 +262,7 @@ watch(
           >
             <div
               :class="cn(
-                'absolute top-1/2 -translate-y-1/2 right-4 z-30 select-none flex items-center justify-center rounded-md bg-background/70 dark:bg-neutral-900/40 px-1 py-1 backdrop-blur-[1px] border border-border/40 shadow-sm transition-opacity',
+                'absolute top-1/2 -translate-y-1/2 -right-3 z-40 select-none flex items-center justify-center rounded-md bg-background/80 dark:bg-neutral-900/60 px-1 py-1 backdrop-blur-[1px] border border-border/50 shadow-sm transition-opacity',
                 selectedIndex === index ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
               )"
             >
