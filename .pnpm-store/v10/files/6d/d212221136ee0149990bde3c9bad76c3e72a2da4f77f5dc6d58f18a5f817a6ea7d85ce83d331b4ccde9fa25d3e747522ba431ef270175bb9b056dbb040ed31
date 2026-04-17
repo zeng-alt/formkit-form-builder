@@ -1,0 +1,5 @@
+import * as _unocss_core from '@unocss/core';
+
+declare const presetTwAnimate: _unocss_core.PresetFactory<object, undefined>;
+
+export { presetTwAnimate };

@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import 'uno.css'
 import './style.css'
 import { plugin } from '@formkit/vue'
 import App from './App.vue'

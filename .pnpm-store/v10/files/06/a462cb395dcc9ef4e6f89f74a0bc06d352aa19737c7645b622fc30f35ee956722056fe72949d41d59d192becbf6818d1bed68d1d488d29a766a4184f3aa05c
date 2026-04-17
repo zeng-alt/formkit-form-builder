@@ -1,0 +1,72 @@
+{
+  "name": "unocss-tw-animate-css",
+  "type": "module",
+  "version": "0.1.1",
+  "description": "UnoCSS's animate preset for Wind4",
+  "author": "retronew <https://github.com/retronew>",
+  "license": "MIT",
+  "homepage": "https://github.com/retronew/unocss-tw-animate-css#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/retronew/unocss-tw-animate-css.git"
+  },
+  "bugs": {
+    "url": "https://github.com/retronew/unocss-tw-animate-css/issues"
+  },
+  "keywords": [
+    "unocss",
+    "unpreset",
+    "unocss-preset",
+    "unocss-tw-animate-css"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./dist/*",
+        "./dist/index.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@unocss/core": "^66.2.1"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^4.14.1",
+    "@babel/types": "^7.27.6",
+    "@types/node": "^24.0.3",
+    "@unocss/eslint-plugin": "^66.2.1",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "bumpp": "^10.1.1",
+    "eslint": "^9.29.0",
+    "typescript": "5.8.3",
+    "unbuild": "^3.5.0",
+    "unocss": "^66.2.1",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.3"
+  },
+  "scripts": {
+    "build": "unbuild",
+    "dev": "unbuild --stub",
+    "release": "bumpp --commit --push --tag && pnpm publish",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest",
+    "test:update": "vitest --update",
+    "play": "vite playground",
+    "deploy": "vite build playground"
+  }
+}
