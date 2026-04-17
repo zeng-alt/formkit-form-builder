@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/formkit-form-builder.git"
+    "url": "https://github.com/zeng-alt/formkit-form-builder.git"
   },
   "keywords": [
     "vue",
@@ -49,22 +49,23 @@
   },
   "peerDependencies": {
     "vue": "^3.5.0",
-    "@formkit/core": "^2.0.0",
-    "@formkit/vue": "^2.0.0",
-    "@formkit/drag-and-drop": "^0.5.0",
+    "@vueuse/core": "^14.2.1",
     "naive-ui": "^2.44.0"
   },
   "dependencies": {
     "@internationalized/date": "^3.12.0",
-    "@vueuse/core": "^14.2.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-vue-next": "^1.0.0",
     "openai": "^6.34.0",
     "tailwind-merge": "^3.5.0",
-    "vue-sonner": "^2.0.9"
+    "vue-sonner": "^2.0.9",
+    "@formkit/core": "^2.0.0",
+    "@formkit/vue": "^2.0.0",
+    "@formkit/drag-and-drop": "^0.5.0"
   },
   "devDependencies": {
+    "@vueuse/core": "^14.2.1",
     "@formkit/core": "^2.0.0",
     "@formkit/drag-and-drop": "^0.5.3",
     "@formkit/vue": "^2.0.0",
