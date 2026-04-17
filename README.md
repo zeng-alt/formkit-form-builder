@@ -5,19 +5,19 @@
 ## 安装
 
 ```bash
-npm i formkit-form-builder
+pnpm i @zeng-alt/formkit-form-builder
 ```
 
 本库依赖以下 peer 依赖（需要你在项目里自行安装，版本按你项目实际选择即可）：
 
 ```bash
-npm i vue @formkit/core @formkit/vue @formkit/drag-and-drop naive-ui
+pnpm i vue naive-ui @vueuse/core
 ```
 
 ## 样式引入
 
 ```ts
-import 'formkit-form-builder/style.css'
+import '@zeng-alt/formkit-form-builder/style.css'
 ```
 
 ## 快速开始
