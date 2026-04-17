@@ -312,7 +312,7 @@ watch(
                 size="small"
                 :aria-label="t('builder.deleteField')"
                 @click.stop="deleteField(index)"
-                class="h-7 w-7 md:h-8 md:w-8 hover:!bg-destructive hover:!text-white"
+                class="h-7 w-7 md:h-8 md:w-8 !text-muted-foreground hover:!bg-destructive/15 hover:!text-destructive"
               >
                 <template #icon><Trash2 class="!h-4 !w-4" /></template>
               </n-button>
@@ -320,14 +320,21 @@ watch(
 
             <!-- Resize handle（submit 字段不允许调整宽度） -->
             <button
-              class="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-10 cursor-ew-resize flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ring/10 rounded-md touch-none"
+              class="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 cursor-ew-resize flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity touch-none"
               type="button"
               :aria-label="t('builder.resizeFieldWidth')"
               @pointerdown.stop.prevent="startResize($event, index)"
               @keydown.left.stop.prevent="nudgeResize(index, -2)"
               @keydown.right.stop.prevent="nudgeResize(index, 2)"
             >
-              <ChevronsLeftRight class="h-3.5 w-3.5 text-muted-foreground/70" />
+              <span
+                :class="cn(
+                  'h-2.5 w-2.5 rounded-full border-2 bg-background dark:bg-neutral-900',
+                  selectedIndex === index
+                    ? 'border-[color:var(--n-primary-color)]'
+                    : 'border-[color:var(--n-primary-color-hover,var(--n-primary-color))]',
+                )"
+              />
             </button>
 
             <!-- 拖拽调整宽度时的遮罩，显示当前百分比 -->
