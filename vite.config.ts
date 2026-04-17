@@ -52,12 +52,8 @@ export default defineConfig(({ command }) => ({
             external: [
               'vue',
               '@formkit/core',
-              '@formkit/vue',
-              '@formkit/drag-and-drop',
-              '@formkit/drag-and-drop/vue',
               'naive-ui',
               '@vueuse/core',
-              'lucide-vue-next',
               'vue-sonner',
               'openai',
             ],
