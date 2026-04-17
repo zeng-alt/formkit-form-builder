@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
-import { Trash2, Monitor, Tablet, Smartphone, CodeXml, GripVertical, ChevronsLeftRight } from 'lucide-vue-next'
+import { Trash2, Monitor, Tablet, Smartphone, CodeXml, Move, ChevronsLeftRight } from 'lucide-vue-next'
 import { useFormBuilderI18n } from '../i18n/context'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
@@ -288,11 +288,11 @@ watch(
           >
             <div
               :class="cn(
-                'absolute top-1/2 -translate-y-1/2 -right-7 z-40 select-none flex items-center justify-center rounded-md bg-background/80 dark:bg-neutral-900/60 px-1 py-1 backdrop-blur-[1px] border border-border/50 shadow-sm transition-opacity',
+                'absolute top-2 -right-7 z-40 select-none flex items-center justify-center rounded-md bg-background/80 dark:bg-neutral-900/60 px-1 py-1 backdrop-blur-[1px] border border-border/50 shadow-sm transition-opacity',
                 selectedIndex === index ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
               )"
             >
-              <GripVertical class="h-4 w-4 text-muted-foreground/80" />
+              <Move class="h-3.5 w-3.5 text-muted-foreground/80" />
             </div>
             <!-- Field content -->
             <div class="flex gap-1.5 p-1 w-full pb-2">
@@ -305,7 +305,7 @@ watch(
             </div>
 
             <!-- Bottom controls: validation rules count + delete button -->
-            <div class="absolute bottom-1 right-1 flex flex-row z-10">
+            <div class="absolute bottom-1 right-1 flex flex-row z-40">
               <div
                 class="px-2 mr-1 border-1 border-ring/40 dark:border-ring/20 rounded-md flex items-center justify-center"
                 v-if="selectedIndex === index"
@@ -328,7 +328,7 @@ watch(
 
             <!-- Resize handle（submit 字段不允许调整宽度） -->
             <button
-              class="absolute right-0 top-0 bottom-0 w-6 cursor-ew-resize flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ring/10 rounded-r-lg touch-none"
+              class="absolute right-0 top-0 bottom-0 w-6 cursor-ew-resize flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ring/10 rounded-r-lg touch-none"
               type="button"
               :aria-label="t('builder.resizeFieldWidth')"
               @pointerdown.stop.prevent="startResize($event, index)"
