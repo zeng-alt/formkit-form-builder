@@ -3,8 +3,11 @@ import { useFormField } from '../../../../composables/form-fields'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
+import TextInput from '../common/TextInput.vue'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 
-const { createButtonProp } = useFormField()
+const { createButtonProp, buttonText } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const buttonBlock = createButtonProp<boolean>('block', false)
 const buttonBordered = createButtonProp<boolean>('bordered', true)
@@ -22,6 +25,12 @@ const buttonType = createButtonProp<string>('type', 'default')
 </script>
 
 <template>
+  <TextInput
+    label="Button Text"
+    :placeholder="t('edits.placeholder.label')"
+    :value="buttonText"
+    @update:value="(v) => (buttonText = v)"
+  />
   <LabelHelpSection />
   <SelectInput
     label="align"
@@ -73,4 +82,3 @@ const buttonType = createButtonProp<string>('type', 'default')
   <SwitchInput label="round" :value="buttonRound" @update:value="(v) => (buttonRound = v)" />
   <SwitchInput label="secondary" :value="buttonSecondary" @update:value="(v) => (buttonSecondary = v)" />
 </template>
-

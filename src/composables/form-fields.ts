@@ -146,6 +146,19 @@ export function useFormField() {
     },
   })
 
+  const buttonText = computed<string>({
+    get: () => {
+      const current = selectedField.value as any
+      const value = current?.buttonText
+      if (typeof value !== 'string') return ''
+      return value
+    },
+    set: (value: string) => {
+      const next = value.trim()
+      setFieldProp('buttonText', next ? next : undefined)
+    },
+  })
+
   const placeholder = computed({
     get: () => selectedField.value?.placeholder || '',
     set: (newPlaceholder: string) => {
@@ -393,6 +406,7 @@ export function useFormField() {
     useExpressionValue,
     valueExpression,
     label,
+    buttonText,
     placeholder,
     fieldValue,
     updateValidationString,
