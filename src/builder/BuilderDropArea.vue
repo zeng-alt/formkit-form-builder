@@ -328,14 +328,17 @@ watch(
             <!-- Resize handle -->
             <button
               class="absolute -right-3 top-1/2 -translate-y-1/2 z-30
-                    w-6 h-10
-                    flex flex-col items-center justify-center gap-1
+                    flex items-center justify-center
+                    bg-transparent border-0 shadow-none p-0 m-0 appearance-none
+                    relative before:content-[''] before:absolute before:inset-[-10px] before:block
                     cursor-ew-resize touch-none
                     opacity-0 pointer-events-none
                     group-hover:opacity-100 group-hover:pointer-events-auto
                     transition-[opacity,transform,color] duration-150
                     text-muted-foreground
                     group-hover:text-[#3355e0]
+                    focus:outline-none focus-visible:outline-none focus-visible:ring-0
+                    hover:bg-transparent
                     active:scale-[0.98]"
               :class="resizingIndex === index
                 ? '!opacity-100 !pointer-events-auto !text-[#3355e0]'
