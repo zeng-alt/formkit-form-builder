@@ -15,5 +15,4 @@ const { t } = useFormBuilderI18n()
     :value="buttonText"
     @update:value="(v) => (buttonText = v)"
   />
-  <LabelHelpSection />
 </template>

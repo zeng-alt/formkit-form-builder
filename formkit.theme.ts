@@ -31,6 +31,7 @@ export function rootClasses(
 ): Record<string, boolean> {
   const semanticKey = `formkit-${sectionName}`;
   if (node.props.family === "naive") {
+    const type = (node.props as any)?.$formkit || node.props.type;
     if (sectionName === "outer" || sectionName === "wrapper") {
       return { [semanticKey]: true, "w-full": true };
     }
@@ -54,6 +55,9 @@ export function rootClasses(
       };
     }
     if (sectionName === "label") {
+      if (type === "submit" || type === "naiveButton") {
+        return { [semanticKey]: true, hidden: true };
+      }
       return {
         [semanticKey]: true,
         block: true,
@@ -65,6 +69,9 @@ export function rootClasses(
       };
     }
     if (sectionName === "help") {
+      if (type === "submit" || type === "naiveButton") {
+        return { [semanticKey]: true, hidden: true };
+      }
       return {
         [semanticKey]: true,
         "text-[11px]": true,
@@ -75,15 +82,24 @@ export function rootClasses(
       };
     }
     if (sectionName === "messages") {
-      return { [semanticKey]: true, "mt-1": true };
+      return {
+        [semanticKey]: true,
+        "mt-1": true,
+        "space-y-0.5": true,
+      };
     }
     if (sectionName === "message") {
       return {
         [semanticKey]: true,
-        "text-red-600": true,
+        "text-red-500": true,
         "text-[11px]": true,
-        "[line-height:1em]": true,
-        "mb-1": true,
+        "[line-height:1.2]": true,
+        "pl-1.5": true,
+        "relative": true,
+        "before:content-['•']": true,
+        "before:absolute": true,
+        "before:left-0": true,
+        "before:top-0": true,
         "dark:text-red-400": true,
       };
     }

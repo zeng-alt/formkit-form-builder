@@ -31,7 +31,6 @@ const buttonType = createButtonProp<string>('type', 'default')
     :value="buttonText"
     @update:value="(v) => (buttonText = v)"
   />
-  <LabelHelpSection />
   <SelectInput
     label="align"
     :value="buttonAlign"
