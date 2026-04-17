@@ -323,17 +323,19 @@ watch(
 
             <!-- Resize handle -->
             <button
-              class="absolute -right-3.5 top-1/2 -translate-y-1/2 z-30
-                    w-[18px] h-[42px] rounded-[9px] border
-                    flex flex-col items-center justify-center gap-[3px]
+              class="absolute right-1 top-1 z-30
+                    w-6 h-6 rounded-[6px] border
+                    flex items-center justify-center
                     cursor-ew-resize touch-none
-                    opacity-0 group-hover:opacity-100
-                    transition-all duration-150
-                    border-border/40 bg-background/80
+                    opacity-0 pointer-events-none
+                    group-hover:opacity-100 group-hover:pointer-events-auto
+                    transition-[opacity,transform,background-color,border-color] duration-150
+                    border-border/50 bg-background/85 backdrop-blur-[2px]
                     hover:border-[#7c9ef8] hover:bg-[#e8eeff]
+                    active:scale-[0.98]
                     dark:hover:border-[#5577cc] dark:hover:bg-[rgba(100,130,255,0.12)]"
               :class="resizingIndex === index
-                ? '!opacity-100 !bg-[#a277ff] !border-[#3355e0]'
+                ? '!opacity-100 !pointer-events-auto !bg-[#a277ff] !border-[#3355e0]'
                 : ''"
               type="button"
               :aria-label="t('builder.resizeFieldWidth')"
@@ -341,19 +343,12 @@ watch(
               @keydown.left.stop.prevent="nudgeResize(index, -2)"
               @keydown.right.stop.prevent="nudgeResize(index, 2)"
             >
-              <!-- 2×3 dot grid -->
-              <template v-for="_ in 3" :key="_">
-                <div class="flex gap-[3px]">
-                  <div
-                    :class="cn(
-                      'w-[3px] h-[3px] rounded-full transition-colors duration-150',
-                      resizingIndex === index
-                        ? 'bg-white'
-                        : 'bg-border/60 group-hover:bg-[#a277ff]'
-                    )"
-                  />
-                </div>
-              </template>
+              <ChevronsLeftRight
+                :class="cn(
+                  'h-4 w-4 transition-colors duration-150',
+                  resizingIndex === index ? 'text-white' : 'text-muted-foreground group-hover:text-[#3355e0]'
+                )"
+              />
             </button>
 
             <!-- 拖拽宽度遮罩 -->
