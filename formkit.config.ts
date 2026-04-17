@@ -71,6 +71,7 @@ export default defaultConfig({
     rootClasses,
   },
   inputs: {
+    submit: createInput(CustomButton, { family: 'button', props: ['buttonProps'] }),
     naiveButton: createInput(CustomButton, { family: 'button', props: ['buttonProps'] }),
     text: createNaiveInput('NaiveTextInput', NaiveTextInput, { family: 'text' }),
     email: createNaiveInput('NaiveTextInput', NaiveTextInput, { family: 'text' }),
