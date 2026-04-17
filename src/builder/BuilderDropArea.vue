@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
-import { Trash2, Monitor, Tablet, Smartphone, CodeXml, ChevronsLeftRight } from 'lucide-vue-next'
+import { Trash2, Monitor, Tablet, Smartphone, CodeXml, MoreVertical } from 'lucide-vue-next'
 import { useFormBuilderI18n } from '../i18n/context'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
@@ -38,6 +38,7 @@ const resizingPointerId = ref<number | null>(null)
 const startX = ref(0)
 const startSpan = ref(12)
 const columnWidth = ref(0)
+const isDragging = ref(false)
 
 // Safelist for Tailwind JIT to properly generate classes for dynamic column spans
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -136,28 +137,9 @@ const insertPointClasses = [
   'absolute',
   'bg-green-500',
   'z-[2000]',
-  'rounded-full',
-  'duration-[5ms]',
-  'before:block',
-  'before:content-["Drop_here"]',
-  'before:whitespace-nowrap',
-  'before:bg-green-900',
-  'before:py-1',
-  'before:h-6',
-  'before:px-3',
-  'before:rounded-lg',
-  'before:text-xs',
-  'before:font-medium',
-  'before:absolute',
-  'before:top-1/2',
-  'before:left-1/2',
-  'before:-translate-y-1/2',
-  'before:-translate-x-1/2',
-  'before:text-white',
-  'before:shadow-sm',
-  'before:transition-[opacity,transform]',
-  'before:border',
-  'before:border-green-400/20',
+  'rounded-sm',
+  'pointer-events-none',
+  'opacity-90',
 ]
 
 const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.value, {
@@ -267,6 +249,9 @@ watch(
             'w-full grid grid-cols-12 gap-x-4 gap-y-2 list-none p-0 m-0 flex-1',
             fields.length === 0 ? 'min-h-[200px] h-full' : 'h-fit',
           )"
+          @dragstart.capture="isDragging = true"
+          @dragend.capture="isDragging = false"
+          @drop.capture="isDragging = false"
           data-testid="drop-area"
         >
           <li
@@ -322,39 +307,26 @@ watch(
             </div>
 
             <!-- Resize handle -->
-            <button
-              class="absolute -right-3.5 top-1/2 -translate-y-1/2 z-30
-                    w-[18px] h-[42px] rounded-[9px] border
-                    flex flex-col items-center justify-center gap-[3px]
-                    cursor-ew-resize touch-none
-                    opacity-0 group-hover:opacity-100
+            <n-button
+              text
+              size="small"
+              class="absolute top-1/2 -translate-y-1/2 -right-3 z-30
+                    opacity-0 pointer-events-none
+                    group-hover:opacity-100 group-hover:pointer-events-auto
                     transition-all duration-150
-                    border-border/40 bg-background/80
-                    hover:border-[#7c9ef8] hover:bg-[#e8eeff]
-                    dark:hover:border-[#5577cc] dark:hover:bg-[rgba(100,130,255,0.12)]"
+                    !cursor-ew-resize"
+              content-class="!cursor-ew-resize"
               :class="resizingIndex === index
-                ? '!opacity-100 !bg-[#a277ff] !border-[#3355e0]'
-                : ''"
-              type="button"
-              :aria-label="t('builder.resizeFieldWidth')"
+                ? '!opacity-100 scale-110'
+                : isDragging ? '!opacity-0 !pointer-events-none' : ''"
               @pointerdown.stop.prevent="startResize($event, index)"
               @keydown.left.stop.prevent="nudgeResize(index, -2)"
               @keydown.right.stop.prevent="nudgeResize(index, 2)"
             >
-              <!-- 2×3 dot grid -->
-              <template v-for="_ in 3" :key="_">
-                <div class="flex gap-[3px]">
-                  <div
-                    :class="cn(
-                      'w-[3px] h-[3px] rounded-full transition-colors duration-150',
-                      resizingIndex === index
-                        ? 'bg-white'
-                        : 'bg-border/60 group-hover:bg-[#a277ff]'
-                    )"
-                  />
-                </div>
+              <template #icon>
+                <MoreVertical class="h-5 w-5" />
               </template>
-            </button>
+            </n-button>
 
             <!-- 拖拽宽度遮罩 -->
             <div
