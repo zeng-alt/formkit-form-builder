@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
-import { Trash2, Monitor, Tablet, Smartphone, CodeXml, Move, ChevronsLeftRight } from 'lucide-vue-next'
+import { Trash2, Monitor, Tablet, Smartphone, CodeXml, ChevronsLeftRight } from 'lucide-vue-next'
 import { useFormBuilderI18n } from '../i18n/context'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
@@ -286,14 +286,6 @@ watch(
             @keydown.enter.stop.prevent="clickedField(index)"
             @keydown.space.stop.prevent="clickedField(index)"
           >
-            <div
-              :class="cn(
-                'absolute top-2 -right-7 z-40 select-none flex items-center justify-center rounded-md bg-background/80 dark:bg-neutral-900/60 px-1 py-1 backdrop-blur-[1px] border border-border/50 shadow-sm transition-opacity',
-                selectedIndex === index ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-              )"
-            >
-              <Move class="h-3.5 w-3.5 text-muted-foreground/80" />
-            </div>
             <!-- Field content -->
             <div class="flex gap-1.5 p-1 w-full pb-2">
               <div class="flex-1 w-full">
@@ -320,7 +312,7 @@ watch(
                 size="small"
                 :aria-label="t('builder.deleteField')"
                 @click.stop="deleteField(index)"
-                class="h-7 w-7 md:h-8 md:w-8 hover:!bg-destructive/90 hover:text-white"
+                class="h-7 w-7 md:h-8 md:w-8 hover:!bg-destructive hover:!text-white"
               >
                 <template #icon><Trash2 class="!h-4 !w-4" /></template>
               </n-button>
@@ -328,7 +320,7 @@ watch(
 
             <!-- Resize handle（submit 字段不允许调整宽度） -->
             <button
-              class="absolute right-0 top-0 bottom-0 w-6 cursor-ew-resize flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ring/10 rounded-r-lg touch-none"
+              class="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-10 cursor-ew-resize flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ring/10 rounded-md touch-none"
               type="button"
               :aria-label="t('builder.resizeFieldWidth')"
               @pointerdown.stop.prevent="startResize($event, index)"
