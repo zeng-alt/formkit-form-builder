@@ -53,6 +53,26 @@ export function rootClasses(
         "!bg-transparent": true,
       };
     }
+    if (sectionName === "label") {
+      return {
+        [semanticKey]: true,
+        block: true,
+        "text-xs": true,
+        "font-medium": true,
+        "mb-1": true,
+        "text-neutral-700": true,
+        "dark:text-zinc-300": true,
+      };
+    }
+    if (sectionName === "help") {
+      return {
+        [semanticKey]: true,
+        "text-[11px]": true,
+        "text-neutral-500": true,
+        "mt-0.5": true,
+        "dark:text-zinc-400": true,
+      };
+    }
     return { [semanticKey]: true };
   }
 
