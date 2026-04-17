@@ -73,6 +73,28 @@ export function rootClasses(
         "dark:text-zinc-400": true,
       };
     }
+    if (sectionName === "messages") {
+      return { [semanticKey]: true, "mt-1": true };
+    }
+    if (sectionName === "message") {
+      return {
+        [semanticKey]: true,
+        "text-red-600": true,
+        "text-[11px]": true,
+        "[line-height:1em]": true,
+        "mb-1": true,
+        "dark:text-red-400": true,
+      };
+    }
+    if (sectionName === "messageLink") {
+      return {
+        [semanticKey]: true,
+        "outline-none": true,
+        "focus-visible:ring-2": true,
+        "focus-visible:ring-offset-2": true,
+        "focus-visible:ring-red-500": true,
+      };
+    }
     return { [semanticKey]: true };
   }
 
