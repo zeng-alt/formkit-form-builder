@@ -103,14 +103,6 @@ const config = {
 }
 ```
 
-## 界面效果
-<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/db73d65c-9cda-4053-9cf1-8140d4db358a" />
-
-<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/0cd7a23e-db73-409b-892c-0632aaa57470" />
-
-<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/b0785ec4-aa4a-48ab-8422-0f989aebf884" />
-
-
 ## 发布到 npm（公共仓库）
 
 1) 确认 `package.json`：
