@@ -87,6 +87,7 @@ const isFocused = () => {
       type="textarea"
       @focus="isFocused"
       @blur="isFocused"
+      status="warning"
       class="border-none shadow-none bg-transparent flex-1"
       :autosize="{ minRows: 1, maxRows: 4 }"
       :placeholder="t('ai.placeholder')"
@@ -94,8 +95,7 @@ const isFocused = () => {
     />
     <n-button
       quaternary
-      circle
-      size="small"
+      size="medium"
       class="hover:bg-green-500 dark:hover:bg-green-500/30 hover:text-white h-6 w-6 mr-2"
       @click="handleClick()"
       :disabled="isLoading"
