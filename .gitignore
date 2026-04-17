@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 .DS_Store
 dist
+dist/*
 dist-ssr
 coverage
 *.local
@@ -29,7 +30,7 @@ coverage
 *.tsbuildinfo
 
 .eslintcache
-
+.package-lock.json
 # Cypress
 /cypress/videos/
 /cypress/screenshots/
