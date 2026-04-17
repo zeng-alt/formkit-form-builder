@@ -48,8 +48,8 @@ export function rootClasses(
 }
 
 /**
- * These classes have already been merged with globals using tailwind-merge
- * and are ready to be used directly in the theme.
+ * These classes have already been merged with globals and are ready to be used
+ * directly in the theme.
  **/
 const classes: Record<string, Record<string, boolean>> = {
   naiveAvatar__inner: {

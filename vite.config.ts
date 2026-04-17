@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import vueDevTools from 'vite-plugin-vue-devtools'
-import tailwindcss from '@tailwindcss/vite'
+import UnoCSS from 'unocss/vite'
 import dts from 'vite-plugin-dts'
 
 export default defineConfig(({ command }) => ({
@@ -12,7 +12,7 @@ export default defineConfig(({ command }) => ({
   publicDir:
     command === 'serve' ? fileURLToPath(new URL('./public', import.meta.url)) : false,
   plugins: [
-    tailwindcss(),
+    UnoCSS(),
     vue(),
     vueJsx(),
     vueDevTools(),
