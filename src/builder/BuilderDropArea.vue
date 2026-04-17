@@ -273,18 +273,18 @@ watch(
             v-for="(field, index) in fields"
             :key="(field as any)?.__key || (field as FormKitSchemaFormKit)?.name || (field as FormKitSchemaFormKit)?.$formkit + index"
             :class="cn(
-              'group rounded-lg transition-[border-color,background-color] duration-200 p-1 !cursor-grab h-full !z-20 relative border-2 border-dashed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--n-primary-color)] focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-              selectedIndex === index
-                ? 'border-[color:var(--n-primary-color)] bg-ring/20 dark:bg-accent/20 duration-300'
-                : 'bg-ring/5 border-transparent hover:border-[color:var(--n-primary-color-hover,var(--n-primary-color))] dark:bg-ring/3',
-            )"
-            :style="{
-              gridColumn: `span ${getColSpan(field, index)} / span ${getColSpan(field, index)}`
-            }"
-            tabindex="0"
-            @pointerdown.capture="clickedField(index)"
-            @keydown.enter.stop.prevent="clickedField(index)"
-            @keydown.space.stop.prevent="clickedField(index)"
+            'group rounded-xl transition-[border-color,background-color,box-shadow] duration-150',
+            'p-1 !cursor-grab h-full !z-20 relative border-[1.5px]',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a277ff] focus-visible:ring-offset-2',
+            selectedIndex === index
+              ? 'border-solid border-[#a277ff] bg-[#a277ff]/[0.05] shadow-[0_0_0_3px_rgba(79,110,247,0.12)] dark:bg-[#a277ff]/[0.08]'
+              : 'border-dashed border-transparent hover:border-[#7c9ef8] hover:bg-[#f0f4ff] dark:hover:bg-[rgba(100,130,255,0.07)]',
+          )"
+          :style="{ gridColumn: `span ${getColSpan(field, index)} / span ${getColSpan(field, index)}` }"
+          tabindex="0"
+          @pointerdown.capture="clickedField(index)"
+          @keydown.enter.stop.prevent="clickedField(index)"
+          @keydown.space.stop.prevent="clickedField(index)"
           >
             <!-- Field content -->
             <div class="flex gap-1.5 p-1 w-full pb-2">
@@ -308,41 +308,60 @@ watch(
               </div>
               <n-button
                 quaternary
-                circle
                 size="small"
                 :aria-label="t('builder.deleteField')"
                 @click.stop="deleteField(index)"
-                class="h-7 w-7 md:h-8 md:w-8 !text-muted-foreground hover:!bg-destructive/15 hover:!text-destructive"
+                class="!h-[26px] !w-[26px] !rounded-[7px] !text-muted-foreground
+                      hover:!bg-red-100 hover:!text-red-600
+                      active:!scale-95 active:!bg-red-200 active:!text-red-700
+                      dark:hover:!bg-red-950/50 dark:hover:!text-red-400
+                      transition-all duration-150"
               >
-                <template #icon><Trash2 class="!h-4 !w-4" /></template>
+                <template #icon><Trash2 class="!h-[13px] !w-[13px]" /></template>
               </n-button>
             </div>
 
-            <!-- Resize handle（submit 字段不允许调整宽度） -->
+            <!-- Resize handle -->
             <button
-              class="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 cursor-ew-resize flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity touch-none"
+              class="absolute -right-3.5 top-1/2 -translate-y-1/2 z-30
+                    w-[18px] h-[42px] rounded-[9px] border
+                    flex flex-col items-center justify-center gap-[3px]
+                    cursor-ew-resize touch-none
+                    opacity-0 group-hover:opacity-100
+                    transition-all duration-150
+                    border-border/40 bg-background/80
+                    hover:border-[#7c9ef8] hover:bg-[#e8eeff]
+                    dark:hover:border-[#5577cc] dark:hover:bg-[rgba(100,130,255,0.12)]"
+              :class="resizingIndex === index
+                ? '!opacity-100 !bg-[#a277ff] !border-[#3355e0]'
+                : ''"
               type="button"
               :aria-label="t('builder.resizeFieldWidth')"
               @pointerdown.stop.prevent="startResize($event, index)"
               @keydown.left.stop.prevent="nudgeResize(index, -2)"
               @keydown.right.stop.prevent="nudgeResize(index, 2)"
             >
-              <span
-                :class="cn(
-                  'h-2.5 w-2.5 rounded-full border-2 bg-transparent',
-                  selectedIndex === index
-                    ? 'border-[color:var(--n-primary-color)]'
-                    : 'border-[color:var(--n-primary-color-hover,var(--n-primary-color))]',
-                )"
-              />
+              <!-- 2×3 dot grid -->
+              <template v-for="_ in 3" :key="_">
+                <div class="flex gap-[3px]">
+                  <div
+                    :class="cn(
+                      'w-[3px] h-[3px] rounded-full transition-colors duration-150',
+                      resizingIndex === index
+                        ? 'bg-white'
+                        : 'bg-border/60 group-hover:bg-[#a277ff]'
+                    )"
+                  />
+                </div>
+              </template>
             </button>
 
-            <!-- 拖拽调整宽度时的遮罩，显示当前百分比 -->
+            <!-- 拖拽宽度遮罩 -->
             <div
               v-if="resizingIndex === index"
-              class="absolute inset-0 z-40 bg-background/50 backdrop-blur-[1px] flex items-center justify-center rounded-lg border-2 border-primary/50"
+              class="absolute inset-0 z-40 bg-[#a277ff]/[0.06] flex items-center justify-center rounded-xl border-[1.5px] border-[#a277ff]/50"
             >
-              <span class="bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded shadow-md">
+              <span class="bg-[#a277ff] text-white text-xs font-medium px-2.5 py-1 rounded-lg tracking-wide">
                 {{ (getColSpan(field, index) / 12 * 100).toFixed(0) }}%
               </span>
             </div>
