@@ -1166,7 +1166,7 @@ const classes: Record<string, Record<string, boolean>> = {
     "dark:text-white": true,
     "dark:ring-offset-amber-500": true,
     "before:transition-all": true,
-    "group-data-[loading=true]/form:before:content['']": true,
+    "group-data-[loading=true]/form:before:content-['']": true,
     "group-data-[loading=true]/form:before:block": true,
     "group-data-[loading=true]/form:before:animate-spin": true,
     "group-data-[loading=true]/form:before:w-5": true,
