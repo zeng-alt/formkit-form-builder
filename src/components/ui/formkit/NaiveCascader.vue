@@ -28,6 +28,7 @@ const clearable = computed<boolean>(() => (naiveProps.value.clearable as boolean
 const disabled = computed<boolean>(() =>
   Boolean((naiveProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
 )
+const bordered = computed<boolean>(() => (naiveProps.value.bordered as boolean | undefined) ?? true)
 const filterable = computed<boolean>(() => (naiveProps.value.filterable as boolean | undefined) ?? false)
 const multiple = computed<boolean>(() => (naiveProps.value.multiple as boolean | undefined) ?? false)
 const placeholder = computed(() => props.context.placeholder as string | undefined)
@@ -68,7 +69,7 @@ function handleUpdateValue(next: unknown) {
     :multiple="multiple"
     :placeholder="placeholder"
     :input-props="{ id: context.id }"
-    :bordered="false"
+    :bordered="bordered"
     @update:value="handleUpdateValue"
     @blur="context.handlers.blur"
   />

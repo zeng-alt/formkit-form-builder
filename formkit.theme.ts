@@ -29,8 +29,34 @@ export function rootClasses(
   sectionName: string,
   node: FormKitNode,
 ): Record<string, boolean> {
-  const key = `${node.props.type}__${sectionName}`;
   const semanticKey = `formkit-${sectionName}`;
+  if (node.props.family === "naive") {
+    if (sectionName === "outer" || sectionName === "wrapper") {
+      return { [semanticKey]: true, "w-full": true };
+    }
+    if (sectionName === "inner") {
+      return {
+        [semanticKey]: true,
+        "w-full": true,
+        "!p-0": true,
+        "!border-none": true,
+        "!bg-transparent": true,
+        "!shadow-none": true,
+      };
+    }
+    if (sectionName === "input") {
+      return {
+        [semanticKey]: true,
+        "w-full": true,
+        "!p-0": true,
+        "!border-none": true,
+        "!bg-transparent": true,
+      };
+    }
+    return { [semanticKey]: true };
+  }
+
+  const key = `${node.props.type}__${sectionName}`;
   const familyKey = node.props.family
     ? `family:${node.props.family}__${sectionName}`
     : "";
