@@ -1,6 +1,6 @@
 {
   "name": "@zeng-alt/formkit-form-builder",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A visual FormKit schema builder for Vue 3",
   "type": "module",
   "license": "MIT",
