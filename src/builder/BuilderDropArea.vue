@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
 import { Trash2, Monitor, Tablet, Smartphone, CodeXml, MoreVertical } from 'lucide-vue-next'
 import { useFormBuilderI18n } from '../i18n/context'
+import { useRuntimeLocale } from '../i18n/runtime-locale'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
@@ -16,6 +17,8 @@ import ImportExportModal from './ImportExportModal.vue'
 
 const { validationStringLength } = useFormField()
 const { t } = useFormBuilderI18n()
+const { locale: runtimeLocale, setLocale } = useRuntimeLocale()
+const isZh = computed(() => runtimeLocale.value === 'zh-CN')
 
 const showImportExportModal = ref(false)
 
@@ -344,21 +347,44 @@ watch(
 
     <!-- Right side controls -->
     <div class="w-16 shrink-0 hidden md:flex flex-col items-center">
-      <n-button-group vertical class="sticky top-20 bg-card shadow-sm rounded-lg border border-border/50">
-        <n-tooltip placement="left">
-          <template #trigger>
-            <n-button
-              @click="showImportExportModal = true"
-              size="small"
-              :aria-label="t('builder.importExportSchema')"
-              class="w-8 h-8"
-            >
-              <template #icon><CodeXml class="h-3.5 w-3.5" /></template>
-            </n-button>
-          </template>
-          {{ t('builder.importExportSchema') }}
-        </n-tooltip>
-      </n-button-group>
+      <div class="sticky top-20 flex flex-col gap-2">
+        <n-button-group vertical class="bg-card shadow-sm rounded-lg border border-border/50">
+          <n-tooltip placement="left">
+            <template #trigger>
+              <n-button
+                @click="showImportExportModal = true"
+                size="small"
+                :aria-label="t('builder.importExportSchema')"
+                class="w-8 h-8"
+              >
+                <template #icon><CodeXml class="h-3.5 w-3.5" /></template>
+              </n-button>
+            </template>
+            {{ t('builder.importExportSchema') }}
+          </n-tooltip>
+        </n-button-group>
+
+        <n-button-group vertical class="bg-card shadow-sm rounded-lg border border-border/50">
+          <n-button
+            size="small"
+            class="w-8 h-8"
+            :type="isZh ? 'primary' : 'default'"
+            aria-label="切换到中文"
+            @click="setLocale('zh-CN')"
+          >
+            中
+          </n-button>
+          <n-button
+            size="small"
+            class="w-8 h-8"
+            :type="!isZh ? 'primary' : 'default'"
+            aria-label="Switch to English"
+            @click="setLocale('en')"
+          >
+            EN
+          </n-button>
+        </n-button-group>
+      </div>
     </div>
 
     <ImportExportModal v-model:show="showImportExportModal" />
