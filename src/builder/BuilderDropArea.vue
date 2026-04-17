@@ -326,31 +326,26 @@ watch(
             </div>
 
             <!-- Resize handle -->
-            <button
-              class="absolute -right-3 inset-y-0 my-auto z-30
-                    w-4 h-4 flex items-center justify-center
-                    bg-transparent border-0 shadow-none p-0 m-0 appearance-none
-                    relative before:content-[''] before:absolute before:inset-[-10px] before:block
-                    cursor-ew-resize touch-none
+            <n-button
+              text
+              size="small"
+              class="absolute top-1/2 -translate-y-1/2 -right-3 z-30
                     opacity-0 pointer-events-none
                     group-hover:opacity-100 group-hover:pointer-events-auto
-                    transition-[opacity,transform,color] duration-150
-                    text-muted-foreground
-                    group-hover:text-[#3355e0]
-                    focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3355e0]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background
-                    hover:bg-transparent
-                    active:scale-[0.98]"
+                    transition-all duration-150
+                    !cursor-ew-resize"
+              content-class="!cursor-ew-resize"
               :class="resizingIndex === index
-                ? '!opacity-100 !pointer-events-auto !text-[#3355e0]'
+                ? '!opacity-100 scale-110'
                 : isDragging ? '!opacity-0 !pointer-events-none' : ''"
-              type="button"
-              :aria-label="t('builder.resizeFieldWidth')"
               @pointerdown.stop.prevent="startResize($event, index)"
               @keydown.left.stop.prevent="nudgeResize(index, -2)"
               @keydown.right.stop.prevent="nudgeResize(index, 2)"
             >
-              <MoreVertical class="h-4 w-4" />
-            </button>
+              <template #icon>
+                <MoreVertical class="h-5 w-5" />
+              </template>
+            </n-button>
 
             <!-- 拖拽宽度遮罩 -->
             <div
