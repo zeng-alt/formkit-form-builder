@@ -29,8 +29,93 @@ export function rootClasses(
   sectionName: string,
   node: FormKitNode,
 ): Record<string, boolean> {
-  const key = `${node.props.type}__${sectionName}`;
   const semanticKey = `formkit-${sectionName}`;
+  if (node.props.family === "naive") {
+    const type = (node.props as any)?.$formkit || node.props.type;
+    if (sectionName === "outer" || sectionName === "wrapper") {
+      return { [semanticKey]: true, "w-full": true };
+    }
+    if (sectionName === "inner") {
+      return {
+        [semanticKey]: true,
+        "w-full": true,
+        "!p-0": true,
+        "!border-none": true,
+        "!bg-transparent": true,
+        "!shadow-none": true,
+      };
+    }
+    if (sectionName === "input") {
+      return {
+        [semanticKey]: true,
+        "w-full": true,
+        "!p-0": true,
+        "!border-none": true,
+        "!bg-transparent": true,
+      };
+    }
+    if (sectionName === "label") {
+      if (type === "submit" || type === "naiveButton") {
+        return { [semanticKey]: true, hidden: true };
+      }
+      return {
+        [semanticKey]: true,
+        block: true,
+        "text-xs": true,
+        "font-bold": true,
+        "mb-1": true,
+        "text-neutral-700": true,
+        "dark:text-zinc-300": true,
+      };
+    }
+    if (sectionName === "help") {
+      if (type === "submit" || type === "naiveButton") {
+        return { [semanticKey]: true, hidden: true };
+      }
+      return {
+        [semanticKey]: true,
+        "text-[11px]": true,
+        "text-neutral-500": true,
+        "font-normal": true,
+        "mt-0.5": true,
+        "dark:text-zinc-400": true,
+      };
+    }
+    if (sectionName === "messages") {
+      return {
+        [semanticKey]: true,
+        "mt-1": true,
+        "space-y-0.5": true,
+      };
+    }
+    if (sectionName === "message") {
+      return {
+        [semanticKey]: true,
+        "text-red-500": true,
+        "text-[11px]": true,
+        "[line-height:1.2]": true,
+        "pl-1.5": true,
+        "relative": true,
+        "before:content-['•']": true,
+        "before:absolute": true,
+        "before:left-0": true,
+        "before:top-0": true,
+        "dark:text-red-400": true,
+      };
+    }
+    if (sectionName === "messageLink") {
+      return {
+        [semanticKey]: true,
+        "outline-none": true,
+        "focus-visible:ring-2": true,
+        "focus-visible:ring-offset-2": true,
+        "focus-visible:ring-red-500": true,
+      };
+    }
+    return { [semanticKey]: true };
+  }
+
+  const key = `${node.props.type}__${sectionName}`;
   const familyKey = node.props.family
     ? `family:${node.props.family}__${sectionName}`
     : "";
@@ -52,132 +137,6 @@ export function rootClasses(
  * directly in the theme.
  **/
 const classes: Record<string, Record<string, boolean>> = {
-  naiveAvatar__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveText__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveP__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveA__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveBlockquote__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveHr__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveH1__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveH2__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveH3__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveH4__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveH5__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveH6__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveUl__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveOl__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveLi__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveDivider__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveRate__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
-  naiveSwitch__inner: {
-    "!border-none": true,
-    "!shadow-none": true,
-    "!bg-transparent": true,
-    "!px-0": true,
-    "!py-0": true,
-  },
   "family:button__wrapper": {
     "group-data-[disabled=true]:grayscale": true,
   },

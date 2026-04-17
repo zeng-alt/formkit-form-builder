@@ -16,6 +16,17 @@ const buttonProps = computed(() => {
   )
 })
 
+const text = computed(() => {
+  return (
+    buttonProps.value?.text ??
+    props.context?.attrs?.buttonText ??
+    props.context?.node?.props?.buttonText ??
+    props.context?.buttonText ??
+    props.context?.label ??
+    ''
+  )
+})
+
 const type = computed(() => {
   const configuredType = buttonProps.value?.type
   if (configuredType && configuredType !== 'submit' && configuredType !== 'button') return configuredType
@@ -68,7 +79,7 @@ function handleClick(e: MouseEvent) {
       :secondary="booleans.secondary"
       @click="handleClick"
     >
-      {{ context.label }}
+      {{ text }}
     </NButton>
   </div>
 </template>

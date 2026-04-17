@@ -26,6 +26,7 @@ const clearable = computed<boolean>(() => (naiveProps.value.clearable as boolean
 const disabled = computed<boolean>(() =>
   Boolean((naiveProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
 )
+const bordered = computed<boolean>(() => (naiveProps.value.bordered as boolean | undefined) ?? true)
 
 const pickerType = computed<DatePickerProps['type']>(() =>
   props.context.type === 'datetime-local' || props.context.type === 'date-time' ? 'datetime' : 'date',
@@ -63,7 +64,7 @@ const formattedValue = computed<string | null>({
     :disabled="disabled"
     :placeholder="placeholder"
     :input-props="{ id: context.id }"
-    :bordered="false"
+    :bordered="bordered"
     @blur="context.handlers.blur"
   />
 </template>

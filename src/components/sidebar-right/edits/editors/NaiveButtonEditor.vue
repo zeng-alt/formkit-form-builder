@@ -73,4 +73,3 @@ const buttonType = createButtonProp<string>('type', 'default')
   <SwitchInput label="round" :value="buttonRound" @update:value="(v) => (buttonRound = v)" />
   <SwitchInput label="secondary" :value="buttonSecondary" @update:value="(v) => (buttonSecondary = v)" />
 </template>
-
