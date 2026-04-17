@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
-import { Trash2, Monitor, Tablet, Smartphone, CodeXml } from 'lucide-vue-next'
+import { Trash2, Monitor, Tablet, Smartphone, CodeXml, ChevronsLeftRight } from 'lucide-vue-next'
 import { useFormBuilderI18n } from '../i18n/context'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
@@ -34,6 +34,7 @@ const getColSpan = (field: unknown, index: number): number => {
 }
 
 const resizingIndex = ref<number | null>(null)
+const resizingPointerId = ref<number | null>(null)
 const startX = ref(0)
 const startSpan = ref(12)
 const columnWidth = ref(0)
@@ -46,8 +47,9 @@ const safelistClasses = [
   'col-span-9', 'col-span-10', 'col-span-11', 'col-span-12'
 ]
 
-const startResize = (e: MouseEvent, index: number) => {
+const startResize = (e: PointerEvent, index: number) => {
   resizingIndex.value = index
+  resizingPointerId.value = e.pointerId
   startX.value = e.clientX
 
   const schemaItem = formSchema.value[index]
@@ -61,18 +63,13 @@ const startResize = (e: MouseEvent, index: number) => {
     columnWidth.value = ul.clientWidth / 12
   }
 
-  window.addEventListener('mousemove', onMouseMove)
-  window.addEventListener('mouseup', onMouseUp)
+  ;(e.currentTarget as HTMLElement | null)?.setPointerCapture?.(e.pointerId)
+  window.addEventListener('pointermove', onPointerMove)
+  window.addEventListener('pointerup', onPointerUp)
+  window.addEventListener('pointercancel', onPointerUp)
 }
 
-const onMouseMove = (e: MouseEvent) => {
-  const index = resizingIndex.value
-  if (index === null) return
-
-  const deltaX = e.clientX - startX.value
-  const deltaSpan = Math.round(deltaX / columnWidth.value)
-  let newSpan = startSpan.value + deltaSpan
-
+const setColSpan = (index: number, newSpan: number) => {
   newSpan = Math.max(2, Math.min(12, newSpan))
   newSpan = Math.round(newSpan / 2) * 2
 
@@ -95,13 +92,36 @@ const onMouseMove = (e: MouseEvent) => {
   }
 }
 
-const onMouseUp = () => {
+const onPointerMove = (e: PointerEvent) => {
+  if (resizingPointerId.value !== null && e.pointerId !== resizingPointerId.value) return
+  const index = resizingIndex.value
+  if (index === null) return
+
+  const deltaX = e.clientX - startX.value
+  const deltaSpan = Math.round(deltaX / columnWidth.value)
+  setColSpan(index, startSpan.value + deltaSpan)
+}
+
+const onPointerUp = (e: PointerEvent) => {
+  if (resizingPointerId.value !== null && e.pointerId !== resizingPointerId.value) return
   if (resizingIndex.value !== null) {
     commitSchema(formSchema.value, { reason: 'resize' })
   }
   resizingIndex.value = null
-  window.removeEventListener('mousemove', onMouseMove)
-  window.removeEventListener('mouseup', onMouseUp)
+  resizingPointerId.value = null
+  window.removeEventListener('pointermove', onPointerMove)
+  window.removeEventListener('pointerup', onPointerUp)
+  window.removeEventListener('pointercancel', onPointerUp)
+}
+
+const nudgeResize = (index: number, deltaSpan: number) => {
+  const schemaItem = formSchema.value[index]
+  if (!schemaItem) return
+
+  const match = schemaItem.outerClass?.match(/col-span-(\d+)/)
+  const currentSpan = match ? parseInt(match[1], 10) : 12
+  setColSpan(index, currentSpan + deltaSpan)
+  commitSchema(formSchema.value, { reason: 'resize' })
 }
 
 const clickedField = (index: number) => {
@@ -135,7 +155,7 @@ const insertPointClasses = [
   'before:-translate-x-1/2',
   'before:text-white',
   'before:shadow-sm',
-  'before:transition-all',
+  'before:transition-[opacity,transform]',
   'before:border',
   'before:border-green-400/20',
 ]
@@ -181,6 +201,7 @@ watch(
           <template #trigger>
             <n-button
               :type="canvasView === 'desktop' ? 'primary' : 'default'"
+              :aria-label="t('builder.desktopView')"
               @click="canvasView = 'desktop'"
               size="small"
               class="w-8 h-8"
@@ -194,6 +215,7 @@ watch(
           <template #trigger>
             <n-button
               :type="canvasView === 'tablet' ? 'primary' : 'default'"
+              :aria-label="t('builder.tabletView')"
               @click="canvasView = 'tablet'"
               size="small"
               class="w-8 h-8"
@@ -207,6 +229,7 @@ watch(
           <template #trigger>
             <n-button
               :type="canvasView === 'mobile' ? 'primary' : 'default'"
+              :aria-label="t('builder.mobileView')"
               @click="canvasView = 'mobile'"
               size="small"
               class="w-8 h-8"
@@ -230,7 +253,7 @@ watch(
 
       <n-card
         :class="cn(
-          'relative min-h-[80%] !h-fit rounded-xl shadow-md transition-all duration-300 flex flex-col',
+          'relative min-h-[80%] !h-fit rounded-xl shadow-md transition-[width] duration-300 flex flex-col',
           canvasView === 'desktop' ? 'w-full lg:w-[80%]' : '',
           canvasView === 'tablet' ? 'w-[768px]' : '',
           canvasView === 'mobile' ? 'w-[375px]' : ''
@@ -250,15 +273,18 @@ watch(
             v-for="(field, index) in fields"
             :key="(field as any)?.__key || (field as FormKitSchemaFormKit)?.name || (field as FormKitSchemaFormKit)?.$formkit + index"
             :class="cn(
-              'group rounded-lg transition-all duration-200 p-1 !cursor-grab h-full !z-20 relative',
-              selectedIndex === index
-                ? 'border border-ring/30 bg-ring/20 dark:bg-accent/20 dark:border-ring/5 transition-all duration-300'
-                : 'border bg-ring/5 border-transparent hover:border-ring/30 dark:bg-ring/3 dark:hover:border-ring/10 transition-all duration-200',
-            )"
-            :style="{
-              gridColumn: `span ${getColSpan(field, index)} / span ${getColSpan(field, index)}`
-            }"
-            @pointerdown.capture="clickedField(index)"
+            'group rounded-xl transition-[border-color,background-color,box-shadow] duration-150',
+            'p-1 !cursor-grab h-full !z-20 relative border-[1.5px]',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a277ff] focus-visible:ring-offset-2',
+            selectedIndex === index
+              ? 'border-solid border-[#a277ff] bg-[#a277ff]/[0.05] shadow-[0_0_0_3px_rgba(79,110,247,0.12)] dark:bg-[#a277ff]/[0.08]'
+              : 'border-dashed border-transparent hover:border-[#7c9ef8] hover:bg-[#f0f4ff] dark:hover:bg-[rgba(100,130,255,0.07)]',
+          )"
+          :style="{ gridColumn: `span ${getColSpan(field, index)} / span ${getColSpan(field, index)}` }"
+          tabindex="0"
+          @pointerdown.capture="clickedField(index)"
+          @keydown.enter.stop.prevent="clickedField(index)"
+          @keydown.space.stop.prevent="clickedField(index)"
           >
             <!-- Field content -->
             <div class="flex gap-1.5 p-1 w-full pb-2">
@@ -271,7 +297,7 @@ watch(
             </div>
 
             <!-- Bottom controls: validation rules count + delete button -->
-            <div class="absolute bottom-1 right-1 flex flex-row z-10">
+            <div class="absolute bottom-1 right-1 flex flex-row z-40">
               <div
                 class="px-2 mr-1 border-1 border-ring/40 dark:border-ring/20 rounded-md flex items-center justify-center"
                 v-if="selectedIndex === index"
@@ -282,32 +308,60 @@ watch(
               </div>
               <n-button
                 quaternary
-                circle
                 size="small"
+                :aria-label="t('builder.deleteField')"
                 @click.stop="deleteField(index)"
-                class="h-4 w-4 md:h-5 md:w-5 hover:!bg-destructive/90 hover:text-white"
+                class="!h-[26px] !w-[26px] !rounded-[7px] !text-muted-foreground
+                      hover:!bg-red-100 hover:!text-red-600
+                      active:!scale-95 active:!bg-red-200 active:!text-red-700
+                      dark:hover:!bg-red-950/50 dark:hover:!text-red-400
+                      transition-all duration-150"
               >
-                <template #icon><Trash2 class="!h-3 !w-3" /></template>
+                <template #icon><Trash2 class="!h-[13px] !w-[13px]" /></template>
               </n-button>
             </div>
 
-            <!-- Resize handle（submit 字段不允许调整宽度） -->
-            <div
-              class="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-ring/10 rounded-r-lg"
-              @mousedown.stop.prevent="startResize($event, index)"
+            <!-- Resize handle -->
+            <button
+              class="absolute -right-3.5 top-1/2 -translate-y-1/2 z-30
+                    w-[18px] h-[42px] rounded-[9px] border
+                    flex flex-col items-center justify-center gap-[3px]
+                    cursor-ew-resize touch-none
+                    opacity-0 group-hover:opacity-100
+                    transition-all duration-150
+                    border-border/40 bg-background/80
+                    hover:border-[#7c9ef8] hover:bg-[#e8eeff]
+                    dark:hover:border-[#5577cc] dark:hover:bg-[rgba(100,130,255,0.12)]"
+              :class="resizingIndex === index
+                ? '!opacity-100 !bg-[#a277ff] !border-[#3355e0]'
+                : ''"
+              type="button"
+              :aria-label="t('builder.resizeFieldWidth')"
+              @pointerdown.stop.prevent="startResize($event, index)"
+              @keydown.left.stop.prevent="nudgeResize(index, -2)"
+              @keydown.right.stop.prevent="nudgeResize(index, 2)"
             >
-              <div class="flex flex-row gap-[1px]">
-                <div class="w-[2px] h-6 bg-ring/30 dark:bg-ring/50 rounded-full"></div>
-                <div class="w-[2px] h-6 bg-ring/30 dark:bg-ring/50 rounded-full"></div>
-              </div>
-            </div>
+              <!-- 2×3 dot grid -->
+              <template v-for="_ in 3" :key="_">
+                <div class="flex gap-[3px]">
+                  <div
+                    :class="cn(
+                      'w-[3px] h-[3px] rounded-full transition-colors duration-150',
+                      resizingIndex === index
+                        ? 'bg-white'
+                        : 'bg-border/60 group-hover:bg-[#a277ff]'
+                    )"
+                  />
+                </div>
+              </template>
+            </button>
 
-            <!-- 拖拽调整宽度时的遮罩，显示当前百分比 -->
+            <!-- 拖拽宽度遮罩 -->
             <div
               v-if="resizingIndex === index"
-              class="absolute inset-0 z-40 bg-background/50 backdrop-blur-[1px] flex items-center justify-center rounded-lg border-2 border-primary/50"
+              class="absolute inset-0 z-40 bg-[#a277ff]/[0.06] flex items-center justify-center rounded-xl border-[1.5px] border-[#a277ff]/50"
             >
-              <span class="bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded shadow-md">
+              <span class="bg-[#a277ff] text-white text-xs font-medium px-2.5 py-1 rounded-lg tracking-wide">
                 {{ (getColSpan(field, index) / 12 * 100).toFixed(0) }}%
               </span>
             </div>
@@ -324,6 +378,7 @@ watch(
             <n-button
               @click="showImportExportModal = true"
               size="small"
+              :aria-label="t('builder.importExportSchema')"
               class="w-8 h-8"
             >
               <template #icon><CodeXml class="h-3.5 w-3.5" /></template>
