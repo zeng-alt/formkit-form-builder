@@ -38,6 +38,7 @@ const resizingPointerId = ref<number | null>(null)
 const startX = ref(0)
 const startSpan = ref(12)
 const columnWidth = ref(0)
+const isDragging = ref(false)
 
 // Safelist for Tailwind JIT to properly generate classes for dynamic column spans
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -267,6 +268,9 @@ watch(
             'w-full grid grid-cols-12 gap-x-4 gap-y-2 list-none p-0 m-0 flex-1',
             fields.length === 0 ? 'min-h-[200px] h-full' : 'h-fit',
           )"
+          @dragstart.capture="isDragging = true"
+          @dragend.capture="isDragging = false"
+          @drop.capture="isDragging = false"
           data-testid="drop-area"
         >
           <li
@@ -323,7 +327,7 @@ watch(
 
             <!-- Resize handle -->
             <button
-              class="absolute right-1 top-1 z-30
+              class="absolute -right-3 top-1/2 -translate-y-1/2 z-30
                     w-6 h-6 rounded-[6px] border
                     flex items-center justify-center
                     cursor-ew-resize touch-none
@@ -336,7 +340,7 @@ watch(
                     dark:hover:border-[#5577cc] dark:hover:bg-[rgba(100,130,255,0.12)]"
               :class="resizingIndex === index
                 ? '!opacity-100 !pointer-events-auto !bg-[#a277ff] !border-[#3355e0]'
-                : ''"
+                : isDragging ? '!opacity-0 !pointer-events-none' : ''"
               type="button"
               :aria-label="t('builder.resizeFieldWidth')"
               @pointerdown.stop.prevent="startResize($event, index)"
