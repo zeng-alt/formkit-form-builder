@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
-import { Trash2, Monitor, Tablet, Smartphone, CodeXml } from 'lucide-vue-next'
+import { Trash2, Monitor, Tablet, Smartphone, CodeXml, GripVertical } from 'lucide-vue-next'
 import { useFormBuilderI18n } from '../i18n/context'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
@@ -260,6 +260,14 @@ watch(
             }"
             @pointerdown.capture="clickedField(index)"
           >
+            <div
+              :class="cn(
+                'absolute top-1/2 -translate-y-1/2 right-4 z-30 select-none flex items-center justify-center rounded-md bg-background/70 dark:bg-neutral-900/40 px-1 py-1 backdrop-blur-[1px] border border-border/40 shadow-sm transition-opacity',
+                selectedIndex === index ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+              )"
+            >
+              <GripVertical class="h-4 w-4 text-muted-foreground/80" />
+            </div>
             <!-- Field content -->
             <div class="flex gap-1.5 p-1 w-full pb-2">
               <div class="flex-1 w-full">
