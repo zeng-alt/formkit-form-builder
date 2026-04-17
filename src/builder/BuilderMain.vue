@@ -8,6 +8,8 @@ import BuilderDropArea from './BuilderDropArea.vue'
 import BuilderHeader from './BuilderHeader.vue'
 import { useFormBuilderConfig } from '../composables/use-config'
 import { provideFormBuilderI18n } from '../i18n/context'
+import { provideRuntimeLocale, type RuntimeLocale } from '../i18n/runtime-locale'
+import type { FormBuilderConfig } from '../types/env'
 
 const props = defineProps<ConfigProviderProps>()
 
@@ -17,9 +19,12 @@ const activeTheme = computed(() => {
   return colorMode.value === 'dark' ? darkTheme : null
 })
 
-const cfg = useFormBuilderConfig() as any
+const cfg = useFormBuilderConfig() as FormBuilderConfig
+const initialLocale: RuntimeLocale = cfg?.locale === 'en' ? 'en' : 'zh-CN'
+const runtimeLocale = provideRuntimeLocale(initialLocale)
+
 provideFormBuilderI18n({
-  locale: computed(() => cfg?.locale as string | undefined),
+  locale: computed(() => runtimeLocale.locale.value),
   messages: computed(() => cfg?.messages as Record<string, any> | undefined),
 })
 </script>
@@ -28,8 +33,8 @@ provideFormBuilderI18n({
   <n-config-provider
     :theme="activeTheme"
     :theme-overrides="themeOverrides"
-    :locale="locale"
-    :date-locale="dateLocale"
+    :locale="runtimeLocale.naiveLocale.value"
+    :date-locale="runtimeLocale.naiveDateLocale.value"
     :breakpoints="breakpoints"
     :cls-prefix="clsPrefix"
     :abstract="abstract"
