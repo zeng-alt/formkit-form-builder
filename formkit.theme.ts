@@ -58,7 +58,7 @@ export function rootClasses(
         [semanticKey]: true,
         block: true,
         "text-xs": true,
-        "font-medium": true,
+        "font-bold": true,
         "mb-1": true,
         "text-neutral-700": true,
         "dark:text-zinc-300": true,
@@ -69,6 +69,7 @@ export function rootClasses(
         [semanticKey]: true,
         "text-[11px]": true,
         "text-neutral-500": true,
+        "font-normal": true,
         "mt-0.5": true,
         "dark:text-zinc-400": true,
       };
