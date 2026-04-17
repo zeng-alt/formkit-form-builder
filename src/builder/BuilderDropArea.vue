@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
 import { FormKitSchema } from '@formkit/vue'
-import { Trash2, Monitor, Tablet, Smartphone, CodeXml, ChevronsLeftRight } from 'lucide-vue-next'
+import { Trash2, Monitor, Tablet, Smartphone, CodeXml } from 'lucide-vue-next'
 import { useFormBuilderI18n } from '../i18n/context'
 import { customInsertPlugin } from '../utils/custom-insert-plugin'
 import { formSchema, selectedIndex } from '../utils/default-form-elements'
@@ -328,18 +328,17 @@ watch(
             <!-- Resize handle -->
             <button
               class="absolute -right-3 top-1/2 -translate-y-1/2 z-30
-                    w-6 h-6 rounded-[6px] border
-                    flex items-center justify-center
+                    w-6 h-10
+                    flex flex-col items-center justify-center gap-1
                     cursor-ew-resize touch-none
                     opacity-0 pointer-events-none
                     group-hover:opacity-100 group-hover:pointer-events-auto
-                    transition-[opacity,transform,background-color,border-color] duration-150
-                    border-border/50 bg-background/85 backdrop-blur-[2px]
-                    hover:border-[#7c9ef8] hover:bg-[#e8eeff]
-                    active:scale-[0.98]
-                    dark:hover:border-[#5577cc] dark:hover:bg-[rgba(100,130,255,0.12)]"
+                    transition-[opacity,transform,color] duration-150
+                    text-muted-foreground
+                    group-hover:text-[#3355e0]
+                    active:scale-[0.98]"
               :class="resizingIndex === index
-                ? '!opacity-100 !pointer-events-auto !bg-[#a277ff] !border-[#3355e0]'
+                ? '!opacity-100 !pointer-events-auto !text-[#3355e0]'
                 : isDragging ? '!opacity-0 !pointer-events-none' : ''"
               type="button"
               :aria-label="t('builder.resizeFieldWidth')"
@@ -347,12 +346,9 @@ watch(
               @keydown.left.stop.prevent="nudgeResize(index, -2)"
               @keydown.right.stop.prevent="nudgeResize(index, 2)"
             >
-              <ChevronsLeftRight
-                :class="cn(
-                  'h-4 w-4 transition-colors duration-150',
-                  resizingIndex === index ? 'text-white' : 'text-muted-foreground group-hover:text-[#3355e0]'
-                )"
-              />
+              <span class="w-1 h-1 rounded-full bg-current" />
+              <span class="w-1 h-1 rounded-full bg-current" />
+              <span class="w-1 h-1 rounded-full bg-current" />
             </button>
 
             <!-- 拖拽宽度遮罩 -->
