@@ -2,6 +2,14 @@ import { defineConfig, presetWind3 } from 'unocss'
 import { presetTwAnimate } from 'unocss-tw-animate-css'
 
 export default defineConfig({
+  safelist: [
+    'mt-1',
+    'mb-0.5',
+    'text-red-600',
+    'dark:text-red-400',
+    'text-[11px]',
+    '[line-height:1.15]',
+  ],
   presets: [
     presetWind3(),
     presetTwAnimate(),
