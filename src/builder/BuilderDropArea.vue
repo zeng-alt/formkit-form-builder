@@ -328,7 +328,7 @@ watch(
             <!-- Resize handle -->
             <button
               class="absolute -right-3 top-1/2 -translate-y-1/2 z-30
-                    flex items-center justify-center
+                    w-4 h-4 flex items-center justify-center
                     bg-transparent border-0 shadow-none p-0 m-0 appearance-none
                     relative before:content-[''] before:absolute before:inset-[-10px] before:block
                     cursor-ew-resize touch-none
