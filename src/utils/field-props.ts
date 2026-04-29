@@ -1,3 +1,6 @@
+import type { Component } from 'vue'
+import { defineAsyncComponent } from 'vue'
+
 export type FieldCategory = 'fields' | 'structure' | 'static'
 
 type FieldPropDef = {
@@ -56,8 +59,13 @@ const defs: FieldPropDef[] = [
   { name: 'naiveAlert', tooltipKey: 'fieldProps.tooltip.naiveAlert', icon: 'i-lucide-alert-triangle', category: 'static' },
   { name: 'naiveBackTop', tooltipKey: 'fieldProps.tooltip.naiveBackTop', icon: 'i-lucide-arrow-up-to-line', category: 'static' },
   { name: 'naiveButton', tooltipKey: 'fieldProps.tooltip.naiveButton', icon: 'i-lucide-square', category: 'static' },
-  { name: 'submit', tooltipKey: 'fieldProps.tooltip.submit', icon: 'i-lucide-check-square', category: 'static' },
-  { name: 'reset', tooltipKey: 'fieldProps.tooltip.reset', icon: 'i-lucide-refresh-cw', category: 'static' },
+  { name: 'submit', tooltipKey: 'fieldProps.tooltip.submit', icon: 'i-lucide-check-square', category: 'structure' },
+  { name: 'reset', tooltipKey: 'fieldProps.tooltip.reset', icon: 'i-lucide-refresh-cw', category: 'structure' },
+  { name: 'group', tooltipKey: 'fieldProps.tooltip.group', icon: 'i-lucide-layers', category: 'structure' },
+  { name: 'list', tooltipKey: 'fieldProps.tooltip.list', icon: 'i-lucide-list', category: 'structure' },
+  { name: 'card', tooltipKey: 'fieldProps.tooltip.card', icon: 'i-lucide-square-stack', category: 'structure' },
+  { name: 'inputGroup', tooltipKey: 'fieldProps.tooltip.inputGroup', icon: 'i-lucide-columns-2', category: 'structure' },
+  { name: 'tabs', tooltipKey: 'fieldProps.tooltip.tabs', icon: 'i-lucide-panels-top-left', category: 'structure' },
 ]
 
 export function createFieldProps(
@@ -69,4 +77,69 @@ export function createFieldProps(
     icon: def.icon,
     category: def.category,
   }))
+}
+
+const editorImports: Record<string, () => Promise<{ default: Component }>> = {
+  text: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
+  textarea: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
+  email: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
+  url: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
+  tel: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
+  password: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
+  number: () => import('@/components/sidebar-right/edits/editors/NumberEditor.vue'),
+  checkbox: () => import('@/components/sidebar-right/edits/editors/CheckboxEditor.vue'),
+  radio: () => import('@/components/sidebar-right/edits/editors/RadioEditor.vue'),
+  range: () => import('@/components/sidebar-right/edits/editors/RangeEditor.vue'),
+  select: () => import('@/components/sidebar-right/edits/editors/SelectEditor.vue'),
+  date: () => import('@/components/sidebar-right/edits/editors/DateLikeEditor.vue'),
+  time: () => import('@/components/sidebar-right/edits/editors/DateLikeEditor.vue'),
+  naiveDateTime: () => import('@/components/sidebar-right/edits/editors/DateTimeEditor.vue'),
+  file: () => import('@/components/sidebar-right/edits/editors/FileEditor.vue'),
+  color: () => import('@/components/sidebar-right/edits/editors/ColorEditor.vue'),
+  naiveCascader: () => import('@/components/sidebar-right/edits/editors/NaiveCascaderEditor.vue'),
+  naiveTreeSelect: () => import('@/components/sidebar-right/edits/editors/NaiveTreeSelectEditor.vue'),
+  naiveMention: () => import('@/components/sidebar-right/edits/editors/NaiveMentionEditor.vue'),
+  naiveRate: () => import('@/components/sidebar-right/edits/editors/NaiveRateEditor.vue'),
+  naiveSwitch: () => import('@/components/sidebar-right/edits/editors/NaiveSwitchEditor.vue'),
+
+  naiveAvatar: () => import('@/components/sidebar-right/edits/editors/NaiveAvatarEditor.vue'),
+  naiveImage: () => import('@/components/sidebar-right/edits/editors/NaiveImageEditor.vue'),
+  naiveText: () => import('@/components/sidebar-right/edits/editors/NaiveTextEditor.vue'),
+  naiveP: () => import('@/components/sidebar-right/edits/editors/NaiveParagraphEditor.vue'),
+  naiveA: () => import('@/components/sidebar-right/edits/editors/NaiveLinkEditor.vue'),
+  naiveBlockquote: () => import('@/components/sidebar-right/edits/editors/NaiveBlockquoteEditor.vue'),
+  naiveH1: () => import('@/components/sidebar-right/edits/editors/NaiveH1Editor.vue'),
+  naiveH2: () => import('@/components/sidebar-right/edits/editors/NaiveH2Editor.vue'),
+  naiveH3: () => import('@/components/sidebar-right/edits/editors/NaiveH3Editor.vue'),
+  naiveH4: () => import('@/components/sidebar-right/edits/editors/NaiveH4Editor.vue'),
+  naiveH5: () => import('@/components/sidebar-right/edits/editors/NaiveH5Editor.vue'),
+  naiveH6: () => import('@/components/sidebar-right/edits/editors/NaiveH6Editor.vue'),
+  naiveUl: () => import('@/components/sidebar-right/edits/editors/NaiveUlEditor.vue'),
+  naiveOl: () => import('@/components/sidebar-right/edits/editors/NaiveOlEditor.vue'),
+  naiveLi: () => import('@/components/sidebar-right/edits/editors/NaiveLiEditor.vue'),
+  naiveDivider: () => import('@/components/sidebar-right/edits/editors/NaiveDividerEditor.vue'),
+  naiveAlert: () => import('@/components/sidebar-right/edits/editors/NaiveAlertEditor.vue'),
+  naiveBackTop: () => import('@/components/sidebar-right/edits/editors/NaiveBackTopEditor.vue'),
+  naiveButton: () => import('@/components/sidebar-right/edits/editors/NaiveButtonEditor.vue'),
+
+  submit: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
+  reset: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
+
+  group: () => import('@/components/sidebar-right/edits/editors/GroupEditor.vue'),
+  card: () => import('@/components/sidebar-right/edits/editors/CardEditor.vue'),
+  inputGroup: () => import('@/components/sidebar-right/edits/editors/InputGroupEditor.vue'),
+  tabs: () => import('@/components/sidebar-right/edits/editors/TabsEditor.vue'),
+}
+
+const editorComponents: Record<string, Component> = {}
+
+export function getFieldEditorComponent(type: string | null) {
+  const key = type ?? ''
+  if (!key) return null
+  const loader = editorImports[key]
+  if (!loader) return null
+  if (editorComponents[key]) return editorComponents[key]!
+  const cmp = defineAsyncComponent(loader)
+  editorComponents[key] = cmp
+  return cmp
 }

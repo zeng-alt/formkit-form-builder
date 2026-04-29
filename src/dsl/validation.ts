@@ -4,6 +4,7 @@ const escRegex = (raw: string) => raw.replaceAll('\\', '\\\\').replaceAll('/', '
 
 export function compileValidation(rules: DslRules | undefined): string | undefined {
   if (!rules) return undefined
+  if (typeof rules.validation === 'string' && rules.validation.trim()) return rules.validation.trim()
   const out: string[] = []
 
   if (rules.required) out.push('required')
@@ -39,6 +40,10 @@ export function compileValidation(rules: DslRules | undefined): string | undefin
 export function compileValidationMessages(
   rules: DslRules | undefined,
 ): Record<string, string> | undefined {
+  const explicit = rules?.validationMessages
+  if (explicit && typeof explicit === 'object' && Object.keys(explicit).length) {
+    return explicit
+  }
   const messages: Record<string, string> = {}
   const globalMsg = rules?.message?.trim() || undefined
   const overrides = rules?.messages && typeof rules.messages === 'object' ? rules.messages : undefined

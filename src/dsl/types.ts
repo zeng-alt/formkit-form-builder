@@ -14,6 +14,9 @@ export type DslLogic = {
 }
 
 export type DslRules = {
+  validation?: string
+  validationMessages?: Record<string, string>
+
   required?: boolean
   email?: boolean
   number?: boolean
@@ -37,6 +40,7 @@ export type DslRules = {
 
 export type DslLayout = {
   span?: number
+  rowSpan?: number
   labelWidth?: number
   labelAlign?: 'left' | 'right'
   display?: 'horizontal' | 'vertical'

@@ -26,12 +26,14 @@ const filteredFormElements = computed(() => {
 
 const categories = computed<{ id: PaletteCategory; label: string }[]>(() => [
   { id: 'fields', label: t('fieldProps.category.fields') },
+  { id: 'structure', label: t('fieldProps.category.structure') },
   { id: 'static', label: t('fieldProps.category.static') },
 ])
 
 const groupedElements = computed(() => {
   const groups: Record<PaletteCategory, PaletteItem[]> = {
     fields: [],
+    structure: [],
     static: [],
   }
 

@@ -14,6 +14,8 @@ import { generateKey } from '@/utils/dnd/schema'
 import { cn } from '@/utils/utils'
 import ImportExportModal from './ImportExportModal.vue'
 import type { PaletteItem } from '@/utils/palette-elements'
+import { canvasSchemaLibrary } from './containers'
+import { provideCanvasSchemaContext } from './composables/canvas-schema-context'
 
 const { t } = useFormBuilderI18n()
 const { setLocale, locale } = useRuntimeLocale()
@@ -47,9 +49,39 @@ const ensureUniqueField = (base: string, existing: Set<string>) => {
 const withFreshIdentity = (node: DslNode, existingFields: Set<string>): DslNode => {
   const cloned = safeClone(node)
   const nextId = generateKey()
-  const baseField = cloned.field || cloned.type || 'field'
-  const nextField = ensureUniqueField(baseField, existingFields)
-  existingFields.add(nextField)
+  const noFieldTypes = new Set([
+    'group',
+    'naiveAvatar',
+    'naiveImage',
+    'naiveText',
+    'naiveP',
+    'naiveA',
+    'naiveBlockquote',
+    'naiveH1',
+    'naiveH2',
+    'naiveH3',
+    'naiveH4',
+    'naiveH5',
+    'naiveH6',
+    'naiveUl',
+    'naiveOl',
+    'naiveLi',
+    'naiveDivider',
+    'naiveAlert',
+    'naiveBackTop',
+    'naiveButton',
+    'submit',
+    'reset',
+  ])
+  const shouldHaveField = (cloned.kind ?? 'formkit') === 'formkit' && !noFieldTypes.has(cloned.type)
+  const nextField = shouldHaveField
+    ? (() => {
+        const baseField = cloned.field || cloned.type || 'field'
+        const safe = ensureUniqueField(baseField, existingFields)
+        existingFields.add(safe)
+        return safe
+      })()
+    : undefined
   const next: DslNode = { ...cloned, id: nextId, field: nextField }
   if (Array.isArray(cloned.children) && cloned.children.length) {
     next.children = cloned.children.map((c) => withFreshIdentity(c, existingFields))
@@ -91,7 +123,13 @@ watch(
   { deep: true },
 )
 
-const compiledSchema = computed(() => dslToFormKitSchema(items.value as any, {}))
+const compiledSchema = computed(() =>
+  dslToFormKitSchema(items.value as any, {}).map((n: any) => {
+    if (!n || typeof n !== 'object') return n
+    if ('if' in n) delete n.if
+    return n
+  }),
+)
 
 const canvasFormClass = computed(() => {
   const common = ['[&_.formkit-label]:text-xs', '[&_.formkit-label]:font-bold'].join(' ')
@@ -133,7 +171,69 @@ const deleteField = (index: number) => {
 }
 
 const cardStyle = computed(() => ({ '--fk-label-width': `${formDsl.value.meta.labelWidth}px` }))
-const schemaLibrary = {}
+
+type TabsPane = { __key: string; label?: string; children?: DslNode[] }
+
+const updateContainerChildren = (containerKey: string, children: any[]) => {
+  const updateNodes = (nodes: DslNode[]): { next: DslNode[]; updated: boolean } => {
+    let updated = false
+    const next = nodes.map((n) => {
+      if (!n || typeof n !== 'object') return n
+
+      if (n.id === containerKey) {
+        if (n.kind === 'cmp' && n.type === 'tabs') {
+          const panes = Array.isArray(children) ? (children as TabsPane[]) : []
+          updated = true
+          return { ...n, props: { ...n.props, modelValue: panes } }
+        }
+        const arr = Array.isArray(children) ? (children as DslNode[]) : []
+        updated = true
+        return { ...n, children: arr }
+      }
+
+      if (n.kind === 'cmp' && n.type === 'tabs') {
+        const panes = (n.props as any)?.modelValue
+        if (Array.isArray(panes)) {
+          const nextPanes = panes.map((p: any) => {
+            if (p && typeof p === 'object' && p.__key === containerKey) {
+              updated = true
+              return { ...p, children: Array.isArray(children) ? (children as DslNode[]) : [] }
+            }
+            return p
+          })
+          if (updated) return { ...n, props: { ...n.props, modelValue: nextPanes } }
+        }
+      }
+
+      if (Array.isArray(n.children) && n.children.length) {
+        const res = updateNodes(n.children)
+        if (res.updated) {
+          updated = true
+          return { ...n, children: res.next }
+        }
+      }
+      return n
+    })
+    return { next, updated }
+  }
+
+  const res = updateNodes(formDsl.value.nodes)
+  if (!res.updated) return
+  commitSchema({ ...formDsl.value, nodes: res.next }, { reason: 'container-children', merge: true })
+}
+
+const selectByKey = (key: string) => {
+  selectedTarget.value = 'node'
+  selectedId.value = key
+}
+
+provideCanvasSchemaContext({
+  library: canvasSchemaLibrary,
+  updateContainerChildren,
+  selectByKey,
+})
+
+const schemaLibrary = canvasSchemaLibrary
 </script>
 
 <template>
@@ -226,7 +326,8 @@ const schemaLibrary = {}
                 : 'border-dashed border-transparent hover:border-[#7c9ef8] hover:bg-[#f0f4ff] dark:hover:bg-[rgba(100,130,255,0.07)]',
             ]"
             :style="{
-              gridColumn: `span ${Math.max(1, Math.min(12, Number(node.layout?.span ?? 12)))} / span ${Math.max(1, Math.min(12, Number(node.layout?.span ?? 12)))}`
+              gridColumn: `span ${Math.max(1, Math.min(12, Number(node.layout?.span ?? 12)))} / span ${Math.max(1, Math.min(12, Number(node.layout?.span ?? 12)))}`,
+              gridRow: `span ${Math.max(1, Math.min(6, Number(node.layout?.rowSpan ?? 1)))} / span ${Math.max(1, Math.min(6, Number(node.layout?.rowSpan ?? 1)))}`
             }"
             tabindex="0"
             @pointerdown.stop="onSelectItem(node)"

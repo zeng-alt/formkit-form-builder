@@ -5,7 +5,7 @@ import {
   DEFAULT_TIME_VALUE_FORMAT,
 } from './default-form-elements'
 
-export type PaletteCategory = 'fields' | 'static'
+export type PaletteCategory = 'fields' | 'structure' | 'static'
 
 export type PaletteItem = {
   key: string
@@ -60,6 +60,12 @@ export function createPaletteItems(
     const name = t(`elements.${key}.name`)
     const description = t(`elements.${key}.description`)
     return { key, name, description, icon: '', category: 'static', node }
+  }
+
+  const structureEl = (key: string, node: DslNode): PaletteItem => {
+    const name = t(`elements.${key}.name`)
+    const description = t(`elements.${key}.description`)
+    return { key, name, description, icon: '', category: 'structure', node }
   }
 
   const base = [
@@ -303,6 +309,48 @@ export function createPaletteItems(
     }),
   ]
 
-  return [...base, ...statics]
-}
+  const structures: PaletteItem[] = [
+    structureEl('group', {
+      id: mk('group'),
+      kind: 'formkit',
+      type: 'group',
+      field: 'group',
+      label: tOpt(t, 'elements.group.label') ?? t('elements.group.name'),
+      layout: { span: 12 },
+      children: [],
+    }),
+    structureEl('list', {
+      id: mk('list'),
+      kind: 'cmp',
+      type: 'list',
+      layout: { span: 12 },
+      props: { showActions: false, label: tOpt(t, 'elements.list.label') ?? t('elements.list.name') },
+      children: [],
+    }),
+    structureEl('card', {
+      id: mk('card'),
+      kind: 'cmp',
+      type: 'card',
+      layout: { span: 12 },
+      props: { label: tOpt(t, 'elements.card.label') ?? t('elements.card.name') },
+      children: [],
+    }),
+    structureEl('inputGroup', {
+      id: mk('inputGroup'),
+      kind: 'cmp',
+      type: 'inputGroup',
+      layout: { span: 12 },
+      props: { label: tOpt(t, 'elements.inputGroup.label') ?? t('elements.inputGroup.name') },
+      children: [],
+    }),
+    structureEl('tabs', {
+      id: mk('tabs'),
+      kind: 'cmp',
+      type: 'tabs',
+      layout: { span: 12 },
+      props: { label: tOpt(t, 'elements.tabs.label') ?? t('elements.tabs.name') },
+    }),
+  ]
 
+  return [...base, ...structures, ...statics]
+}

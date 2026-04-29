@@ -17,7 +17,17 @@ const clampSpan = (v: unknown) => {
   return Math.max(1, Math.min(12, Math.round(n)))
 }
 
-const compileOuterClass = (span: number | undefined) => `col-span-${clampSpan(span)}`
+const clampRowSpan = (v: unknown) => {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return 1
+  return Math.max(1, Math.min(6, Math.round(n)))
+}
+
+const compileOuterClass = (span: number | undefined, rowSpan: number | undefined) => {
+  const col = `col-span-${clampSpan(span)}`
+  const row = rowSpan && clampRowSpan(rowSpan) > 1 ? ` row-span-${clampRowSpan(rowSpan)}` : ''
+  return `${col}${row}`
+}
 
 const unwrapExpr = (value: unknown) => {
   if (typeof value === 'string' && value.trim().startsWith('$')) return value.trim()
@@ -88,11 +98,23 @@ export function dslToFormKitSchema(
     }
 
     if (kind === 'cmp') {
+      const containerKey = n.id
+      const base = unwrappedProps ?? {}
+      const mv =
+        base && typeof base === 'object' && 'modelValue' in (base as any)
+          ? (base as any).modelValue
+          : Array.isArray(n.children)
+            ? n.children
+            : []
+      const { modelValue: _mv, ...rest } = base as any
       return {
         __key: n.id,
         $cmp: n.type,
-        ...(unwrappedProps ? { props: unwrappedProps } : {}),
-        ...(children ? { children } : {}),
+        props: {
+          ...rest,
+          containerKey,
+          modelValue: mv,
+        },
       }
     }
 
@@ -162,7 +184,7 @@ export function dslToFormKitSchema(
       name,
       id: `field_${n.id}`,
       label: n.label,
-      outerClass: compileOuterClass(n.layout?.span),
+      outerClass: compileOuterClass(n.layout?.span, n.layout?.rowSpan),
       validation: compileValidation(n.rules),
       validationMessages: compileValidationMessages(n.rules),
       ...(ifExpr ? { if: ifExpr } : {}),
