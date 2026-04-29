@@ -35,7 +35,6 @@ import NaiveBackTop from './components/ui/structure/NaiveBackTop.vue'
 
 const sharedObservedProps = [
   'props',
-  '__bind',
   'placeholder',
   'options',
   'min',
@@ -77,9 +76,9 @@ export default defaultConfig({
     rootClasses,
   },
   inputs: {
-    naiveButton: createInput(CustomButton, { family: 'naive', props: ['buttonProps', 'buttonText', 'label', 'type', '__bind'] }),
-    submit: createInput(CustomButton, { family: 'naive', props: ['buttonProps', 'buttonText', 'label', 'type', '__bind'] }),
-    reset: createInput(CustomButton, { family: 'naive', props: ['buttonProps', 'buttonText', 'label', 'type', '__bind'] }),
+    naiveButton: createInput(CustomButton, { family: 'naive', props: ['buttonProps', 'buttonText', 'label', 'type'] }),
+    submit: createInput(CustomButton, { family: 'naive', props: ['buttonProps', 'buttonText', 'label', 'type'] }),
+    reset: createInput(CustomButton, { family: 'naive', props: ['buttonProps', 'buttonText', 'label', 'type'] }),
     text: createUiInput('NaiveTextInput', NaiveTextInput),
     email: createUiInput('NaiveTextInput', NaiveTextInput),
     password: createUiInput('NaiveTextInput', NaiveTextInput),

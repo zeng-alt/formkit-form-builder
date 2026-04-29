@@ -12,7 +12,7 @@ import { useFormBuilderConfig } from '../composables/use-config'
 import type { FormBuilderConfig } from '../types/env'
 import { provideFormBuilderI18n } from '../i18n/context'
 import { provideRuntimeLocale, type RuntimeLocale } from '../i18n/runtime-locale'
-import { selectedKey, selectedTarget } from '../utils/default-form-elements'
+import { selectedId, selectedTarget } from '../utils/default-form-elements'
 
 
 const props = defineProps<ConfigProviderProps>()
@@ -53,7 +53,7 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
   if (el.closest('.n-button,.n-input,.n-select,.n-switch,.n-dropdown,.n-popover')) return
 
   selectedTarget.value = 'form'
-  selectedKey.value = null
+  selectedId.value = null
 }
 </script>
 

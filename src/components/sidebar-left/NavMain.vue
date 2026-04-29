@@ -2,17 +2,16 @@
 import { inject, computed, ref, type Ref } from 'vue'
 import { NTabs, NTabPane, NScrollbar } from 'naive-ui'
 import { createFieldProps } from '../../utils/field-props'
-import { createDefaultFormElements } from '../../utils/default-form-elements'
+import { defaultDslElements } from '../../utils/default-dsl-elements'
 import DraggableList from './DraggableList.vue'
 import { useFormBuilderI18n } from '../../i18n/context'
-import type { FormKitSchemaFormKit } from '@formkit/core'
-import { getContainerKind } from '../../utils/schema/containers'
+import type { DslNode } from '@/dsl/types'
 
 const searchInput = inject('searchInput', ref(''))
 const collapsed = inject('sidebarCollapsed', ref(false)) as Ref<boolean>
 const { t } = useFormBuilderI18n()
 const fieldProps = computed(() => createFieldProps(t))
-const defaultFormElements = computed(() => createDefaultFormElements(t))
+const defaultFormElements = computed(() => defaultDslElements)
 
 const filteredFormElements = computed(() => {
   if (!searchInput.value.trim()) {
@@ -22,9 +21,9 @@ const filteredFormElements = computed(() => {
   const query = searchInput.value.toLowerCase()
   return defaultFormElements.value.filter(
     (element) =>
-      element.name.toLowerCase().includes(query) ||
-      element.description.toLowerCase().includes(query) ||
-      String((element as any).$formkit ?? (element as any).$cmp ?? '').toLowerCase().includes(query),
+      String(element.label ?? '').toLowerCase().includes(query) ||
+      String(element.field ?? '').toLowerCase().includes(query) ||
+      String(element.type ?? '').toLowerCase().includes(query),
   )
 })
 
@@ -37,15 +36,14 @@ const categories = computed<{ id: ElementCategory; label: string }[]>(() => [
 ])
 
 const groupedElements = computed(() => {
-  const groups: Record<ElementCategory, FormKitSchemaFormKit[]> = {
+  const groups: Record<ElementCategory, DslNode[]> = {
     fields: [],
     structure: [],
     static: [],
   }
 
   filteredFormElements.value.forEach((item) => {
-    const kind = getContainerKind(item)
-    const typeName = kind ? kind : String((item as any).$formkit ?? (item as any).$cmp ?? '')
+    const typeName = String(item.type ?? '')
     const prop = fieldProps.value.find((p) => p.name === typeName)
     const category = (prop?.category || 'fields') as ElementCategory
     if (groups[category]) {

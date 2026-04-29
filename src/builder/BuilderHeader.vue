@@ -3,14 +3,14 @@ import { ref } from 'vue'
 import { NButton, NButtonGroup, NTooltip, NPopconfirm } from 'naive-ui'
 import { useFormBuilderI18n } from '../i18n/context'
 import BuilderPreview from './BuilderPreview.vue'
-import AiPrompt from '../components/ai-prompt/AiPrompt.vue'
 import ThemeSwitcher from '../components/ui/theme-switcher/ThemeSwitcher.vue'
 import { canRedo, canUndo, commitSchema, redo, undo } from '../composables/schema-history'
+import { formDsl } from '../utils/default-form-elements'
 
 const { t } = useFormBuilderI18n()
 
 const clearForm = () => {
-  commitSchema([], { reason: 'clear' })
+  commitSchema({ ...formDsl.value, nodes: [] }, { reason: 'clear' })
 }
 const showPreview = ref(false)
 </script>
@@ -51,9 +51,7 @@ const showPreview = ref(false)
       </div>
 
       <div class="flex justify-center">
-        <div class="w-full max-w-[560px]">
-          <AiPrompt />
-        </div>
+        <div class="w-full max-w-[560px]" />
       </div>
 
       <div class="flex items-center gap-2 justify-end">

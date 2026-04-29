@@ -4,7 +4,6 @@ import type { InputProps } from 'naive-ui'
 import { NInput } from 'naive-ui'
 import { computed } from 'vue'
 import { getSchemaProps } from './schema-props'
-import { createSchemaRuntimeContext, runBindCode } from '@/utils/bind-runtime'
 
 const props = defineProps<{
   context: FormKitFrameworkContext
@@ -43,30 +42,15 @@ const value = computed(() => {
 })
 const placeholder = computed(() => props.context.placeholder as string | undefined)
 
-const bind = computed(() => {
-  const b: any = props.context?.node?.props?.__bind
-  return b && typeof b === 'object' ? (b as Record<string, unknown>) : {}
-})
-
-const runEvent = async (key: string, event: unknown, extra?: Record<string, unknown>) => {
-  const code = bind.value[key]
-  if (typeof code !== 'string' || !code.trim()) return
-  const $ = createSchemaRuntimeContext(props.context, event, extra)
-  await runBindCode(code, { event, data: props.context?.node?.root?.value, attrs: props.context?.attrs, $ })
-}
-
 async function handleUpdateValue(next: string | [string, string]) {
   props.context.node.input(next)
-  await runEvent('onInput', next, { $value: next })
-  await runEvent('onChange', next, { $value: next })
 }
 
 const handleFocus = async (e: FocusEvent) => {
-  await runEvent('onFocus', e)
+  props.context.handlers.focus?.(e as any)
 }
 
 const handleBlur = async (e: FocusEvent) => {
-  await runEvent('onBlur', e)
   props.context.handlers.blur(e)
 }
 </script>

@@ -1,620 +1,190 @@
-import type { FormKitSchemaFormKit } from '@formkit/core'
-import type { WritableComputedRef } from 'vue'
+import type { DslCondition, DslNode, DslRules } from '@/dsl/types'
 import { computed, ref } from 'vue'
-import { formMeta, formSchema, selectedIndex, selectedKey, selectedTarget } from '../utils/default-form-elements'
+import { formDsl, selectedId, selectedTarget } from '../utils/default-form-elements'
 import { commitSchema } from './schema-history'
 
 export const isLoading = ref(false)
 
-type Found = { node: FormKitSchemaFormKit; path: number[]; rootIndex: number } | null
+export type CanvasView = 'desktop' | 'tablet' | 'mobile'
+export const canvasView = ref<CanvasView>('desktop')
 
-export const findSchemaNodeByKey = (schema: any[], key: string, path: number[] = [], rootIndex = -1): Found => {
-  for (let i = 0; i < schema.length; i++) {
-    const node = schema[i]
+type Found = { node: DslNode; path: number[] } | null
+
+export const findDslNodeById = (nodes: any[], id: string, path: number[] = []): Found => {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]
     if (!node || typeof node !== 'object') continue
     const nextPath = [...path, i]
-    const nextRootIndex = rootIndex >= 0 ? rootIndex : i
-    if ((node as any).__key === key) return { node, path: nextPath, rootIndex: nextRootIndex }
+    if (node.id === id) return { node: node as DslNode, path: nextPath }
     const children = (node as any)?.children
     if (Array.isArray(children)) {
-      const found = findSchemaNodeByKey(children, key, [...nextPath, -1], nextRootIndex)
+      const found = findDslNodeById(children, id, nextPath)
       if (found) return found
     }
   }
   return null
 }
 
-const normalizePath = (path: number[]) => path.filter((p) => p !== -1)
-
-const getNodeAtPath = (schema: any[], path: number[]) => {
-  let cur: any = schema
-  for (const idx of normalizePath(path)) {
-    cur = Array.isArray(cur) ? cur[idx] : cur?.children?.[idx]
+const updateAtPath = (nodes: any[], path: number[], nextNode: any): any[] => {
+  if (path.length === 0) return nodes
+  const nextNodes = [...nodes]
+  const idx0 = path[0]!
+  if (path.length === 1) {
+    nextNodes[idx0] = nextNode
+    return nextNodes
   }
-  return cur as FormKitSchemaFormKit | undefined
-}
-
-const updateAtPath = (schema: any[], path: number[], nextNode: any): any[] => {
-  const p = normalizePath(path)
-  if (p.length === 0) return schema
-  const nextSchema = [...schema]
-  const idx0 = p[0]!
-  if (p.length === 1) {
-    nextSchema[idx0] = nextNode
-    return nextSchema
-  }
-  const parent = { ...(nextSchema[idx0] as any) }
+  const parent = { ...(nextNodes[idx0] as any) }
+  nextNodes[idx0] = parent
   let cursor: any = parent
-  for (let i = 1; i < p.length - 1; i++) {
-    const idx = p[i]!
+  for (let i = 1; i < path.length - 1; i++) {
+    const idx = path[i]!
     const arr = Array.isArray(cursor.children) ? [...cursor.children] : []
     const child = { ...(arr[idx] as any) }
     arr[idx] = child
     cursor.children = arr
     cursor = child
   }
-  const lastIdx = p[p.length - 1]!
+  const lastIdx = path[path.length - 1]!
   const lastArr = Array.isArray(cursor.children) ? [...cursor.children] : []
   lastArr[lastIdx] = nextNode
   cursor.children = lastArr
-  nextSchema[idx0] = parent
-  return nextSchema
+  return nextNodes
 }
 
-export const selectedField = computed(() => {
-  const key = selectedKey.value
-  if (key) {
-    const found = findSchemaNodeByKey(formSchema.value as any[], key)
-    if (found) return found.node
+const setNodePartial = (patch: Partial<DslNode>) => {
+  const id = selectedId.value
+  if (!id) return
+  const found = findDslNodeById(formDsl.value.nodes as any[], id)
+  if (!found) return
+  const current = found.node
+  const nextNode: DslNode = {
+    ...current,
+    ...patch,
+    props: patch.props === undefined ? current.props : patch.props,
+    rules: patch.rules === undefined ? current.rules : patch.rules,
+    layout: patch.layout === undefined ? current.layout : patch.layout,
+    logic: patch.logic === undefined ? current.logic : patch.logic,
   }
-  return formSchema.value[selectedIndex.value]
+  const nextNodes = updateAtPath(formDsl.value.nodes as any[], found.path, nextNode)
+  commitSchema({ ...formDsl.value, nodes: nextNodes }, { reason: 'node-edit', merge: true })
+}
+
+export const selectedNode = computed(() => {
+  const id = selectedId.value
+  if (!id) return null
+  const found = findDslNodeById(formDsl.value.nodes as any[], id)
+  return found?.node ?? null
 })
 
-export type CanvasView = 'desktop' | 'tablet' | 'mobile'
-export const canvasView = ref<CanvasView>('desktop')
-
-type SchemaWithButtonProps = FormKitSchemaFormKit & {
-  buttonProps?: Record<string, unknown>
-}
-
 export function useFormField() {
-  const normalizeName = (value: string) => {
-    let name = value.trim().replace(/[^a-zA-Z0-9_]+/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '')
-    if (!name) return ''
-    if (/^\d/.test(name)) name = `field_${name}`
-    return name
-  }
-
-  const setFieldProp = (key: string, value: unknown) => {
-    if (formSchema.value.length > 0) {
-      const selected = selectedKey.value
-      const found = selected ? findSchemaNodeByKey(formSchema.value as any[], selected) : null
-      const path = found?.path
-      const currentNode = path ? getNodeAtPath(formSchema.value as any[], path) : formSchema.value[selectedIndex.value]
-      if (!currentNode) return
-
-      const current = { ...(currentNode as Record<string, unknown>) }
-      const isCmp = typeof (current as any)?.$cmp === 'string' && Boolean((current as any)?.$cmp)
-      const propKeys = new Set(['label', 'help', 'placeholder', 'bordered', 'embedded', 'hoverable', 'size'])
-      if (isCmp && propKeys.has(key)) {
-        const nextProps: any = { ...(((current as any).props ?? {}) as any) }
-        if (value === undefined) delete nextProps[key]
-        else nextProps[key] = value
-        ;(current as any).props = Object.keys(nextProps).length ? nextProps : undefined
-      } else if (value === undefined) {
-        delete (current as any)[key]
-      } else {
-        ;(current as any)[key] = value
-      }
-      const nextSchema = path
-        ? updateAtPath(formSchema.value as any[], path, current as FormKitSchemaFormKit)
-        : (() => {
-            const updatedSchema = [...formSchema.value]
-            updatedSchema[selectedIndex.value] = current as FormKitSchemaFormKit
-            return updatedSchema
-          })()
-      commitSchema(nextSchema as FormKitSchemaFormKit[], { reason: 'field-edit', merge: true })
-    }
-  }
-
-  const setButtonProp = (key: string, value: unknown) => {
-    if (formSchema.value.length > 0) {
-      const selected = selectedKey.value
-      const found = selected ? findSchemaNodeByKey(formSchema.value as any[], selected) : null
-      const path = found?.path
-      const current = (path ? getNodeAtPath(formSchema.value as any[], path) : formSchema.value[selectedIndex.value]) as SchemaWithButtonProps
-      if (!current) return
-      const nextButtonProps = {
-        ...current?.buttonProps,
-        [key]: value,
-      }
-      const nextNode = {
-        ...current,
-        buttonProps: nextButtonProps,
-      } as FormKitSchemaFormKit
-      const nextSchema = path
-        ? updateAtPath(formSchema.value as any[], path, nextNode)
-        : (() => {
-            const updatedSchema = [...formSchema.value]
-            updatedSchema[selectedIndex.value] = nextNode
-            return updatedSchema
-          })()
-      commitSchema(nextSchema as FormKitSchemaFormKit[], { reason: 'field-edit', merge: true })
-    }
-  }
-
-  const setPropsProp = (key: string, value: unknown) => {
-    if (formSchema.value.length > 0) {
-      const selected = selectedKey.value
-      const found = selected ? findSchemaNodeByKey(formSchema.value as any[], selected) : null
-      const path = found?.path
-      const current = (path ? getNodeAtPath(formSchema.value as any[], path) : formSchema.value[selectedIndex.value]) as any
-      if (!current) return
-      const nextProps: any = { ...(((current as any).props ?? {}) as any) }
-      if (value === undefined) delete nextProps[key]
-      else nextProps[key] = value
-      const nextNode: any = { ...current, props: Object.keys(nextProps).length ? nextProps : undefined }
-      const nextSchema = path
-        ? updateAtPath(formSchema.value as any[], path, nextNode)
-        : (() => {
-            const updatedSchema = [...formSchema.value]
-            updatedSchema[selectedIndex.value] = nextNode
-            return updatedSchema
-          })()
-      commitSchema(nextSchema as FormKitSchemaFormKit[], { reason: 'field-edit', merge: true })
-    }
-  }
-
-  const createButtonProp = <T>(key: string, defaultValue: T): WritableComputedRef<T, T> => {
-    return computed({
-      get: () => {
-        const current = selectedField.value as SchemaWithButtonProps
-        const value = current?.buttonProps?.[key]
-        return (value ?? defaultValue) as T
-      },
-      set: (value: T) => setButtonProp(key, value),
-    })
-  }
-
-  const createPropsProp = <T>(key: string, defaultValue: T): WritableComputedRef<T, T> => {
-    return computed({
-      get: () => {
-        const current: any = selectedField.value as any
-        const value = current?.props?.[key]
-        return (value ?? defaultValue) as T
-      },
-      set: (value: T) => setPropsProp(key, value),
-    })
-  }
-
-  const createValidationValue = (validationType: string, active: boolean = true) => {
-    return computed({
-      get: () => getParameterizedValidation(validationType),
-      set: (value: string) => {
-        updateValidationString(`${validationType}:${value}`, active)
-      },
-    })
-  }
-
-  const createValidationMessageValue = (validationType: string) => {
-    return computed<string>({
-      get: () => {
-        const current: any = selectedField.value as any
-        const msgs = current?.validationMessages
-        if (!msgs || typeof msgs !== 'object') return ''
-        const v = (msgs as any)[validationType]
-        if (v === null || v === undefined) return ''
-        return String(v)
-      },
-      set: (value: string) => {
-        const current: any = selectedField.value as any
-        const prev = current?.validationMessages
-        const next: Record<string, unknown> =
-          prev && typeof prev === 'object' ? { ...(prev as Record<string, unknown>) } : {}
-        const trimmed = value.trim()
-        if (!trimmed) delete next[validationType]
-        else next[validationType] = trimmed
-        setFieldProp('validationMessages', Object.keys(next).length ? next : undefined)
-      },
-    })
-  }
-
-  const fieldName = computed({
-    get: () => selectedField.value?.name || '',
-    set: (newName: string) => {
-      const nextName = normalizeName(newName)
-      setFieldProp('name', nextName || undefined)
-    },
-  })
-
-  const useExpressionValue = computed({
-    get: () => {
-      const current = selectedField.value as any
-      return Boolean(current?.useExpressionValue)
-    },
-    set: (value: boolean) => setFieldProp('useExpressionValue', value ? true : undefined),
-  })
-
-  const valueExpression = computed<string>({
-    get: () => {
-      const current = selectedField.value as any
-      const value = current?.__raw__valueExpression ?? current?.valueExpression
-      if (typeof value !== 'string') return ''
-      return value
-    },
-    set: (value: string) => {
-      setFieldProp('__raw__valueExpression', value.trim() ? value : undefined)
-      setFieldProp('valueExpression', undefined)
-    },
-  })
-
-  const ifExpression = computed<string>({
-    get: () => {
-      const current = selectedField.value as any
-      const raw = current?.__raw__ifExpression ?? current?.if
-      if (typeof raw !== 'string') return ''
-      return raw
-    },
-    set: (value: string) => {
-      const next = value.trim()
-      setFieldProp('__raw__ifExpression', next ? next : undefined)
-      setFieldProp('if', next ? next : undefined)
-    },
-  })
-
-  const label = computed({
-    get: () => {
-      const current: any = selectedField.value as any
-      if (typeof current?.$cmp === 'string' && current.$cmp) return String(current?.props?.label ?? '')
-      return (selectedField.value as any)?.label || ''
-    },
-    set: (newLabel: string) => setFieldProp('label', newLabel),
-  })
-
-  const buttonText = computed<string>({
-    get: () => {
-      const current = selectedField.value as any
-      const value = current?.buttonText
-      if (typeof value !== 'string') return ''
-      return value
-    },
-    set: (value: string) => {
-      const next = value.trim()
-      setFieldProp('buttonText', next ? next : undefined)
-    },
-  })
-
-  const placeholder = computed({
-    get: () => {
-      const current: any = selectedField.value as any
-      if (typeof current?.$cmp === 'string' && current.$cmp) return String(current?.props?.placeholder ?? '')
-      return (selectedField.value as any)?.placeholder || ''
-    },
-    set: (newPlaceholder: string) => setFieldProp('placeholder', newPlaceholder),
-  })
-
-  const fieldValue = computed<string>({
-    get: () => {
-      const current = selectedField.value as unknown as { value?: unknown }
-      const value = current?.value
-      if (value === null || value === undefined) return ''
-      return String(value)
-    },
-    set: (newValue: string) => {
-      setFieldProp('value', newValue === '' ? undefined : newValue)
-    },
-  })
-
-  const validationString = computed({
-    get: () => selectedField.value?.validation || '',
-    set: (value: string) => {
-      const next = value.trim()
-      setFieldProp('validation', next ? next : undefined)
-    },
-  })
-
-  const validationStringLength = computed(() => {
-    if (!validationString.value) return 0
-    const validation = selectedField.value?.validation
-    if (typeof validation !== 'string') return 0
-    return validation.split('|').length
-  })
-
-  const updateValidationString = (value: string, active: boolean = true) => {
-    const currentValidation = validationString.value.split('|').filter(Boolean)
-    let newValidation: string[]
-
-    if (!value.includes(':')) {
-      if (currentValidation.includes(value)) {
-        newValidation = currentValidation.filter((item: string) => item !== value)
-      } else {
-        newValidation = [...currentValidation, value]
-      }
-      validationString.value = newValidation.join('|')
-      return
-    } else {
-      const [validationType, validationValue] = value.split(':')
-      if (currentValidation.includes(value) && !active) {
-        newValidation = currentValidation.filter((item: string) => item !== value)
-      } else {
-        const indexOfType = currentValidation.findIndex((item: string) =>
-          item.startsWith(`${validationType}:`),
-        )
-        if (indexOfType === -1) {
-          newValidation = [...currentValidation, value]
-        } else {
-          newValidation = [
-            ...currentValidation.slice(0, indexOfType),
-            `${validationType}:${validationValue}`,
-            ...currentValidation.slice(indexOfType + 1),
-          ]
-        }
-      }
-      validationString.value = newValidation.join('|')
-      return
-    }
-  }
-
-  const isActive = (fn: (arg0: string) => boolean, strVal: string) => {
-    return computed(() => fn(strVal))
-  }
-
-  const getParameterizedValidation = (validationType: string) => {
-    if (!validationString.value) return ''
-
-    const validations = validationString.value.split('|')
-    const validation = validations.find((item: string) => item.startsWith(`${validationType}`))
-
-    if (!validation) return ''
-
-    return validation.replace(`${validationType}:`, '')
-  }
-
-  const help = computed({
-    get: () => {
-      const current: any = selectedField.value as any
-      if (typeof current?.$cmp === 'string' && current.$cmp) return String(current?.props?.help ?? '')
-      return (selectedField.value as any)?.help || ''
-    },
-    set: (newHelp: string) => setFieldProp('help', newHelp),
-  })
-
-  const whichNumber = computed<string>({
-    get: () => selectedField.value?.number || 'integer',
-    set: (value: string) => {
-      if (value === 'integer') {
-        if (formSchema.value.length > 0) {
-          const updatedSchema = [...formSchema.value]
-          updatedSchema[selectedIndex.value] = {
-            ...updatedSchema[selectedIndex.value],
-            number: value,
-            step: '1',
-          } as FormKitSchemaFormKit
-          commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-        }
-      } else {
-        if (formSchema.value.length > 0) {
-          const updatedSchema = [...formSchema.value]
-          updatedSchema[selectedIndex.value] = {
-            ...updatedSchema[selectedIndex.value],
-            number: value,
-            step: '0.1',
-          } as FormKitSchemaFormKit
-          commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-        }
-      }
-    },
-  })
-
-  const numOfFiles = computed({
-    get: () => selectedField.value?.multiple || 'false',
-    set: (value: string) => {
-      if (formSchema.value.length > 0) {
-        const updatedSchema = [...formSchema.value]
-        updatedSchema[selectedIndex.value] = {
-          ...updatedSchema[selectedIndex.value],
-          multiple: value,
-        } as FormKitSchemaFormKit
-        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-      }
-    },
-  })
-
-  const modelValue = computed<string[]>({
-    get: () => selectedField.value?.options || [],
-    set: (newOptions: string[]) => {
-      if (formSchema.value.length > 0) {
-        const updatedSchema = [...formSchema.value]
-        updatedSchema[selectedIndex.value] = {
-          ...updatedSchema[selectedIndex.value],
-          options: newOptions,
-        } as FormKitSchemaFormKit
-        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-      }
-    },
-  })
-
-  const optionsRaw = computed<unknown>({
-    get: () => selectedField.value?.options ?? [],
-    set: (newOptions: unknown) => {
-      if (formSchema.value.length > 0) {
-        const updatedSchema = [...formSchema.value]
-        updatedSchema[selectedIndex.value] = {
-          ...updatedSchema[selectedIndex.value],
-          options: newOptions,
-        } as FormKitSchemaFormKit
-        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-      }
-    },
-  })
-
-  const min = computed<number | undefined>({
-    get: () => selectedField.value?.min,
-    set: (newMin: number | undefined) => {
-      if (formSchema.value.length > 0) {
-        const updatedSchema = [...formSchema.value]
-        updatedSchema[selectedIndex.value] = {
-          ...updatedSchema[selectedIndex.value],
-          min: newMin,
-        } as FormKitSchemaFormKit
-        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-      }
-    },
-  })
-
-  const max = computed<number | undefined>({
-    get: () => selectedField.value?.max,
-    set: (newMax: number | undefined) => {
-      if (formSchema.value.length > 0) {
-        const updatedSchema = [...formSchema.value]
-        updatedSchema[selectedIndex.value] = {
-          ...updatedSchema[selectedIndex.value],
-          max: newMax,
-        } as FormKitSchemaFormKit
-        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-      }
-    },
-  })
-
   const selectedIsForm = computed(() => selectedTarget.value === 'form')
-  const hasField = computed(() => selectedIsForm.value || !!formSchema.value[selectedIndex.value])
-
-  const isValidationChecked = (validationType: string) => {
-    if (!hasField.value) return false
-    const validationStr = selectedField?.value?.validation
-    if (!validationStr || typeof validationStr !== 'string') return false
-
-    const validations = validationStr.split('|')
-    return validations.some((validation: string) => {
-      if (validation === validationType) return true
-
-      const [type] = validation.split(':')
-      return type === validationType
-    })
-  }
+  const hasField = computed(() => selectedIsForm.value || !!selectedNode.value)
 
   const currentFieldType = computed(() => {
-    if (!hasField.value) return null
     if (selectedIsForm.value) return 'form'
-    const current: any = selectedField.value as any
-    if (typeof current?.$formkit === 'string' && current.$formkit) return current.$formkit
-    if (typeof current?.$cmp === 'string' && current.$cmp) return current.$cmp
-    return null
+    return selectedNode.value?.type ?? null
   })
 
   const formName = computed<string>({
-    get: () => formMeta.value.name,
+    get: () => formDsl.value.formName,
     set: (value: string) => {
-      const next = value.trim()
-      formMeta.value = { ...formMeta.value, name: next || 'form' }
+      const next = value.trim() || 'form'
+      commitSchema({ ...formDsl.value, formName: next }, { reason: 'form-edit', merge: true })
     },
   })
 
   const formLabelPosition = computed<'top' | 'left'>({
-    get: () => formMeta.value.labelPosition,
+    get: () => formDsl.value.meta.labelPosition,
     set: (value: 'top' | 'left') => {
-      formMeta.value = { ...formMeta.value, labelPosition: value }
+      commitSchema(
+        { ...formDsl.value, meta: { ...formDsl.value.meta, labelPosition: value } },
+        { reason: 'form-edit', merge: true },
+      )
     },
   })
 
   const formLabelWidth = computed<number>({
-    get: () => formMeta.value.labelWidth,
+    get: () => formDsl.value.meta.labelWidth,
     set: (value: number) => {
       const n = Number(value)
-      const next = Number.isFinite(n) ? Math.max(0, Math.min(2000, Math.round(n))) : 120
-      formMeta.value = { ...formMeta.value, labelWidth: next }
+      const next = Number.isFinite(n) ? Math.max(0, Math.min(2000, Math.round(n))) : 80
+      commitSchema(
+        { ...formDsl.value, meta: { ...formDsl.value.meta, labelWidth: next } },
+        { reason: 'form-edit', merge: true },
+      )
     },
+  })
+
+  const fieldName = computed<string>({
+    get: () => selectedNode.value?.field ?? '',
+    set: (value: string) => setNodePartial({ field: value.trim() || undefined }),
+  })
+
+  const label = computed<string>({
+    get: () => selectedNode.value?.label ?? '',
+    set: (value: string) => setNodePartial({ label: value }),
+  })
+
+  const placeholder = computed<string>({
+    get: () => String(selectedNode.value?.props?.placeholder ?? ''),
+    set: (value: string) => {
+      const nextProps = { ...selectedNode.value?.props, placeholder: value }
+      setNodePartial({ props: nextProps })
+    },
+  })
+
+  const span = computed<number>({
+    get: () => Number(selectedNode.value?.layout?.span ?? 12),
+    set: (value: number) => {
+      const n = Number(value)
+      const nextSpan = Number.isFinite(n) ? Math.max(1, Math.min(12, Math.round(n))) : 12
+      setNodePartial({ layout: { ...selectedNode.value?.layout, span: nextSpan } })
+    },
+  })
+
+  const rules = computed<DslRules>({
+    get: () => selectedNode.value?.rules ?? {},
+    set: (value: DslRules) => setNodePartial({ rules: value }),
+  })
+
+  const visibleIf = computed<DslCondition | undefined>({
+    get: () => selectedNode.value?.logic?.visibleIf,
+    set: (value: DslCondition | undefined) =>
+      setNodePartial({ logic: { ...selectedNode.value?.logic, visibleIf: value } }),
+  })
+
+  const disabledIf = computed<DslCondition | undefined>({
+    get: () => selectedNode.value?.logic?.disabledIf,
+    set: (value: DslCondition | undefined) =>
+      setNodePartial({ logic: { ...selectedNode.value?.logic, disabledIf: value } }),
   })
 
   const availableFieldNames = computed(() => {
-    const extractNames = (schema: FormKitSchemaFormKit[]): string[] => {
-      let names: string[] = []
-      for (const field of schema) {
-        if (field.name && typeof field.name === 'string') {
-          names.push(field.name)
-        }
-        if (field.children && Array.isArray(field.children)) {
-          names = names.concat(extractNames(field.children as FormKitSchemaFormKit[]))
-        }
+    const out: string[] = []
+    const walk = (nodes: DslNode[]) => {
+      for (const n of nodes) {
+        if (n.field) out.push(n.field)
+        if (Array.isArray(n.children)) walk(n.children)
       }
-      return names
     }
-    return Array.from(new Set(extractNames(formSchema.value)))
-  })
-
-  const rowSpan = computed<number>({
-    get: () => {
-      const outerClass = selectedField.value?.outerClass
-      if (typeof outerClass !== 'string') return 1
-      const match = outerClass.match(/\brow-span-(\d+)\b/)
-      return match ? parseInt(match[1]!, 10) : 1
-    },
-    set: (value: number) => {
-      const nextSpan = Math.max(1, Math.min(6, Math.round(value)))
-      const currentOuterClass = selectedField.value?.outerClass
-      let classes = typeof currentOuterClass === 'string' ? currentOuterClass : ''
-
-      if (nextSpan === 1) {
-        classes = classes.replace(/\brow-span-\d+\b/g, '').replace(/\s+/g, ' ').trim()
-      } else if (/\brow-span-\d+\b/.test(classes)) {
-        classes = classes.replace(/\brow-span-\d+\b/g, `row-span-${nextSpan}`).replace(/\s+/g, ' ').trim()
-      } else {
-        classes = `${classes} row-span-${nextSpan}`.replace(/\s+/g, ' ').trim()
-      }
-
-      setFieldProp('outerClass', classes || undefined)
-    },
-  })
-
-  const bindEvents = computed<Record<string, unknown>>({
-    get: () => {
-      const current: any = selectedField.value as any
-      const value = current?.__bind
-      if (value && typeof value === 'object') return value as Record<string, unknown>
-      const legacy = current?.bind
-      if (legacy && typeof legacy === 'object') return legacy as Record<string, unknown>
-      return {}
-    },
-    set: (value: Record<string, unknown>) => {
-      const hasAny = value && typeof value === 'object' && Object.keys(value).length > 0
-      setFieldProp('__bind', hasAny ? value : undefined)
-      setFieldProp('bind', undefined)
-    },
+    walk(formDsl.value.nodes)
+    return Array.from(new Set(out))
   })
 
   return {
-    fieldName,
-    useExpressionValue,
-    valueExpression,
-    ifExpression,
-    label,
-    buttonText,
-    placeholder,
-    fieldValue,
-    updateValidationString,
-    isActive,
-    createValidationValue,
-    createValidationMessageValue,
-    validationStringLength,
-    currentFieldType,
-    availableFieldNames,
     hasField,
     selectedIsForm,
+    currentFieldType,
     formName,
     formLabelPosition,
     formLabelWidth,
-    help,
-    whichNumber,
-    validationString,
-    numOfFiles,
-    modelValue,
-    optionsRaw,
-    min,
-    max,
-    isValidationChecked,
-    createButtonProp,
-    createPropsProp,
-    rowSpan,
-    bindEvents,
+    fieldName,
+    label,
+    placeholder,
+    span,
+    rules,
+    visibleIf,
+    disabledIf,
+    availableFieldNames,
   }
 }

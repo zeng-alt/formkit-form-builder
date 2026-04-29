@@ -1,100 +1,46 @@
-import type { FormKitSchemaFormKit } from '@formkit/core'
 import { computed, ref } from 'vue'
-import { formSchema, selectedIndex, selectedKey } from '../utils/default-form-elements'
-import { generateKey } from '../utils/dnd/schema'
+import { formDsl, selectedId, selectedTarget } from '../utils/default-form-elements'
+import type { FormDslDocument } from '@/dsl/types'
 
-type SchemaSnapshot = FormKitSchemaFormKit[]
+type DslSnapshot = FormDslDocument
 
 const MAX_HISTORY = 100
 const MERGE_WINDOW_MS = 500
 
-const past = ref<SchemaSnapshot[]>([])
-const future = ref<SchemaSnapshot[]>([])
+const past = ref<DslSnapshot[]>([])
+const future = ref<DslSnapshot[]>([])
 const lastCommit = ref<{ at: number; reason?: string } | null>(null)
 
-function cloneSchema(schema: SchemaSnapshot): SchemaSnapshot {
+function cloneSnapshot(snapshot: DslSnapshot): DslSnapshot {
   try {
-    return structuredClone(schema)
+    return structuredClone(snapshot)
   } catch {
-    return JSON.parse(JSON.stringify(schema)) as SchemaSnapshot
-  }
-}
-
-function clampSelectedIndex(schemaLength: number) {
-  if (schemaLength <= 0) {
-    selectedIndex.value = 0
-    selectedKey.value = null
-    return
-  }
-
-  if (selectedIndex.value > schemaLength - 1) {
-    selectedIndex.value = schemaLength - 1
+    return JSON.parse(JSON.stringify(snapshot)) as DslSnapshot
   }
 }
 
 export const canUndo = computed(() => past.value.length > 0)
 export const canRedo = computed(() => future.value.length > 0)
 
-function migrateExpressionKeys(schema: SchemaSnapshot) {
-  const visit = (nodes: any[]) => {
-    for (const node of nodes) {
-      if (!node || typeof node !== 'object') continue
-      if (typeof node.__key !== 'string' || !node.__key) {
-        node.__key = generateKey()
-      }
-      if (typeof node.valueExpression === 'string' && typeof node.__raw__valueExpression !== 'string') {
-        node.__raw__valueExpression = node.valueExpression
-      }
-      if (typeof node.if === 'string' && typeof node.__raw__ifExpression !== 'string') {
-        node.__raw__ifExpression = node.if
-      }
-      if ('valueExpression' in node) delete node.valueExpression
-      const bind = (node as any).bind
-      if (bind && typeof bind !== 'string') {
-        if (typeof bind === 'object' && !Array.isArray(bind) && typeof (node as any).__bind !== 'object') {
-          ;(node as any).__bind = bind
-        }
-        delete (node as any).bind
-      } else if (typeof bind === 'string') {
-        if (bind === '$someAttributes') delete (node as any).bind
-        else if (bind.startsWith('$bind_')) delete (node as any).bind
-      }
-      if (Array.isArray(node.children)) visit(node.children)
-    }
-  }
-  visit(schema as any[])
-}
-
-function containsKey(nodes: any[], key: string): boolean {
+function containsId(nodes: any[], id: string): boolean {
   for (const node of nodes) {
     if (!node || typeof node !== 'object') continue
-    if ((node as any).__key === key) return true
+    if ((node as any).id === id) return true
     const children = (node as any)?.children
-    if (Array.isArray(children) && containsKey(children, key)) return true
+    if (Array.isArray(children) && containsId(children, id)) return true
   }
   return false
 }
 
-function findRootIndexForKey(schema: any[], key: string): number {
-  for (let i = 0; i < schema.length; i++) {
-    const node = schema[i]
-    if (!node || typeof node !== 'object') continue
-    if ((node as any).__key === key) return i
-    const children = (node as any)?.children
-    if (Array.isArray(children) && containsKey(children, key)) return i
-  }
-  return -1
-}
-
 export function commitSchema(
-  nextSchema: SchemaSnapshot,
+  next: DslSnapshot,
   options?: { reason?: string; merge?: boolean },
 ) {
   const now = Date.now()
-  const currentSchema = formSchema.value
-  const prevSelectedKey = selectedKey.value ?? ((formSchema.value[selectedIndex.value] as any)?.__key as string | undefined)
+  const current = formDsl.value
+  const prevSelectedId = selectedId.value
 
-  if (currentSchema === nextSchema) return
+  if (current === next) return
 
   const last = lastCommit.value
   const shouldMerge =
@@ -105,7 +51,7 @@ export function commitSchema(
     past.value.length > 0
 
   if (!shouldMerge) {
-    past.value.push(cloneSchema(currentSchema))
+    past.value.push(cloneSnapshot(current))
     if (past.value.length > MAX_HISTORY) {
       past.value.splice(0, past.value.length - MAX_HISTORY)
     }
@@ -114,46 +60,40 @@ export function commitSchema(
   future.value = []
   lastCommit.value = { at: now, reason: options?.reason }
 
-  migrateExpressionKeys(nextSchema)
-  formSchema.value = nextSchema
-  if (prevSelectedKey) {
-    const rootIndex = findRootIndexForKey(nextSchema as any[], prevSelectedKey)
-    if (rootIndex >= 0) {
-      selectedIndex.value = rootIndex
-      selectedKey.value = prevSelectedKey
-    } else {
-      selectedKey.value = null
+  formDsl.value = next
+  if (prevSelectedId) {
+    const ok = containsId(next.nodes as any[], prevSelectedId)
+    if (!ok) {
+      selectedId.value = null
+      if (selectedTarget.value === 'node') selectedTarget.value = 'form'
     }
   }
-  clampSelectedIndex(formSchema.value.length)
 }
 
 export function undo() {
   const previous = past.value.pop()
   if (!previous) return
 
-  future.value.unshift(cloneSchema(formSchema.value))
+  future.value.unshift(cloneSnapshot(formDsl.value))
   if (future.value.length > MAX_HISTORY) {
     future.value.splice(MAX_HISTORY)
   }
 
   lastCommit.value = null
-  formSchema.value = cloneSchema(previous)
-  clampSelectedIndex(formSchema.value.length)
+  formDsl.value = cloneSnapshot(previous)
 }
 
 export function redo() {
   const next = future.value.shift()
   if (!next) return
 
-  past.value.push(cloneSchema(formSchema.value))
+  past.value.push(cloneSnapshot(formDsl.value))
   if (past.value.length > MAX_HISTORY) {
     past.value.splice(0, past.value.length - MAX_HISTORY)
   }
 
   lastCommit.value = null
-  formSchema.value = cloneSchema(next)
-  clampSelectedIndex(formSchema.value.length)
+  formDsl.value = cloneSnapshot(next)
 }
 
 export function resetHistory() {

@@ -18,14 +18,10 @@
     </template>
     <div class="py-4 px-3">
       <FormSchemaRenderer
-        :schema="schemaSnapshot"
+        :dsl="formDsl"
         v-model="data"
         :actions="props.actions"
         :form-class="props.formClass"
-        :form-name="formMeta.name"
-        :label-position="formMeta.labelPosition"
-        :label-width="formMeta.labelWidth"
-        :interactive-containers="props.interactiveContainers"
         @submit="handleSubmit"
       />
       <div v-if="props.showDataPanel" class="mt-4 p-3 bg-muted/30 rounded border border-border/50">
@@ -40,11 +36,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { NModal } from 'naive-ui'
-import { formMeta, formSchema } from '../utils/default-form-elements'
-import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useFormBuilderI18n } from '../i18n/context'
 import { canvasView, type CanvasView } from '../composables/form-fields'
 import FormSchemaRenderer from '@/renderer/FormSchemaRenderer.vue'
+import { formDsl } from '../utils/default-form-elements'
 
 const { t } = useFormBuilderI18n()
 
@@ -53,7 +48,6 @@ type ModelValue = Record<string, unknown>
 const props = withDefaults(
   defineProps<{
     show?: boolean
-    schema?: FormKitSchemaFormKit[]
     title?: string
     description?: string
     showDataPanel?: boolean
@@ -61,14 +55,12 @@ const props = withDefaults(
     view?: CanvasView
     actions?: boolean
     formClass?: string
-    interactiveContainers?: boolean
     resetOnSubmit?: boolean
   }>(),
   {
     showDataPanel: true,
     actions: false,
     formClass: 'w-full !grid !grid-cols-12 gap-x-4 gap-y-2',
-    interactiveContainers: true,
     resetOnSubmit: true,
   },
 )
@@ -96,7 +88,6 @@ const safeClone = <T,>(value: T): T => {
 }
 
 const data = ref<ModelValue>({})
-const schemaSnapshot = ref<FormKitSchemaFormKit[]>([])
 
 const resolvedView = computed<CanvasView>(() => props.view ?? canvasView.value)
 const resolvedTitle = computed(() => props.title ?? t('builder.previewTitle'))
@@ -114,14 +105,11 @@ const prettyData = computed(() =>
 )
 
 const initSnapshot = () => {
-  const base = props.schema ?? formSchema.value
-  schemaSnapshot.value = safeClone(base)
   data.value = safeClone(props.initialData ?? {})
 }
 
 const clearSnapshot = () => {
   data.value = {}
-  schemaSnapshot.value = []
 }
 
 watch(

@@ -1,40 +1,100 @@
 <script setup lang="ts">
+import type { DslNode } from '@/dsl/types'
+import { dslToFormKitSchema } from '@/dsl/compiler'
 import { computed, ref, watch } from 'vue'
-import { NButton, NButtonGroup, NSpin, NCard, NTooltip } from 'naive-ui'
-import { customInsertPlugin } from '../utils/custom-insert-plugin'
-import { formMeta, formSchema, selectedIndex, selectedKey, selectedTarget } from '../utils/default-form-elements'
+import { FormKitSchema } from '@formkit/vue'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
-import type { FormKitSchemaFormKit } from '@formkit/core'
-import { isLoading, canvasView } from '../composables/form-fields'
-import { cn } from '../utils/utils'
-import { commitSchema } from '../composables/schema-history'
-import ImportExportModal from './ImportExportModal.vue'
-import { canvasSchemaLibrary } from './containers'
-import { createDefaultInsertPointElement } from '../utils/dnd/insert-point-element'
-import { collectSchemaNames, ensureUniqueName, generateKey, toSafeName } from '../utils/dnd/schema'
-import { findSchemaNodeByKey } from '../composables/form-fields'
+import { NButton, NButtonGroup, NCard, NEmpty, NSpin, NTooltip } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { useRuntimeLocale } from '@/i18n/runtime-locale'
-import { toCanvasSchemaNode } from '../utils/canvas-schema'
-import { provideCanvasSchemaContext } from './composables/canvas-schema-context'
-import { normalizeContainerNode } from '@/containers/registry'
-import ContainerChildrenGrid from '@/components/ui/containers/shared/ContainerChildrenGrid.vue'
-
-const showImportExportModal = ref(false)
-const { setLocale, locale } = useRuntimeLocale()
+import { canvasView, isLoading } from '@/composables/form-fields'
+import { commitSchema } from '@/composables/schema-history'
+import { formDsl, selectedId, selectedTarget } from '@/utils/default-form-elements'
+import { generateKey } from '@/utils/dnd/schema'
+import { cn } from '@/utils/utils'
+import ImportExportModal from './ImportExportModal.vue'
 
 const { t } = useFormBuilderI18n()
-
+const { setLocale, locale } = useRuntimeLocale()
 const isZh = computed(() => locale.value === 'zh-CN')
 
+const showImportExportModal = ref(false)
+
+const safeClone = <T,>(value: T): T => {
+  try {
+    return structuredClone(value)
+  } catch {
+    return JSON.parse(JSON.stringify(value)) as T
+  }
+}
+
+const collectFields = (nodes: DslNode[], out: Set<string>) => {
+  for (const n of nodes) {
+    if (n.field) out.add(n.field)
+    if (Array.isArray(n.children)) collectFields(n.children, out)
+  }
+}
+
+const ensureUniqueField = (base: string, existing: Set<string>) => {
+  const safe = base.trim() || 'field'
+  if (!existing.has(safe)) return safe
+  let i = 1
+  while (existing.has(`${safe}_${i}`)) i++
+  return `${safe}_${i}`
+}
+
+const withFreshIdentity = (node: DslNode, existingFields: Set<string>): DslNode => {
+  const cloned = safeClone(node)
+  const nextId = generateKey()
+  const baseField = cloned.field || cloned.type || 'field'
+  const nextField = ensureUniqueField(baseField, existingFields)
+  existingFields.add(nextField)
+  const next: DslNode = { ...cloned, id: nextId, field: nextField }
+  if (Array.isArray(cloned.children) && cloned.children.length) {
+    next.children = cloned.children.map((c) => withFreshIdentity(c, existingFields))
+  }
+  return next
+}
+
+type DynamicValuesData = { draggedNodes: Array<{ data: { value: DslNode } }> }
+
+const [containerRef, items] = useDragAndDrop<DslNode>(formDsl.value.nodes, {
+  group: 'form-builder',
+  nativeDrag: true,
+  sortable: true,
+  accepts: () => true,
+  draggable: () => true,
+  handleNodePointerup(data: any) {
+    data.targetData.node.el.setAttribute('draggable', 'true')
+  },
+  insertConfig: {
+    dynamicValues: (data: DynamicValuesData) => {
+      const existingFields = new Set<string>()
+      collectFields(formDsl.value.nodes, existingFields)
+      return data.draggedNodes.map((n) => withFreshIdentity(n.data.value, existingFields))
+    },
+  },
+  onDragend() {
+    commitSchema({ ...formDsl.value, nodes: safeClone(items.value) }, { reason: 'dnd' })
+  },
+} as any)
+
+watch(
+  () => formDsl.value.nodes,
+  (next) => {
+    if (next !== items.value) items.value = safeClone(next)
+  },
+  { deep: true },
+)
+
+const compiledSchema = computed(() => dslToFormKitSchema(items.value as any, {}))
+
 const canvasFormClass = computed(() => {
-  const common = [
-    '[&_.formkit-label]:text-xs',
-    '[&_.formkit-label]:font-bold',
-  ].join(' ')
-  if (formMeta.value.labelPosition !== 'left') return common
+  const common = ['[&_.formkit-label]:text-xs', '[&_.formkit-label]:font-bold'].join(' ')
+  if (formDsl.value.meta.labelPosition !== 'left') return common
   return [
     common,
+    'fk-label-left',
     '[&_.formkit-wrapper]:flex',
     '[&_.formkit-wrapper]:flex-row',
     '[&_.formkit-wrapper]:items-start',
@@ -47,190 +107,33 @@ const canvasFormClass = computed(() => {
     '[&_.formkit-inner]:min-w-0',
   ].join(' ')
 })
-const deleteField = (index: number) => {
-  const nextSchema = formSchema.value.filter((_: unknown, i: number) => i !== index)
-  commitSchema(nextSchema as FormKitSchemaFormKit[], { reason: 'delete' })
-  fields.value = fields.value.filter((_, i) => i !== index)
-}
-
-const updateContainerChildren = (containerKey: string, children: FormKitSchemaFormKit[]) => {
-  const currentFound = findSchemaNodeByKey(formSchema.value as any[], containerKey)
-  if (!currentFound) return
-  const current = currentFound.node
-  const existingNames = new Set<string>()
-  collectSchemaNames(formSchema.value as any, existingNames)
-  const ensureIdentity = (node: any): any => {
-    if (!node || typeof node !== 'object') return node
-    if (node.$formkit === 'submit' && Array.isArray(node.children)) {
-      delete node.children
-    }
-    if (typeof node.__key === 'string' && node.__key) {
-      if (Array.isArray(node.children)) node.children = node.children.map((c: any) => ensureIdentity(c))
-      return node
-    }
-    const nextKey = generateKey()
-    const base = toSafeName(node.$formkit || node.name || 'field')
-    const nextName = node.$formkit === 'submit' ? node.name : ensureUniqueName(base, existingNames)
-    const next: any =
-      node.$formkit === 'submit'
-        ? { ...node, __key: nextKey, outerClass: node.outerClass || 'col-span-12 pt-2' }
-        : { ...node, __key: nextKey, name: nextName, id: `field_${nextKey}`, outerClass: node.outerClass || 'col-span-12' }
-    if (Array.isArray(node.children)) next.children = node.children.map((c: any) => ensureIdentity(c))
-    return next
-  }
-  const normalizedChildren = children.map((c: any) => ensureIdentity({ ...c }))
-
-  const childKeys = new Set<string>()
-  const collectKeys = (nodes: any[]) => {
-    for (const n of nodes) {
-      const k = n?.__key
-      if (typeof k === 'string' && k) childKeys.add(k)
-      const c = n?.children
-      if (Array.isArray(c)) collectKeys(c)
-    }
-  }
-  collectKeys(normalizedChildren as any[])
-
-  const prune = (nodes: any[]): any[] => {
-    return nodes
-      .filter((node) => {
-        const k = node?.__key
-        if (typeof k === 'string' && k) {
-          if (k === containerKey) return true
-          if (childKeys.has(k)) return false
-        }
-        return true
-      })
-      .map((node) => {
-        if (!node || typeof node !== 'object') return node
-        const c = (node as any).children
-        if (!Array.isArray(c)) return node
-        const nextChildren = prune(c)
-        return { ...(node as any), children: nextChildren }
-      })
-  }
-  const normalizePath = (path: number[]) => path.filter((p) => p !== -1)
-  const updateAtPath = (schema: any[], path: number[], nextNode: any): any[] => {
-    const p = normalizePath(path)
-    if (p.length === 0) return schema
-    const nextSchema = [...schema]
-    const idx0 = p[0]!
-    if (p.length === 1) {
-      nextSchema[idx0] = nextNode
-      return nextSchema
-    }
-    const parent = { ...(nextSchema[idx0] as any) }
-    let cursor: any = parent
-    for (let i = 1; i < p.length - 1; i++) {
-      const idx = p[i]!
-      const arr = Array.isArray(cursor.children) ? [...cursor.children] : []
-      const child = { ...(arr[idx] as any) }
-      arr[idx] = child
-      cursor.children = arr
-      cursor = child
-    }
-    const lastIdx = p[p.length - 1]!
-    const lastArr = Array.isArray(cursor.children) ? [...cursor.children] : []
-    lastArr[lastIdx] = nextNode
-    cursor.children = lastArr
-    nextSchema[idx0] = parent
-    return nextSchema
-  }
-
-  const prunedSchema = prune(formSchema.value as any[]) as FormKitSchemaFormKit[]
-  const found = findSchemaNodeByKey(prunedSchema as any[], containerKey)
-  if (!found) return
-  const merged: any = { ...(found.node as any), children: normalizedChildren }
-  if (merged.$cmp) {
-    merged.props = { ...merged.props }
-    if (merged.props && typeof merged.props === 'object') delete merged.props.modelValue
-  }
-  const nextSchema = updateAtPath(prunedSchema as any[], found.path, merged) as FormKitSchemaFormKit[]
-  commitSchema(nextSchema as FormKitSchemaFormKit[], { reason: 'container-children', merge: true })
-}
-
-
-const selectByKey = (key: string) => {
-  const found = findSchemaNodeByKey(formSchema.value as any[], key)
-  if (!found) return
-  selectedTarget.value = 'field'
-  selectedIndex.value = found.rootIndex
-  selectedKey.value = key
-}
-
-const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.value, {
-  group: 'form-builder',
-  nativeDrag: true,
-  draggingClass: 'opacity-5 bg-green-400/50',
-  accepts: () => true,
-  sortable: true,
-  draggable: () => true,
-  handleNodePointerup(data) {
-    data.targetData.node.el.setAttribute('draggable', 'true')
-  },
-  plugins: [
-    customInsertPlugin({
-      insertPoint: () => {
-        return createDefaultInsertPointElement()
-      },
-    }),
-  ],
-})
-
-const rootGrid = { containerRef: formFields, items: fields }
-
-watch(
-  () => formSchema.value,
-  (nextSchema) => {
-    if (nextSchema !== fields.value) {
-      fields.value = [...nextSchema]
-    }
-  },
-)
-
-const dropAreaUlClass = computed(() =>
-  cn(
-    'w-full grid grid-cols-12 gap-x-4 gap-y-2 list-none p-0 m-0 flex-1',
-    fields.value.length === 0 ? 'min-h-[200px] h-full' : 'h-fit',
-  ),
-)
-
-const onSelectRoot = (child: FormKitSchemaFormKit, index: number) => {
-  const key = (child as any)?.__key as string | undefined
-  selectedTarget.value = 'field'
-  if (key) selectByKey(key)
-  else selectedIndex.value = index
-}
 
 const onSelectBlank = () => {
   selectedTarget.value = 'form'
-  selectedKey.value = null
+  selectedId.value = null
 }
 
-const onResizeEnd = () => {
-  commitSchema(fields.value as FormKitSchemaFormKit[], { reason: 'resize', merge: true })
+const onSelectItem = (n: DslNode) => {
+  selectedTarget.value = 'node'
+  selectedId.value = n.id
 }
 
-const schemaLibrary = canvasSchemaLibrary
-
-const renderCanvasSchemaNode = (field: any): any => {
-  if (!field || typeof field !== 'object') return field
-  const next = normalizeContainerNode(field)
-  return toCanvasSchemaNode(next as FormKitSchemaFormKit)
+const deleteField = (index: number) => {
+  const next = items.value.filter((_, i) => i !== index)
+  items.value = next
+  commitSchema({ ...formDsl.value, nodes: safeClone(next) }, { reason: 'delete' })
+  if (selectedId.value && !next.some((n) => n.id === selectedId.value)) {
+    selectedId.value = null
+    selectedTarget.value = 'form'
+  }
 }
 
-provideCanvasSchemaContext({
-  library: schemaLibrary,
-  renderNode: renderCanvasSchemaNode,
-  updateContainerChildren,
-  selectByKey,
-})
+const cardStyle = computed(() => ({ '--fk-label-width': `${formDsl.value.meta.labelWidth}px` }))
+const schemaLibrary = {}
 </script>
 
 <template>
   <div class="flex flex-1 h-full min-h-0 flex-row justify-start pb-15 pt-10">
-
-    <!-- Left side controls -->
     <div class="w-16 shrink-0 flex flex-col items-center">
       <n-button-group vertical class="sticky top-20 bg-card shadow-sm rounded-lg border border-border/50">
         <n-tooltip placement="right">
@@ -278,7 +181,6 @@ provideCanvasSchemaContext({
       </n-button-group>
     </div>
 
-    <!-- Center Canvas Area -->
     <div class="flex-1 flex justify-center px-4 relative">
       <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center z-50">
         <div class="flex flex-col items-center bg-white dark:bg-neutral-600 justify-center gap-3 p-4 rounded-lg shadow-md">
@@ -288,7 +190,7 @@ provideCanvasSchemaContext({
       </div>
 
       <n-card
-        :style="{ '--fk-label-width': `${formMeta.labelWidth}px` }"
+        :style="cardStyle"
         :class="cn(
           'relative min-h-[80%] !h-fit rounded-xl shadow-md transition-[width] duration-300 flex flex-col',
           canvasFormClass,
@@ -297,24 +199,66 @@ provideCanvasSchemaContext({
           canvasView === 'mobile' ? 'w-[375px]' : ''
         )"
         content-style="padding: 16px; flex: 1; display: flex; flex-direction: column;"
+        @pointerdown.self="onSelectBlank"
       >
-        <ContainerChildrenGrid
-          :container-ref="rootGrid.containerRef"
-          :items="rootGrid.items"
-          :selected-key="selectedKey"
-          :empty-text="t('builder.listDropHere')"
-          :delete-aria-label="t('builder.deleteField')"
-          :data-attrs="{ 'data-testid': 'drop-area' }"
-          :ul-class="`${dropAreaUlClass} min-h-full`"
-          :on-select="onSelectRoot"
-          :on-select-blank="onSelectBlank"
-          :on-delete="deleteField"
-          :on-resize-end="onResizeEnd"
-        />
+        <ul
+          ref="containerRef"
+          class="w-full grid grid-cols-12 gap-x-4 gap-y-2 list-none p-0 m-0 flex-1"
+          data-testid="drop-area"
+          @pointerdown.self="onSelectBlank"
+        >
+          <li v-if="items.length === 0" class="col-span-12 min-h-[140px] flex items-center justify-center pointer-events-none">
+            <n-empty :description="t('builder.listDropHere')" />
+          </li>
+          <li
+            v-for="(node, idx) in items"
+            :key="node.id"
+            data-canvas-item="true"
+            :class="[
+              'group rounded-xl transition-[border-color,background-color,box-shadow] duration-150',
+              'px-2 py-1 pr-4 !cursor-grab h-full !z-20 relative border-[1.5px] min-w-0 box-border',
+              node.id === selectedId
+                ? 'border-solid border-[#a277ff] bg-[#a277ff]/[0.05] shadow-[0_0_0_3px_rgba(79,110,247,0.12)] dark:bg-[#a277ff]/[0.08]'
+                : 'border-dashed border-transparent hover:border-[#7c9ef8] hover:bg-[#f0f4ff] dark:hover:bg-[rgba(100,130,255,0.07)]',
+            ]"
+            :style="{
+              gridColumn: `span ${Math.max(1, Math.min(12, Number(node.layout?.span ?? 12)))} / span ${Math.max(1, Math.min(12, Number(node.layout?.span ?? 12)))}`
+            }"
+            tabindex="0"
+            @pointerdown.stop="onSelectItem(node)"
+          >
+            <div class="flex gap-1.5 p-1 w-full pb-2">
+              <div class="flex-1 w-full min-w-0">
+                <FormKitSchema
+                  :schema="compiledSchema[idx] ? [compiledSchema[idx]!] : []"
+                  :library="schemaLibrary"
+                  :key="`dsl-node-${node.id}`"
+                />
+              </div>
+            </div>
+
+            <div class="absolute bottom-2 right-2 flex flex-row z-40">
+              <n-button
+                quaternary
+                size="small"
+                :aria-label="t('builder.deleteField')"
+                draggable="false"
+                @pointerdown.stop.prevent
+                @click.stop="deleteField(idx)"
+                class="!h-[26px] !w-[26px] !rounded-[7px] !text-muted-foreground
+                      hover:!bg-red-100 hover:!text-red-600
+                      active:!scale-95 active:!bg-red-200 active:!text-red-700
+                      dark:hover:!bg-red-950/50 dark:hover:!text-red-400
+                      transition-all duration-150"
+              >
+                <template #icon><span class="i-lucide-trash-2 !h-[13px] !w-[13px]"></span></template>
+              </n-button>
+            </div>
+          </li>
+        </ul>
       </n-card>
     </div>
 
-    <!-- Right side controls -->
     <div class="w-16 shrink-0 hidden md:flex flex-col items-center">
       <div class="sticky top-20 flex flex-col gap-2">
         <n-button-group vertical class="bg-card shadow-sm rounded-lg border border-border/50">

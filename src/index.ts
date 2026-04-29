@@ -5,6 +5,8 @@ import FormSchemaRenderer from './renderer/FormSchemaRenderer.vue'
 
 export { useFormBuilderConfig, provideFormBuilderConfig } from './composables/use-config'
 export type { FormBuilderConfig } from './types/env'
+export type { FormDslDocument, DslNode, DslCondition, DslOperator, DslLayout, DslLogic, DslRules } from './dsl/types'
+export { dslToFormKitSchema } from './dsl/compiler'
 
 export { FormBuilder, BuilderProvider }
 export { BuilderPreview, FormSchemaRenderer }
