@@ -8,17 +8,21 @@ import { useFormField } from '../../composables/form-fields'
 const {
   hasField,
   selectedIsForm,
+  currentFieldType,
   formName,
   formLabelPosition,
   formLabelWidth,
   fieldName,
   label,
   placeholder,
+  help,
   span,
   rules,
   visibleIf,
   disabledIf,
   availableFieldNames,
+  rawProps,
+  rawPropsJson,
 } = useFormField()
 
 const { t } = useFormBuilderI18n()
@@ -190,6 +194,87 @@ const message = computed<string>({
   get: () => rules.value.message ?? '',
   set: (val) => rules.value = { ...rules.value, message: val.trim() || undefined },
 })
+
+const optionTypes = new Set([
+  'select',
+  'checkbox',
+  'radio',
+  'naiveMention',
+  'naiveCascader',
+  'naiveTreeSelect',
+  'naiveUl',
+  'naiveOl',
+])
+
+const hasOptions = computed(() => optionTypes.has(String(currentFieldType.value ?? '')))
+
+const optionsJson = computed<string>({
+  get: () => JSON.stringify((rawProps.value as any)?.options ?? [], null, 2),
+  set: (value: string) => {
+    try {
+      const parsed = JSON.parse(value)
+      rawProps.value = { ...rawProps.value, options: parsed }
+    } catch {
+      return
+    }
+  },
+})
+
+const accept = computed<string>({
+  get: () => String((rawProps.value as any)?.accept ?? ''),
+  set: (v) => {
+    rawProps.value = { ...rawProps.value, accept: v.trim() || undefined }
+  },
+})
+
+const multiple = computed<boolean>({
+  get: () => Boolean((rawProps.value as any)?.multiple ?? false),
+  set: (v) => {
+    rawProps.value = { ...rawProps.value, multiple: v ? true : undefined }
+  },
+})
+
+const minProp = computed<number | null>({
+  get: () => (typeof (rawProps.value as any)?.min === 'number' ? ((rawProps.value as any).min as number) : null),
+  set: (v) => rawProps.value = { ...rawProps.value, min: typeof v === 'number' ? v : undefined },
+})
+
+const maxProp = computed<number | null>({
+  get: () => (typeof (rawProps.value as any)?.max === 'number' ? ((rawProps.value as any).max as number) : null),
+  set: (v) => rawProps.value = { ...rawProps.value, max: typeof v === 'number' ? v : undefined },
+})
+
+const stepProp = computed<number | null>({
+  get: () => {
+    const raw = (rawProps.value as any)?.step
+    if (typeof raw === 'number') return raw
+    if (typeof raw === 'string') {
+      const n = Number(raw)
+      return Number.isFinite(n) ? n : null
+    }
+    return null
+  },
+  set: (v) => rawProps.value = { ...rawProps.value, step: typeof v === 'number' ? v : undefined },
+})
+
+const isButtonLike = computed(() => ['naiveButton', 'submit', 'reset'].includes(String(currentFieldType.value ?? '')))
+
+const buttonText = computed<string>({
+  get: () => String((rawProps.value as any)?.buttonText ?? ''),
+  set: (v) => rawProps.value = { ...rawProps.value, buttonText: v },
+})
+
+const buttonPropsJson = computed<string>({
+  get: () => JSON.stringify((rawProps.value as any)?.buttonProps ?? {}, null, 2),
+  set: (value: string) => {
+    try {
+      const parsed = JSON.parse(value)
+      rawProps.value = { ...rawProps.value, buttonProps: parsed }
+    } catch {
+      return
+    }
+  },
+})
 </script>
 
 <template>
@@ -212,7 +297,50 @@ const message = computed<string>({
           <n-input v-model:value="label" :placeholder="t('builder.label')" />
           <n-input v-model:value="fieldName" :placeholder="t('builder.name')" />
           <n-input v-model:value="placeholder" :placeholder="t('builder.placeholder')" />
+          <n-input v-model:value="help" :placeholder="t('elements.common.help')" />
           <n-input-number v-model:value="span" :min="1" :max="12" />
+        </div>
+
+        <div v-if="hasOptions" class="space-y-2 p-3 border border-border rounded-md bg-muted/30">
+          <div class="text-xs font-medium text-foreground">options</div>
+          <n-input
+            v-model:value="optionsJson"
+            type="textarea"
+            :autosize="{ minRows: 4, maxRows: 12 }"
+            class="font-mono text-xs"
+          />
+        </div>
+
+        <div v-if="String(currentFieldType) === 'file'" class="space-y-2 p-3 border border-border rounded-md bg-muted/30">
+          <div class="text-xs font-medium text-foreground">file</div>
+          <n-input v-model:value="accept" placeholder="accept" />
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-muted-foreground">multiple</div>
+            <n-switch size="small" v-model:value="multiple" />
+          </div>
+        </div>
+
+        <div
+          v-if="['number', 'range'].includes(String(currentFieldType))"
+          class="space-y-2 p-3 border border-border rounded-md bg-muted/30"
+        >
+          <div class="text-xs font-medium text-foreground">number</div>
+          <div class="grid grid-cols-3 gap-2">
+            <n-input-number v-model:value="minProp" :placeholder="'min'" />
+            <n-input-number v-model:value="maxProp" :placeholder="'max'" />
+            <n-input-number v-model:value="stepProp" :placeholder="'step'" />
+          </div>
+        </div>
+
+        <div v-if="isButtonLike" class="space-y-2 p-3 border border-border rounded-md bg-muted/30">
+          <div class="text-xs font-medium text-foreground">button</div>
+          <n-input v-model:value="buttonText" placeholder="buttonText" />
+          <n-input
+            v-model:value="buttonPropsJson"
+            type="textarea"
+            :autosize="{ minRows: 4, maxRows: 10 }"
+            class="font-mono text-xs"
+          />
         </div>
 
         <div class="space-y-2 p-3 border border-border rounded-md bg-muted/30">
@@ -309,6 +437,18 @@ const message = computed<string>({
           </div>
           <n-input v-model:value="matches" :placeholder="'matches (regex)'" />
           <n-input v-model:value="message" :placeholder="'message'" />
+        </div>
+
+        <n-divider />
+
+        <div class="space-y-2 p-3 border border-border rounded-md bg-muted/30">
+          <div class="text-xs font-medium text-foreground">props (raw)</div>
+          <n-input
+            v-model:value="rawPropsJson"
+            type="textarea"
+            :autosize="{ minRows: 6, maxRows: 18 }"
+            class="font-mono text-xs"
+          />
         </div>
       </template>
     </div>

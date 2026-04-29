@@ -1,54 +1,42 @@
 <script setup lang="ts">
 import { inject, computed, ref, type Ref } from 'vue'
 import { NTabs, NTabPane, NScrollbar } from 'naive-ui'
-import { createFieldProps } from '../../utils/field-props'
-import { defaultDslElements } from '../../utils/default-dsl-elements'
+import { createPaletteItems, type PaletteCategory, type PaletteItem } from '../../utils/palette-elements'
 import DraggableList from './DraggableList.vue'
 import { useFormBuilderI18n } from '../../i18n/context'
-import type { DslNode } from '@/dsl/types'
 
 const searchInput = inject('searchInput', ref(''))
 const collapsed = inject('sidebarCollapsed', ref(false)) as Ref<boolean>
 const { t } = useFormBuilderI18n()
-const fieldProps = computed(() => createFieldProps(t))
-const defaultFormElements = computed(() => defaultDslElements)
+const palette = computed(() => createPaletteItems(t))
 
 const filteredFormElements = computed(() => {
   if (!searchInput.value.trim()) {
-    return defaultFormElements.value
+    return palette.value
   }
 
   const query = searchInput.value.toLowerCase()
-  return defaultFormElements.value.filter(
-    (element) =>
-      String(element.label ?? '').toLowerCase().includes(query) ||
-      String(element.field ?? '').toLowerCase().includes(query) ||
-      String(element.type ?? '').toLowerCase().includes(query),
+  return palette.value.filter(
+    (item) =>
+      item.name.toLowerCase().includes(query) ||
+      item.description.toLowerCase().includes(query) ||
+      item.key.toLowerCase().includes(query),
   )
 })
 
-type ElementCategory = 'fields' | 'structure' | 'static'
-
-const categories = computed<{ id: ElementCategory; label: string }[]>(() => [
+const categories = computed<{ id: PaletteCategory; label: string }[]>(() => [
   { id: 'fields', label: t('fieldProps.category.fields') },
-  { id: 'structure', label: t('fieldProps.category.structure') },
   { id: 'static', label: t('fieldProps.category.static') },
 ])
 
 const groupedElements = computed(() => {
-  const groups: Record<ElementCategory, DslNode[]> = {
+  const groups: Record<PaletteCategory, PaletteItem[]> = {
     fields: [],
-    structure: [],
     static: [],
   }
 
   filteredFormElements.value.forEach((item) => {
-    const typeName = String(item.type ?? '')
-    const prop = fieldProps.value.find((p) => p.name === typeName)
-    const category = (prop?.category || 'fields') as ElementCategory
-    if (groups[category]) {
-      groups[category].push(item)
-    }
+    groups[item.category].push(item)
   })
 
   return groups

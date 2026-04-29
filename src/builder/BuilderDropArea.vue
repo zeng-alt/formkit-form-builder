@@ -13,6 +13,7 @@ import { formDsl, selectedId, selectedTarget } from '@/utils/default-form-elemen
 import { generateKey } from '@/utils/dnd/schema'
 import { cn } from '@/utils/utils'
 import ImportExportModal from './ImportExportModal.vue'
+import type { PaletteItem } from '@/utils/palette-elements'
 
 const { t } = useFormBuilderI18n()
 const { setLocale, locale } = useRuntimeLocale()
@@ -56,7 +57,7 @@ const withFreshIdentity = (node: DslNode, existingFields: Set<string>): DslNode 
   return next
 }
 
-type DynamicValuesData = { draggedNodes: Array<{ data: { value: DslNode } }> }
+type DynamicValuesData = { draggedNodes: Array<{ data: { value: DslNode | PaletteItem } }> }
 
 const [containerRef, items] = useDragAndDrop<DslNode>(formDsl.value.nodes, {
   group: 'form-builder',
@@ -71,7 +72,10 @@ const [containerRef, items] = useDragAndDrop<DslNode>(formDsl.value.nodes, {
     dynamicValues: (data: DynamicValuesData) => {
       const existingFields = new Set<string>()
       collectFields(formDsl.value.nodes, existingFields)
-      return data.draggedNodes.map((n) => withFreshIdentity(n.data.value, existingFields))
+      return data.draggedNodes.map((n) => {
+        const raw = (n.data.value as any)?.node ? (n.data.value as PaletteItem).node : (n.data.value as DslNode)
+        return withFreshIdentity(raw, existingFields)
+      })
     },
   },
   onDragend() {

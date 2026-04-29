@@ -99,12 +99,54 @@ export function dslToFormKitSchema(
     const formkitType = typeMap[n.type] ?? n.type
     const name = n.field || n.id
 
-    const placeholder = unwrappedProps?.placeholder
-    const help = unwrappedProps?.help
-    const options = unwrappedProps?.options
-    const value = unwrappedProps?.value
-    const type = unwrappedProps?.type
-    const { placeholder: _p, help: _h, options: _o, value: _v, type: _t, ...restProps } = unwrappedProps ?? {}
+    const restProps: Record<string, unknown> = { ...unwrappedProps }
+
+    const placeholder = restProps.placeholder
+    if (placeholder !== undefined) delete restProps.placeholder
+
+    const help = restProps.help
+    if (help !== undefined) delete restProps.help
+
+    const value = restProps.value
+    if (value !== undefined) delete restProps.value
+
+    const optionTypes = new Set([
+      'select',
+      'checkbox',
+      'radio',
+      'naiveMention',
+      'naiveCascader',
+      'naiveTreeSelect',
+      'naiveUl',
+      'naiveOl',
+    ])
+    const options = optionTypes.has(formkitType) ? restProps.options : undefined
+    if (options !== undefined) delete restProps.options
+
+    const accept = restProps.accept
+    if (accept !== undefined) delete restProps.accept
+
+    const multiple = restProps.multiple
+    if (multiple !== undefined) delete restProps.multiple
+
+    const min = restProps.min
+    if (min !== undefined) delete restProps.min
+
+    const max = restProps.max
+    if (max !== undefined) delete restProps.max
+
+    const step = restProps.step
+    if (step !== undefined) delete restProps.step
+
+    const isButtonLike = formkitType === 'submit' || formkitType === 'reset' || formkitType === 'naiveButton'
+    const type = isButtonLike ? restProps.type : undefined
+    if (type !== undefined) delete restProps.type
+
+    const buttonText = isButtonLike ? restProps.buttonText : undefined
+    if (buttonText !== undefined) delete restProps.buttonText
+
+    const buttonProps = isButtonLike ? restProps.buttonProps : undefined
+    if (buttonProps !== undefined) delete restProps.buttonProps
 
     const nodeProps =
       Object.keys(restProps).length || disabledExpr
@@ -124,11 +166,18 @@ export function dslToFormKitSchema(
       validation: compileValidation(n.rules),
       validationMessages: compileValidationMessages(n.rules),
       ...(ifExpr ? { if: ifExpr } : {}),
-      ...(formkitType === 'submit' && typeof type === 'string' ? { type } : {}),
+      ...(isButtonLike && typeof type === 'string' ? { type } : {}),
+      ...(isButtonLike && typeof buttonText === 'string' ? { buttonText } : {}),
+      ...(isButtonLike && buttonProps && typeof buttonProps === 'object' ? { buttonProps } : {}),
       ...(placeholder !== undefined ? { placeholder } : {}),
       ...(help !== undefined ? { help } : {}),
       ...(value !== undefined ? { value } : {}),
-      ...(formkitType === 'select' && options !== undefined ? { options } : {}),
+      ...(options !== undefined ? { options } : {}),
+      ...(accept !== undefined ? { accept } : {}),
+      ...(multiple !== undefined ? { multiple } : {}),
+      ...(min !== undefined ? { min } : {}),
+      ...(max !== undefined ? { max } : {}),
+      ...(step !== undefined ? { step } : {}),
       ...(nodeProps ? { props: nodeProps } : {}),
       ...(children ? { children } : {}),
     }

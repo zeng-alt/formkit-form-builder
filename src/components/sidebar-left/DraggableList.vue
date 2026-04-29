@@ -3,10 +3,10 @@ import { computed, inject, ref, watch, type Ref } from 'vue'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
 import { createFieldProps } from '../../utils/field-props'
 import { useFormBuilderI18n } from '../../i18n/context'
-import type { DslNode } from '@/dsl/types'
+import type { PaletteItem } from '@/utils/palette-elements'
 
 const props = defineProps<{
-  elements: DslNode[]
+  elements: PaletteItem[]
 }>()
 
 const { t } = useFormBuilderI18n()
@@ -14,7 +14,7 @@ const fieldProps = computed(() => createFieldProps(t))
 const collapsed = inject('sidebarCollapsed', ref(false))
 
 type PointerupData = { targetData: { node: { el: HTMLElement } } }
-type DynamicValuesData = { draggedNodes: Array<{ data: { value: DslNode } }> }
+type DynamicValuesData = { draggedNodes: Array<{ data: { value: PaletteItem } }> }
 
 const dragConfig = {
   group: 'form-builder',
@@ -37,10 +37,10 @@ const dragConfig = {
 const [parentRef, items] = useDragAndDrop(
   props.elements,
   dragConfig as unknown as Parameters<typeof useDragAndDrop>[1],
-) as unknown as [Ref<HTMLElement | null>, Ref<DslNode[]>]
+) as unknown as [Ref<HTMLElement | null>, Ref<PaletteItem[]>]
 
 const getTypeName = (item: any) => {
-  return String(item?.type ?? '')
+  return String(item?.node?.type ?? '')
 }
 
 // Sync items when props.elements changes (e.g. during search)
@@ -57,12 +57,12 @@ watch(() => props.elements, (newElements) => {
   >
     <div
       v-for="item in items"
-      :key="item.id"
+      :key="item.key"
       :class="[
         collapsed
           ? 'h-12 w-12 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-grab flex items-center justify-center border border-transparent hover:border-gray-200 dark:hover:border-gray-700'
           : 'p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-grab flex items-center border border-transparent hover:border-gray-200 dark:hover:border-gray-700',
-        String(item.id),
+        String(item.key),
       ]"
     >
       <div
@@ -77,9 +77,9 @@ watch(() => props.elements, (newElements) => {
       ></span>
       <div v-if="!collapsed" class="ml-3 flex flex-col justify-center overflow-hidden">
         <span class="text-[11px] text-secondary-foreground/80 font-medium">
-          {{ item.label || item.field || item.type }}
+          {{ item.name }}
         </span>
-        <span class="text-[9px] text-muted-foreground truncate">{{ item.type }}</span>
+        <span class="text-[9px] text-muted-foreground truncate">{{ item.description }}</span>
       </div>
     </div>
   </div>

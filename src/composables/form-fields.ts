@@ -133,6 +133,34 @@ export function useFormField() {
     },
   })
 
+  const help = computed<string>({
+    get: () => String(selectedNode.value?.props?.help ?? ''),
+    set: (value: string) => {
+      const nextProps = { ...selectedNode.value?.props, help: value }
+      setNodePartial({ props: nextProps })
+    },
+  })
+
+  const rawProps = computed<Record<string, unknown>>({
+    get: () => (selectedNode.value?.props && typeof selectedNode.value.props === 'object' ? selectedNode.value.props : {}),
+    set: (value) => {
+      setNodePartial({ props: value && typeof value === 'object' ? value : undefined })
+    },
+  })
+
+  const rawPropsJson = computed<string>({
+    get: () => JSON.stringify(rawProps.value ?? {}, null, 2),
+    set: (value: string) => {
+      try {
+        const parsed = JSON.parse(value)
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return
+        rawProps.value = parsed as Record<string, unknown>
+      } catch {
+        return
+      }
+    },
+  })
+
   const span = computed<number>({
     get: () => Number(selectedNode.value?.layout?.span ?? 12),
     set: (value: number) => {
@@ -181,10 +209,13 @@ export function useFormField() {
     fieldName,
     label,
     placeholder,
+    help,
     span,
     rules,
     visibleIf,
     disabledIf,
     availableFieldNames,
+    rawProps,
+    rawPropsJson,
   }
 }
