@@ -5,13 +5,13 @@ import CardContainerPreview from '@/components/ui/containers/card/CardContainerP
 
 function isCardContainer(node: any) {
   if (!node || typeof node !== 'object') return false
-  return node.$cmp === 'card' || node.$formkit === 'card'
+  return node.$cmp === 'card' || node.$formkit === 'card' || (node.$formkit === 'group' && node.wrapper === 'card')
 }
 
 function normalize(node: SchemaNode): SchemaNode {
   const next: any = { ...node }
-  next.$cmp = next.$cmp || 'card'
-  next.children = Array.isArray(next.children) ? next.children : []
+  next.$cmp = 'card'
+  next.children = Array.isArray(next.children) ? next.children : Array.isArray((next as any)?.props?.modelValue) ? (next as any).props.modelValue : []
   const props = typeof next.props === 'object' && next.props ? { ...next.props } : {}
   props.cardKey = typeof props.cardKey === 'string' && props.cardKey ? props.cardKey : (next.__key as string | undefined) ?? ''
   props.modelValue = next.children
@@ -32,6 +32,11 @@ export const cardContainerDef: ContainerDefinition = {
       ? (normalized.children as FormKitSchemaFormKit[]).map((c, i) => ctx.format(c, i))
       : []
     const schemaIf = (normalized as any).if
+    const slotChild: any = {
+      $el: 'div',
+      attrs: { class: 'w-full grid grid-cols-12 gap-x-4 gap-y-2' },
+      children,
+    }
     const nextNode: any = {
       $el: 'div',
       attrs: { class: (normalized as any).outerClass || 'col-span-12' },
@@ -42,7 +47,9 @@ export const cardContainerDef: ContainerDefinition = {
             ...(normalized as any).props,
             cardKey: ((normalized as any).props?.cardKey as string | undefined) ?? key ?? '',
             modelValue: children,
+            children,
           },
+          children: [slotChild],
         },
       ],
     }

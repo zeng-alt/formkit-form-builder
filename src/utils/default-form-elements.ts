@@ -623,42 +623,46 @@ const defs: DefaultElementDef[] = [
     labelKey: 'elements.reset.label',
   },
   {
-    $cmp: 'list',
+    $formkit: 'group',
+    wrapper: 'list',
     nameKey: 'elements.list.name',
     labelKey: 'elements.list.label',
     id: 'list_field',
     outerClass: 'col-span-12',
     descriptionKey: 'elements.list.description',
     children: [],
-    props: { showActions: false, modelValue: [], listKey: '' },
+    props: { showActions: false },
   },
   {
-    $cmp: 'card',
+    $formkit: 'group',
+    wrapper: 'card',
     nameKey: 'elements.card.name',
     labelKey: 'elements.card.label',
     id: 'card_container',
     outerClass: 'col-span-12',
-    props: { size: 'medium', bordered: true, embedded: false, hoverable: false, modelValue: [], cardKey: '' },
+    props: { size: 'medium', bordered: true, embedded: false, hoverable: false },
     descriptionKey: 'elements.card.description',
     children: [],
   },
   {
-    $cmp: 'inputGroup',
+    $formkit: 'group',
+    wrapper: 'inputGroup',
     nameKey: 'elements.inputGroup.name',
     labelKey: 'elements.inputGroup.label',
     id: 'input_group_container',
     outerClass: 'col-span-12',
-    props: { modelValue: [], inputGroupKey: '' },
+    props: {},
     descriptionKey: 'elements.inputGroup.description',
     children: [],
   },
   {
-    $cmp: 'tabs',
+    $formkit: 'group',
+    wrapper: 'tabs',
     nameKey: 'elements.tabs.name',
     labelKey: 'elements.tabs.label',
     id: 'tabs_container',
     outerClass: 'col-span-12',
-    props: { modelValue: [], tabsKey: '' },
+    props: {},
     descriptionKey: 'elements.tabs.description',
     children: [],
   },
@@ -672,22 +676,23 @@ export function createDefaultFormElements(t: (key: string) => string): FormKitSc
       description: t(descriptionKey),
     }
     const isCmp = typeof next.$cmp === 'string' && next.$cmp
+    const isWrapperContainer = next.$formkit === 'group' && typeof next.wrapper === 'string' && next.wrapper.trim()
     if (labelKey) {
-      if (isCmp) {
+      if (isCmp || isWrapperContainer) {
         next.props = { ...next.props, label: t(labelKey) }
       } else {
         next.label = t(labelKey)
       }
     }
     if (placeholderKey) {
-      if (isCmp) {
+      if (isCmp || isWrapperContainer) {
         next.props = { ...next.props, placeholder: t(placeholderKey) }
       } else {
         next.placeholder = t(placeholderKey)
       }
     }
     if (helpKey) {
-      if (isCmp) {
+      if (isCmp || isWrapperContainer) {
         next.props = { ...next.props, help: t(helpKey) }
       } else {
         next.help = t(helpKey)

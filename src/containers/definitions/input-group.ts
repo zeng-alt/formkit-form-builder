@@ -5,13 +5,17 @@ import InputGroupContainerPreview from '@/components/ui/containers/input-group/I
 
 function isInputGroupContainer(node: any) {
   if (!node || typeof node !== 'object') return false
-  return node.$cmp === 'inputGroup' || node.$formkit === 'inputGroup'
+  return (
+    node.$cmp === 'inputGroup' ||
+    node.$formkit === 'inputGroup' ||
+    (node.$formkit === 'group' && (node.wrapper === 'inputGroup' || node.wrapper === 'input-group' || node.wrapper === 'input_group'))
+  )
 }
 
 function normalize(node: SchemaNode): SchemaNode {
   const next: any = { ...node }
-  next.$cmp = next.$cmp || 'inputGroup'
-  next.children = Array.isArray(next.children) ? next.children : []
+  next.$cmp = 'inputGroup'
+  next.children = Array.isArray(next.children) ? next.children : Array.isArray((next as any)?.props?.modelValue) ? (next as any).props.modelValue : []
   const props = typeof next.props === 'object' && next.props ? { ...next.props } : {}
   props.inputGroupKey =
     typeof props.inputGroupKey === 'string' && props.inputGroupKey ? props.inputGroupKey : (next.__key as string | undefined) ?? ''
@@ -33,6 +37,11 @@ export const inputGroupContainerDef: ContainerDefinition = {
       ? (normalized.children as FormKitSchemaFormKit[]).map((c, i) => ctx.format(c, i))
       : []
     const schemaIf = (normalized as any).if
+    const slotChild: any = {
+      $el: 'div',
+      attrs: { class: 'w-full grid grid-cols-12 gap-x-4 gap-y-2' },
+      children,
+    }
     const nextNode: any = {
       $el: 'div',
       attrs: { class: (normalized as any).outerClass || 'col-span-12' },
@@ -43,7 +52,9 @@ export const inputGroupContainerDef: ContainerDefinition = {
             ...(normalized as any).props,
             inputGroupKey: ((normalized as any).props?.inputGroupKey as string | undefined) ?? key ?? '',
             modelValue: children,
+            children,
           },
+          children: [slotChild],
         },
       ],
     }
@@ -52,4 +63,3 @@ export const inputGroupContainerDef: ContainerDefinition = {
     return nextNode as FormKitSchemaFormKit
   },
 }
-

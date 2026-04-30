@@ -85,6 +85,9 @@ export function useFormField() {
     return name
   }
 
+  const isWrapperContainer = (node: any) =>
+    node?.$formkit === 'group' && typeof node?.wrapper === 'string' && Boolean(node.wrapper.trim())
+
   const setFieldProp = (key: string, value: unknown) => {
     if (formSchema.value.length > 0) {
       const selected = selectedKey.value
@@ -95,8 +98,9 @@ export function useFormField() {
 
       const current = { ...(currentNode as Record<string, unknown>) }
       const isCmp = typeof (current as any)?.$cmp === 'string' && Boolean((current as any)?.$cmp)
+      const isWrapper = isWrapperContainer(current)
       const propKeys = new Set(['label', 'help', 'placeholder', 'bordered', 'embedded', 'hoverable', 'size'])
-      if (isCmp && propKeys.has(key)) {
+      if ((isCmp || isWrapper) && propKeys.has(key)) {
         const nextProps: any = { ...(((current as any).props ?? {}) as any) }
         if (value === undefined) delete nextProps[key]
         else nextProps[key] = value
@@ -265,7 +269,7 @@ export function useFormField() {
   const label = computed({
     get: () => {
       const current: any = selectedField.value as any
-      if (typeof current?.$cmp === 'string' && current.$cmp) return String(current?.props?.label ?? '')
+      if ((typeof current?.$cmp === 'string' && current.$cmp) || isWrapperContainer(current)) return String(current?.props?.label ?? '')
       return (selectedField.value as any)?.label || ''
     },
     set: (newLabel: string) => setFieldProp('label', newLabel),
@@ -287,7 +291,8 @@ export function useFormField() {
   const placeholder = computed({
     get: () => {
       const current: any = selectedField.value as any
-      if (typeof current?.$cmp === 'string' && current.$cmp) return String(current?.props?.placeholder ?? '')
+      if ((typeof current?.$cmp === 'string' && current.$cmp) || isWrapperContainer(current))
+        return String(current?.props?.placeholder ?? '')
       return (selectedField.value as any)?.placeholder || ''
     },
     set: (newPlaceholder: string) => setFieldProp('placeholder', newPlaceholder),
@@ -373,7 +378,7 @@ export function useFormField() {
   const help = computed({
     get: () => {
       const current: any = selectedField.value as any
-      if (typeof current?.$cmp === 'string' && current.$cmp) return String(current?.props?.help ?? '')
+      if ((typeof current?.$cmp === 'string' && current.$cmp) || isWrapperContainer(current)) return String(current?.props?.help ?? '')
       return (selectedField.value as any)?.help || ''
     },
     set: (newHelp: string) => setFieldProp('help', newHelp),
@@ -497,7 +502,10 @@ export function useFormField() {
     if (!hasField.value) return null
     if (selectedIsForm.value) return 'form'
     const current: any = selectedField.value as any
-    if (typeof current?.$formkit === 'string' && current.$formkit) return current.$formkit
+    if (typeof current?.$formkit === 'string' && current.$formkit) {
+      if (isWrapperContainer(current)) return current.wrapper
+      return current.$formkit
+    }
     if (typeof current?.$cmp === 'string' && current.$cmp) return current.$cmp
     return null
   })

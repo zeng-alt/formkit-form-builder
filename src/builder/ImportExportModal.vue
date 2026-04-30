@@ -4,6 +4,7 @@ import { NModal, NInput, NButton, NSpace } from 'naive-ui'
 import { formMeta, formSchema } from '../utils/default-form-elements'
 import { commitSchema } from '../composables/schema-history'
 import type { FormKitSchemaFormKit } from '@formkit/core'
+import { migrateContainerNodes } from '../utils/schema/migrate-containers'
 import { toast } from 'vue-sonner'
 import { useFormBuilderI18n } from '../i18n/context'
 
@@ -52,6 +53,7 @@ const handleSaveAndImport = () => {
     if (!Array.isArray(parsed)) {
       throw new Error(t('importExport.schemaMustBeArray'))
     }
+    migrateContainerNodes(parsed as any)
     const first = parsed[0]
     if (
       parsed.length === 1 &&

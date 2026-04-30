@@ -20,6 +20,7 @@ import { formSchema } from '../default-form-elements'
 import { insertState } from './insert-state'
 import { getVisualRows, setColSpan, adjustColSpansForInsertAtRow } from './grid'
 import { collectSchemaNames, ensureUniqueName, generateKey, toSafeName } from './schema'
+import { getContainerKind } from '../schema/containers'
 import { eq } from '../utils'
 
 function widthClassFromSpan(span: number) {
@@ -95,41 +96,25 @@ function normalizeInsertValues(
         delete val.children
       }
       const nextKey = typeof val.__key === 'string' && val.__key ? val.__key : generateKey()
-      const base = toSafeName(val.name || val.$formkit || val.$cmp || 'field')
+      const base = toSafeName(val.name || val.wrapper || val.$formkit || val.$cmp || 'field')
       const nextName = val.$formkit === 'submit' ? val.name : ensureUniqueName(base, existingNames)
       if (val.$formkit === 'submit') return { ...valObj, __key: nextKey, outerClass: 'col-span-12 pt-2' }
-      if (val.$cmp === 'list' || val.$formkit === 'list') {
-        const props = { ...val.props, listKey: nextKey }
-        return { ...valObj, __key: nextKey, name: nextName, id: `field_${nextKey}`, props, children: Array.isArray(val.children) ? val.children : [], outerClass: val.outerClass || 'col-span-12' }
-      }
-      if (val.$cmp === 'card' || val.$formkit === 'card') {
-        const props = { ...val.props, cardKey: nextKey }
-        return { ...valObj, __key: nextKey, name: nextName, id: `field_${nextKey}`, props, children: Array.isArray(val.children) ? val.children : [], outerClass: val.outerClass || 'col-span-12' }
-      }
-      if (val.$cmp === 'inputGroup' || val.$formkit === 'inputGroup') {
-        const props = {
-          ...val.props,
-          inputGroupKey: nextKey,
+      const kind = getContainerKind(val)
+      if (kind) {
+        const props = typeof val.props === 'object' && val.props ? { ...val.props } : {}
+        if (props && typeof props === 'object') {
+          delete (props as any).modelValue
+          delete (props as any).listKey
+          delete (props as any).cardKey
+          delete (props as any).inputGroupKey
+          delete (props as any).tabsKey
         }
-        if (props && typeof props === 'object') delete (props as any).modelValue
+        const wrapper = typeof val.wrapper === 'string' && val.wrapper.trim() ? val.wrapper : kind
+        const { $cmp: _cmp, ...rest } = valObj as any
         return {
-          ...valObj,
-          __key: nextKey,
-          name: nextName,
-          id: `field_${nextKey}`,
-          props,
-          children: Array.isArray(val.children) ? val.children : [],
-          outerClass: val.outerClass || 'col-span-12',
-        }
-      }
-      if (val.$cmp === 'tabs' || val.$formkit === 'tabs') {
-        const props = {
-          ...val.props,
-          tabsKey: nextKey,
-        }
-        if (props && typeof props === 'object') delete (props as any).modelValue
-        return {
-          ...valObj,
+          ...rest,
+          $formkit: 'group',
+          wrapper,
           __key: nextKey,
           name: nextName,
           id: `field_${nextKey}`,
@@ -357,24 +342,29 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
 
     if (typeof key === 'string' && key && listMap.has(key)) {
       const rawChildren = listMap.get(key) ?? []
-      const isInputGroup = node.$formkit === 'inputGroup' || node.$cmp === 'inputGroup'
+      const isInputGroup = getContainerKind(node) === 'inputGroup'
       const children = isInputGroup ? normalizeInputGroupChildren(rawChildren as any) : rawChildren
       next = { ...node, children }
-      if (next.$cmp) {
-        next.props = { ...next.props }
-        if (next.props && typeof next.props === 'object') delete next.props.modelValue
+      if (getContainerKind(next)) {
+        const props = typeof next.props === 'object' && next.props ? { ...next.props } : {}
+        delete (props as any).modelValue
+        delete (props as any).listKey
+        delete (props as any).cardKey
+        delete (props as any).inputGroupKey
+        delete (props as any).tabsKey
+        next.props = props
       }
     } else {
-      const isList = node.$formkit === 'list' || node.$cmp === 'list'
-      const isCard = node.$formkit === 'card' || node.$cmp === 'card'
-      const isInputGroup = node.$formkit === 'inputGroup' || node.$cmp === 'inputGroup'
-      const isTabs = node.$formkit === 'tabs' || node.$cmp === 'tabs'
-      if ((isList || isCard || isInputGroup || isTabs) && !Array.isArray(node.children)) {
+      const kind = getContainerKind(node)
+      if (kind && !Array.isArray(node.children)) {
         next = { ...node, children: [] }
-        if (next.$cmp) {
-          next.props = { ...next.props }
-          if (next.props && typeof next.props === 'object') delete next.props.modelValue
-        }
+        const props = typeof next.props === 'object' && next.props ? { ...next.props } : {}
+        delete (props as any).modelValue
+        delete (props as any).listKey
+        delete (props as any).cardKey
+        delete (props as any).inputGroupKey
+        delete (props as any).tabsKey
+        next.props = props
       }
     }
 

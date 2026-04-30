@@ -5,13 +5,13 @@ import TabsContainerPreview from '@/components/ui/containers/tabs/TabsContainerP
 
 function isTabsContainer(node: any) {
   if (!node || typeof node !== 'object') return false
-  return node.$cmp === 'tabs' || node.$formkit === 'tabs'
+  return node.$cmp === 'tabs' || node.$formkit === 'tabs' || (node.$formkit === 'group' && node.wrapper === 'tabs')
 }
 
 function normalize(node: SchemaNode): SchemaNode {
   const next: any = { ...node }
-  next.$cmp = next.$cmp || 'tabs'
-  next.children = Array.isArray(next.children) ? next.children : []
+  next.$cmp = 'tabs'
+  next.children = Array.isArray(next.children) ? next.children : Array.isArray((next as any)?.props?.modelValue) ? (next as any).props.modelValue : []
   const props = typeof next.props === 'object' && next.props ? { ...next.props } : {}
   props.tabsKey = typeof props.tabsKey === 'string' && props.tabsKey ? props.tabsKey : (next.__key as string | undefined) ?? ''
   props.modelValue = next.children
@@ -37,6 +37,12 @@ export const tabsContainerDef: ContainerDefinition = {
         })
       : []
     const schemaIf = (normalized as any).if
+    const firstPaneChildren = Array.isArray((children as any[])?.[0]?.children) ? ((children as any[])[0] as any).children : []
+    const slotChild: any = {
+      $el: 'div',
+      attrs: { class: 'w-full grid grid-cols-12 gap-x-4 gap-y-2' },
+      children: firstPaneChildren,
+    }
     const nextNode: any = {
       $el: 'div',
       attrs: { class: (normalized as any).outerClass || 'col-span-12' },
@@ -47,7 +53,9 @@ export const tabsContainerDef: ContainerDefinition = {
             ...(normalized as any).props,
             tabsKey: ((normalized as any).props?.tabsKey as string | undefined) ?? key ?? '',
             modelValue: children,
+            children,
           },
+          children: [slotChild],
         },
       ],
     }

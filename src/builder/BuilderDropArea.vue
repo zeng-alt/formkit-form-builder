@@ -56,7 +56,6 @@ const deleteField = (index: number) => {
 const updateContainerChildren = (containerKey: string, children: FormKitSchemaFormKit[]) => {
   const currentFound = findSchemaNodeByKey(formSchema.value as any[], containerKey)
   if (!currentFound) return
-  const current = currentFound.node
   const existingNames = new Set<string>()
   collectSchemaNames(formSchema.value as any, existingNames)
   const ensureIdentity = (node: any): any => {

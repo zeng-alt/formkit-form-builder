@@ -2,6 +2,7 @@ import type { FormKitSchemaFormKit } from '@formkit/core'
 import { computed, ref } from 'vue'
 import { formSchema, selectedIndex, selectedKey } from '../utils/default-form-elements'
 import { generateKey } from '../utils/dnd/schema'
+import { migrateContainerNodes } from '../utils/schema/migrate-containers'
 
 type SchemaSnapshot = FormKitSchemaFormKit[]
 
@@ -114,6 +115,7 @@ export function commitSchema(
   future.value = []
   lastCommit.value = { at: now, reason: options?.reason }
 
+  migrateContainerNodes(nextSchema)
   migrateExpressionKeys(nextSchema)
   formSchema.value = nextSchema
   if (prevSelectedKey) {

@@ -8,6 +8,7 @@ import { evalExpression } from '@/utils/expression-eval'
 import { collectSchemaNames, generateKey, toSafeName } from '@/utils/dnd/schema'
 import { getContainerKind } from '@/utils/schema/containers'
 import { getPreviewSchemaLibrary } from '@/containers/registry'
+import { useFormBuilderConfig } from '@/composables/use-config'
 
 type ModelValue = Record<string, unknown>
 
@@ -78,9 +79,12 @@ watch(
   { deep: true },
 )
 
+const cfg = useFormBuilderConfig() as any
+
 const schemaLibrary = computed<Record<string, Component>>(() => {
-  if (props.schemaLibrary) return props.schemaLibrary
-  return getPreviewSchemaLibrary()
+  const base = getPreviewSchemaLibrary()
+  const wrapper = cfg?.wrapper && typeof cfg.wrapper === 'object' ? (cfg.wrapper as Record<string, Component>) : {}
+  return { ...base, ...wrapper, ...props.schemaLibrary }
 })
 
 const formWrapper = computed<any | null>(() => {
@@ -277,8 +281,12 @@ const cloneNodeWithFreshIdentity = (node: any, existingNames: Set<string>, listS
     const baseProps = typeof next.props === 'object' && next.props ? next.props : {}
     if (kind === 'list') {
       next.props = { ...baseProps, listKey: nextKey, modelValue: Array.isArray(next.children) ? next.children : [] }
-    } else {
+    } else if (kind === 'card') {
       next.props = { ...baseProps, cardKey: nextKey, modelValue: Array.isArray(next.children) ? next.children : [] }
+    } else if (kind === 'inputGroup') {
+      next.props = { ...baseProps, inputGroupKey: nextKey, modelValue: Array.isArray(next.children) ? next.children : [] }
+    } else if (kind === 'tabs') {
+      next.props = { ...baseProps, tabsKey: nextKey, modelValue: Array.isArray(next.children) ? next.children : [] }
     }
   }
   return next

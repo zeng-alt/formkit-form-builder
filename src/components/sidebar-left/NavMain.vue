@@ -24,7 +24,9 @@ const filteredFormElements = computed(() => {
     (element) =>
       element.name.toLowerCase().includes(query) ||
       element.description.toLowerCase().includes(query) ||
-      String((element as any).$formkit ?? (element as any).$cmp ?? '').toLowerCase().includes(query),
+      String(getContainerKind(element) ?? (element as any).wrapper ?? (element as any).$formkit ?? (element as any).$cmp ?? '')
+        .toLowerCase()
+        .includes(query),
   )
 })
 
