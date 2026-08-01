@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { inject, computed, ref, type Ref } from 'vue'
 import { NTabs, NTabPane, NScrollbar } from 'naive-ui'
-import { createFieldProps } from '../../utils/field-props'
-import { createDefaultFormElements } from '../../utils/default-form-elements'
+import { createFieldProps } from '@/elements'
+import { createDefaultFormElements } from '@/elements'
 import DraggableList from './DraggableList.vue'
 import { useFormBuilderI18n } from '../../i18n/context'
 import type { FormKitSchemaFormKit } from '@formkit/core'

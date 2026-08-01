@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch, type Ref } from 'vue'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
-import { createFieldProps } from '../../utils/field-props'
+import { createFieldProps } from '@/elements'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useFormBuilderI18n } from '../../i18n/context'
 import { customInsertPlugin } from '../../utils/custom-insert-plugin'

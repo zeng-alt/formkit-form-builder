@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { selectedIndex, selectedKey } from '../../../../utils/default-form-elements'
+import { selectedIndex, selectedKey } from '@/state/form-schema'
 import { useFormField } from '../../../../composables/form-fields'
 import JsonTextarea from './JsonTextarea.vue'
 

@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { NSwitch, NInput, NAlert } from 'naive-ui'
 import { useFormField } from '../../../composables/form-fields'
-import { selectedIndex, selectedKey } from '../../../utils/default-form-elements'
+import { selectedIndex, selectedKey } from '@/state/form-schema'
 import { evalExpression } from '../../../utils/expression-eval'
 import { useFormBuilderI18n } from '../../../i18n/context'
 

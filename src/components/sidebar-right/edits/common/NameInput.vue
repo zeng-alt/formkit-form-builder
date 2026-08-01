@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { fieldProps } from '../../../../utils/field-props'
-import { useFormField, selectedField } from '../../../../composables/form-fields'
-import { formSchema, selectedKey } from '../../../../utils/default-form-elements'
-import { useFormBuilderI18n } from '../../../../i18n/context'
+import { fieldProps } from '@/elements'
+import { useFormField, selectedField } from '@/composables/form-fields'
+import { formSchema, selectedKey } from '@/state/form-schema'
+import { useFormBuilderI18n } from '@/i18n/context'
 import TextInput from './TextInput.vue'
 
 const { currentFieldType, fieldName, hasField } = useFormField()

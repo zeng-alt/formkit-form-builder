@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
-import { DEFAULT_DATE_TIME_VALUE_FORMAT } from '../../../../utils/default-form-elements'
+import { DEFAULT_DATE_TIME_VALUE_FORMAT } from '@/elements/constants'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import PlaceholderSection from '../common/PlaceholderSection.vue'
 import NaiveBasicSection from '../common/NaiveBasicSection.vue'

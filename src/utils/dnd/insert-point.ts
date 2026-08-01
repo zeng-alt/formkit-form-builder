@@ -1,7 +1,7 @@
  
 import type { InsertState, NodeRecord, ParentRecord } from '@formkit/drag-and-drop'
 import { state } from '@formkit/drag-and-drop'
-import { formSchema } from '../default-form-elements'
+import { formSchema } from '@/state/form-schema'
 import { findSchemaByKey } from './schema'
 import { computePlacements, findInsertIndexForCell, getRowSpan } from './grid'
 import { getRealCoords } from './range'

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { NButton, NInput, NTabPane, NTabs } from 'naive-ui'
-import { selectedIndex, selectedKey } from '../../../../utils/default-form-elements'
+import { selectedIndex, selectedKey } from '@/state/form-schema'
 import { useFormField } from '../../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../../i18n/context'
 import EditsLayout from './EditsLayout.vue'

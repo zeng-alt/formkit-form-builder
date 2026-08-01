@@ -15,12 +15,12 @@ import {
   setParentValues,
 } from '@formkit/drag-and-drop'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { commitSchema } from '../../composables/schema-history'
-import { formSchema } from '../default-form-elements'
+import { commitSchema } from '@/composables/schema-history'
+import { formSchema } from '@/state/form-schema'
 import { insertState } from './insert-state'
 import { getVisualRows, setColSpan, adjustColSpansForInsertAtRow } from './grid'
 import { collectSchemaNames, ensureUniqueName, generateKey, toSafeName } from './schema'
-import { eq } from '../utils'
+import { eq } from '@/utils/utils'
 
 function widthClassFromSpan(span: number) {
   const safeSpan = Math.max(1, Math.min(12, Math.round(span)))

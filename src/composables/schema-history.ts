@@ -1,6 +1,6 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { computed, ref } from 'vue'
-import { formSchema, selectedIndex, selectedKey } from '../utils/default-form-elements'
+import { formSchema, selectedIndex, selectedKey } from '@/state/form-schema'
 import { generateKey } from '../utils/dnd/schema'
 
 type SchemaSnapshot = FormKitSchemaFormKit[]

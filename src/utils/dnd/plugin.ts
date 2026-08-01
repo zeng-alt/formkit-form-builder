@@ -21,7 +21,7 @@ import {
   state,
 } from '@formkit/drag-and-drop'
 import { watch } from 'vue'
-import { formSchema } from '../default-form-elements'
+import { formSchema } from '@/state/form-schema'
 import { handleEnd } from './commit'
 import { insertState } from './insert-state'
 import { positionInsertPoint, createInsertPoint } from './insert-point'
@@ -306,7 +306,7 @@ function findClosest<T>(enabledNodes: NodeRecord<T>[], state: DragState<T>) {
   return foundRange
 }
 
-// 对外暴露：在 BuilderDropArea 里作为插件传入
+// 对外暴露：在画布 DnD 里作为插件传入
 export function customInsertPlugin<T>(insertConfig: InsertConfig<T>) {
   return (parent: HTMLElement) => {
     const parentData = parents.get(parent)

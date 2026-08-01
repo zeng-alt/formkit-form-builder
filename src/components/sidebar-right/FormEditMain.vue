@@ -8,7 +8,7 @@ import EditsSection from './edits/EditsSection.vue'
 import ExpressionEditor from './edits/ExpressionEditor.vue'
 import IfConditionEditor from './edits/IfConditionEditor.vue'
 import BindEditor from './edits/BindEditor.vue'
-import { createFieldProps } from '../../utils/field-props'
+import { createFieldProps } from '@/elements'
 import FormEditor from './edits/editors/FormEditor.vue'
 
 const { hasField, currentFieldType, selectedIsForm } = useFormField()

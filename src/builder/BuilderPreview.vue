@@ -40,10 +40,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { NModal } from 'naive-ui'
-import { formMeta, formSchema } from '../utils/default-form-elements'
+import { formMeta, formSchema } from '@/state/form-schema'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { useFormBuilderI18n } from '../i18n/context'
-import { canvasView, type CanvasView } from '../composables/form-fields'
+import { useFormBuilderI18n } from '@/i18n/context'
+import { canvasView, type CanvasView } from '@/state/canvas-ui'
 import FormSchemaRenderer from '@/renderer/FormSchemaRenderer.vue'
 
 const { t } = useFormBuilderI18n()

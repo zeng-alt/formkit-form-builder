@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useFormField } from '../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../i18n/context'
-import { getFieldEditorComponent } from '../../../utils/field-props'
+import { getFieldEditorComponent } from '@/elements'
 import NameInput from './common/NameInput.vue'
 
 const { hasField, currentFieldType } = useFormField()

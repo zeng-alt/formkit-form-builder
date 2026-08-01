@@ -1,0 +1,73 @@
+import type { ElementDefinition } from '../types'
+
+// 容器结构元素（$cmp 渲染，通过 containers/registry 的 schemaLibrary 映射到画布/预览组件）
+export const containerElements: ElementDefinition[] = [
+  {
+    type: 'list',
+    category: 'structure',
+    icon: 'i-lucide-list-tree',
+    tooltipKey: 'fieldProps.tooltip.list',
+    editor: () => import('@/components/sidebar-right/edits/editors/GroupEditor.vue'),
+    schema: {
+      $cmp: 'list',
+      nameKey: 'elements.list.name',
+      labelKey: 'elements.list.label',
+      id: 'list_field',
+      outerClass: 'col-span-12',
+      descriptionKey: 'elements.list.description',
+      children: [],
+      props: { showActions: false, modelValue: [], listKey: '' },
+    },
+  },
+  {
+    type: 'card',
+    category: 'structure',
+    icon: 'i-lucide-credit-card',
+    tooltipKey: 'fieldProps.tooltip.card',
+    editor: () => import('@/components/sidebar-right/edits/editors/CardEditor.vue'),
+    schema: {
+      $cmp: 'card',
+      nameKey: 'elements.card.name',
+      labelKey: 'elements.card.label',
+      id: 'card_container',
+      outerClass: 'col-span-12',
+      props: { size: 'medium', bordered: true, embedded: false, hoverable: false, modelValue: [], cardKey: '' },
+      descriptionKey: 'elements.card.description',
+      children: [],
+    },
+  },
+  {
+    type: 'inputGroup',
+    category: 'structure',
+    icon: 'i-lucide-align-horizontal-justify-start',
+    tooltipKey: 'fieldProps.tooltip.inputGroup',
+    editor: () => import('@/components/sidebar-right/edits/editors/InputGroupEditor.vue'),
+    schema: {
+      $cmp: 'inputGroup',
+      nameKey: 'elements.inputGroup.name',
+      labelKey: 'elements.inputGroup.label',
+      id: 'input_group_container',
+      outerClass: 'col-span-12',
+      props: { modelValue: [], inputGroupKey: '' },
+      descriptionKey: 'elements.inputGroup.description',
+      children: [],
+    },
+  },
+  {
+    type: 'tabs',
+    category: 'structure',
+    icon: 'i-lucide-panel-top',
+    tooltipKey: 'fieldProps.tooltip.tabs',
+    editor: () => import('@/components/sidebar-right/edits/editors/TabsEditor.vue'),
+    schema: {
+      $cmp: 'tabs',
+      nameKey: 'elements.tabs.name',
+      labelKey: 'elements.tabs.label',
+      id: 'tabs_container',
+      outerClass: 'col-span-12',
+      props: { modelValue: [], tabsKey: '' },
+      descriptionKey: 'elements.tabs.description',
+      children: [],
+    },
+  },
+]

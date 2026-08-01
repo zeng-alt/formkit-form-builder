@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { NLayoutSider, NScrollbar } from 'naive-ui'
 import FormEditMain from './FormEditMain.vue'
-import { createFieldProps } from '../../utils/field-props'
+import { createFieldProps } from '@/elements'
 import { useFormField } from '../../composables/form-fields'
 import { useFormBuilderI18n } from '../../i18n/context'
 

@@ -1,77 +1,18 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { WritableComputedRef } from 'vue'
-import { computed, ref } from 'vue'
-import { formMeta, formSchema, selectedIndex, selectedKey, selectedTarget } from '../utils/default-form-elements'
+import { computed } from 'vue'
+import { formMeta, formSchema, selectedIndex, selectedKey, selectedTarget } from '@/state/form-schema'
+import { findNodeByKey, getNodeAtPath, updateAtPath } from '@/utils/schema/tree'
 import { commitSchema } from './schema-history'
-
-export const isLoading = ref(false)
-
-type Found = { node: FormKitSchemaFormKit; path: number[]; rootIndex: number } | null
-
-export const findSchemaNodeByKey = (schema: any[], key: string, path: number[] = [], rootIndex = -1): Found => {
-  for (let i = 0; i < schema.length; i++) {
-    const node = schema[i]
-    if (!node || typeof node !== 'object') continue
-    const nextPath = [...path, i]
-    const nextRootIndex = rootIndex >= 0 ? rootIndex : i
-    if ((node as any).__key === key) return { node, path: nextPath, rootIndex: nextRootIndex }
-    const children = (node as any)?.children
-    if (Array.isArray(children)) {
-      const found = findSchemaNodeByKey(children, key, [...nextPath, -1], nextRootIndex)
-      if (found) return found
-    }
-  }
-  return null
-}
-
-const normalizePath = (path: number[]) => path.filter((p) => p !== -1)
-
-const getNodeAtPath = (schema: any[], path: number[]) => {
-  let cur: any = schema
-  for (const idx of normalizePath(path)) {
-    cur = Array.isArray(cur) ? cur[idx] : cur?.children?.[idx]
-  }
-  return cur as FormKitSchemaFormKit | undefined
-}
-
-const updateAtPath = (schema: any[], path: number[], nextNode: any): any[] => {
-  const p = normalizePath(path)
-  if (p.length === 0) return schema
-  const nextSchema = [...schema]
-  const idx0 = p[0]!
-  if (p.length === 1) {
-    nextSchema[idx0] = nextNode
-    return nextSchema
-  }
-  const parent = { ...(nextSchema[idx0] as any) }
-  let cursor: any = parent
-  for (let i = 1; i < p.length - 1; i++) {
-    const idx = p[i]!
-    const arr = Array.isArray(cursor.children) ? [...cursor.children] : []
-    const child = { ...(arr[idx] as any) }
-    arr[idx] = child
-    cursor.children = arr
-    cursor = child
-  }
-  const lastIdx = p[p.length - 1]!
-  const lastArr = Array.isArray(cursor.children) ? [...cursor.children] : []
-  lastArr[lastIdx] = nextNode
-  cursor.children = lastArr
-  nextSchema[idx0] = parent
-  return nextSchema
-}
 
 export const selectedField = computed(() => {
   const key = selectedKey.value
   if (key) {
-    const found = findSchemaNodeByKey(formSchema.value as any[], key)
+    const found = findNodeByKey(formSchema.value as unknown[], key)
     if (found) return found.node
   }
   return formSchema.value[selectedIndex.value]
 })
-
-export type CanvasView = 'desktop' | 'tablet' | 'mobile'
-export const canvasView = ref<CanvasView>('desktop')
 
 type SchemaWithButtonProps = FormKitSchemaFormKit & {
   buttonProps?: Record<string, unknown>
@@ -88,7 +29,7 @@ export function useFormField() {
   const setFieldProp = (key: string, value: unknown) => {
     if (formSchema.value.length > 0) {
       const selected = selectedKey.value
-      const found = selected ? findSchemaNodeByKey(formSchema.value as any[], selected) : null
+      const found = selected ? findNodeByKey(formSchema.value as any[], selected) : null
       const path = found?.path
       const currentNode = path ? getNodeAtPath(formSchema.value as any[], path) : formSchema.value[selectedIndex.value]
       if (!currentNode) return
@@ -120,7 +61,7 @@ export function useFormField() {
   const setButtonProp = (key: string, value: unknown) => {
     if (formSchema.value.length > 0) {
       const selected = selectedKey.value
-      const found = selected ? findSchemaNodeByKey(formSchema.value as any[], selected) : null
+      const found = selected ? findNodeByKey(formSchema.value as any[], selected) : null
       const path = found?.path
       const current = (path ? getNodeAtPath(formSchema.value as any[], path) : formSchema.value[selectedIndex.value]) as SchemaWithButtonProps
       if (!current) return
@@ -146,7 +87,7 @@ export function useFormField() {
   const setPropsProp = (key: string, value: unknown) => {
     if (formSchema.value.length > 0) {
       const selected = selectedKey.value
-      const found = selected ? findSchemaNodeByKey(formSchema.value as any[], selected) : null
+      const found = selected ? findNodeByKey(formSchema.value as any[], selected) : null
       const path = found?.path
       const current = (path ? getNodeAtPath(formSchema.value as any[], path) : formSchema.value[selectedIndex.value]) as any
       if (!current) return

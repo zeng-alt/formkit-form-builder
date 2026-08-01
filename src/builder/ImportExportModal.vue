@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { NModal, NInput, NButton, NSpace } from 'naive-ui'
-import { formMeta, formSchema } from '../utils/default-form-elements'
+import { formMeta, formSchema } from '@/state/form-schema'
 import { commitSchema } from '../composables/schema-history'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { toast } from 'vue-sonner'

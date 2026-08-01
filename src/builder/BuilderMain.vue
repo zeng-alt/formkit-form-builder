@@ -6,13 +6,13 @@ import { changeLocale } from '@formkit/vue'
 
 import SidebarLeft from '../components/sidebar-left/SidebarLeft.vue'
 import SidebarRight from '../components/sidebar-right/SidebarRight.vue'
-import BuilderDropArea from './BuilderDropArea.vue'
+import BuilderCanvas from './canvas/BuilderCanvas.vue'
 import BuilderHeader from './BuilderHeader.vue'
 import { useFormBuilderConfig } from '../composables/use-config'
 import type { FormBuilderConfig } from '../types/env'
 import { provideFormBuilderI18n } from '../i18n/context'
 import { provideRuntimeLocale, type RuntimeLocale } from '../i18n/runtime-locale'
-import { selectedKey, selectedTarget } from '../utils/default-form-elements'
+import { selectedKey, selectedTarget } from '@/state/form-schema'
 
 
 const props = defineProps<ConfigProviderProps>()
@@ -75,7 +75,7 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
         <n-layout class="relative h-full" :native-scrollbar="false" @pointerdown.capture="onBuilderBlankPointerDown">
           <div class="p-4 flex flex-1 min-h-0 flex-col">
             <BuilderHeader />
-            <BuilderDropArea class="flex-1 min-h-0" />
+            <BuilderCanvas class="flex-1 min-h-0" />
           </div>
         </n-layout>
         <SidebarRight />
