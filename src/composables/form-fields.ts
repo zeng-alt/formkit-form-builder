@@ -1,13 +1,7 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { WritableComputedRef } from 'vue'
 import { computed } from 'vue'
-import {
-  formMeta,
-  formSchema,
-  selectedIndex,
-  selectedKey,
-  selectedTarget,
-} from '@/state/form-schema'
+import { formSchema, selectedIndex, selectedKey, selectedTarget } from '@/state/form-schema'
 import { formDefinition } from '@/state/form-definition'
 import { findNodeByKey, getNodeAtPath } from '@/utils/schema/tree'
 import { findDslNodeByKey, updateDslNodeAtKey } from '@/utils/schema/dsl-tree'
@@ -466,26 +460,35 @@ export function useFormField() {
   })
 
   const formName = computed<string>({
-    get: () => formMeta.value.name,
+    get: () => formDefinition.value?.name ?? 'form',
     set: (value: string) => {
       const next = value.trim()
-      formMeta.value = { ...formMeta.value, name: next || 'form' }
+      const def = formDefinition.value
+      commitFormDefinition({ ...def, name: next || 'form' }, { reason: 'form-name', merge: true })
     },
   })
 
   const formLabelPosition = computed<'top' | 'left'>({
-    get: () => formMeta.value.labelPosition,
+    get: () => (formDefinition.value?.settings?.labelAlign === 'left' ? 'left' : 'top'),
     set: (value: 'top' | 'left') => {
-      formMeta.value = { ...formMeta.value, labelPosition: value }
+      const def = formDefinition.value
+      commitFormDefinition(
+        { ...def, settings: { ...def.settings, labelAlign: value } },
+        { reason: 'form-label-position', merge: true },
+      )
     },
   })
 
   const formLabelWidth = computed<number>({
-    get: () => formMeta.value.labelWidth,
+    get: () => formDefinition.value?.settings?.labelWidth ?? 80,
     set: (value: number) => {
       const n = Number(value)
       const next = Number.isFinite(n) ? Math.max(0, Math.min(2000, Math.round(n))) : 120
-      formMeta.value = { ...formMeta.value, labelWidth: next }
+      const def = formDefinition.value
+      commitFormDefinition(
+        { ...def, settings: { ...def.settings, labelWidth: next } },
+        { reason: 'form-label-width', merge: true },
+      )
     },
   })
 

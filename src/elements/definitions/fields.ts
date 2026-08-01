@@ -25,7 +25,7 @@ import NaiveTreeSelect from '@/components/ui/fields/NaiveTreeSelect.vue'
 
 const commonProps = { size: 'medium', disabled: false, clearable: true } as const
 
-// 文本类字段共用 FormKit 组件
+// 文本类字段共用 FormKit 组件（$cmp 引用组件名，createInput 注册仍走 formkit 字段）
 const textLike = (_type: string) => ({ component: NaiveTextInput, libraryName: 'NaiveTextInput' })
 
 export const fieldElements: ElementDefinition[] = [
@@ -37,7 +37,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
     formkit: textLike('text'),
     schema: {
-      $formkit: 'text',
+      $cmp: 'NaiveTextInput',
       nameKey: 'elements.text.name',
       labelKey: 'elements.text.label',
       outerClass: 'col-span-12',
@@ -58,7 +58,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
     formkit: { component: NaiveTextarea, libraryName: 'NaiveTextarea' },
     schema: {
-      $formkit: 'textarea',
+      $cmp: 'NaiveTextarea',
       nameKey: 'elements.textarea.name',
       labelKey: 'elements.textarea.label',
       id: 'textarea_field',
@@ -79,7 +79,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
     formkit: textLike('email'),
     schema: {
-      $formkit: 'email',
+      $cmp: 'NaiveEmailInput',
       nameKey: 'elements.email.name',
       labelKey: 'elements.email.label',
       outerClass: 'col-span-12',
@@ -100,7 +100,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NumberEditor.vue'),
     formkit: { component: NaiveNumberInput, libraryName: 'NaiveNumberInput' },
     schema: {
-      $formkit: 'number',
+      $cmp: 'NaiveNumberInput',
       nameKey: 'elements.number.name',
       labelKey: 'elements.number.label',
       outerClass: 'col-span-12',
@@ -122,7 +122,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
     formkit: textLike('url'),
     schema: {
-      $formkit: 'url',
+      $cmp: 'NaiveUrlInput',
       nameKey: 'elements.url.name',
       labelKey: 'elements.url.label',
       helpKey: 'elements.common.help',
@@ -143,7 +143,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/CheckboxEditor.vue'),
     formkit: { component: NaiveCheckboxGroup, libraryName: 'NaiveCheckboxGroup' },
     schema: {
-      $formkit: 'checkbox',
+      $cmp: 'NaiveCheckboxGroup',
       nameKey: 'elements.checkbox.name',
       labelKey: 'elements.checkbox.label',
       helpKey: 'elements.common.help',
@@ -164,7 +164,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/ColorEditor.vue'),
     formkit: { component: NaiveColorPicker, libraryName: 'NaiveColorPicker' },
     schema: {
-      $formkit: 'color',
+      $cmp: 'NaiveColorPicker',
       nameKey: 'elements.color.name',
       labelKey: 'elements.color.label',
       value: '#00ff00',
@@ -185,7 +185,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/DateLikeEditor.vue'),
     formkit: { component: NaiveDatePicker, libraryName: 'NaiveDatePicker' },
     schema: {
-      $formkit: 'date',
+      $cmp: 'NaiveDatePicker',
       nameKey: 'elements.date.name',
       labelKey: 'elements.date.label',
       helpKey: 'elements.common.help',
@@ -205,7 +205,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/DateLikeEditor.vue'),
     formkit: { component: NaiveTimePicker, libraryName: 'NaiveTimePicker' },
     schema: {
-      $formkit: 'time',
+      $cmp: 'NaiveTimePicker',
       nameKey: 'elements.time.name',
       labelKey: 'elements.time.label',
       helpKey: 'elements.common.help',
@@ -225,7 +225,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/DateTimeEditor.vue'),
     formkit: { component: NaiveDatePicker, libraryName: 'NaiveDatePicker' },
     schema: {
-      $formkit: 'naiveDateTime',
+      $cmp: 'NaiveDateTimePicker',
       nameKey: 'elements.dateTime.name',
       labelKey: 'elements.dateTime.label',
       helpKey: 'elements.common.help',
@@ -249,7 +249,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/FileEditor.vue'),
     formkit: { component: NaiveUpload, libraryName: 'NaiveUpload' },
     schema: {
-      $formkit: 'file',
+      $cmp: 'NaiveUpload',
       nameKey: 'elements.file.name',
       labelKey: 'elements.file.label',
       helpKey: 'elements.file.help',
@@ -270,7 +270,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/PasswordEditor.vue'),
     formkit: textLike('password'),
     schema: {
-      $formkit: 'password',
+      $cmp: 'NaivePasswordInput',
       nameKey: 'elements.password.name',
       labelKey: 'elements.password.label',
       placeholderKey: 'elements.password.placeholder',
@@ -291,7 +291,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/RadioEditor.vue'),
     formkit: { component: NaiveRadioGroup, libraryName: 'NaiveRadioGroup' },
     schema: {
-      $formkit: 'radio',
+      $cmp: 'NaiveRadioGroup',
       options: ['one'],
       nameKey: 'elements.radio.name',
       labelKey: 'elements.radio.label',
@@ -312,7 +312,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/RangeEditor.vue'),
     formkit: { component: NaiveSlider, libraryName: 'NaiveSlider' },
     schema: {
-      $formkit: 'range',
+      $cmp: 'NaiveSlider',
       nameKey: 'elements.range.name',
       labelKey: 'elements.range.label',
       children: '$slots.default',
@@ -343,7 +343,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/SelectEditor.vue'),
     formkit: { component: NaiveSelect, libraryName: 'NaiveSelect' },
     schema: {
-      $formkit: 'select',
+      $cmp: 'NaiveSelect',
       nameKey: 'elements.select.name',
       labelKey: 'elements.select.label',
       helpKey: 'elements.common.help',
@@ -368,7 +368,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveCascaderEditor.vue'),
     formkit: { component: NaiveCascader, libraryName: 'NaiveCascader' },
     schema: {
-      $formkit: 'naiveCascader',
+      $cmp: 'NaiveCascader',
       nameKey: 'elements.naiveCascader.name',
       labelKey: 'elements.naiveCascader.label',
       helpKey: 'elements.common.help',
@@ -407,7 +407,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveTreeSelectEditor.vue'),
     formkit: { component: NaiveTreeSelect, libraryName: 'NaiveTreeSelect' },
     schema: {
-      $formkit: 'naiveTreeSelect',
+      $cmp: 'NaiveTreeSelect',
       nameKey: 'elements.naiveTreeSelect.name',
       labelKey: 'elements.naiveTreeSelect.label',
       helpKey: 'elements.common.help',
@@ -443,7 +443,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveMentionEditor.vue'),
     formkit: { component: NaiveMention, libraryName: 'NaiveMention' },
     schema: {
-      $formkit: 'naiveMention',
+      $cmp: 'NaiveMention',
       nameKey: 'elements.naiveMention.name',
       labelKey: 'elements.naiveMention.label',
       helpKey: 'elements.common.help',
@@ -465,7 +465,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveRateEditor.vue'),
     formkit: { component: NaiveRate, libraryName: 'NaiveRate' },
     schema: {
-      $formkit: 'naiveRate',
+      $cmp: 'NaiveRate',
       nameKey: 'elements.naiveRate.name',
       labelKey: 'elements.naiveRate.label',
       helpKey: 'elements.common.help',
@@ -486,7 +486,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveSwitchEditor.vue'),
     formkit: { component: NaiveSwitch, libraryName: 'NaiveSwitch' },
     schema: {
-      $formkit: 'naiveSwitch',
+      $cmp: 'NaiveSwitch',
       nameKey: 'elements.naiveSwitch.name',
       labelKey: 'elements.naiveSwitch.label',
       helpKey: 'elements.common.help',
@@ -507,7 +507,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveAvatarEditor.vue'),
     formkit: { component: NaiveAvatar, libraryName: 'NaiveAvatar' },
     schema: {
-      $formkit: 'naiveAvatar',
+      $cmp: 'NaiveAvatar',
       nameKey: 'elements.naiveAvatar.name',
       labelKey: 'elements.naiveAvatar.label',
       helpKey: 'elements.common.help',
@@ -527,7 +527,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveImageEditor.vue'),
     formkit: { component: NaiveImage, libraryName: 'NaiveImage' },
     schema: {
-      $formkit: 'naiveImage',
+      $cmp: 'NaiveImage',
       nameKey: 'elements.naiveImage.name',
       labelKey: 'elements.naiveImage.label',
       helpKey: 'elements.common.help',
@@ -555,7 +555,7 @@ export const fieldElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
     formkit: textLike('tel'),
     schema: {
-      $formkit: 'tel',
+      $cmp: 'NaiveTelInput',
       nameKey: 'elements.tel.name',
       labelKey: 'elements.tel.label',
       placeholderKey: 'elements.tel.placeholder',

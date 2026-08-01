@@ -1,4 +1,3 @@
- 
 import type { InsertState, NodeRecord, ParentRecord } from '@formkit/drag-and-drop'
 import { state } from '@formkit/drag-and-drop'
 import { formSchema } from '@/state/form-schema'
@@ -87,10 +86,14 @@ export function positionInsertPoint<T>(
 
     const latestValues = parent.data.getValues(parent.el) as any
     const latestValue =
-      Array.isArray(latestValues) && typeof node.data.index === 'number' ? latestValues[node.data.index] : undefined
+      Array.isArray(latestValues) && typeof node.data.index === 'number'
+        ? latestValues[node.data.index]
+        : undefined
     const targetKey = (node.data.value as any)?.__key
     const schemaValue =
-      typeof targetKey === 'string' && targetKey ? findSchemaByKey(formSchema.value as any[], targetKey) : undefined
+      typeof targetKey === 'string' && targetKey
+        ? findSchemaByKey(formSchema.value as any[], targetKey)
+        : undefined
     const targetRowSpan = getRowSpan(schemaValue ?? latestValue ?? node.data.value)
     const draggedRowSpan = (insertState as any).draggedRowSpan ?? 1
     const shouldSegment = targetRowSpan > 1 && draggedRowSpan === 1
@@ -105,7 +108,8 @@ export function positionInsertPoint<T>(
         const valuesForPlacement = Array.isArray(latestValues)
           ? latestValues.map((v: any) => {
               const k = v?.__key
-              if (typeof k === 'string' && k) return findSchemaByKey(formSchema.value as any[], k) ?? v
+              if (typeof k === 'string' && k)
+                return findSchemaByKey(formSchema.value as any[], k) ?? v
               return v
             })
           : []
@@ -115,7 +119,11 @@ export function positionInsertPoint<T>(
           const desiredRow = p.row + (segment - 1)
           const desiredCol = ascending ? p.col + p.colSpan : p.col
           ;(insertState as any).explicitRow = desiredRow
-          ;(insertState as any).explicitIndex = findInsertIndexForCell(placements, desiredRow, desiredCol)
+          ;(insertState as any).explicitIndex = findInsertIndexForCell(
+            placements,
+            desiredRow,
+            desiredCol,
+          )
         }
       }
     }

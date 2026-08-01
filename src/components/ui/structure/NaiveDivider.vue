@@ -11,8 +11,12 @@ const props = defineProps<{
 const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
 
 const titlePlacement = computed(() => uiProps.value.titlePlacement as any)
-const dashed = computed<boolean>(() => Boolean((uiProps.value.dashed as boolean | undefined) ?? false))
-const vertical = computed<boolean>(() => Boolean((uiProps.value.vertical as boolean | undefined) ?? false))
+const dashed = computed<boolean>(() =>
+  Boolean((uiProps.value.dashed as boolean | undefined) ?? false),
+)
+const vertical = computed<boolean>(() =>
+  Boolean((uiProps.value.vertical as boolean | undefined) ?? false),
+)
 
 const title = computed(() => {
   const raw = uiProps.value.title

@@ -4,7 +4,6 @@ import { NButton } from 'naive-ui'
 import { createSchemaRuntimeContext, runBindCode } from '@/utils/bind-runtime'
 
 const props = defineProps<{
-   
   context: any
 }>()
 
@@ -32,7 +31,8 @@ const text = computed(() => {
 
 const type = computed(() => {
   const configuredType = buttonProps.value?.type
-  if (configuredType && configuredType !== 'submit' && configuredType !== 'button') return configuredType
+  if (configuredType && configuredType !== 'submit' && configuredType !== 'button')
+    return configuredType
   const formkitType = props.context.node.props.type
   return formkitType === 'submit' ? 'primary' : 'default'
 })
@@ -71,14 +71,25 @@ async function handleClick(e: MouseEvent) {
   const onClick = bind && typeof bind === 'object' ? (bind as any).onClick : undefined
   if (typeof onClick === 'string' && onClick.trim()) {
     const $ = createSchemaRuntimeContext(props.context, e)
-    await runBindCode(onClick, { event: e, data: props.context?.node?.root?.value, attrs: props.context?.attrs, $ })
+    await runBindCode(onClick, {
+      event: e,
+      data: props.context?.node?.root?.value,
+      attrs: props.context?.attrs,
+      $,
+    })
   }
   props.context?.handlers?.click?.(e)
 }
 </script>
 
 <template>
-  <div :class="['flex', booleans.fullWidth ? 'w-full' : '', align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start']">
+  <div
+    :class="[
+      'flex',
+      booleans.fullWidth ? 'w-full' : '',
+      align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start',
+    ]"
+  >
     <NButton
       :class="[booleans.fullWidth ? 'w-full' : '']"
       :type="type"

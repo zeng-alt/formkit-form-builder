@@ -17,4 +17,3 @@ export type ContainerDefinition = {
   normalize?: (node: SchemaNode) => SchemaNode
   formatPreview?: (node: SchemaNode, ctx: ContainerFormatCtx) => FormKitSchemaFormKit
 }
-

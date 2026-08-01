@@ -68,7 +68,12 @@ const expressionError = computed(() => {
     <div v-if="enabled" class="space-y-2">
       <n-input
         :value="draft"
-        @update:value="(v) => { draft = v; ifExpression = v }"
+        @update:value="
+          (v) => {
+            draft = v
+            ifExpression = v
+          }
+        "
         type="textarea"
         :placeholder="t('condition.placeholder')"
         :autosize="{ minRows: 2, maxRows: 5 }"
@@ -76,10 +81,14 @@ const expressionError = computed(() => {
       <n-alert v-if="expressionError" type="error" :show-icon="true" class="mt-2 text-xs">
         {{ expressionError }}
       </n-alert>
-      <n-alert v-if="missingVariables.length > 0" type="warning" :show-icon="true" class="mt-2 text-xs">
+      <n-alert
+        v-if="missingVariables.length > 0"
+        type="warning"
+        :show-icon="true"
+        class="mt-2 text-xs"
+      >
         {{ t('expression.variablesNotFound', { vars: missingVariables.join(', ') }) }}
       </n-alert>
     </div>
   </div>
 </template>
-

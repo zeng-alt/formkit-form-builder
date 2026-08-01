@@ -16,4 +16,3 @@ const horizontal = createPropsProp<boolean>('horizontal', false)
     @update:value="(v) => (horizontal = v)"
   />
 </template>
-

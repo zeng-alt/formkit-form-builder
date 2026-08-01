@@ -13,4 +13,3 @@ import NaiveBasicSection from '../common/NaiveBasicSection.vue'
   <SelectSwitchesSection />
   <NaiveBasicSection :size="true" :disabled="true" :clearable="true" />
 </template>
-

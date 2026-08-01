@@ -57,4 +57,3 @@ const visibilityHeight = computed({
     @update:value="(v) => (visibilityHeight = v)"
   />
 </template>
-

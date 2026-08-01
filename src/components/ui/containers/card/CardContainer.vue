@@ -40,8 +40,12 @@ const dnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
   },
 })
 
-const title = computed(() => (typeof props.label === 'string' && props.label.trim() ? props.label.trim() : ''))
-const helpText = computed(() => (typeof props.help === 'string' && props.help.trim() ? props.help.trim() : ''))
+const title = computed(() =>
+  typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
+)
+const helpText = computed(() =>
+  typeof props.help === 'string' && props.help.trim() ? props.help.trim() : '',
+)
 const bordered = computed<boolean>(() => props.bordered ?? true)
 const embedded = computed<boolean>(() => props.embedded ?? false)
 const hoverable = computed<boolean>(() => props.hoverable ?? false)

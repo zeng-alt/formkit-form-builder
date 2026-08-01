@@ -12,7 +12,9 @@ const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.con
 
 const src = computed(() => uiProps.value.src as string | undefined)
 const round = computed<boolean>(() => Boolean((uiProps.value.round as boolean | undefined) ?? true))
-const bordered = computed<boolean>(() => Boolean((uiProps.value.bordered as boolean | undefined) ?? false))
+const bordered = computed<boolean>(() =>
+  Boolean((uiProps.value.bordered as boolean | undefined) ?? false),
+)
 const fallbackText = computed(() => (uiProps.value.fallbackText as string | undefined) ?? '')
 
 const size = computed(() => {

@@ -7,7 +7,10 @@ function withColSpanClass(field: FormKitSchemaFormKit, span: number) {
   const currentOuterClass = typeof field.outerClass === 'string' ? field.outerClass : ''
   let classes = currentOuterClass
   if (/\bcol-span-\d+\b/.test(classes)) {
-    classes = classes.replace(/\bcol-span-\d+\b/g, `col-span-${safeSpan}`).replace(/\s+/g, ' ').trim()
+    classes = classes
+      .replace(/\bcol-span-\d+\b/g, `col-span-${safeSpan}`)
+      .replace(/\s+/g, ' ')
+      .trim()
   } else {
     classes = `${classes} col-span-${safeSpan}`.replace(/\s+/g, ' ').trim()
   }
@@ -72,4 +75,3 @@ export function useGridSpanResize(params: {
     startResize,
   }
 }
-

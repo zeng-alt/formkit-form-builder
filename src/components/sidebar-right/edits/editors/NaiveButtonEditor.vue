@@ -59,11 +59,23 @@ const buttonType = createButtonProp<string>('type', 'default')
     @update:value="(v) => (buttonType = v)"
   />
   <SwitchInput label="block" :value="buttonBlock" @update:value="(v) => (buttonBlock = v)" />
-  <SwitchInput label="bordered" :value="buttonBordered" @update:value="(v) => (buttonBordered = v)" />
+  <SwitchInput
+    label="bordered"
+    :value="buttonBordered"
+    @update:value="(v) => (buttonBordered = v)"
+  />
   <SwitchInput label="circle" :value="buttonCircle" @update:value="(v) => (buttonCircle = v)" />
   <SwitchInput label="dashed" :value="buttonDashed" @update:value="(v) => (buttonDashed = v)" />
-  <SwitchInput label="disabled" :value="buttonDisabled" @update:value="(v) => (buttonDisabled = v)" />
-  <SwitchInput label="focusable" :value="buttonFocusable" @update:value="(v) => (buttonFocusable = v)" />
+  <SwitchInput
+    label="disabled"
+    :value="buttonDisabled"
+    @update:value="(v) => (buttonDisabled = v)"
+  />
+  <SwitchInput
+    label="focusable"
+    :value="buttonFocusable"
+    @update:value="(v) => (buttonFocusable = v)"
+  />
   <SwitchInput
     label="full width"
     :value="buttonFullWidth"
@@ -71,5 +83,9 @@ const buttonType = createButtonProp<string>('type', 'default')
   />
   <SwitchInput label="ghost" :value="buttonGhost" @update:value="(v) => (buttonGhost = v)" />
   <SwitchInput label="round" :value="buttonRound" @update:value="(v) => (buttonRound = v)" />
-  <SwitchInput label="secondary" :value="buttonSecondary" @update:value="(v) => (buttonSecondary = v)" />
+  <SwitchInput
+    label="secondary"
+    :value="buttonSecondary"
+    @update:value="(v) => (buttonSecondary = v)"
+  />
 </template>

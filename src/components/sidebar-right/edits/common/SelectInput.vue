@@ -27,10 +27,11 @@ const emit = defineEmits<{
       size="small"
       :value="props.value"
       :options="props.options"
-      @update:value="(v) => {
-        if (v !== null) emit('update:value', v)
-      }"
+      @update:value="
+        (v) => {
+          if (v !== null) emit('update:value', v)
+        }
+      "
     />
   </EditsLayout>
 </template>
-

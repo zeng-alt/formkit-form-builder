@@ -35,7 +35,9 @@ const isDragging = ref(false)
 const canvasCtx = useCanvasSchemaContext()
 const schemaLibrary = computed(() => canvasCtx?.library as any)
 const renderSchemaNode = (node: unknown) => {
-  return (canvasCtx?.renderNode ? canvasCtx.renderNode(node) : toCanvasSchemaNode(node as any)) as any
+  return (
+    canvasCtx?.renderNode ? canvasCtx.renderNode(node) : toCanvasSchemaNode(node as any)
+  ) as any
 }
 
 const tailwindSafelist = [
@@ -89,7 +91,8 @@ const baseUlClass = computed(() => {
 })
 
 const emptyPlaceholderClass = computed(() => {
-  if (layout.value === 'row') return 'w-full min-h-[140px] flex items-center justify-center pointer-events-none'
+  if (layout.value === 'row')
+    return 'w-full min-h-[140px] flex items-center justify-center pointer-events-none'
   return 'col-span-12 min-h-[140px] flex items-center justify-center pointer-events-none'
 })
 
@@ -128,8 +131,14 @@ const resizeHandleClass = computed(() => {
       @pointerdown.self="props.onSelectBlank?.()"
       @dragover.capture="props.setNestedParentOnRoot?.(true)"
       @dragstart.capture="isDragging = true"
-      @dragend.capture="isDragging = false; props.setNestedParentOnRoot?.(false)"
-      @drop="isDragging = false; props.setNestedParentOnRoot?.(false)"
+      @dragend.capture="
+        isDragging = false,
+        props.setNestedParentOnRoot?.(false)
+      "
+      @drop="
+        isDragging = false,
+        props.setNestedParentOnRoot?.(false)
+      "
     >
       <li v-if="props.items.value.length === 0" :class="emptyPlaceholderClass">
         <n-empty :description="props.emptyText" />
@@ -143,7 +152,7 @@ const resizeHandleClass = computed(() => {
           'px-2 py-1 pr-4 h-full !z-20 relative border-[1.5px] min-w-0 box-border',
           dragEnabled ? (dragHandle ? '!cursor-default' : '!cursor-grab') : '!cursor-default',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a277ff] focus-visible:ring-offset-2',
-          ((child as any)?.__key && (child as any).__key === props.selectedKey)
+          (child as any)?.__key && (child as any).__key === props.selectedKey
             ? 'border-solid border-[#a277ff] bg-[#a277ff]/[0.05] shadow-[0_0_0_3px_rgba(79,110,247,0.12)] dark:bg-[#a277ff]/[0.08]'
             : 'border-dashed border-transparent hover:border-[#7c9ef8] hover:bg-[#f0f4ff] dark:hover:bg-[rgba(100,130,255,0.07)]',
         ]"
@@ -193,13 +202,11 @@ const resizeHandleClass = computed(() => {
                 draggable="false"
                 @pointerdown.stop.prevent
                 @click.stop="props.onDelete(idx)"
-                class="!h-[26px] !w-[26px] !rounded-[7px] !text-muted-foreground
-                      hover:!bg-red-100 hover:!text-red-600
-                      active:!scale-95 active:!bg-red-200 active:!text-red-700
-                      dark:hover:!bg-red-950/50 dark:hover:!text-red-400
-                      transition-[transform,background-color,color,opacity] duration-150"
+                class="!h-[26px] !w-[26px] !rounded-[7px] !text-muted-foreground hover:!bg-red-100 hover:!text-red-600 active:!scale-95 active:!bg-red-200 active:!text-red-700 dark:hover:!bg-red-950/50 dark:hover:!text-red-400 transition-[transform,background-color,color,opacity] duration-150"
               >
-                <template #icon><span aria-hidden="true" class="i-lucide-trash-2 !h-[13px] !w-[13px]"></span></template>
+                <template #icon
+                  ><span aria-hidden="true" class="i-lucide-trash-2 !h-[13px] !w-[13px]"></span
+                ></template>
               </n-button>
             </template>
             {{ props.deleteTooltipText }}
@@ -213,13 +220,11 @@ const resizeHandleClass = computed(() => {
             draggable="false"
             @pointerdown.stop.prevent
             @click.stop="props.onDelete(idx)"
-            class="!h-[26px] !w-[26px] !rounded-[7px] !text-muted-foreground
-                  hover:!bg-red-100 hover:!text-red-600
-                  active:!scale-95 active:!bg-red-200 active:!text-red-700
-                  dark:hover:!bg-red-950/50 dark:hover:!text-red-400
-                  transition-[transform,background-color,color,opacity] duration-150"
+            class="!h-[26px] !w-[26px] !rounded-[7px] !text-muted-foreground hover:!bg-red-100 hover:!text-red-600 active:!scale-95 active:!bg-red-200 active:!text-red-700 dark:hover:!bg-red-950/50 dark:hover:!text-red-400 transition-[transform,background-color,color,opacity] duration-150"
           >
-            <template #icon><span aria-hidden="true" class="i-lucide-trash-2 !h-[13px] !w-[13px]"></span></template>
+            <template #icon
+              ><span aria-hidden="true" class="i-lucide-trash-2 !h-[13px] !w-[13px]"></span
+            ></template>
           </n-button>
         </div>
 
@@ -233,7 +238,11 @@ const resizeHandleClass = computed(() => {
             'group-hover:opacity-100 group-hover:pointer-events-auto',
             'transition-[transform,opacity] duration-150',
             '!cursor-ew-resize',
-            resizingIndex === idx ? '!opacity-100 scale-110' : isDragging ? '!opacity-0 !pointer-events-none' : '',
+            resizingIndex === idx
+              ? '!opacity-100 scale-110'
+              : isDragging
+                ? '!opacity-0 !pointer-events-none'
+                : '',
           ]"
           content-class="!cursor-ew-resize"
           @pointerdown.stop.prevent="startResize($event, idx)"
@@ -247,12 +256,13 @@ const resizeHandleClass = computed(() => {
           v-if="resizingIndex === idx"
           class="absolute inset-0 z-40 bg-[#a277ff]/[0.06] flex items-center justify-center rounded-xl border-[1.5px] border-[#a277ff]/50"
         >
-          <span class="bg-[#a277ff] text-white text-xs font-medium px-2.5 py-1 rounded-lg tracking-wide">
-            {{ (getColSpan(child) / 12 * 100).toFixed(0) }}%
+          <span
+            class="bg-[#a277ff] text-white text-xs font-medium px-2.5 py-1 rounded-lg tracking-wide"
+          >
+            {{ ((getColSpan(child) / 12) * 100).toFixed(0) }}%
           </span>
         </div>
       </li>
     </ul>
-
   </div>
 </template>

@@ -31,6 +31,8 @@ export interface DslToSchemaCtx {
 export interface ElementTypeDef {
   type: string
   category: NodeCategory
+  /** $cmp 组件名：toSchema 时输出 $cmp: '<cmp>'（空则输出 $formkit: type） */
+  cmp?: string
   /** 新建节点默认 DSL */
   defaults: () => FormNode
   toSchema: (node: FormNode, ctx: DslToSchemaCtx) => SchemaNode
@@ -68,12 +70,13 @@ export function getElementTypeDefs(): ElementTypeDef[] {
 // ─── 构造器：字段 ───────────────────────────────────────────────────────────────
 
 export function fieldType(type: string, extra?: Partial<ElementTypeDef>): ElementTypeDef {
+  const cmp = extra?.cmp
   const def: ElementTypeDef = {
     type,
     category: 'field',
     defaults: () => ({ id: generateKey(), category: 'field', type }),
-    toSchema: (node, _ctx) => fieldNodeToSchema(node as never),
-    match: (s) => s.$formkit === type,
+    toSchema: (node, _ctx) => fieldNodeToSchema(node as never, cmp),
+    match: (s) => (s as any).$formkit === type || (cmp ? (s as any).$cmp === cmp : false),
     fromSchema: (s) => fieldNodeFromSchema(s, type),
     ...extra,
   }
@@ -111,18 +114,35 @@ export function layoutType(type: string, extra?: Partial<ElementTypeDef>): Eleme
   const def: ElementTypeDef = {
     type,
     category: 'layout',
-    defaults: () => ({ id: generateKey(), category: 'layout', type: type as LayoutType, children: [] }),
+    defaults: () => ({
+      id: generateKey(),
+      category: 'layout',
+      type: type as LayoutType,
+      children: [],
+    }),
     toSchema: (node, ctx) => layoutNodeToSchema(node as never, ctx.children),
     match: (s) => {
       const anyS: any = s
       if (type === 'card') return anyS.$cmp === 'card' || anyS.$formkit === 'card'
       if (type === 'tabs') return anyS.$cmp === 'tabs' || anyS.$formkit === 'tabs'
       if (type === 'grid')
-        return anyS.$el === 'div' && typeof anyS.attrs?.class === 'string' && String(anyS.attrs.class).includes('grid-cols')
+        return (
+          anyS.$el === 'div' &&
+          typeof anyS.attrs?.class === 'string' &&
+          String(anyS.attrs.class).includes('grid-cols')
+        )
       if (type === 'row')
-        return anyS.$el === 'div' && typeof anyS.attrs?.class === 'string' && String(anyS.attrs.class).includes('flex-row')
+        return (
+          anyS.$el === 'div' &&
+          typeof anyS.attrs?.class === 'string' &&
+          String(anyS.attrs.class).includes('flex-row')
+        )
       if (type === 'column')
-        return anyS.$el === 'div' && typeof anyS.attrs?.class === 'string' && String(anyS.attrs.class).includes('flex-col')
+        return (
+          anyS.$el === 'div' &&
+          typeof anyS.attrs?.class === 'string' &&
+          String(anyS.attrs.class).includes('flex-col')
+        )
       return anyS.$cmp === type
     },
     fromSchema: (s, ctx) => layoutNodeFromSchema(s, ctx),
@@ -134,13 +154,19 @@ export function layoutType(type: string, extra?: Partial<ElementTypeDef>): Eleme
 // ─── 构造器：静态 ───────────────────────────────────────────────────────────────
 
 export function staticType(type: string, extra?: Partial<ElementTypeDef>): ElementTypeDef {
+  const cmp = extra?.cmp
   const def: ElementTypeDef = {
     type,
     category: 'static',
     defaults: () => ({ id: generateKey(), category: 'static', type }),
-    toSchema: (node, _ctx) => staticNodeToSchema(node as never),
+    toSchema: (node, _ctx) => staticNodeToSchema(node as never, cmp),
     match: (s) => {
       const anyS: any = s
+      if (cmp) {
+        if (anyS.$cmp === cmp) return true
+        if (anyS.$formkit === type) return true
+        return false
+      }
       if (type === 'submit') return anyS.$formkit === 'submit'
       return anyS.$el === type
     },

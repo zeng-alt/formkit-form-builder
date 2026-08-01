@@ -1,5 +1,3 @@
- 
-
 // 从 outerClass 中解析 col-span，默认 12
 export function getColSpan(item: any): number {
   const outerClass = item?.outerClass
@@ -29,7 +27,13 @@ export function getRowSpan(item: any): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
 }
 
-export type Placement = { index: number; row: number; col: number; rowSpan: number; colSpan: number }
+export type Placement = {
+  index: number
+  row: number
+  col: number
+  rowSpan: number
+  colSpan: number
+}
 
 // 基于 12 列网格 + rowSpan/colSpan 做简易“自动布局”，用于推断某个元素在第几行/第几列
 export function computePlacements(values: any[]): Placement[] {
@@ -115,7 +119,11 @@ export function getVisualRows(values: any[]) {
 }
 
 // 仅对指定行（row-span 覆盖到的那一行）进行均分 col-span，避免影响其他行
-export function adjustColSpansForInsertAtRow(targetParentValues: any[], row: number, insertValues: any[]) {
+export function adjustColSpansForInsertAtRow(
+  targetParentValues: any[],
+  row: number,
+  insertValues: any[],
+) {
   const placements = computePlacements(targetParentValues)
   const rowIndices = placements
     .filter((p) => row >= p.row && row < p.row + p.rowSpan)

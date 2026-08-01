@@ -27,5 +27,9 @@ const cardHoverable = createPropsProp<boolean>('hoverable', false)
   />
   <SwitchInput label="bordered" :value="cardBordered" @update:value="(v) => (cardBordered = v)" />
   <SwitchInput label="embedded" :value="cardEmbedded" @update:value="(v) => (cardEmbedded = v)" />
-  <SwitchInput label="hoverable" :value="cardHoverable" @update:value="(v) => (cardHoverable = v)" />
+  <SwitchInput
+    label="hoverable"
+    :value="cardHoverable"
+    @update:value="(v) => (cardHoverable = v)"
+  />
 </template>

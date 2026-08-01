@@ -91,5 +91,9 @@ const lazy = createPropsProp<boolean>('lazy', false)
     :value="previewDisabled"
     @update:value="(v) => (previewDisabled = v)"
   />
-  <SwitchInput :label="t('edits.image.lazyLabel')" :value="lazy" @update:value="(v) => (lazy = v)" />
+  <SwitchInput
+    :label="t('edits.image.lazyLabel')"
+    :value="lazy"
+    @update:value="(v) => (lazy = v)"
+  />
 </template>

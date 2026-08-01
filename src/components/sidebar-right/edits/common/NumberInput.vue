@@ -18,7 +18,9 @@ const emit = defineEmits<{
 
 <template>
   <EditsLayout :class="cn(props.class)">
-    <label class="text-xs font-medium tracking-wide text-foreground/80 block mb-1">{{ props.label }}</label>
+    <label class="text-xs font-medium tracking-wide text-foreground/80 block mb-1">{{
+      props.label
+    }}</label>
     <n-input-number
       size="small"
       :value="props.value"

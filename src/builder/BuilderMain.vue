@@ -14,12 +14,13 @@ import { provideFormBuilderI18n } from '../i18n/context'
 import { provideRuntimeLocale, type RuntimeLocale } from '../i18n/runtime-locale'
 import { selectedKey, selectedTarget } from '@/state/form-schema'
 
-
 const props = defineProps<ConfigProviderProps>()
 
 const colorMode = useColorMode()
 const preferredDark = usePreferredDark()
-const resolvedIsDark = computed(() => colorMode.value === 'dark' || (colorMode.value === 'auto' && preferredDark.value))
+const resolvedIsDark = computed(
+  () => colorMode.value === 'dark' || (colorMode.value === 'auto' && preferredDark.value),
+)
 const activeTheme = computed(() => {
   if (props.theme !== undefined) return props.theme
   return resolvedIsDark.value ? darkTheme : null
@@ -48,7 +49,11 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
   if (!el) return
 
   if (el.closest('[data-canvas-item="true"]')) return
-  if (el.closest('button,a,input,textarea,select,option,[role="button"],[role="switch"],[contenteditable="true"]'))
+  if (
+    el.closest(
+      'button,a,input,textarea,select,option,[role="button"],[role="switch"],[contenteditable="true"]',
+    )
+  )
     return
   if (el.closest('.n-button,.n-input,.n-select,.n-switch,.n-dropdown,.n-popover')) return
 
@@ -72,7 +77,11 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
     <n-layout has-sider class="h-screen w-full">
       <SidebarLeft />
       <n-layout has-sider sider-placement="right" class="flex-1">
-        <n-layout class="relative h-full" :native-scrollbar="false" @pointerdown.capture="onBuilderBlankPointerDown">
+        <n-layout
+          class="relative h-full"
+          :native-scrollbar="false"
+          @pointerdown.capture="onBuilderBlankPointerDown"
+        >
           <div class="p-4 flex flex-1 min-h-0 flex-col">
             <BuilderHeader />
             <BuilderCanvas class="flex-1 min-h-0" />

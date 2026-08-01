@@ -1,9 +1,8 @@
 import { ref } from 'vue'
 
-// 状态门面：formSchema / formMeta 已迁到 form-definition.ts（DSL 真源 + 只读投影），
+// 状态门面：formSchema 已迁到 form-definition.ts（DSL 真源 + 只读投影），
 // 这里统一 re-export，避免既有消费方改动。
-export { formSchema, formMeta } from './form-definition'
-export type { FormLabelPosition } from './form-definition'
+export { formSchema } from './form-definition'
 
 // 选中的根节点下标（未用 __key 定位时的回退）
 export const selectedIndex = ref(0)

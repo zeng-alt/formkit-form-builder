@@ -32,5 +32,9 @@ const dividerVertical = createPropsProp<boolean>('vertical', false)
     @update:value="(v) => (dividerTitlePlacement = v)"
   />
   <SwitchInput label="dashed" :value="dividerDashed" @update:value="(v) => (dividerDashed = v)" />
-  <SwitchInput label="vertical" :value="dividerVertical" @update:value="(v) => (dividerVertical = v)" />
+  <SwitchInput
+    label="vertical"
+    :value="dividerVertical"
+    @update:value="(v) => (dividerVertical = v)"
+  />
 </template>

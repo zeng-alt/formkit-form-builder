@@ -204,55 +204,103 @@ const assertNodeRoundTrip = (label: string, node: any) => {
   return { dslNode: dsl.root.children[0] as FormNode, backChildren }
 }
 
-// 文本字段（含嵌套 props / __key / 校验）
+// 文本字段（$cmp 化：FormKit 语义键在 props 内，name/__key/outerClass 留顶层）
 const textField = {
-  $formkit: 'text',
+  $cmp: 'NaiveTextInput',
   name: 'username',
   id: 'field_abc',
   __key: 'abc',
-  label: '用户名',
   outerClass: 'col-span-6',
-  props: { size: 'medium', disabled: false, clearable: true },
-  validation: 'required|min:3',
-  'validation-messages': { min: '至少 3 个字符' },
+  props: {
+    name: 'username',
+    id: 'field_abc',
+    label: '用户名',
+    size: 'medium',
+    disabled: false,
+    clearable: true,
+    validation: 'required|min:3',
+    'validation-messages': { min: '至少 3 个字符' },
+  },
 }
 
 // 下拉字段（options）
 const selectField = {
-  $formkit: 'select',
+  $cmp: 'NaiveSelect',
   name: 'role',
   id: 'field_role',
   __key: 'role_k',
-  label: '角色',
   outerClass: 'col-span-12',
-  options: [
-    { label: '管理员', value: 'admin' },
-    { label: '用户', value: 'user' },
-  ],
+  props: {
+    name: 'role',
+    id: 'field_role',
+    label: '角色',
+    options: [
+      { label: '管理员', value: 'admin' },
+      { label: '用户', value: 'user' },
+    ],
+  },
 }
 
 const realNodes: Record<string, any> = {
-  submit: { $formkit: 'submit', outerClass: 'col-span-12 pt-2', type: 'submit', name: 'submit_button', label: 'Submit' },
-  reset: { $formkit: 'reset', outerClass: 'col-span-12 pt-2', type: 'reset', name: 'reset_button', label: 'Reset' },
-  naiveP: { $formkit: 'naiveP', name: '段落', outerClass: 'col-span-12', props: { type: 'default', depth: 1, align: 'start', text: 'text' }, id: 'naive_p_static' },
-  naiveH2: { $formkit: 'naiveH2', name: '标题', outerClass: 'col-span-12', props: { text: 'text' }, id: 'naive_h2_static' },
-  naiveButton: { $formkit: 'naiveButton', name: '按钮', label: '按钮', outerClass: 'col-span-12 pt-2', buttonProps: { block: false, size: 'medium' } },
-  naiveUl: { $formkit: 'naiveUl', name: '列表', outerClass: 'col-span-12', options: ['Item 1', 'Item 2'], id: 'naive_ul_static' },
-  naiveDivider: { $formkit: 'naiveDivider', name: '分割线', outerClass: 'col-span-12', props: { title: 'Divider', dashed: false } },
-  naiveAlert: { $formkit: 'naiveAlert', name: '提示', outerClass: 'col-span-12', props: { title: 'Title', type: 'default' } },
+  submit: {
+    $cmp: 'NaiveSubmit',
+    name: 'submit_button',
+    outerClass: 'col-span-12 pt-2',
+    props: { name: 'submit_button', label: 'Submit', type: 'submit' },
+  },
+  reset: {
+    $cmp: 'NaiveReset',
+    name: 'reset_button',
+    outerClass: 'col-span-12 pt-2',
+    props: { name: 'reset_button', label: 'Reset', type: 'reset' },
+  },
+  naiveP: {
+    $cmp: 'NaiveTypographyP',
+    name: '段落',
+    id: 'naive_p_static',
+    outerClass: 'col-span-12',
+    props: { name: '段落', id: 'naive_p_static', type: 'default', depth: 1, align: 'start', text: 'text' },
+  },
+  naiveH2: {
+    $cmp: 'NaiveH2',
+    name: '标题',
+    id: 'naive_h2_static',
+    outerClass: 'col-span-12',
+    props: { name: '标题', id: 'naive_h2_static', text: 'text' },
+  },
+  naiveButton: {
+    $cmp: 'NaiveButton',
+    name: '按钮',
+    outerClass: 'col-span-12 pt-2',
+    props: { name: '按钮', label: '按钮', buttonProps: { block: false, size: 'medium' } },
+  },
+  naiveUl: {
+    $cmp: 'NaiveTypographyUl',
+    name: '列表',
+    id: 'naive_ul_static',
+    outerClass: 'col-span-12',
+    props: { name: '列表', id: 'naive_ul_static', options: ['Item 1', 'Item 2'] },
+  },
+  naiveDivider: {
+    $cmp: 'NaiveDivider',
+    name: '分割线',
+    id: 'naive_divider_static',
+    outerClass: 'col-span-12',
+    props: { name: '分割线', id: 'naive_divider_static', title: 'Divider', dashed: false },
+  },
+  naiveAlert: {
+    $cmp: 'NaiveAlert',
+    name: '提示',
+    id: 'naive_alert_static',
+    outerClass: 'col-span-12',
+    props: { name: '提示', id: 'naive_alert_static', title: 'Title', type: 'default' },
+  },
   '文本字段': textField,
   '下拉字段': selectField,
 }
 
 for (const [label, node] of Object.entries(realNodes)) {
-  const { dslNode } = assertNodeRoundTrip(label, node)
-  const expectedCategory =
-    node.$formkit === 'text' || node.$formkit === 'select'
-      ? 'field'
-      : node.$formkit && !node.$el && !node.$cmp
-        ? 'static'
-        : 'unknown'
-  assert(dslNode.category === expectedCategory && dslNode.type === node.$formkit, `${label} 分类/类型识别`)
+  assertNodeRoundTrip(label, node)
 }
 
 // __key 保留
@@ -279,7 +327,7 @@ assert((listDsl as ContainerNode).children?.[0]?.type === 'text', 'list 容器�
 const cardNode = {
   $cmp: 'card',
   __key: 'card_1',
-  props: { cardKey: 'card_1', title: '卡片', modelValue: [selectField] },
+  props: { cardKey: 'card_1', label: '卡片', modelValue: [selectField] },
   children: [selectField],
 }
 const { dslNode: cardDsl } = assertNodeRoundTrip('card 布局', cardNode)
@@ -309,7 +357,12 @@ const defaultCanvasState = [
     name: 'form',
     props: { labelPosition: 'top', labelWidth: 80, columns: 12, layout: 'vertical' },
     children: [
-      { $formkit: 'submit', outerClass: 'col-span-12 pt-2', type: 'submit', name: 'submit_button', label: 'Submit' },
+      {
+        $cmp: 'NaiveSubmit',
+        name: 'submit_button',
+        outerClass: 'col-span-12 pt-2',
+        props: { name: 'submit_button', label: 'Submit', type: 'submit' },
+      },
       textField,
       listNode,
       cardNode,
@@ -355,7 +408,7 @@ assert(
 const bindField = { ...textField, __bind: { click: '() => console.log(1)' } }
 const bindRound = dslToSchema(schemaToDsl([{ $formkit: 'form', name: 'form', props: {}, children: [bindField] }]))
 assert(
-  JSON.stringify((bindRound[0] as any)?.children?.[0]?.__bind) === JSON.stringify(bindField.__bind),
+  JSON.stringify((bindRound[0] as any)?.children?.[0]?.props?.__bind) === JSON.stringify(bindField.__bind),
   '__bind 事件绑定 schemaToDsl→dslToSchema 往返恒等',
 )
 
@@ -405,12 +458,12 @@ assert(found, 'updateDslNodeAtKey 命中 key')
 const patchedDef: FormDefinition = { ...editDef, root: { ...editDef.root, children: patchedRoot } }
 const patchedSchema = dslToSchema(patchedDef)[0] as any
 const patchedUser = patchedSchema.children[0] as any
-assert(patchedUser.placeholder === '请输入用户名', '节点属性修改生效')
-assert(patchedUser.name === 'username' && patchedUser.label === '用户名', '同节点其余属性保留')
+assert(patchedUser.props?.placeholder === '请输入用户名', '节点属性修改生效')
+assert(patchedUser.name === 'username' && patchedUser.props?.label === '用户名', '同节点其余属性保留')
 assert((patchedDef.root.children[1] as LayoutNode).id === cardKeyBefore, '容器 id 保持稳定')
 assert((patchedSchema.children[1] as any).props.cardKey === cardKeyBefore, '容器 cardKey 写回不变')
 const patchedSelect = patchedSchema.children[1]?.children?.[0] as any
-assert(Array.isArray(patchedSelect?.options) && patchedSelect.options.length === 2, '兄弟节点子树无损')
+assert(Array.isArray(patchedSelect?.props?.options) && patchedSelect.props.options.length === 2, '兄弟节点子树无损')
 
 // 嵌套容器内节点按 key 定位 patch（不需要根下标）
 const nestedDef = schemaToDsl(
@@ -440,7 +493,7 @@ assert(
   '嵌套字段位置与兄弟结构保留',
 )
 const nestedBack = dslToSchema({ ...nestedDef, root: { ...nestedDef.root, children: nestedRoot } })[0] as any
-assert(nestedBack.children[0].children[0].placeholder === '嵌套占位', '嵌套字段属性 patch 生效')
+assert(nestedBack.children[0].children[0].props?.placeholder === '嵌套占位', '嵌套字段属性 patch 生效')
 
 // ─── P3-2C：DnD/画布差异调和写路径 ──────────────────────────────────────────────
 // 复刻 commitSchemaReconcile 核心：只转换变更节点，未变子树（含引用）原样复用。

@@ -23,7 +23,9 @@ const disabled = computed<boolean>(() =>
   Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
 )
 const bordered = computed<boolean>(() => (uiProps.value.bordered as boolean | undefined) ?? true)
-const filterable = computed<boolean>(() => (uiProps.value.filterable as boolean | undefined) ?? false)
+const filterable = computed<boolean>(
+  () => (uiProps.value.filterable as boolean | undefined) ?? false,
+)
 const multiple = computed<boolean>(() => (uiProps.value.multiple as boolean | undefined) ?? false)
 const placeholder = computed(() => props.context.placeholder as string | undefined)
 

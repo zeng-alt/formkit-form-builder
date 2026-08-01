@@ -19,7 +19,12 @@ const linkTarget = createPropsProp<string>('target', '_blank')
     :value="typographyText"
     @update:value="(v) => (typographyText = v)"
   />
-  <TextInput label="href" placeholder="https://..." :value="linkHref" @update:value="(v) => (linkHref = v)" />
+  <TextInput
+    label="href"
+    placeholder="https://..."
+    :value="linkHref"
+    @update:value="(v) => (linkHref = v)"
+  />
   <SelectInput
     label="target"
     :value="linkTarget"

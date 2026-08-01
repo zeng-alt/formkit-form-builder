@@ -29,7 +29,7 @@ const heading = (depth: number, icon: string, tooltipKey: string, editor: string
   editor: () => import(editor),
   formkit: { component: NaiveTypographyHeader, libraryName: 'NaiveTypographyHeader' },
   schema: {
-    $formkit: `naiveH${depth}`,
+    $cmp: `NaiveH${depth}`,
     outerClass: 'col-span-12',
     props: { text: 'text' },
     nameKey: `elements.naiveH${depth}.name`,
@@ -47,7 +47,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
     formkit: buttonFormkit,
     schema: {
-      $formkit: 'submit',
+      $cmp: 'NaiveSubmit',
       outerClass: 'col-span-12 pt-2',
       type: 'submit',
       nameKey: 'elements.submit.name',
@@ -63,7 +63,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
     formkit: buttonFormkit,
     schema: {
-      $formkit: 'reset',
+      $cmp: 'NaiveReset',
       outerClass: 'col-span-12 pt-2',
       type: 'reset',
       nameKey: 'elements.reset.name',
@@ -79,7 +79,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveButtonEditor.vue'),
     formkit: buttonFormkit,
     schema: {
-      $formkit: 'naiveButton',
+      $cmp: 'NaiveButton',
       outerClass: 'col-span-12 pt-2',
       buttonProps: {
         block: false,
@@ -109,7 +109,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveTextEditor.vue'),
     formkit: { component: NaiveTypographyText, libraryName: 'NaiveTypographyText' },
     schema: {
-      $formkit: 'naiveText',
+      $cmp: 'NaiveTypographyText',
       outerClass: 'col-span-12',
       props: {
         text: 'text',
@@ -134,7 +134,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveParagraphEditor.vue'),
     formkit: { component: NaiveTypographyP, libraryName: 'NaiveTypographyP' },
     schema: {
-      $formkit: 'naiveP',
+      $cmp: 'NaiveTypographyP',
       outerClass: 'col-span-12',
       props: {
         type: 'default',
@@ -155,7 +155,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveLinkEditor.vue'),
     formkit: { component: NaiveTypographyA, libraryName: 'NaiveTypographyA' },
     schema: {
-      $formkit: 'naiveA',
+      $cmp: 'NaiveTypographyA',
       outerClass: 'col-span-12',
       props: {
         text: 'text',
@@ -175,7 +175,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveBlockquoteEditor.vue'),
     formkit: { component: NaiveTypographyBlockquote, libraryName: 'NaiveTypographyBlockquote' },
     schema: {
-      $formkit: 'naiveBlockquote',
+      $cmp: 'NaiveTypographyBlockquote',
       outerClass: 'col-span-12',
       props: {
         text: 'text',
@@ -185,12 +185,42 @@ export const staticElements: ElementDefinition[] = [
       id: 'naive_blockquote_static',
     },
   },
-  heading(1, 'i-lucide-heading-1', 'fieldProps.tooltip.naiveH1', '@/components/sidebar-right/edits/editors/NaiveH1Editor.vue'),
-  heading(2, 'i-lucide-heading-2', 'fieldProps.tooltip.naiveH2', '@/components/sidebar-right/edits/editors/NaiveH2Editor.vue'),
-  heading(3, 'i-lucide-heading-3', 'fieldProps.tooltip.naiveH3', '@/components/sidebar-right/edits/editors/NaiveH3Editor.vue'),
-  heading(4, 'i-lucide-heading-4', 'fieldProps.tooltip.naiveH4', '@/components/sidebar-right/edits/editors/NaiveH4Editor.vue'),
-  heading(5, 'i-lucide-heading-5', 'fieldProps.tooltip.naiveH5', '@/components/sidebar-right/edits/editors/NaiveH5Editor.vue'),
-  heading(6, 'i-lucide-heading-6', 'fieldProps.tooltip.naiveH6', '@/components/sidebar-right/edits/editors/NaiveH6Editor.vue'),
+  heading(
+    1,
+    'i-lucide-heading-1',
+    'fieldProps.tooltip.naiveH1',
+    '@/components/sidebar-right/edits/editors/NaiveH1Editor.vue',
+  ),
+  heading(
+    2,
+    'i-lucide-heading-2',
+    'fieldProps.tooltip.naiveH2',
+    '@/components/sidebar-right/edits/editors/NaiveH2Editor.vue',
+  ),
+  heading(
+    3,
+    'i-lucide-heading-3',
+    'fieldProps.tooltip.naiveH3',
+    '@/components/sidebar-right/edits/editors/NaiveH3Editor.vue',
+  ),
+  heading(
+    4,
+    'i-lucide-heading-4',
+    'fieldProps.tooltip.naiveH4',
+    '@/components/sidebar-right/edits/editors/NaiveH4Editor.vue',
+  ),
+  heading(
+    5,
+    'i-lucide-heading-5',
+    'fieldProps.tooltip.naiveH5',
+    '@/components/sidebar-right/edits/editors/NaiveH5Editor.vue',
+  ),
+  heading(
+    6,
+    'i-lucide-heading-6',
+    'fieldProps.tooltip.naiveH6',
+    '@/components/sidebar-right/edits/editors/NaiveH6Editor.vue',
+  ),
   {
     type: 'naiveUl',
     category: 'static',
@@ -199,7 +229,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveUlEditor.vue'),
     formkit: { component: NaiveTypographyUl, libraryName: 'NaiveTypographyUl' },
     schema: {
-      $formkit: 'naiveUl',
+      $cmp: 'NaiveTypographyUl',
       outerClass: 'col-span-12',
       options: ['Item 1', 'Item 2', 'Item 3'],
       nameKey: 'elements.naiveUl.name',
@@ -215,7 +245,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveOlEditor.vue'),
     formkit: { component: NaiveTypographyOl, libraryName: 'NaiveTypographyOl' },
     schema: {
-      $formkit: 'naiveOl',
+      $cmp: 'NaiveTypographyOl',
       outerClass: 'col-span-12',
       options: ['Item 1', 'Item 2', 'Item 3'],
       nameKey: 'elements.naiveOl.name',
@@ -231,7 +261,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveLiEditor.vue'),
     formkit: { component: NaiveTypographyLi, libraryName: 'NaiveTypographyLi' },
     schema: {
-      $formkit: 'naiveLi',
+      $cmp: 'NaiveTypographyLi',
       outerClass: 'col-span-12',
       value: 'List Item',
       nameKey: 'elements.naiveLi.name',
@@ -247,7 +277,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveDividerEditor.vue'),
     formkit: { component: NaiveDivider, libraryName: 'NaiveDivider' },
     schema: {
-      $formkit: 'naiveDivider',
+      $cmp: 'NaiveDivider',
       outerClass: 'col-span-12',
       props: {
         title: 'Divider',
@@ -268,7 +298,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveAlertEditor.vue'),
     formkit: { component: NaiveAlert, libraryName: 'NaiveAlert' },
     schema: {
-      $formkit: 'naiveAlert',
+      $cmp: 'NaiveAlert',
       outerClass: 'col-span-12',
       props: {
         title: 'Title',
@@ -292,7 +322,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveBackTopEditor.vue'),
     formkit: { component: NaiveBackTop, libraryName: 'NaiveBackTop' },
     schema: {
-      $formkit: 'naiveBackTop',
+      $cmp: 'NaiveBackTop',
       outerClass: 'col-span-12',
       props: {
         show: true,

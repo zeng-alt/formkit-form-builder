@@ -27,7 +27,7 @@ watch(
     isExpression.value = Boolean(useExpressionValue.value)
     expressionDraft.value = valueExpression.value
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 watch(valueExpression, (v) => {
@@ -52,14 +52,13 @@ const handleSwitchChange = (val: boolean) => {
 // Regex to extract variables
 const variableRegex = /\$([a-zA-Z0-9_]+)/g
 
-
 const missingVariables = computed(() => {
   if (!isExpression.value || !expressionDraft.value) return []
-  
+
   const matches = [...expressionDraft.value.matchAll(variableRegex)]
-  const variables = matches.map(match => match[1]).filter(Boolean) as string[]
-  
-  const missing = variables.filter(v => !availableFieldNames.value.includes(v))
+  const variables = matches.map((match) => match[1]).filter(Boolean) as string[]
+
+  const missing = variables.filter((v) => !availableFieldNames.value.includes(v))
   return missing
 })
 
@@ -76,14 +75,21 @@ const expressionError = computed(() => {
 <template>
   <div class="space-y-2 mt-4 p-3 border border-border rounded-md bg-muted/30">
     <div class="flex items-center justify-between">
-      <label class="text-xs font-medium text-foreground">{{ t('expression.useExpressionValue') }}</label>
+      <label class="text-xs font-medium text-foreground">{{
+        t('expression.useExpressionValue')
+      }}</label>
       <n-switch size="small" :value="isExpression" @update:value="handleSwitchChange" />
     </div>
-    
+
     <div v-if="isExpression" class="space-y-2">
       <n-input
         :value="expressionDraft"
-        @update:value="(v) => { expressionDraft = v; valueExpression = v }"
+        @update:value="
+          (v) => {
+            expressionDraft = v
+            valueExpression = v
+          }
+        "
         type="textarea"
         :placeholder="t('expression.placeholder')"
         :autosize="{ minRows: 2, maxRows: 5 }"
@@ -91,7 +97,12 @@ const expressionError = computed(() => {
       <n-alert v-if="expressionError" type="error" :show-icon="true" class="mt-2 text-xs">
         {{ expressionError }}
       </n-alert>
-      <n-alert v-if="missingVariables.length > 0" type="warning" :show-icon="true" class="mt-2 text-xs">
+      <n-alert
+        v-if="missingVariables.length > 0"
+        type="warning"
+        :show-icon="true"
+        class="mt-2 text-xs"
+      >
         {{ t('expression.variablesNotFound', { vars: missingVariables.join(', ') }) }}
       </n-alert>
     </div>

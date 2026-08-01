@@ -30,7 +30,7 @@ function handleUpdateValue(next: string) {
 <template>
   <div class="w-full">
     <NColorPicker
-      style="width: 100%;"
+      style="width: 100%"
       :value="value"
       :size="size"
       :disabled="disabled"

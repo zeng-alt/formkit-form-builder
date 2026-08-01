@@ -22,5 +22,8 @@ export {
   fieldProps,
   createDefaultFormElements,
   buildFormkitInputs,
+  buildElementSchemaLibrary,
+  getElementCmpName,
+  getElementTypeBySchema,
   SHARED_FORMKIT_PROPS,
 } from './registry'

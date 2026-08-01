@@ -19,8 +19,7 @@ const {
   createValidationMessageValue,
   updateValidationString,
   isValidationChecked,
-} =
-  useFormField()
+} = useFormField()
 
 const active = isActive(isValidationChecked, props.value)
 const paramValue = createValidationValue(props.value)

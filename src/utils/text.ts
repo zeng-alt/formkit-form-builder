@@ -3,8 +3,11 @@ export function pluralize(count: number, noun: string, suffix = 's') {
 }
 
 export function validationCount(field: any) {
-  const raw = field?.validation
+  const raw = field?.props?.validation ?? field?.validation
   if (typeof raw !== 'string') return 0
-  const parts = raw.split('|').map((s) => s.trim()).filter(Boolean)
+  const parts = raw
+    .split('|')
+    .map((s) => s.trim())
+    .filter(Boolean)
   return parts.length
 }

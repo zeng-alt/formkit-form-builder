@@ -41,7 +41,8 @@ const numBinary =
     return op(na, nb)
   }
 
-const cmp = (cmpFn: (a: number | string, b: number | string) => boolean): BuiltinFn['eval'] =>
+const cmp =
+  (cmpFn: (a: number | string, b: number | string) => boolean): BuiltinFn['eval'] =>
   ([a, b]) => {
     const na = toNum(a)
     const nb = toNum(b)
@@ -87,10 +88,34 @@ export const builtins: Record<string, BuiltinFn> = {
     toJs: ([a, b]) => `(${a} !== ${b})`,
     eval: ([a, b]) => !equal(a, b),
   },
-  gt: { name: 'gt', arity: [2, 2], returns: 'boolean', toJs: ([a, b]) => `(${a} > ${b})`, eval: cmp((a, b) => a > b) },
-  gte: { name: 'gte', arity: [2, 2], returns: 'boolean', toJs: ([a, b]) => `(${a} >= ${b})`, eval: cmp((a, b) => a >= b) },
-  lt: { name: 'lt', arity: [2, 2], returns: 'boolean', toJs: ([a, b]) => `(${a} < ${b})`, eval: cmp((a, b) => a < b) },
-  lte: { name: 'lte', arity: [2, 2], returns: 'boolean', toJs: ([a, b]) => `(${a} <= ${b})`, eval: cmp((a, b) => a <= b) },
+  gt: {
+    name: 'gt',
+    arity: [2, 2],
+    returns: 'boolean',
+    toJs: ([a, b]) => `(${a} > ${b})`,
+    eval: cmp((a, b) => a > b),
+  },
+  gte: {
+    name: 'gte',
+    arity: [2, 2],
+    returns: 'boolean',
+    toJs: ([a, b]) => `(${a} >= ${b})`,
+    eval: cmp((a, b) => a >= b),
+  },
+  lt: {
+    name: 'lt',
+    arity: [2, 2],
+    returns: 'boolean',
+    toJs: ([a, b]) => `(${a} < ${b})`,
+    eval: cmp((a, b) => a < b),
+  },
+  lte: {
+    name: 'lte',
+    arity: [2, 2],
+    returns: 'boolean',
+    toJs: ([a, b]) => `(${a} <= ${b})`,
+    eval: cmp((a, b) => a <= b),
+  },
   contains: {
     name: 'contains',
     arity: [2, 2],
@@ -124,12 +149,39 @@ export const builtins: Record<string, BuiltinFn> = {
     arity: [2, 2],
     returns: 'any',
     toJs: ([a, b]) => `(${a} + ${b})`,
-    eval: ([a, b]) => (typeof a === 'string' || typeof b === 'string' ? String(a ?? '') + String(b ?? '') : toNum(a) + toNum(b)),
+    eval: ([a, b]) =>
+      typeof a === 'string' || typeof b === 'string'
+        ? String(a ?? '') + String(b ?? '')
+        : toNum(a) + toNum(b),
   },
-  sub: { name: 'sub', arity: [2, 2], returns: 'number', toJs: ([a, b]) => `(${a} - ${b})`, eval: numBinary((a, b) => a - b) },
-  mul: { name: 'mul', arity: [2, 2], returns: 'number', toJs: ([a, b]) => `(${a} * ${b})`, eval: numBinary((a, b) => a * b) },
-  div: { name: 'div', arity: [2, 2], returns: 'number', toJs: ([a, b]) => `(${a} / ${b})`, eval: numBinary((a, b) => a / b) },
-  mod: { name: 'mod', arity: [2, 2], returns: 'number', toJs: ([a, b]) => `(${a} % ${b})`, eval: numBinary((a, b) => a % b) },
+  sub: {
+    name: 'sub',
+    arity: [2, 2],
+    returns: 'number',
+    toJs: ([a, b]) => `(${a} - ${b})`,
+    eval: numBinary((a, b) => a - b),
+  },
+  mul: {
+    name: 'mul',
+    arity: [2, 2],
+    returns: 'number',
+    toJs: ([a, b]) => `(${a} * ${b})`,
+    eval: numBinary((a, b) => a * b),
+  },
+  div: {
+    name: 'div',
+    arity: [2, 2],
+    returns: 'number',
+    toJs: ([a, b]) => `(${a} / ${b})`,
+    eval: numBinary((a, b) => a / b),
+  },
+  mod: {
+    name: 'mod',
+    arity: [2, 2],
+    returns: 'number',
+    toJs: ([a, b]) => `(${a} % ${b})`,
+    eval: numBinary((a, b) => a % b),
+  },
   concat: {
     name: 'concat',
     arity: [1, Infinity],
@@ -137,11 +189,41 @@ export const builtins: Record<string, BuiltinFn> = {
     toJs: (args) => `(${args.join(' + ')})`,
     eval: (args) => args.map((a) => String(a ?? '')).join(''),
   },
-  lower: { name: 'lower', arity: [1, 1], returns: 'string', toJs: ([a]) => `String(${a}).toLowerCase()`, eval: ([a]) => String(a ?? '').toLowerCase() },
-  upper: { name: 'upper', arity: [1, 1], returns: 'string', toJs: ([a]) => `String(${a}).toUpperCase()`, eval: ([a]) => String(a ?? '').toUpperCase() },
-  trim: { name: 'trim', arity: [1, 1], returns: 'string', toJs: ([a]) => `String(${a}).trim()`, eval: ([a]) => String(a ?? '').trim() },
-  length: { name: 'length', arity: [1, 1], returns: 'number', toJs: ([a]) => `String(${a}).length`, eval: ([a]) => String(a ?? '').length },
-  coalesce: { name: 'coalesce', arity: [2, 2], returns: 'any', toJs: ([a, b]) => `(${a} ?? ${b})`, eval: ([a, b]) => (a === null || a === undefined ? b : a) },
+  lower: {
+    name: 'lower',
+    arity: [1, 1],
+    returns: 'string',
+    toJs: ([a]) => `String(${a}).toLowerCase()`,
+    eval: ([a]) => String(a ?? '').toLowerCase(),
+  },
+  upper: {
+    name: 'upper',
+    arity: [1, 1],
+    returns: 'string',
+    toJs: ([a]) => `String(${a}).toUpperCase()`,
+    eval: ([a]) => String(a ?? '').toUpperCase(),
+  },
+  trim: {
+    name: 'trim',
+    arity: [1, 1],
+    returns: 'string',
+    toJs: ([a]) => `String(${a}).trim()`,
+    eval: ([a]) => String(a ?? '').trim(),
+  },
+  length: {
+    name: 'length',
+    arity: [1, 1],
+    returns: 'number',
+    toJs: ([a]) => `String(${a}).length`,
+    eval: ([a]) => String(a ?? '').length,
+  },
+  coalesce: {
+    name: 'coalesce',
+    arity: [2, 2],
+    returns: 'any',
+    toJs: ([a, b]) => `(${a} ?? ${b})`,
+    eval: ([a, b]) => (a === null || a === undefined ? b : a),
+  },
   // 兜底：原样透传的原始字符串（保证 schema → DSL 无损）
   __raw__: {
     name: '__raw__',

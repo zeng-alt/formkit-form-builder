@@ -1,4 +1,3 @@
- 
 import type {
   DragState,
   InsertConfig,
@@ -49,8 +48,10 @@ function findFirstOverflowingParent(element: HTMLElement): HTMLElement | null {
   let parent = element.parentElement
   while (parent) {
     const { overflow, overflowY, overflowX } = getComputedStyle(parent)
-    const isOverflowSet = overflow !== 'visible' || overflowY !== 'visible' || overflowX !== 'visible'
-    const isOverflowing = parent.scrollHeight > parent.clientHeight || parent.scrollWidth > parent.clientWidth
+    const isOverflowSet =
+      overflow !== 'visible' || overflowY !== 'visible' || overflowX !== 'visible'
+    const isOverflowing =
+      parent.scrollHeight > parent.clientHeight || parent.scrollWidth > parent.clientWidth
     const hasScrollPosition = parent.scrollTop > 0 || parent.scrollLeft > 0
     if (isOverflowSet && (isOverflowing || hasScrollPosition)) return parent
     parent = parent.parentElement
@@ -82,7 +83,10 @@ function checkPosition(e: DragEvent | PointerEvent) {
   if (!isWithinAParent) {
     if (insertState.insertPoint) insertState.insertPoint.el.style.display = 'none'
     if (insertState.draggedOverParent) {
-      removeClass([insertState.draggedOverParent.el], insertState.draggedOverParent.data.config.dropZoneClass)
+      removeClass(
+        [insertState.draggedOverParent.el],
+        insertState.draggedOverParent.data.config.dropZoneClass,
+      )
     }
     insertState.draggedOverNodes = []
     insertState.draggedOverParent = null
@@ -120,7 +124,8 @@ function processParentDragEvent<T>(
 
   if (nestedParent) {
     const rect = nestedParent.el.getBoundingClientRect()
-    if (state.coordinates.y > rect.top && state.coordinates.y < rect.bottom) realTargetParent = nestedParent
+    if (state.coordinates.y > rect.top && state.coordinates.y < rect.bottom)
+      realTargetParent = nestedParent
   }
 
   defineRanges(realTargetParent.el)
@@ -145,7 +150,10 @@ export function handleParentPointerover<T>(data: PointeroverParentEvent<T>) {
   processParentDragEvent(detail.e, targetData, state)
 }
 
-function handleInsertBasedOnRange<T>(foundRange: [NodeRecord<any>, string] | null, data: ParentRecord<T>) {
+function handleInsertBasedOnRange<T>(
+  foundRange: [NodeRecord<any>, string] | null,
+  data: ParentRecord<T>,
+) {
   if (!foundRange) return
 
   const key = foundRange[1] as 'left' | 'right' | 'top' | 'bottom'
@@ -192,8 +200,12 @@ export function moveBetween<T>(data: ParentRecord<T>, state: DragState<T>) {
       Object.assign(insertState.insertPoint.el.style, {
         position: 'absolute',
         display: 'block',
-        top: onlyX ? `${rect.top + scrollTop}px` : `${rect.top + rect.height / 2 + scrollTop - 2}px`,
-        left: onlyX ? `${rect.left + rect.width / 2 + scrollLeft - 2}px` : `${rect.left + scrollLeft}px`,
+        top: onlyX
+          ? `${rect.top + scrollTop}px`
+          : `${rect.top + rect.height / 2 + scrollTop - 2}px`,
+        left: onlyX
+          ? `${rect.left + rect.width / 2 + scrollLeft - 2}px`
+          : `${rect.left + scrollLeft}px`,
         width: onlyX ? '4px' : `${rect.width}px`,
         height: onlyX ? `${rect.height}px` : '4px',
         transform: '',
@@ -211,7 +223,10 @@ export function moveBetween<T>(data: ParentRecord<T>, state: DragState<T>) {
   ) {
     return
   } else if (insertState.draggedOverParent?.el) {
-    removeClass([insertState.draggedOverParent.el], insertState.draggedOverParent.data.config.dropZoneClass)
+    removeClass(
+      [insertState.draggedOverParent.el],
+      insertState.draggedOverParent.data.config.dropZoneClass,
+    )
     insertState.draggedOverParent = null
   }
 
@@ -239,7 +254,10 @@ function moveOutside<T>(data: ParentRecord<T>, state: DragState<T>) {
 
   if (!values.length) {
     if (insertState.draggedOverParent?.el && insertState.draggedOverParent.el !== data.el) {
-      removeClass([insertState.draggedOverParent.el], insertState.draggedOverParent.data.config.dropZoneClass)
+      removeClass(
+        [insertState.draggedOverParent.el],
+        insertState.draggedOverParent.data.config.dropZoneClass,
+      )
     }
     addParentClass([data.el], targetConfig.dropZoneClass)
     insertState.draggedOverParent = data as ParentRecord<unknown>
@@ -248,7 +266,10 @@ function moveOutside<T>(data: ParentRecord<T>, state: DragState<T>) {
   } else {
     removeClass([state.currentParent.el], targetConfig.dropZoneClass)
     if (insertState.draggedOverParent?.el) {
-      removeClass([insertState.draggedOverParent.el], insertState.draggedOverParent.data.config.dropZoneClass)
+      removeClass(
+        [insertState.draggedOverParent.el],
+        insertState.draggedOverParent.data.config.dropZoneClass,
+      )
       insertState.draggedOverParent = null
     }
     insertState.draggedRowSpan = Math.max(
@@ -319,10 +340,14 @@ export function customInsertPlugin<T>(insertConfig: InsertConfig<T>) {
 
     return {
       setup() {
-        insertParentConfig.handleNodeDragover = insertConfig.handleNodeDragover || handleNodeDragover
-        insertParentConfig.handleParentPointerover = insertConfig.handleParentPointerover || handleParentPointerover
-        insertParentConfig.handleNodePointerover = insertConfig.handleNodePointerover || handleParentPointerover
-        insertParentConfig.handleParentDragover = insertConfig.handleParentDragover || handleParentDragover
+        insertParentConfig.handleNodeDragover =
+          insertConfig.handleNodeDragover || handleNodeDragover
+        insertParentConfig.handleParentPointerover =
+          insertConfig.handleParentPointerover || handleParentPointerover
+        insertParentConfig.handleNodePointerover =
+          insertConfig.handleNodePointerover || handleParentPointerover
+        insertParentConfig.handleParentDragover =
+          insertConfig.handleParentDragover || handleParentDragover
 
         const originalHandleEnd = insertParentConfig.handleEnd
         insertParentConfig.handleEnd = (state: DragState<T> | SynthDragState<T>) => {
@@ -368,7 +393,8 @@ export function customInsertPlugin<T>(insertConfig: InsertConfig<T>) {
         })
 
         const firstScrollableParent = findFirstOverflowingParent(parent)
-        if (firstScrollableParent) firstScrollableParent.addEventListener('scroll', defineRanges.bind(null, parent))
+        if (firstScrollableParent)
+          firstScrollableParent.addEventListener('scroll', defineRanges.bind(null, parent))
 
         window.addEventListener('resize', defineRanges.bind(null, parent))
       },

@@ -21,4 +21,3 @@ const { numOfFiles } = useFormField()
   />
   <NaiveBasicSection :size="true" :disabled="true" :clearable="true" />
 </template>
-

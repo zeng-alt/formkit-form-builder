@@ -58,7 +58,7 @@ const commitLabel = (next: string[]) => {
 const commitPairs = () => {
   const next = pairs.value
     .map((r) => ({ label: r.label.trim(), value: parsePrimitive(r.value) }))
-    .filter((r) => r.label && (String(r.value).trim() !== ''))
+    .filter((r) => r.label && String(r.value).trim() !== '')
   optionsRaw.value = next
 }
 
@@ -119,7 +119,8 @@ watch(
     } else if (next === 'json') {
       jsonDraft.value = JSON.stringify(Array.isArray(raw) ? raw : [], null, 2)
     } else if (next === 'endpoint') {
-      endpoint.value = typeof (raw as any)?.endpoint === 'string' ? String((raw as any).endpoint) : ''
+      endpoint.value =
+        typeof (raw as any)?.endpoint === 'string' ? String((raw as any).endpoint) : ''
     }
   },
   { immediate: true },
@@ -168,14 +169,24 @@ const removePairRow = (idx: number) => {
               class="flex-1"
               :placeholder="t('edits.optionsSource.pairLabelPlaceholder')"
               :value="r.label"
-              @update:value="(v) => { pairs[idx] = { ...r, label: v }; commitPairs() }"
+              @update:value="
+                (v) => {
+                  pairs[idx] = { ...r, label: v }
+                  commitPairs()
+                }
+              "
             />
             <n-input
               size="small"
               class="flex-1"
               :placeholder="t('edits.optionsSource.pairValuePlaceholder')"
               :value="r.value"
-              @update:value="(v) => { pairs[idx] = { ...r, value: v }; commitPairs() }"
+              @update:value="
+                (v) => {
+                  pairs[idx] = { ...r, value: v }
+                  commitPairs()
+                }
+              "
             />
             <n-button quaternary size="small" @click="removePairRow(idx)" class="!px-2">
               <span class="i-lucide-trash-2 h-4 w-4"></span>

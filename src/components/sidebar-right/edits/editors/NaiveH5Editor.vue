@@ -5,4 +5,3 @@ import NaiveHeaderEditor from './NaiveHeaderEditor.vue'
 <template>
   <NaiveHeaderEditor />
 </template>
-

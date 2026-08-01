@@ -105,7 +105,13 @@ const isFocused = () => {
     </n-button>
   </div>
 
-  <n-popover v-if="isMobile" v-model:show="isOpen" trigger="click" :show-arrow="false" placement="bottom">
+  <n-popover
+    v-if="isMobile"
+    v-model:show="isOpen"
+    trigger="click"
+    :show-arrow="false"
+    placement="bottom"
+  >
     <template #trigger>
       <n-tooltip trigger="hover">
         <template #trigger>

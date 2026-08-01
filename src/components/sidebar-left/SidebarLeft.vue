@@ -12,7 +12,17 @@ const { t } = useFormBuilderI18n()
 </script>
 
 <template>
-  <n-layout-sider v-model:collapsed="collapsed" bordered collapse-mode="width" :collapsed-width="64" :width="240" show-trigger :native-scrollbar="false" content-style="display: flex; flex-direction: column; height: 100%;" class="sidebar-sider">
+  <n-layout-sider
+    v-model:collapsed="collapsed"
+    bordered
+    collapse-mode="width"
+    :collapsed-width="64"
+    :width="240"
+    show-trigger
+    :native-scrollbar="false"
+    content-style="display: flex; flex-direction: column; height: 100%;"
+    class="sidebar-sider"
+  >
     <div v-if="!collapsed" class="p-4 shrink-0">
       <n-input :placeholder="t('sidebar.search')" v-model:value="searchInput" />
     </div>

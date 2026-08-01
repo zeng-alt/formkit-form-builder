@@ -23,4 +23,3 @@ const { whichNumber } = useFormField()
   />
   <NaiveBasicSection :size="true" :disabled="true" :clearable="true" />
 </template>
-

@@ -35,7 +35,7 @@ const emit = defineEmits<{
   (e: 'submit', value: ModelValue): void
 }>()
 
-const safeClone = <T,>(value: T): T => {
+const safeClone = <T>(value: T): T => {
   try {
     return structuredClone(value)
   } catch {
@@ -120,10 +120,7 @@ const resolvedLabelWidth = computed<number>(() => {
 
 const resolvedFormClass = computed(() => {
   const base = props.formClass
-  const common = [
-    '[&_.formkit-label]:text-xs',
-    '[&_.formkit-label]:font-bold',
-  ].join(' ')
+  const common = ['[&_.formkit-label]:text-xs', '[&_.formkit-label]:font-bold'].join(' ')
   if (resolvedLabelPosition.value === 'left') {
     return [
       base,
@@ -271,14 +268,24 @@ const cloneNodeWithFreshIdentity = (node: any, existingNames: Set<string>, listS
     next.id = `field_${nextKey}`
   }
   if (Array.isArray(node.children)) {
-    next.children = node.children.map((c: any) => cloneNodeWithFreshIdentity(c, existingNames, listSuffix))
+    next.children = node.children.map((c: any) =>
+      cloneNodeWithFreshIdentity(c, existingNames, listSuffix),
+    )
   }
   if (kind) {
     const baseProps = typeof next.props === 'object' && next.props ? next.props : {}
     if (kind === 'list') {
-      next.props = { ...baseProps, listKey: nextKey, modelValue: Array.isArray(next.children) ? next.children : [] }
+      next.props = {
+        ...baseProps,
+        listKey: nextKey,
+        modelValue: Array.isArray(next.children) ? next.children : [],
+      }
     } else {
-      next.props = { ...baseProps, cardKey: nextKey, modelValue: Array.isArray(next.children) ? next.children : [] }
+      next.props = {
+        ...baseProps,
+        cardKey: nextKey,
+        modelValue: Array.isArray(next.children) ? next.children : [],
+      }
     }
   }
   return next
@@ -330,7 +337,9 @@ provide('previewListIsLast', (key: string) => {
   const info = getParentArrayAtPath(internalSchema.value as any[], found.path)
   if (!info) return true
   const { parentArr } = info
-  const last = [...parentArr].reverse().find((n: any) => getContainerKind(n) === 'list' && (n as any)?.__preview_placeholder !== true)
+  const last = [...parentArr]
+    .reverse()
+    .find((n: any) => getContainerKind(n) === 'list' && (n as any)?.__preview_placeholder !== true)
   if (!last) return true
   return (last as any).__key === key
 })
@@ -343,7 +352,12 @@ provide('previewListRemove', (key: string) => {
     const walk = (nodes: any[]): boolean => {
       for (const node of nodes) {
         if (!node || typeof node !== 'object') continue
-        if (getContainerKind(node) === 'list' && node.__key !== key && (node as any).__preview_placeholder !== true) return true
+        if (
+          getContainerKind(node) === 'list' &&
+          node.__key !== key &&
+          (node as any).__preview_placeholder !== true
+        )
+          return true
         const children = (node as any)?.children
         if (Array.isArray(children) && walk(children)) return true
       }
@@ -368,7 +382,10 @@ provide('previewListRestore', (key: string) => {
   if (!found) return
   const current: any = found.node as any
   const { __preview_placeholder, ...rest } = current
-  const nextNode: any = { ...rest, children: Array.isArray(current.children) ? current.children : [] }
+  const nextNode: any = {
+    ...rest,
+    children: Array.isArray(current.children) ? current.children : [],
+  }
   internalSchema.value = updateAtPath(internalSchema.value as any[], found.path, nextNode) as any
 })
 
@@ -377,9 +394,14 @@ watchEffect(() => {
   let nextData: Record<string, unknown> | null = null
   eachField(internalSchema.value as FormKitSchemaFormKit[], (field) => {
     if (!field || typeof field !== 'object') return
-    if (!field.useExpressionValue) return
+    const props = field.props && typeof field.props === 'object' ? field.props : {}
+    if (!(props.useExpressionValue ?? field.useExpressionValue)) return
     if (typeof field.name !== 'string' || !field.name) return
-    const expr = (field as any)?.__raw__valueExpression ?? (field as any)?.valueExpression
+    const expr =
+      props.__raw__valueExpression ??
+      field.__raw__valueExpression ??
+      props.valueExpression ??
+      field.valueExpression
     if (typeof expr !== 'string' || !expr.trim()) return
 
     const evalResult = evalExpression(expr, currentData)
@@ -391,7 +413,8 @@ watchEffect(() => {
     lastDepsSigByName.value = { ...lastDepsSigByName.value, [field.name]: depsSig }
 
     if (!evalResult.ok) return
-    const result = evalResult.value === null || evalResult.value === undefined ? '' : String(evalResult.value)
+    const result =
+      evalResult.value === null || evalResult.value === undefined ? '' : String(evalResult.value)
 
     const currentValue = currentData[field.name]
     const lastComputedValue = lastComputedValueByName.value[field.name]

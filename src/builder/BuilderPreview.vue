@@ -6,7 +6,7 @@
       'max-h-[90vh] overflow-y-auto border-none transition-all duration-300',
       resolvedView === 'desktop' ? 'sm:max-w-[800px]' : '',
       resolvedView === 'tablet' ? 'sm:max-w-[768px]' : '',
-      resolvedView === 'mobile' ? 'sm:max-w-[375px]' : ''
+      resolvedView === 'mobile' ? 'sm:max-w-[375px]' : '',
     ]"
     :title="resolvedTitle"
     size="small"
@@ -22,14 +22,16 @@
         v-model="data"
         :actions="props.actions"
         :form-class="props.formClass"
-        :form-name="formMeta.name"
-        :label-position="formMeta.labelPosition"
-        :label-width="formMeta.labelWidth"
+        :form-name="formName"
+        :label-position="formLabelPosition"
+        :label-width="formLabelWidth"
         :interactive-containers="props.interactiveContainers"
         @submit="handleSubmit"
       />
       <div v-if="props.showDataPanel" class="mt-4 p-3 bg-muted/30 rounded border border-border/50">
-        <h3 class="text-[11px] font-medium mb-2 text-foreground/80">{{ t('builder.formDataTitle') }}</h3>
+        <h3 class="text-[11px] font-medium mb-2 text-foreground/80">
+          {{ t('builder.formDataTitle') }}
+        </h3>
 
         <pre class="text-[11px] text-muted-foreground">{{ prettyData }}</pre>
       </div>
@@ -40,7 +42,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { NModal } from 'naive-ui'
-import { formMeta } from '@/state/form-schema'
 import { formDefinition } from '@/state/form-definition'
 import { dslToSchema } from '@/dsl'
 import type { FormKitSchemaFormKit } from '@formkit/core'
@@ -89,7 +90,7 @@ const isOpen = computed({
   },
 })
 
-const safeClone = <T,>(value: T): T => {
+const safeClone = <T>(value: T): T => {
   try {
     return structuredClone(value)
   } catch {
@@ -103,6 +104,12 @@ const schemaSnapshot = ref<FormKitSchemaFormKit[]>([])
 const resolvedView = computed<CanvasView>(() => props.view ?? canvasView.value)
 const resolvedTitle = computed(() => props.title ?? t('builder.previewTitle'))
 const resolvedDescription = computed(() => props.description ?? t('builder.previewDescription'))
+
+const formName = computed(() => formDefinition.value?.name ?? 'form')
+const formLabelPosition = computed<'top' | 'left'>(() =>
+  formDefinition.value?.settings?.labelAlign === 'left' ? 'left' : 'top',
+)
+const formLabelWidth = computed(() => formDefinition.value?.settings?.labelWidth ?? 80)
 
 const prettyData = computed(() =>
   JSON.stringify(

@@ -61,7 +61,10 @@ const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false))
         :closable="paneClosable"
       >
         <div class="w-full grid grid-cols-12 gap-x-4 gap-y-2">
-          <FormKitSchema :schema="Array.isArray((child as any)?.children) ? (child as any).children : []" :library="schemaLibrary" />
+          <FormKitSchema
+            :schema="Array.isArray((child as any)?.children) ? (child as any).children : []"
+            :library="schemaLibrary"
+          />
         </div>
       </n-tab-pane>
     </n-tabs>

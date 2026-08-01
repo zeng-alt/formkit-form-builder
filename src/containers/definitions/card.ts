@@ -13,7 +13,10 @@ function normalize(node: SchemaNode): SchemaNode {
   next.$cmp = next.$cmp || 'card'
   next.children = Array.isArray(next.children) ? next.children : []
   const props = typeof next.props === 'object' && next.props ? { ...next.props } : {}
-  props.cardKey = typeof props.cardKey === 'string' && props.cardKey ? props.cardKey : (next.__key as string | undefined) ?? ''
+  props.cardKey =
+    typeof props.cardKey === 'string' && props.cardKey
+      ? props.cardKey
+      : ((next.__key as string | undefined) ?? '')
   props.modelValue = next.children
   next.props = props
   return next

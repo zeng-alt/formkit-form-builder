@@ -19,7 +19,9 @@ const emit = defineEmits<{
 
 <template>
   <EditsLayout>
-    <label class="text-xs font-medium tracking-wide text-foreground/80 block mb-1">{{ props.label }}</label>
+    <label class="text-xs font-medium tracking-wide text-foreground/80 block mb-1">{{
+      props.label
+    }}</label>
     <n-input
       :value="props.value"
       @update:value="(v) => emit('update:value', v)"
@@ -28,7 +30,8 @@ const emit = defineEmits<{
       :autosize="{ minRows: 6, maxRows: 14 }"
       :class="cn('rounded-md text-xs font-mono', props.class)"
     />
-    <div v-if="props.error" class="text-[11px] text-destructive leading-tight">{{ props.error }}</div>
+    <div v-if="props.error" class="text-[11px] text-destructive leading-tight">
+      {{ props.error }}
+    </div>
   </EditsLayout>
 </template>
-

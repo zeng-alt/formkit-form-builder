@@ -28,8 +28,18 @@ const avatarFallbackText = createPropsProp<string>('fallbackText', 'A')
 
 <template>
   <LabelHelpSection />
-  <TextInput label="src" placeholder="https://..." :value="avatarSrc" @update:value="(v) => (avatarSrc = v)" />
-  <TextInput label="size" placeholder="48" :value="avatarSize" @update:value="(v) => (avatarSize = v)" />
+  <TextInput
+    label="src"
+    placeholder="https://..."
+    :value="avatarSrc"
+    @update:value="(v) => (avatarSrc = v)"
+  />
+  <TextInput
+    label="size"
+    placeholder="48"
+    :value="avatarSize"
+    @update:value="(v) => (avatarSize = v)"
+  />
   <TextInput
     label="fallback-text"
     placeholder="A"
@@ -37,5 +47,9 @@ const avatarFallbackText = createPropsProp<string>('fallbackText', 'A')
     @update:value="(v) => (avatarFallbackText = v)"
   />
   <SwitchInput label="round" :value="avatarRound" @update:value="(v) => (avatarRound = v)" />
-  <SwitchInput label="bordered" :value="avatarBordered" @update:value="(v) => (avatarBordered = v)" />
+  <SwitchInput
+    label="bordered"
+    :value="avatarBordered"
+    @update:value="(v) => (avatarBordered = v)"
+  />
 </template>

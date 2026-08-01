@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { NModal, NInput, NButton, NSpace } from 'naive-ui'
-import { formMeta } from '@/state/form-schema'
 import { formDefinition } from '@/state/form-definition'
 import { dslToSchema } from '@/dsl'
-import { commitSchema } from '../composables/schema-history'
+import { commitFormDefinition, commitSchema } from '../composables/schema-history'
+import { generateKey } from '@/utils/dnd/schema'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { FormDefinition } from '@/types/dsl'
 import { toast } from 'vue-sonner'
@@ -45,7 +45,7 @@ watch(
     if (newVal) {
       jsonContent.value = JSON.stringify(formDefinition.value, null, 2)
     }
-  }
+  },
 )
 
 const handleClose = () => {
@@ -55,16 +55,10 @@ const handleClose = () => {
 const handleSaveAndImport = () => {
   try {
     const parsed = JSON.parse(jsonContent.value)
-    // 规范 DSL 导入：FormDefinition → dslToSchema → formMeta + schema
+    // 规范 DSL 导入：FormDefinition 整体提交（name / settings 一并并入状态）
     if (isDslDefinition(parsed)) {
-      const wrapped = dslToSchema(parsed)
-      const wrapper: any = wrapped[0]
-      formMeta.value = {
-        name: typeof wrapper?.name === 'string' && wrapper.name.trim() ? wrapper.name : 'form',
-        labelPosition: wrapper?.props?.labelPosition === 'left' ? 'left' : 'top',
-        labelWidth: Number.isFinite(Number(wrapper?.props?.labelWidth)) ? Number(wrapper?.props?.labelWidth) : 120,
-      }
-      commitSchema((wrapper?.children as FormKitSchemaFormKit[]) ?? [], { reason: 'import' })
+      const nextDef: FormDefinition = parsed.id ? parsed : { ...parsed, id: generateKey() }
+      commitFormDefinition(nextDef, { reason: 'import' })
       toast.success(t('importExport.importSuccess'))
       handleClose()
       return
@@ -85,8 +79,11 @@ const handleSaveAndImport = () => {
       const labelPosition = (first as any)?.props?.labelPosition === 'left' ? 'left' : 'top'
       const labelWidthRaw = Number((first as any)?.props?.labelWidth)
       const labelWidth = Number.isFinite(labelWidthRaw) ? labelWidthRaw : 120
-      formMeta.value = { name, labelPosition, labelWidth }
-      commitSchema((first as any).children as FormKitSchemaFormKit[], { reason: 'import' })
+      commitSchema((first as any).children as FormKitSchemaFormKit[], {
+        reason: 'import',
+        name,
+        settings: { layout: 'vertical', labelAlign: labelPosition, labelWidth },
+      })
     } else {
       commitSchema(parsed as FormKitSchemaFormKit[], { reason: 'import' })
     }
@@ -221,7 +218,7 @@ const handleDownloadJs = () => {
     size="huge"
     :segmented="{
       content: 'soft',
-      footer: 'soft'
+      footer: 'soft',
     }"
   >
     <div class="py-4">

@@ -34,10 +34,7 @@ export type EvalResult =
   | { ok: true; value: unknown; deps: string[] }
   | { ok: false; error: string; deps: string[] }
 
-export function evalExpression(
-  input: string,
-  vars: Record<string, unknown>,
-): EvalResult {
+export function evalExpression(input: string, vars: Record<string, unknown>): EvalResult {
   const deps = new Set<string>()
   const tokensResult = tokenize(input, deps)
   if (!tokensResult.ok) return { ok: false, error: tokensResult.error, deps: Array.from(deps) }
@@ -48,9 +45,7 @@ export function evalExpression(
   return { ok: true, value: valueResult.value, deps: Array.from(deps) }
 }
 
-type TokenizeResult =
-  | { ok: true; tokens: Token[] }
-  | { ok: false; error: string }
+type TokenizeResult = { ok: true; tokens: Token[] } | { ok: false; error: string }
 
 function tokenize(input: string, deps: Set<string>): TokenizeResult {
   const tokens: Token[] = []
@@ -201,9 +196,7 @@ function tokenize(input: string, deps: Set<string>): TokenizeResult {
   return { ok: true, tokens }
 }
 
-type RpnResult =
-  | { ok: true; rpn: Token[] }
-  | { ok: false; error: string }
+type RpnResult = { ok: true; rpn: Token[] } | { ok: false; error: string }
 
 function toRpn(tokens: Token[]): RpnResult {
   const output: Token[] = []
@@ -250,10 +243,7 @@ function toRpn(tokens: Token[]): RpnResult {
     }
     if (t.type === 'op') {
       const isUnary: boolean =
-        t.op === '!' ||
-        prev === null ||
-        prev.type === 'op' ||
-        prev.type === 'lparen'
+        t.op === '!' || prev === null || prev.type === 'op' || prev.type === 'lparen'
       const opToken: Extract<Token, { type: 'op' }> = isUnary
         ? { type: 'op', op: t.op === '-' ? 'u-' : t.op === '+' ? 'u+' : t.op }
         : t
@@ -284,9 +274,7 @@ function toRpn(tokens: Token[]): RpnResult {
   return { ok: true, rpn: output }
 }
 
-type EvalRpnResult =
-  | { ok: true; value: unknown }
-  | { ok: false; error: string }
+type EvalRpnResult = { ok: true; value: unknown } | { ok: false; error: string }
 
 function evalRpn(rpn: Token[], vars: Record<string, unknown>): EvalRpnResult {
   const stack: unknown[] = []
@@ -343,7 +331,8 @@ function evalRpn(rpn: Token[], vars: Record<string, unknown>): EvalRpnResult {
         }
         const na = toNum(a)
         const nb = toNum(b)
-        if (!Number.isFinite(na) || !Number.isFinite(nb)) return { ok: false, error: '数值运算失败' }
+        if (!Number.isFinite(na) || !Number.isFinite(nb))
+          return { ok: false, error: '数值运算失败' }
         stack.push(na + nb)
         continue
       }

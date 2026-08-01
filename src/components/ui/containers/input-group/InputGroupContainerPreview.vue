@@ -17,8 +17,12 @@ const { t } = useFormBuilderI18n()
 
 const schemaLibrary = getPreviewSchemaLibrary()
 
-const title = computed(() => (typeof props.label === 'string' && props.label.trim() ? props.label.trim() : ''))
-const helpText = computed(() => (typeof props.help === 'string' && props.help.trim() ? props.help.trim() : ''))
+const title = computed(() =>
+  typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
+)
+const helpText = computed(() =>
+  typeof props.help === 'string' && props.help.trim() ? props.help.trim() : '',
+)
 const showHeader = computed(() => Boolean(title.value || helpText.value))
 const modelValue = computed(() => {
   if (Array.isArray(props.modelValue)) return props.modelValue
@@ -39,4 +43,3 @@ const modelValue = computed(() => {
     </n-input-group>
   </div>
 </template>
-

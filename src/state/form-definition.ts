@@ -1,9 +1,7 @@
 import { computed, ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import type { FormDefinition } from '../types/dsl'
+import type { FormDefinition, FormSettings } from '../types/dsl'
 import { dslToSchema, schemaToDsl } from '../dsl'
-
-export type FormLabelPosition = 'top' | 'left'
 
 // 默认画布初始节点（带稳定 __key，保证投影 / 选中一致）
 const DEFAULT_CHILDREN: FormKitSchemaFormKit[] = [
@@ -17,25 +15,25 @@ const DEFAULT_CHILDREN: FormKitSchemaFormKit[] = [
   },
 ]
 
-// 表单级设置（name / labelPosition / labelWidth）
-export const formMeta = ref<{
-  name: string
-  labelPosition: FormLabelPosition
-  labelWidth: number
-}>({
-  name: 'form',
-  labelPosition: 'top',
-  labelWidth: 80,
-})
+// 表单级设置默认值（未显式提供时使用）
+const DEFAULT_FORM_NAME = 'form'
+const DEFAULT_SETTINGS: FormSettings = { layout: 'vertical', labelWidth: 80, labelAlign: 'top' }
 
-function buildWrappedSchema(children: FormKitSchemaFormKit[]): FormKitSchemaFormKit[] {
+// 表单级设置（name / labelAlign / labelWidth）统一由 FormDefinition 承载，无旁路状态。
+// 未传 source 时回落到 formDefinition（保持当前表单级设置）。
+function buildWrappedSchema(
+  children: FormKitSchemaFormKit[],
+  source?: Pick<FormDefinition, 'name' | 'settings'>,
+): FormKitSchemaFormKit[] {
+  const name = source?.name ?? formDefinition.value?.name ?? DEFAULT_FORM_NAME
+  const settings = source?.settings ?? formDefinition.value?.settings ?? DEFAULT_SETTINGS
   return [
     {
       $formkit: 'form',
-      name: formMeta.value.name,
+      name,
       props: {
-        labelPosition: formMeta.value.labelPosition,
-        labelWidth: formMeta.value.labelWidth,
+        labelPosition: settings.labelAlign === 'left' ? 'left' : 'top',
+        labelWidth: settings.labelWidth ?? 80,
       },
       children: children as any,
     },
@@ -43,7 +41,11 @@ function buildWrappedSchema(children: FormKitSchemaFormKit[]): FormKitSchemaForm
 }
 
 // 规范表单定义：唯一真源。画布 / DnD 的 schema（formSchema）是其只读投影。
-export const formDefinition = ref<FormDefinition>(schemaToDsl(buildWrappedSchema(DEFAULT_CHILDREN)))
+export const formDefinition = ref<FormDefinition>(
+  schemaToDsl(
+    buildWrappedSchema(DEFAULT_CHILDREN, { name: DEFAULT_FORM_NAME, settings: DEFAULT_SETTINGS }),
+  ),
+)
 
 // schema 投影（只读）：渲染 / DnD / 画布使用，由 DSL 派生
 export const formSchema = computed<FormKitSchemaFormKit[]>(() => {
@@ -53,6 +55,10 @@ export const formSchema = computed<FormKitSchemaFormKit[]>(() => {
 })
 
 // 由 schema 投影提交 → 转回 DSL（供 DnD / 容器更新 / legacy 导入使用）
-export function commitSchemaChildren(children: FormKitSchemaFormKit[]): FormDefinition {
-  return schemaToDsl(buildWrappedSchema(children), { id: formDefinition.value?.id })
+// source 用于覆盖表单级设置（如导入带 name / settings 的外部 schema）
+export function commitSchemaChildren(
+  children: FormKitSchemaFormKit[],
+  source?: Pick<FormDefinition, 'name' | 'settings'>,
+): FormDefinition {
+  return schemaToDsl(buildWrappedSchema(children, source), { id: formDefinition.value?.id })
 }

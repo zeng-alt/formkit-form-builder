@@ -11,7 +11,9 @@ const props = defineProps<{
 
 const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
 
-const size = computed<InputProps['size']>(() => (uiProps.value.size as InputProps['size']) ?? 'medium')
+const size = computed<InputProps['size']>(
+  () => (uiProps.value.size as InputProps['size']) ?? 'medium',
+)
 const clearable = computed<boolean>(() => (uiProps.value.clearable as boolean | undefined) ?? true)
 const disabled = computed<boolean>(() =>
   Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),

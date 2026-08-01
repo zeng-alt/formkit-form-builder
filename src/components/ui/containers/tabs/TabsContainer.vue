@@ -9,7 +9,12 @@ import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-cont
 import ContainerChildrenGrid from '../shared/ContainerChildrenGrid.vue'
 import { generateKey } from '@/utils/dnd/schema'
 
-type TabsPane = { __key: string; label?: string; children?: FormKitSchemaFormKit[]; outerClass?: string }
+type TabsPane = {
+  __key: string
+  label?: string
+  children?: FormKitSchemaFormKit[]
+  outerClass?: string
+}
 
 const props = defineProps<{
   tabsKey?: string
@@ -157,7 +162,10 @@ const deleteChild = (index: number) => {
 
 <template>
   <div class="w-full rounded-xl border border-border/50 bg-card/50">
-    <div v-if="props.label || props.help" class="flex flex-col gap-0.5 px-3 py-2 border-b border-border/50">
+    <div
+      v-if="props.label || props.help"
+      class="flex flex-col gap-0.5 px-3 py-2 border-b border-border/50"
+    >
       <div v-if="props.label" class="text-xs text-muted-foreground">{{ props.label }}</div>
       <div v-if="props.help" class="text-[11px] text-muted-foreground">{{ props.help }}</div>
     </div>
@@ -188,9 +196,7 @@ const deleteChild = (index: number) => {
           />
           <span v-else class="select-none">{{ tabLabel(pane, idx) }}</span>
         </div>
-        <n-button quaternary size="small" class="!h-7 !px-2" @click="addTab">
-          +
-        </n-button>
+        <n-button quaternary size="small" class="!h-7 !px-2" @click="addTab"> + </n-button>
       </div>
     </div>
 

@@ -30,7 +30,10 @@ function updateValue(value: boolean) {
       <span class="text-xs">{{ props.label }}</span>
       <n-tooltip trigger="hover" placement="top">
         <template #trigger>
-          <span class="i-lucide-circle-help h-4 w-4 text-muted-foreground rounded-full" @click.stop></span>
+          <span
+            class="i-lucide-circle-help h-4 w-4 text-muted-foreground rounded-full"
+            @click.stop
+          ></span>
         </template>
         {{ props.tooltip }}
       </n-tooltip>

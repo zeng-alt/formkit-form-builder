@@ -3,7 +3,8 @@ import { NCard, NSpin } from 'naive-ui'
 import type { Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import ContainerChildrenGrid from '@/components/ui/containers/shared/ContainerChildrenGrid.vue'
-import { formMeta, selectedKey } from '@/state/form-schema'
+import { selectedKey } from '@/state/form-schema'
+import { formDefinition } from '@/state/form-definition'
 import { canvasView, isLoading } from '@/state/canvas-ui'
 import { cn } from '@/utils/utils'
 import { useFormBuilderI18n } from '@/i18n/context'
@@ -25,21 +26,27 @@ defineProps<{
 <template>
   <div class="flex-1 flex justify-center px-4 relative">
     <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center z-50">
-      <div class="flex flex-col items-center bg-white dark:bg-neutral-600 justify-center gap-3 p-4 rounded-lg shadow-md">
-        <span class="font-medium text-sm text-zinc-700 dark:text-zinc-300">{{ t('builder.creatingForm') }}</span>
+      <div
+        class="flex flex-col items-center bg-white dark:bg-neutral-600 justify-center gap-3 p-4 rounded-lg shadow-md"
+      >
+        <span class="font-medium text-sm text-zinc-700 dark:text-zinc-300">{{
+          t('builder.creatingForm')
+        }}</span>
         <n-spin size="medium" />
       </div>
     </div>
 
     <n-card
-      :style="{ '--fk-label-width': `${formMeta.labelWidth}px` }"
-      :class="cn(
-        'relative min-h-[80%] !h-fit rounded-xl shadow-md transition-[width] duration-300 flex flex-col',
-        canvasFormClass,
-        canvasView === 'desktop' ? 'w-full lg:w-[80%]' : '',
-        canvasView === 'tablet' ? 'w-[768px]' : '',
-        canvasView === 'mobile' ? 'w-[375px]' : '',
-      )"
+      :style="{ '--fk-label-width': `${formDefinition?.settings?.labelWidth ?? 80}px` }"
+      :class="
+        cn(
+          'relative min-h-[80%] !h-fit rounded-xl shadow-md transition-[width] duration-300 flex flex-col',
+          canvasFormClass,
+          canvasView === 'desktop' ? 'w-full lg:w-[80%]' : '',
+          canvasView === 'tablet' ? 'w-[768px]' : '',
+          canvasView === 'mobile' ? 'w-[375px]' : '',
+        )
+      "
       content-style="padding: 16px; flex: 1; display: flex; flex-direction: column;"
     >
       <ContainerChildrenGrid

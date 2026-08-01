@@ -16,13 +16,16 @@ const { min, max } = useFormField()
     placeholder-two="10"
     :value-one="min ?? null"
     :value-two="max ?? null"
-    @update:valueOne="(v) => {
-      if (v !== null) min = v
-    }"
-    @update:valueTwo="(v) => {
-      if (v !== null) max = v
-    }"
+    @update:valueOne="
+      (v) => {
+        if (v !== null) min = v
+      }
+    "
+    @update:valueTwo="
+      (v) => {
+        if (v !== null) max = v
+      }
+    "
   />
   <NaiveBasicSection :size="true" :disabled="true" />
 </template>
-

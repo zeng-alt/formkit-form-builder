@@ -29,7 +29,8 @@ const emit = defineEmits<{
       :placeholder="props.placeholder"
       :class="cn('h-8 rounded-md text-xs', props.class)"
     />
-    <div v-if="props.error" class="text-[11px] text-destructive leading-tight">{{ props.error }}</div>
+    <div v-if="props.error" class="text-[11px] text-destructive leading-tight">
+      {{ props.error }}
+    </div>
   </EditsLayout>
 </template>
-

@@ -24,6 +24,7 @@ const headerSubtitle = computed(() => {
 })
 
 const headerIcon = computed(() => {
+
   if (selectedIsForm.value) return 'i-lucide-panel-top'
   return currentProp.value?.icon ?? ''
 })

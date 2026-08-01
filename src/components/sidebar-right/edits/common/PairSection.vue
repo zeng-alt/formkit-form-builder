@@ -15,11 +15,7 @@ const showSeparator = computed(() => Boolean(pair.value))
 </script>
 
 <template>
-  <SwitchInput
-    :label="t('edits.pair.label')"
-    :value="pair"
-    @update:value="(v) => (pair = v)"
-  />
+  <SwitchInput :label="t('edits.pair.label')" :value="pair" @update:value="(v) => (pair = v)" />
   <TextInput
     v-if="showSeparator"
     :label="t('edits.pair.separatorLabel')"
@@ -28,4 +24,3 @@ const showSeparator = computed(() => Boolean(pair.value))
     @update:value="(v) => (separator = v)"
   />
 </template>
-

@@ -1,4 +1,3 @@
- 
 import type {
   BaseDragState,
   DragState,
@@ -43,7 +42,10 @@ function widthClassFromSpan(span: number) {
 
 function withWidthClass(field: any, widthClass: string) {
   const current = typeof field?.outerClass === 'string' ? field.outerClass : ''
-  const nextOuterClass = `${current.replace(/\bw-\[[^\]]+\]\b/g, '').replace(/\s+/g, ' ').trim()} ${widthClass}`
+  const nextOuterClass = `${current
+    .replace(/\bw-\[[^\]]+\]\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()} ${widthClass}`
     .replace(/\s+/g, ' ')
     .trim()
   return { ...(field as any), outerClass: nextOuterClass || undefined } as any
@@ -97,14 +99,31 @@ function normalizeInsertValues(
       const nextKey = typeof val.__key === 'string' && val.__key ? val.__key : generateKey()
       const base = toSafeName(val.name || val.$formkit || val.$cmp || 'field')
       const nextName = val.$formkit === 'submit' ? val.name : ensureUniqueName(base, existingNames)
-      if (val.$formkit === 'submit') return { ...valObj, __key: nextKey, outerClass: 'col-span-12 pt-2' }
+      if (val.$formkit === 'submit')
+        return { ...valObj, __key: nextKey, outerClass: 'col-span-12 pt-2' }
       if (val.$cmp === 'list' || val.$formkit === 'list') {
         const props = { ...val.props, listKey: nextKey }
-        return { ...valObj, __key: nextKey, name: nextName, id: `field_${nextKey}`, props, children: Array.isArray(val.children) ? val.children : [], outerClass: val.outerClass || 'col-span-12' }
+        return {
+          ...valObj,
+          __key: nextKey,
+          name: nextName,
+          id: `field_${nextKey}`,
+          props,
+          children: Array.isArray(val.children) ? val.children : [],
+          outerClass: val.outerClass || 'col-span-12',
+        }
       }
       if (val.$cmp === 'card' || val.$formkit === 'card') {
         const props = { ...val.props, cardKey: nextKey }
-        return { ...valObj, __key: nextKey, name: nextName, id: `field_${nextKey}`, props, children: Array.isArray(val.children) ? val.children : [], outerClass: val.outerClass || 'col-span-12' }
+        return {
+          ...valObj,
+          __key: nextKey,
+          name: nextName,
+          id: `field_${nextKey}`,
+          props,
+          children: Array.isArray(val.children) ? val.children : [],
+          outerClass: val.outerClass || 'col-span-12',
+        }
       }
       if (val.$cmp === 'inputGroup' || val.$formkit === 'inputGroup') {
         const props = {
@@ -224,7 +243,9 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
   const sourceListKey = getContainerKey(sourceParent.el as any)
   const targetListKey = getContainerKey(targetParent.el as any)
 
-  const draggedValues = state.draggedNodes.map((node) => node.data.value) as any as FormKitSchemaFormKit[]
+  const draggedValues = state.draggedNodes.map(
+    (node) => node.data.value,
+  ) as any as FormKitSchemaFormKit[]
   const draggedKeys = new Set<string>()
   for (const v of draggedValues as any[]) {
     const k = v?.__key
@@ -233,8 +254,14 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
 
   const isSource = sourceParent.el.getAttribute('data-is-source') === 'true'
 
-  const sourceValues = parentValues(sourceParent.el, sourceParent.data) as any as FormKitSchemaFormKit[]
-  const targetValues = parentValues(targetParent.el, targetParent.data) as any as FormKitSchemaFormKit[]
+  const sourceValues = parentValues(
+    sourceParent.el,
+    sourceParent.data,
+  ) as any as FormKitSchemaFormKit[]
+  const targetValues = parentValues(
+    targetParent.el,
+    targetParent.data,
+  ) as any as FormKitSchemaFormKit[]
 
   const draggedOverNode = insertState.draggedOverNodes[0] as any as NodeRecord<T> | undefined
   const explicitIndex = insertState.explicitIndex
@@ -275,7 +302,12 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
     const nextIndex = Math.max(0, Math.min(remaining.length, index - removedBefore))
 
     if (draggedOverNode) {
-      adjustColSpansForInsert(remaining as any[], draggedOverNode.data.value, insertValues as any[], insertState.verticalInsert ?? false)
+      adjustColSpansForInsert(
+        remaining as any[],
+        draggedOverNode.data.value,
+        insertValues as any[],
+        insertState.verticalInsert ?? false,
+      )
     } else {
       insertValues.forEach((val: any) => setColSpan(val, 12))
     }
@@ -297,7 +329,12 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
     const nextTargetValues = [...targetValues]
 
     if (draggedOverNode) {
-      adjustColSpansForInsert(nextTargetValues as any[], draggedOverNode.data.value, insertValues as any[], insertState.verticalInsert ?? false)
+      adjustColSpansForInsert(
+        nextTargetValues as any[],
+        draggedOverNode.data.value,
+        insertValues as any[],
+        insertState.verticalInsert ?? false,
+      )
     } else {
       insertValues.forEach((val: any) => setColSpan(val, 12))
     }
@@ -394,9 +431,15 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
     ? state.initialParent.data.config.synthDropZoneClass
     : state.initialParent.data.config.dropZoneClass
 
-  removeClass(insertState.draggedOverNodes.map((node) => node.el), dropZoneClass)
+  removeClass(
+    insertState.draggedOverNodes.map((node) => node.el),
+    dropZoneClass,
+  )
   if (insertState.draggedOverParent) {
-    removeClass([insertState.draggedOverParent.el], insertState.draggedOverParent.data.config.dropZoneClass)
+    removeClass(
+      [insertState.draggedOverParent.el],
+      insertState.draggedOverParent.data.config.dropZoneClass,
+    )
   }
 
   insertState.draggedOverNodes = []

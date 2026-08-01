@@ -9,6 +9,10 @@ const naiveMultiple = createPropsProp<boolean>('multiple', false)
 </script>
 
 <template>
-  <SwitchInput label="filterable" :value="naiveFilterable" @update:value="(v) => (naiveFilterable = v)" />
+  <SwitchInput
+    label="filterable"
+    :value="naiveFilterable"
+    @update:value="(v) => (naiveFilterable = v)"
+  />
   <SwitchInput label="multiple" :value="naiveMultiple" @update:value="(v) => (naiveMultiple = v)" />
 </template>

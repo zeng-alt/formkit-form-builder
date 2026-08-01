@@ -14,7 +14,9 @@ function normalize(node: SchemaNode): SchemaNode {
   next.children = Array.isArray(next.children) ? next.children : []
   const props = typeof next.props === 'object' && next.props ? { ...next.props } : {}
   props.inputGroupKey =
-    typeof props.inputGroupKey === 'string' && props.inputGroupKey ? props.inputGroupKey : (next.__key as string | undefined) ?? ''
+    typeof props.inputGroupKey === 'string' && props.inputGroupKey
+      ? props.inputGroupKey
+      : ((next.__key as string | undefined) ?? '')
   props.modelValue = next.children
   next.props = props
   return next
@@ -41,7 +43,8 @@ export const inputGroupContainerDef: ContainerDefinition = {
           $cmp: 'inputGroup',
           props: {
             ...(normalized as any).props,
-            inputGroupKey: ((normalized as any).props?.inputGroupKey as string | undefined) ?? key ?? '',
+            inputGroupKey:
+              ((normalized as any).props?.inputGroupKey as string | undefined) ?? key ?? '',
             modelValue: children,
           },
         },
@@ -52,4 +55,3 @@ export const inputGroupContainerDef: ContainerDefinition = {
     return nextNode as FormKitSchemaFormKit
   },
 }
-

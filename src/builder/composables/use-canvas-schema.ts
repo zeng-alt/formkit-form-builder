@@ -3,7 +3,8 @@ import type { Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
 import { customInsertPlugin } from '@/utils/custom-insert-plugin'
-import { formMeta, formSchema, selectedIndex, selectedKey, selectedTarget } from '@/state/form-schema'
+import { formSchema, selectedIndex, selectedKey, selectedTarget } from '@/state/form-schema'
+import { formDefinition } from '@/state/form-definition'
 import { commitSchemaReconcile } from '@/composables/schema-history'
 import { findNodeByKey, updateAtPath } from '@/utils/schema/tree'
 import { canvasSchemaLibrary } from '@/builder/containers'
@@ -17,11 +18,8 @@ import { provideCanvasSchemaContext } from './canvas-schema-context'
 export function useCanvasSchema() {
   // ── 画布表单样式 ────────────────────────────────────────────────────────────
   const canvasFormClass = computed(() => {
-    const common = [
-      '[&_.formkit-label]:text-xs',
-      '[&_.formkit-label]:font-bold',
-    ].join(' ')
-    if (formMeta.value.labelPosition !== 'left') return common
+    const common = ['[&_.formkit-label]:text-xs', '[&_.formkit-label]:font-bold'].join(' ')
+    if (formDefinition.value?.settings?.labelAlign !== 'left') return common
     return [
       common,
       '[&_.formkit-wrapper]:flex',
@@ -57,17 +55,26 @@ export function useCanvasSchema() {
         delete node.children
       }
       if (typeof node.__key === 'string' && node.__key) {
-        if (Array.isArray(node.children)) node.children = node.children.map((c: any) => ensureIdentity(c))
+        if (Array.isArray(node.children))
+          node.children = node.children.map((c: any) => ensureIdentity(c))
         return node
       }
       const nextKey = generateKey()
       const base = toSafeName(node.$formkit || node.name || 'field')
-      const nextName = node.$formkit === 'submit' ? node.name : ensureUniqueName(base, existingNames)
+      const nextName =
+        node.$formkit === 'submit' ? node.name : ensureUniqueName(base, existingNames)
       const next: any =
         node.$formkit === 'submit'
           ? { ...node, __key: nextKey, outerClass: node.outerClass || 'col-span-12 pt-2' }
-          : { ...node, __key: nextKey, name: nextName, id: `field_${nextKey}`, outerClass: node.outerClass || 'col-span-12' }
-      if (Array.isArray(node.children)) next.children = node.children.map((c: any) => ensureIdentity(c))
+          : {
+              ...node,
+              __key: nextKey,
+              name: nextName,
+              id: `field_${nextKey}`,
+              outerClass: node.outerClass || 'col-span-12',
+            }
+      if (Array.isArray(node.children))
+        next.children = node.children.map((c: any) => ensureIdentity(c))
       return next
     }
     const normalizedChildren = children.map((c: any) => ensureIdentity({ ...c }))
@@ -111,8 +118,15 @@ export function useCanvasSchema() {
       merged.props = { ...merged.props }
       if (merged.props && typeof merged.props === 'object') delete merged.props.modelValue
     }
-    const nextSchema = updateAtPath(prunedSchema as unknown[], found.path, merged) as FormKitSchemaFormKit[]
-    commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], { reason: 'container-children', merge: true })
+    const nextSchema = updateAtPath(
+      prunedSchema as unknown[],
+      found.path,
+      merged,
+    ) as FormKitSchemaFormKit[]
+    commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], {
+      reason: 'container-children',
+      merge: true,
+    })
   }
 
   // ── 选中 ─────────────────────────────────────────────────────────────────────
@@ -156,7 +170,10 @@ export function useCanvasSchema() {
   )
 
   const dropAreaUlClass = computed(() =>
-    ['w-full grid grid-cols-12 gap-x-4 gap-y-2 list-none p-0 m-0 flex-1', fields.value.length === 0 ? 'min-h-[200px] h-full' : 'h-fit'].join(' '),
+    [
+      'w-full grid grid-cols-12 gap-x-4 gap-y-2 list-none p-0 m-0 flex-1',
+      fields.value.length === 0 ? 'min-h-[200px] h-full' : 'h-fit',
+    ].join(' '),
   )
 
   // ── 根节点交互回调（交给 ContainerChildrenGrid）────────────────────────────
@@ -193,7 +210,10 @@ export function useCanvasSchema() {
   })
 
   return {
-    rootGrid: rootGrid as unknown as { containerRef: Ref<unknown>; items: Ref<FormKitSchemaFormKit[]> },
+    rootGrid: rootGrid as unknown as {
+      containerRef: Ref<unknown>
+      items: Ref<FormKitSchemaFormKit[]>
+    },
     dropAreaUlClass,
     canvasFormClass,
     onSelectRoot,

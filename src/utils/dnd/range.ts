@@ -1,4 +1,3 @@
- 
 import type { Coordinates, NodeRecord } from '@formkit/drag-and-drop'
 import { isDragState, isSynthDragState, parents, state } from '@formkit/drag-and-drop'
 

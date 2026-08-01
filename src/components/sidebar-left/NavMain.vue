@@ -3,6 +3,7 @@ import { inject, computed, ref, type Ref } from 'vue'
 import { NTabs, NTabPane, NScrollbar } from 'naive-ui'
 import { createFieldProps } from '@/elements'
 import { createDefaultFormElements } from '@/elements'
+import { getElementTypeBySchema } from '@/elements'
 import DraggableList from './DraggableList.vue'
 import { useFormBuilderI18n } from '../../i18n/context'
 import type { FormKitSchemaFormKit } from '@formkit/core'
@@ -24,7 +25,9 @@ const filteredFormElements = computed(() => {
     (element) =>
       element.name.toLowerCase().includes(query) ||
       element.description.toLowerCase().includes(query) ||
-      String((element as any).$formkit ?? (element as any).$cmp ?? '').toLowerCase().includes(query),
+      String((element as any).$formkit ?? (element as any).$cmp ?? '')
+        .toLowerCase()
+        .includes(query),
   )
 })
 
@@ -45,7 +48,9 @@ const groupedElements = computed(() => {
 
   filteredFormElements.value.forEach((item) => {
     const kind = getContainerKind(item)
-    const typeName = kind ? kind : String((item as any).$formkit ?? (item as any).$cmp ?? '')
+    const typeName = kind
+      ? kind
+      : (getElementTypeBySchema(item) ?? String((item as any).$formkit ?? (item as any).$cmp ?? ''))
     const prop = fieldProps.value.find((p) => p.name === typeName)
     const category = (prop?.category || 'fields') as ElementCategory
     if (groups[category]) {
@@ -70,7 +75,12 @@ const groupedElements = computed(() => {
       class="h-full flex flex-col"
       pane-class="flex-1 overflow-hidden"
     >
-      <n-tab-pane v-for="category in categories" :key="category.id" :name="category.id" :tab="category.label">
+      <n-tab-pane
+        v-for="category in categories"
+        :key="category.id"
+        :name="category.id"
+        :tab="category.label"
+      >
         <n-scrollbar class="h-full sidebar-scrollbar" content-class="pb-4 px-2">
           <DraggableList :elements="groupedElements[category.id]" />
         </n-scrollbar>

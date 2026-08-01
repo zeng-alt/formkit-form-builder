@@ -11,13 +11,17 @@ const props = defineProps<{
 
 const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
 
-const size = computed<SelectProps['size']>(() => (uiProps.value.size as SelectProps['size']) ?? 'medium')
+const size = computed<SelectProps['size']>(
+  () => (uiProps.value.size as SelectProps['size']) ?? 'medium',
+)
 const clearable = computed<boolean>(() => (uiProps.value.clearable as boolean | undefined) ?? true)
 const disabled = computed<boolean>(() =>
   Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
 )
 const bordered = computed<boolean>(() => (uiProps.value.bordered as boolean | undefined) ?? true)
-const filterable = computed<boolean>(() => (uiProps.value.filterable as boolean | undefined) ?? false)
+const filterable = computed<boolean>(
+  () => (uiProps.value.filterable as boolean | undefined) ?? false,
+)
 const multiple = computed<boolean>(() => (uiProps.value.multiple as boolean | undefined) ?? false)
 
 const placeholder = computed(() => props.context.placeholder as string | undefined)
@@ -92,7 +96,8 @@ const options = computed<SelectOption[]>(() => {
 const value = computed<SelectValue>(() => {
   const raw = props.context._value as unknown
   if (multiple.value) {
-    if (Array.isArray(raw)) return raw.filter((v): v is Primitive => typeof v === 'string' || typeof v === 'number')
+    if (Array.isArray(raw))
+      return raw.filter((v): v is Primitive => typeof v === 'string' || typeof v === 'number')
     if (typeof raw === 'string' || typeof raw === 'number') return [raw]
     return []
   }

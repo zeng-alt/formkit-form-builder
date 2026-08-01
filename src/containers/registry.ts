@@ -2,12 +2,18 @@ import { markRaw } from 'vue'
 import type { Component } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { ContainerDefinition, SchemaNode } from './types'
+import { buildElementSchemaLibrary } from '@/elements'
 import { listContainerDef } from './definitions/list'
 import { cardContainerDef } from './definitions/card'
 import { inputGroupContainerDef } from './definitions/input-group'
 import { tabsContainerDef } from './definitions/tabs'
 
-const defs: ContainerDefinition[] = [listContainerDef, cardContainerDef, inputGroupContainerDef, tabsContainerDef]
+const defs: ContainerDefinition[] = [
+  listContainerDef,
+  cardContainerDef,
+  inputGroupContainerDef,
+  tabsContainerDef,
+]
 
 export function getContainerDefinition(node: unknown): ContainerDefinition | null {
   for (const def of defs) {
@@ -23,7 +29,7 @@ export function normalizeContainerNode(node: unknown): unknown {
 }
 
 export function getCanvasSchemaLibrary(): Record<string, Component> {
-  const lib: Record<string, Component> = {}
+  const lib: Record<string, Component> = { ...buildElementSchemaLibrary() }
   for (const def of defs) {
     if (!def.canvas) continue
     lib[def.canvas.libraryKey] = markRaw(def.canvas.component) as unknown as Component
@@ -32,7 +38,7 @@ export function getCanvasSchemaLibrary(): Record<string, Component> {
 }
 
 export function getPreviewSchemaLibrary(): Record<string, Component> {
-  const lib: Record<string, Component> = {}
+  const lib: Record<string, Component> = { ...buildElementSchemaLibrary() }
   for (const def of defs) {
     if (!def.preview) continue
     lib[def.preview.libraryKey] = markRaw(def.preview.component) as unknown as Component
@@ -42,7 +48,11 @@ export function getPreviewSchemaLibrary(): Record<string, Component> {
 
 export function formatContainerPreviewNode(
   node: unknown,
-  ctx: { key?: string; isPlaceholder: boolean; format: (n: FormKitSchemaFormKit, i: number) => FormKitSchemaFormKit },
+  ctx: {
+    key?: string
+    isPlaceholder: boolean
+    format: (n: FormKitSchemaFormKit, i: number) => FormKitSchemaFormKit
+  },
 ): FormKitSchemaFormKit | null {
   const def = getContainerDefinition(node)
   if (!def?.formatPreview) return null

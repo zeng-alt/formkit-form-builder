@@ -47,7 +47,10 @@ export function parseLayout(outerClass: unknown): NodeLayout | undefined {
 }
 
 /** 解析 outerClass：span 进 layout，附加类（pt-2 等）保留 raw 字符串 */
-export function parseOuterClass(outerClass: unknown, node: { layout?: NodeLayout; outerClass?: string }): void {
+export function parseOuterClass(
+  outerClass: unknown,
+  node: { layout?: NodeLayout; outerClass?: string },
+): void {
   const raw = typeof outerClass === 'string' ? outerClass.trim() : ''
   if (!raw) return
   const layout = parseLayout(raw)
@@ -64,6 +67,7 @@ export function nodeOuterClass(node: { layout?: NodeLayout; outerClass?: string 
 
 const FIELD_KNOWN_KEYS = new Set([
   '$formkit',
+  '$cmp',
   'name',
   'id',
   'label',
@@ -107,68 +111,99 @@ function isExprLike(v: unknown): v is { $expr: Expr } {
   return typeof v === 'object' && v !== null && '$expr' in v
 }
 
-export function fieldNodeToSchema(node: FieldNode): SchemaNode {
-  const schema: any = { $formkit: node.type }
-  if (node.name) schema.name = node.name
-  else if (node.id) schema.name = node.id
-  if (node.id) schema.id = node.id
+export function fieldNodeToSchema(node: FieldNode, cmp?: string): SchemaNode {
+  const isCmp = Boolean(cmp)
+  // $cmp 节点：FormKitSchema 只转发 node.props，语义键必须收进 props；
+  // $formkit 节点：sugar() 会把顶层键并入 props，语义键放顶层。
+  // name 例外：$cmp 需同时放 props（组件接收）与顶层（画布 key 兜底 / ensureUniqueName）。
+  const props: Record<string, unknown> = {}
+  const schema: any = isCmp ? { $cmp: cmp, props } : { $formkit: node.type }
+  const put = (key: string, value: unknown) => {
+    if (isCmp) props[key] = value
+    else schema[key] = value
+  }
+
+  if (node.name) put('name', node.name)
+  else if (node.id) put('name', node.id)
+  if (node.id) put('id', node.id)
   if (node.key) schema.__key = node.key
-  if (node.label) schema.label = node.label
+  if (node.label) put('label', node.label)
   if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'formData')
-  Object.assign(schema, resolveEvents(node.events))
+  Object.assign(isCmp ? props : schema, resolveEvents(node.events))
   if (node.value !== undefined) {
     if (isExprLike(node.value)) {
-      schema.useExpressionValue = true
-      schema.__raw__valueExpression = exprToJs(node.value.$expr, 'var')
+      put('useExpressionValue', true)
+      put('__raw__valueExpression', exprToJs(node.value.$expr, 'var'))
     } else {
-      schema.value = node.value
+      put('value', node.value)
     }
   }
-  Object.assign(schema, resolveValidation(node.validation))
-  if (node.options?.length) schema.options = node.options
+  Object.assign(isCmp ? props : schema, resolveValidation(node.validation))
+  if (node.options?.length) put('options', node.options)
   if (node.props) {
-    const nested: Record<string, unknown> = {}
-    for (const [key, value] of Object.entries(node.props)) {
-      if (FIELD_TOP_PROPS.has(key)) schema[key] = value
-      else nested[key] = value
+    if (isCmp) Object.assign(props, node.props)
+    else {
+      const nested: Record<string, unknown> = {}
+      for (const [key, value] of Object.entries(node.props)) {
+        if (FIELD_TOP_PROPS.has(key)) schema[key] = value
+        else nested[key] = value
+      }
+      if (Object.keys(nested).length) schema.props = nested
     }
-    if (Object.keys(nested).length) schema.props = nested
   }
-  schema.outerClass = nodeOuterClass(node)
+  if (isCmp && typeof props.name === 'string') schema.name = props.name
+  const outerClass = nodeOuterClass(node)
+  schema.outerClass = outerClass
+  if (isCmp && outerClass) props.outerClass = outerClass
   return schema as SchemaNode
 }
 
 export function fieldNodeFromSchema(s: SchemaNode, fallbackType = 'text'): FieldNode {
   const anyS: any = s
+  const isCmp = typeof anyS.$cmp === 'string'
+  // $cmp 节点的 FormKit 语义键在 props 内；$formkit 节点在顶层
+  const P = isCmp && anyS.props && typeof anyS.props === 'object' ? anyS.props : anyS
   const node: any = {
-    id: typeof anyS.id === 'string' && anyS.id ? anyS.id : typeof anyS.__key === 'string' ? anyS.__key : generateKey(),
+    id:
+      typeof P.id === 'string' && P.id
+        ? P.id
+        : typeof anyS.__key === 'string'
+          ? anyS.__key
+          : generateKey(),
     category: 'field',
     type: typeof anyS.$formkit === 'string' ? anyS.$formkit : fallbackType,
   }
   if (typeof anyS.__key === 'string' && anyS.__key) node.key = anyS.__key
-  if (typeof anyS.name === 'string' && anyS.name && anyS.name !== node.id) node.name = anyS.name
-  if (typeof anyS.label === 'string' && anyS.label) node.label = anyS.label
+  if (typeof P.name === 'string' && P.name && P.name !== node.id) node.name = P.name
+  if (typeof P.label === 'string' && P.label) node.label = P.label
 
-  if (anyS.useExpressionValue === true && typeof anyS.__raw__valueExpression === 'string') {
-    node.value = { $expr: parseExprString(anyS.__raw__valueExpression) }
-  } else if (anyS.value !== undefined) {
-    node.value = anyS.value
+  if (P.useExpressionValue === true && typeof P.__raw__valueExpression === 'string') {
+    node.value = { $expr: parseExprString(P.__raw__valueExpression) }
+  } else if (P.value !== undefined) {
+    node.value = P.value
   }
 
-  const validation = parseValidation(anyS.validation, anyS['validation-messages'] ?? anyS.validationMessages)
+  const validation = parseValidation(P.validation, P['validation-messages'] ?? P.validationMessages)
   if (validation?.length) node.validation = validation
-  if (Array.isArray(anyS.options)) node.options = anyS.options
+  if (Array.isArray(P.options)) node.options = P.options
 
   if (typeof anyS.if === 'string' && anyS.if) node.visibleIf = parseExprString(anyS.if)
   else if (typeof anyS.if === 'boolean') node.visibleIf = { type: 'literal', value: anyS.if }
 
-  const events = parseEvents(anyS)
+  const events = parseEvents(P)
   if (events?.length) node.events = events
 
   parseOuterClass(anyS.outerClass, node)
 
   const props: Record<string, unknown> = {}
-  if (anyS.props && typeof anyS.props === 'object') Object.assign(props, anyS.props)
+  if (anyS.props && typeof anyS.props === 'object') {
+    for (const [key, value] of Object.entries(anyS.props)) {
+      // $cmp 节点：语义键 / 结构键 / 事件已消费，避免回流到 node.props
+      if (isCmp && (FIELD_KNOWN_KEYS.has(key) || /^on[A-Z]/.test(key))) continue
+      if (value === undefined) continue
+      props[key] = value
+    }
+  }
   for (const [key, value] of Object.entries(anyS)) {
     if (FIELD_KNOWN_KEYS.has(key)) continue
     if (value === undefined) continue
@@ -181,7 +216,15 @@ export function fieldNodeFromSchema(s: SchemaNode, fallbackType = 'text'): Field
 
 // ─── 容器节点 ──────────────────────────────────────────────────────────────────
 
-const CONTAINER_INTERNAL_PROPS = new Set(['listKey', 'cardKey', 'inputGroupKey', 'tabsKey', 'modelValue'])
+const CONTAINER_INTERNAL_PROPS = new Set([
+  'listKey',
+  'cardKey',
+  'inputGroupKey',
+  'tabsKey',
+  'modelValue',
+  'label',
+  'title',
+])
 
 export function containerNodeToSchema(node: ContainerNode, children?: SchemaNode[]): SchemaNode {
   const ch = children ?? []
@@ -201,12 +244,15 @@ export function containerNodeToSchema(node: ContainerNode, children?: SchemaNode
 
   if (node.type === 'list' || node.type === 'inputGroup') {
     const keyProp = node.type === 'list' ? 'listKey' : 'inputGroupKey'
-    const schema: any = {
-      $cmp: node.type,
-      props: { [keyProp]: node.id, name: node.name ?? node.id, modelValue: ch, ...node.props },
+    const containerProps: Record<string, unknown> = {
+      [keyProp]: node.id,
+      name: node.name ?? node.id,
+      modelValue: ch,
+      ...node.props,
     }
+    if (label) containerProps.label = label
+    const schema: any = { $cmp: node.type, props: containerProps }
     if (node.key) schema.__key = node.key
-    if (label) schema.label = label
     if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'formData')
     schema.children = ch
     schema.outerClass = nodeOuterClass(node)
@@ -215,6 +261,7 @@ export function containerNodeToSchema(node: ContainerNode, children?: SchemaNode
 
   // 未知容器类型：$cmp 透传
   const schema: any = { $cmp: node.type, props: { ...node.props } }
+  if (label) schema.props = { ...schema.props, label }
   if (node.key) schema.__key = node.key
   if (ch.length) schema.children = ch
   schema.outerClass = nodeOuterClass(node)
@@ -223,10 +270,19 @@ export function containerNodeToSchema(node: ContainerNode, children?: SchemaNode
 
 export function containerNodeFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx): ContainerNode {
   const anyS: any = s
-  const type = typeof anyS.$formkit === 'string' ? anyS.$formkit : typeof anyS.$cmp === 'string' ? anyS.$cmp : 'group'
+  const type =
+    typeof anyS.$formkit === 'string'
+      ? anyS.$formkit
+      : typeof anyS.$cmp === 'string'
+        ? anyS.$cmp
+        : 'group'
   const props = anyS.props && typeof anyS.props === 'object' ? { ...anyS.props } : {}
   const nodeName =
-    typeof anyS.name === 'string' && anyS.name ? anyS.name : typeof props.name === 'string' ? props.name : undefined
+    typeof anyS.name === 'string' && anyS.name
+      ? anyS.name
+      : typeof props.name === 'string'
+        ? props.name
+        : undefined
   delete props.name
   const childrenArr: SchemaNode[] = Array.isArray(anyS.children)
     ? anyS.children
@@ -235,7 +291,14 @@ export function containerNodeFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx):
       : []
 
   const node: any = {
-    id: typeof anyS.id === 'string' && anyS.id ? anyS.id : typeof anyS.__key === 'string' ? anyS.__key : generateKey(),
+    id:
+      typeof anyS.id === 'string' && anyS.id
+        ? anyS.id
+        : typeof props.id === 'string' && props.id
+          ? props.id
+          : typeof anyS.__key === 'string'
+            ? anyS.__key
+            : generateKey(),
     category: 'container',
     type,
     dataType: type === 'group' ? 'object' : 'array',
@@ -244,6 +307,7 @@ export function containerNodeFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx):
   if (typeof anyS.__key === 'string' && anyS.__key) node.key = anyS.__key
   if (typeof nodeName === 'string' && nodeName && nodeName !== node.id) node.name = nodeName
   if (typeof anyS.label === 'string' && anyS.label) node.label = anyS.label
+  else if (typeof props.label === 'string' && props.label) node.label = props.label
   if (typeof anyS.if === 'string' && anyS.if) node.visibleIf = parseExprString(anyS.if)
 
   parseOuterClass(anyS.outerClass, node)
@@ -256,9 +320,20 @@ export function containerNodeFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx):
   }
   for (const [key, value] of Object.entries(anyS)) {
     if (
-      ['$formkit', '$cmp', '$el', 'name', 'label', 'if', 'children', 'outerClass', 'props', '__key', '__preview_placeholder', 'id'].includes(
-        key,
-      )
+      [
+        '$formkit',
+        '$cmp',
+        '$el',
+        'name',
+        'label',
+        'if',
+        'children',
+        'outerClass',
+        'props',
+        '__key',
+        '__preview_placeholder',
+        'id',
+      ].includes(key)
     )
       continue
     if (restProps[key] !== undefined) continue
@@ -282,7 +357,7 @@ export function layoutNodeToSchema(node: LayoutNode, children?: SchemaNode[]): S
         $cmp: 'card',
         props: { cardKey: node.id, modelValue: ch, ...node.props },
       }
-      if (label) schema.props = { ...schema.props, title: label }
+      if (label) schema.props = { ...schema.props, label }
       if (node.key) schema.__key = node.key
       if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'formData')
       schema.children = ch
@@ -290,12 +365,15 @@ export function layoutNodeToSchema(node: LayoutNode, children?: SchemaNode[]): S
       return schema as SchemaNode
     }
     case 'tabs': {
-      const panes: any[] = ch.map((p) => ({ ...(p as any), __key: (p as any)?.__key ?? generateKey() }))
+      const panes: any[] = ch.map((p) => ({
+        ...(p as any),
+        __key: (p as any)?.__key ?? generateKey(),
+      }))
       const schema: any = {
         $cmp: 'tabs',
         props: { tabsKey: node.id, modelValue: panes, ...node.props },
       }
-      if (label) schema.label = label
+      if (label) schema.props = { ...schema.props, label }
       if (node.key) schema.__key = node.key
       if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'formData')
       schema.children = panes
@@ -345,13 +423,18 @@ export function layoutNodeFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx): La
 
   const node: any = {
     id:
-      typeof anyS.id === 'string' && anyS.id ? anyS.id : typeof anyS.__key === 'string' ? anyS.__key : generateKey(),
+      typeof anyS.id === 'string' && anyS.id
+        ? anyS.id
+        : typeof anyS.__key === 'string'
+          ? anyS.__key
+          : generateKey(),
     category: 'layout',
     type,
     children: ctx.children ? ctx.children(childrenArr) : [],
   }
   if (typeof anyS.__key === 'string' && anyS.__key) node.key = anyS.__key
   if (typeof anyS.label === 'string' && anyS.label) node.label = anyS.label
+  else if (typeof anyS.props?.label === 'string' && anyS.props.label) node.label = anyS.props.label
   if (typeof anyS.if === 'string' && anyS.if) node.visibleIf = parseExprString(anyS.if)
 
   parseOuterClass(anyS.outerClass, node)
@@ -435,26 +518,63 @@ const STATIC_TOP_PROPS = new Set([
   'buttonProps',
 ])
 
-export function staticNodeToSchema(node: StaticNode): SchemaNode {
+// $cmp 静态节点中已消费 / 结构键，props 合并时跳过，避免回流 node.props
+const STATIC_CONSUMED_KEYS = new Set([
+  '$formkit',
+  '$el',
+  '$cmp',
+  'name',
+  'id',
+  'label',
+  'type',
+  'if',
+  'children',
+  'attrs',
+  'outerClass',
+  'props',
+  '__key',
+  '__preview_placeholder',
+])
+
+export function staticNodeToSchema(node: StaticNode, cmp?: string): SchemaNode {
   const anyProps = node.props && typeof node.props === 'object' ? node.props : {}
   const base: any = {}
+  const isCmp = Boolean(cmp)
+  // $cmp 输出时 FormKit 语义键必须进 props（FormKitSchema 只转发 node.props）
+  const props: Record<string, unknown> = {}
+  // $cmp 化：有 cmp 时输出 $cmp: '<组件名>'（渲染时经 schema library → FormKit input），否则回退 $formkit
+  const cmpKey = (fallback: string) => (cmp ? { $cmp: cmp } : { $formkit: fallback })
 
   switch (node.type) {
     case 'submit':
-      base.$formkit = 'submit'
-      base.name = node.name ?? 'submit_button'
-      base.label = node.label ?? 'Submit'
-      base.type = 'submit'
+      Object.assign(base, cmpKey('submit'))
+      if (isCmp) {
+        props.name = node.name ?? 'submit_button'
+        props.label = node.label ?? 'Submit'
+        props.type = 'submit'
+        Object.assign(props, anyProps)
+      } else {
+        base.name = node.name ?? 'submit_button'
+        base.label = node.label ?? 'Submit'
+        base.type = 'submit'
+        Object.assign(base, anyProps)
+      }
       base.outerClass = 'col-span-12 pt-2'
-      Object.assign(base, anyProps)
       break
     case 'reset':
-      base.$formkit = 'reset'
-      base.name = node.name ?? 'reset_button'
-      base.label = node.label ?? 'Reset'
-      base.type = 'reset'
+      Object.assign(base, cmpKey('reset'))
+      if (isCmp) {
+        props.name = node.name ?? 'reset_button'
+        props.label = node.label ?? 'Reset'
+        props.type = 'reset'
+        Object.assign(props, anyProps)
+      } else {
+        base.name = node.name ?? 'reset_button'
+        base.label = node.label ?? 'Reset'
+        base.type = 'reset'
+        Object.assign(base, anyProps)
+      }
       base.outerClass = 'col-span-12 pt-2'
-      Object.assign(base, anyProps)
       break
     case 'button':
       base.$el = 'button'
@@ -474,29 +594,37 @@ export function staticNodeToSchema(node: StaticNode): SchemaNode {
       base.$el = 'hr'
       break
     default: {
-      // $formkit 型静态（reset / naive*）
-      base.$formkit = node.type
-      if (node.name) base.name = node.name
-      if (node.id) base.id = node.id
-      if (node.label) base.label = node.label
-      const nested: Record<string, unknown> = {}
+      // $formkit 型静态（reset / naive*），有 cmp 时输出 $cmp 组件引用
+      Object.assign(base, cmpKey(node.type))
+      const set = (key: string, value: unknown) =>
+        isCmp ? (props[key] = value) : (base[key] = value)
+      if (node.name) set('name', node.name)
+      if (node.id) set('id', node.id)
+      if (node.label) set('label', node.label)
       for (const [key, value] of Object.entries(anyProps)) {
-        if (STATIC_TOP_PROPS.has(key)) base[key] = value
-        else nested[key] = value
+        if (isCmp) props[key] = value
+        else if (STATIC_TOP_PROPS.has(key)) base[key] = value
+        else props[key] = value
       }
-      if (Object.keys(nested).length) base.props = nested
       base.outerClass = nodeOuterClass(node)
     }
   }
 
+  if (isCmp && Object.keys(props).length) base.props = props
+  if (isCmp && typeof base.outerClass === 'string' && base.outerClass) props.outerClass = base.outerClass
   if (node.key) base.__key = node.key
   if (node.visibleIf) base.if = exprToJs(node.visibleIf, 'formData')
-  Object.assign(base, resolveEvents(node.events))
+  Object.assign(isCmp ? props : base, resolveEvents(node.events))
+  // 画布读取顶层 name（key 兜底 / 唯一命名）；组件经 props.name 接收
+  if (isCmp && typeof props.name === 'string') base.name = props.name
   return base as SchemaNode
 }
 
 export function staticNodeFromSchema(s: SchemaNode, hintType?: string): StaticNode {
   const anyS: any = s
+  const isCmp = typeof anyS.$cmp === 'string'
+  // $cmp 节点的语义键在 props 内；$formkit / $el 节点在顶层
+  const P = isCmp && anyS.props && typeof anyS.props === 'object' ? anyS.props : anyS
   const isSubmit = anyS.$formkit === 'submit'
   const type = isSubmit
     ? 'submit'
@@ -506,13 +634,18 @@ export function staticNodeFromSchema(s: SchemaNode, hintType?: string): StaticNo
         ? mapElToStaticType(anyS.$el)
         : (hintType ?? 'html')
   const node: any = {
-    id: typeof anyS.id === 'string' && anyS.id ? anyS.id : typeof anyS.__key === 'string' ? anyS.__key : generateKey(),
+    id:
+      typeof P.id === 'string' && P.id
+        ? P.id
+        : typeof anyS.__key === 'string'
+          ? anyS.__key
+          : generateKey(),
     category: 'static',
     type,
   }
   if (typeof anyS.__key === 'string' && anyS.__key) node.key = anyS.__key
-  if (typeof anyS.name === 'string' && anyS.name && anyS.name !== node.id) node.name = anyS.name
-  if (typeof anyS.label === 'string' && anyS.label) node.label = anyS.label
+  if (typeof P.name === 'string' && P.name && P.name !== node.id) node.name = P.name
+  if (typeof P.label === 'string' && P.label) node.label = P.label
 
   if (typeof anyS.if === 'string' && anyS.if) node.visibleIf = parseExprString(anyS.if)
   else if (typeof anyS.if === 'boolean') node.visibleIf = { type: 'literal', value: anyS.if }
@@ -522,21 +655,23 @@ export function staticNodeFromSchema(s: SchemaNode, hintType?: string): StaticNo
     else if (typeof anyS.children === 'number') node.text = String(anyS.children)
   }
 
-  const events = parseEvents(anyS)
+  const events = parseEvents(P)
   if (events?.length) node.events = events
 
   parseOuterClass(anyS.outerClass, node)
 
   const props: Record<string, unknown> = {}
-  if (anyS.props && typeof anyS.props === 'object') Object.assign(props, anyS.props)
+  if (anyS.props && typeof anyS.props === 'object') {
+    for (const [key, value] of Object.entries(anyS.props)) {
+      // $cmp 节点：语义键 / 结构键 / 事件已消费，避免回流到 node.props
+      if (isCmp && (STATIC_CONSUMED_KEYS.has(key) || /^on[A-Z]/.test(key))) continue
+      if (value === undefined) continue
+      props[key] = value
+    }
+  }
   if (node.type === 'button' && anyS.attrs) props.attrs = anyS.attrs
   for (const [key, value] of Object.entries(anyS)) {
-    if (
-      ['$formkit', '$el', '$cmp', 'name', 'id', 'label', 'if', 'children', 'attrs', 'outerClass', 'props', '__key', '__preview_placeholder', 'type'].includes(
-        key,
-      )
-    )
-      continue
+    if (STATIC_CONSUMED_KEYS.has(key)) continue
     if (value === undefined) continue
     props[key] = value
   }
@@ -547,7 +682,8 @@ export function staticNodeFromSchema(s: SchemaNode, hintType?: string): StaticNo
 
 function mapElToStaticType(tag: string): string {
   if (tag === 'button') return 'button'
-  if (tag === 'h1' || tag === 'h2' || tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'h6') return 'heading'
+  if (tag === 'h1' || tag === 'h2' || tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'h6')
+    return 'heading'
   if (tag === 'hr') return 'divider'
   if (tag === 'p' || tag === 'span' || tag === 'div') return 'paragraph'
   return 'html'
@@ -555,7 +691,10 @@ function mapElToStaticType(tag: string): string {
 
 // ─── 校验 ↔ schema ─────────────────────────────────────────────────────────────
 
-export function parseValidation(validation: unknown, messages?: unknown): ValidationRule[] | undefined {
+export function parseValidation(
+  validation: unknown,
+  messages?: unknown,
+): ValidationRule[] | undefined {
   if (typeof validation !== 'string' || !validation.trim()) return undefined
   const msgMap: Record<string, string> =
     messages && typeof messages === 'object' ? (messages as Record<string, string>) : {}
@@ -614,7 +753,11 @@ export function parseEvents(s: Record<string, unknown>): EventBinding[] | undefi
 // ─── 旧表达式字符串 → AST（best-effort，失败则 __raw__ 无损兜底）───────────────
 
 export function parseExprString(input: string): Expr {
-  const raw = (str: string): Expr => ({ type: 'call', fn: '__raw__', args: [{ type: 'literal', value: str }] })
+  const raw = (str: string): Expr => ({
+    type: 'call',
+    fn: '__raw__',
+    args: [{ type: 'literal', value: str }],
+  })
   if (typeof input !== 'string') return raw(String(input))
   const src = input.trim()
   if (!src) return raw('')

@@ -24,4 +24,3 @@ function updateValue(value: boolean) {
     <n-switch size="small" :value="props.value" @update:value="updateValue" />
   </div>
 </template>
-

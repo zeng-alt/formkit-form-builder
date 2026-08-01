@@ -5,4 +5,3 @@ import LabelHelpSection from '../common/LabelHelpSection.vue'
 <template>
   <LabelHelpSection />
 </template>
-

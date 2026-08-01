@@ -13,9 +13,15 @@ const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.con
 const disabled = computed<boolean>(() =>
   Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
 )
-const readonly = computed<boolean>(() => Boolean((uiProps.value.readonly as boolean | undefined) ?? false))
-const clearable = computed<boolean>(() => Boolean((uiProps.value.clearable as boolean | undefined) ?? true))
-const allowHalf = computed<boolean>(() => Boolean((uiProps.value.allowHalf as boolean | undefined) ?? false))
+const readonly = computed<boolean>(() =>
+  Boolean((uiProps.value.readonly as boolean | undefined) ?? false),
+)
+const clearable = computed<boolean>(() =>
+  Boolean((uiProps.value.clearable as boolean | undefined) ?? true),
+)
+const allowHalf = computed<boolean>(() =>
+  Boolean((uiProps.value.allowHalf as boolean | undefined) ?? false),
+)
 const count = computed<number>(() => {
   const raw = uiProps.value.count as unknown
   if (typeof raw === 'number' && Number.isFinite(raw)) return raw

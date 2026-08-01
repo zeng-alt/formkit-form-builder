@@ -5,4 +5,3 @@ import OptionsTagsSection from '../common/OptionsTagsSection.vue'
 <template>
   <OptionsTagsSection label="Items" />
 </template>
-

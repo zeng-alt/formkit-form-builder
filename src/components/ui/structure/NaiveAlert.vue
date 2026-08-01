@@ -13,9 +13,15 @@ const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.con
 
 const title = computed(() => uiProps.value.title as AlertProps['title'])
 const type = computed(() => (uiProps.value.type as AlertProps['type']) ?? 'default')
-const closable = computed<boolean>(() => Boolean((uiProps.value.closable as boolean | undefined) ?? false))
-const bordered = computed<boolean>(() => Boolean((uiProps.value.bordered as boolean | undefined) ?? false))
-const showIcon = computed<boolean>(() => Boolean((uiProps.value.showIcon as boolean | undefined) ?? true))
+const closable = computed<boolean>(() =>
+  Boolean((uiProps.value.closable as boolean | undefined) ?? false),
+)
+const bordered = computed<boolean>(() =>
+  Boolean((uiProps.value.bordered as boolean | undefined) ?? false),
+)
+const showIcon = computed<boolean>(() =>
+  Boolean((uiProps.value.showIcon as boolean | undefined) ?? true),
+)
 
 const content = computed(() => {
   const raw = uiProps.value.content
@@ -35,4 +41,3 @@ const content = computed(() => {
     {{ content }}
   </NAlert>
 </template>
-

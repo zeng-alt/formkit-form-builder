@@ -66,7 +66,10 @@ function migrateExpressionKeys(schema: FormKitSchemaFormKit[]) {
       if (typeof node.__key !== 'string' || !node.__key) {
         node.__key = generateKey()
       }
-      if (typeof node.valueExpression === 'string' && typeof node.__raw__valueExpression !== 'string') {
+      if (
+        typeof node.valueExpression === 'string' &&
+        typeof node.__raw__valueExpression !== 'string'
+      ) {
         node.__raw__valueExpression = node.valueExpression
       }
       if (typeof node.if === 'string' && typeof node.__raw__ifExpression !== 'string') {
@@ -75,7 +78,11 @@ function migrateExpressionKeys(schema: FormKitSchemaFormKit[]) {
       if ('valueExpression' in node) delete node.valueExpression
       const bind = (node as any).bind
       if (bind && typeof bind !== 'string') {
-        if (typeof bind === 'object' && !Array.isArray(bind) && typeof (node as any).__bind !== 'object') {
+        if (
+          typeof bind === 'object' &&
+          !Array.isArray(bind) &&
+          typeof (node as any).__bind !== 'object'
+        ) {
           ;(node as any).__bind = bind
         }
         delete (node as any).bind
@@ -118,14 +125,29 @@ export function commitFormDefinition(
   applyDefinition(nextDef)
 }
 
-// schema 数组提交（DnD / 容器更新 / legacy 导入）：迁移后转 DSL 再走统一漏斗
+// schema 数组提交（DnD / 容器更新 / legacy 导入）：迁移后转 DSL 再走统一漏斗。
+// name / settings 可选：覆盖表单级设置（如导入带 name / labelAlign 的外部 schema）
 export function commitSchema(
   nextSchema: FormKitSchemaFormKit[],
-  options?: { reason?: string; merge?: boolean },
+  options?: {
+    reason?: string
+    merge?: boolean
+    name?: string
+    settings?: FormDefinition['settings']
+  },
 ) {
-  const working = cloneDef(nextSchema as unknown as DefSnapshot) as unknown as FormKitSchemaFormKit[]
+  const working = cloneDef(
+    nextSchema as unknown as DefSnapshot,
+  ) as unknown as FormKitSchemaFormKit[]
   migrateExpressionKeys(working)
-  commitFormDefinition(commitSchemaChildren(working), options)
+  const source =
+    options?.name || options?.settings
+      ? {
+          name: options.name ?? formDefinition.value?.name ?? 'form',
+          settings: options.settings ?? formDefinition.value?.settings,
+        }
+      : undefined
+  commitFormDefinition(commitSchemaChildren(working, source), options)
 }
 
 // 画布/DnD 写路径：迁移后按 key 差异调和 DSL 树（仅转换变更节点，未变子树原样复用）
@@ -133,7 +155,9 @@ export function commitSchemaReconcile(
   nextSchema: FormKitSchemaFormKit[],
   options?: { reason?: string; merge?: boolean },
 ) {
-  const working = cloneDef(nextSchema as unknown as DefSnapshot) as unknown as FormKitSchemaFormKit[]
+  const working = cloneDef(
+    nextSchema as unknown as DefSnapshot,
+  ) as unknown as FormKitSchemaFormKit[]
   migrateExpressionKeys(working)
   const def = formDefinition.value
   const nextChildren = reconcileDslTree(

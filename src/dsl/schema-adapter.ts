@@ -179,7 +179,10 @@ export function reconcileDslTree(
       if (existing.category === 'container' || existing.category === 'layout') {
         const existingChildren = existing.children
         const newChildren = schemaChildrenOf(schemaNode)
-        if (oldSchema && JSON.stringify(schemaChildrenOf(oldSchema)) === JSON.stringify(newChildren)) {
+        if (
+          oldSchema &&
+          JSON.stringify(schemaChildrenOf(oldSchema)) === JSON.stringify(newChildren)
+        ) {
           next.children = existingChildren
         } else {
           next.children = reconcile(existingChildren, newChildren)

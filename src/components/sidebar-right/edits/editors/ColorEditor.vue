@@ -7,4 +7,3 @@ import NaiveBasicSection from '../common/NaiveBasicSection.vue'
   <LabelHelpSection />
   <NaiveBasicSection :size="true" :disabled="true" :clearable="true" />
 </template>
-

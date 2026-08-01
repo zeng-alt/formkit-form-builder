@@ -24,7 +24,9 @@ const showPreview = ref(false)
             <n-tooltip>
               <template #trigger>
                 <n-button secondary circle size="small" class="h-5 w-5 !p-2">
-                  <template #icon><span class="i-lucide-trash-2 h-4 w-4 dark:text-green-200"></span></template>
+                  <template #icon
+                    ><span class="i-lucide-trash-2 h-4 w-4 dark:text-green-200"></span
+                  ></template>
                 </n-button>
               </template>
               {{ t('builder.clearForm') }}
@@ -42,7 +44,9 @@ const showPreview = ref(false)
               @click="showPreview = true"
               class="h-5 w-5 !p-2"
             >
-              <template #icon><span class="i-lucide-eye h-4 w-4 dark:text-green-200"></span></template>
+              <template #icon
+                ><span class="i-lucide-eye h-4 w-4 dark:text-green-200"></span
+              ></template>
             </n-button>
           </template>
           {{ t('builder.previewForm') }}
@@ -68,7 +72,9 @@ const showPreview = ref(false)
                 :disabled="!canUndo"
                 @click="undo"
               >
-                <template #icon><span class="i-lucide-undo-2 h-4 w-4 dark:text-green-200"></span></template>
+                <template #icon
+                  ><span class="i-lucide-undo-2 h-4 w-4 dark:text-green-200"></span
+                ></template>
               </n-button>
             </template>
             {{ t('builder.undo') }}
@@ -83,7 +89,9 @@ const showPreview = ref(false)
                 :disabled="!canRedo"
                 @click="redo"
               >
-                <template #icon><span class="i-lucide-redo-2 h-4 w-4 dark:text-green-200"></span></template>
+                <template #icon
+                  ><span class="i-lucide-redo-2 h-4 w-4 dark:text-green-200"></span
+                ></template>
               </n-button>
             </template>
             {{ t('builder.redo') }}

@@ -63,7 +63,11 @@ const typographyText = createPropsProp<string>('text', 'text')
   />
   <SwitchInput label="strong" :value="typoStrong" @update:value="(v) => (typoStrong = v)" />
   <SwitchInput label="italic" :value="typoItalic" @update:value="(v) => (typoItalic = v)" />
-  <SwitchInput label="underline" :value="typoUnderline" @update:value="(v) => (typoUnderline = v)" />
+  <SwitchInput
+    label="underline"
+    :value="typoUnderline"
+    @update:value="(v) => (typoUnderline = v)"
+  />
   <SwitchInput label="delete" :value="typoDelete" @update:value="(v) => (typoDelete = v)" />
   <SwitchInput label="code" :value="typoCode" @update:value="(v) => (typoCode = v)" />
 </template>

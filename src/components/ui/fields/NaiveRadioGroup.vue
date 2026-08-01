@@ -21,7 +21,9 @@ const size = computed<GroupSize>(() => {
 const disabled = computed<boolean>(() =>
   Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
 )
-const horizontal = computed<boolean>(() => (uiProps.value.horizontal as boolean | undefined) ?? false)
+const horizontal = computed<boolean>(
+  () => (uiProps.value.horizontal as boolean | undefined) ?? false,
+)
 
 const remoteOptions = ref<Array<{ label: string; value: string | number }>>([])
 
@@ -48,11 +50,13 @@ watch(
       }
       remoteOptions.value = json
         .map((opt) => {
-          if (typeof opt === 'string' || typeof opt === 'number') return { label: String(opt), value: opt }
+          if (typeof opt === 'string' || typeof opt === 'number')
+            return { label: String(opt), value: opt }
           if (opt && typeof opt === 'object') {
             const value = (opt as Record<string, unknown>).value
             const label = (opt as Record<string, unknown>).label
-            if (typeof value === 'string' || typeof value === 'number') return { label: String(label ?? value), value }
+            if (typeof value === 'string' || typeof value === 'number')
+              return { label: String(label ?? value), value }
           }
           return null
         })
@@ -92,7 +96,11 @@ function handleUpdateValue(next: string | number) {
 
 <template>
   <NRadioGroup :value="value" :disabled="disabled" :size="size" @update:value="handleUpdateValue">
-    <div :class="horizontal ? 'flex flex-row flex-wrap gap-4 w-full py-1' : 'flex flex-col gap-2 w-full py-1'">
+    <div
+      :class="
+        horizontal ? 'flex flex-row flex-wrap gap-4 w-full py-1' : 'flex flex-col gap-2 w-full py-1'
+      "
+    >
       <NRadio v-for="opt in options" :key="String(opt.value)" :value="opt.value">
         {{ opt.label }}
       </NRadio>

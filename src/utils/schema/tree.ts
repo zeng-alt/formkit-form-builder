@@ -28,7 +28,8 @@ export function findNodeByKey(
     if (!node || typeof node !== 'object') continue
     const nextPath = [...path, i]
     const nextRootIndex = rootIndex >= 0 ? rootIndex : i
-    if ((node as any).__key === key) return { node: node as FormKitSchemaFormKit, path: nextPath, rootIndex: nextRootIndex }
+    if ((node as any).__key === key)
+      return { node: node as FormKitSchemaFormKit, path: nextPath, rootIndex: nextRootIndex }
     const children = (node as any)?.children
     if (Array.isArray(children)) {
       const found = findNodeByKey(children, key, [...nextPath, -1], nextRootIndex)

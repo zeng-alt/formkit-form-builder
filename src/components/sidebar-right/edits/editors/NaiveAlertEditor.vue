@@ -43,5 +43,9 @@ const alertShowIcon = createPropsProp<boolean>('showIcon', true)
   />
   <SwitchInput label="closable" :value="alertClosable" @update:value="(v) => (alertClosable = v)" />
   <SwitchInput label="bordered" :value="alertBordered" @update:value="(v) => (alertBordered = v)" />
-  <SwitchInput label="show-icon" :value="alertShowIcon" @update:value="(v) => (alertShowIcon = v)" />
+  <SwitchInput
+    label="show-icon"
+    :value="alertShowIcon"
+    @update:value="(v) => (alertShowIcon = v)"
+  />
 </template>

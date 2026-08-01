@@ -65,9 +65,7 @@ watch(
 
 function handleUpdateFileList(next: UploadFileInfo[]) {
   fileList.value = next
-  const files = next
-    .map((f) => f.file)
-    .filter((f): f is File => f instanceof File)
+  const files = next.map((f) => f.file).filter((f): f is File => f instanceof File)
   props.context.node.input(multiple.value ? files : files[0] ? [files[0]] : [])
 }
 
@@ -92,9 +90,7 @@ function customRequest(options: UploadCustomRequestOptions) {
       <div class="flex justify-center mb-3">
         <span class="i-lucide-upload text-[48px] text-muted-foreground"></span>
       </div>
-      <n-text style="font-size: 16px">
-        点击或者拖动文件到该区域来上传
-      </n-text>
+      <n-text style="font-size: 16px"> 点击或者拖动文件到该区域来上传 </n-text>
       <n-p depth="3" style="margin: 8px 0 0 0">
         请不要上传敏感数据，比如你的银行卡号和密码，信用卡号有效期和安全码
       </n-p>

@@ -14,7 +14,10 @@ const views = [
 
 <template>
   <div class="w-16 shrink-0 flex flex-col items-center">
-    <n-button-group vertical class="sticky top-20 bg-card shadow-sm rounded-lg border border-border/50">
+    <n-button-group
+      vertical
+      class="sticky top-20 bg-card shadow-sm rounded-lg border border-border/50"
+    >
       <n-tooltip v-for="view in views" :key="view.id" placement="right">
         <template #trigger>
           <n-button

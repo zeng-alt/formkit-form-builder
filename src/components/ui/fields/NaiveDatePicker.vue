@@ -24,7 +24,8 @@ const bordered = computed<boolean>(() => (uiProps.value.bordered as boolean | un
 
 const pickerType = computed<DatePickerProps['type']>(() => {
   const configured = uiProps.value.type
-  if (typeof configured === 'string' && configured.trim()) return configured as DatePickerProps['type']
+  if (typeof configured === 'string' && configured.trim())
+    return configured as DatePickerProps['type']
   const t = props.context.type
   if (t === 'naiveDateTime') return 'datetime'
   return 'date'
@@ -44,7 +45,8 @@ const formattedValue = computed<FormattedValue>({
   get: () => {
     const raw = props.context._value as unknown
     if (raw === null || raw === undefined || raw === '') return null
-    if (Array.isArray(raw) && raw.length === 2) return [String(raw[0]), String(raw[1])] as [string, string]
+    if (Array.isArray(raw) && raw.length === 2)
+      return [String(raw[0]), String(raw[1])] as [string, string]
     return String(raw)
   },
   set: (next: FormattedValue) => {

@@ -11,4 +11,3 @@ import NaiveBasicSection from '../common/NaiveBasicSection.vue'
   <OptionsTagsSection />
   <NaiveBasicSection :size="true" :disabled="true" />
 </template>
-

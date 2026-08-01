@@ -2,6 +2,7 @@
 import { computed, inject, ref, watch, type Ref } from 'vue'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
 import { createFieldProps } from '@/elements'
+import { getElementTypeBySchema } from '@/elements'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useFormBuilderI18n } from '../../i18n/context'
 import { customInsertPlugin } from '../../utils/custom-insert-plugin'
@@ -59,20 +60,26 @@ const [parentRef, items] = useDragAndDrop(
 const getTypeName = (item: any) => {
   const kind = getContainerKind(item)
   if (kind) return kind
-  return String(item?.$formkit ?? item?.$cmp ?? '')
+  return getElementTypeBySchema(item) ?? String(item?.$formkit ?? item?.$cmp ?? '')
 }
 
 // Sync items when props.elements changes (e.g. during search)
-watch(() => props.elements, (newElements) => {
-  items.value = newElements
-}, { deep: true })
+watch(
+  () => props.elements,
+  (newElements) => {
+    items.value = newElements
+  },
+  { deep: true },
+)
 </script>
 
 <template>
   <div
     ref="parentRef"
     data-is-source="true"
-    :class="collapsed ? 'grid grid-cols-1 gap-2 p-2 min-h-[50px]' : 'flex flex-col gap-1 p-2 min-h-[50px]'"
+    :class="
+      collapsed ? 'grid grid-cols-1 gap-2 p-2 min-h-[50px]' : 'flex flex-col gap-1 p-2 min-h-[50px]'
+    "
   >
     <div
       v-for="item in items"
@@ -88,7 +95,9 @@ watch(() => props.elements, (newElements) => {
         v-if="collapsed"
         class="h-10 w-10 rounded-md bg-ring/20 flex items-center justify-center"
       >
-        <span :class="`${fieldProps.find((prop) => prop.name === getTypeName(item))?.icon ?? ''} h-6 w-6`"></span>
+        <span
+          :class="`${fieldProps.find((prop) => prop.name === getTypeName(item))?.icon ?? ''} h-6 w-6`"
+        ></span>
       </div>
       <span
         v-else

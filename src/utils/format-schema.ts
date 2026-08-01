@@ -15,6 +15,21 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
         format: formatOne,
       })
       if (formattedContainer) return formattedContainer
+
+      // $cmp 节点：FormKitSchema 只转发 props，语义键已在 props 内；原样保留 $cmp / props / children
+      if (typeof (field as any)?.$cmp === 'string') {
+        const { bind, if: schemaIf, ...rest } = field as any
+        const cleanCmp: any = {
+          ...rest,
+          name: field.name || (key ? `field_${key}` : `field_${index}`),
+          id: field.id || (key ? `preview_field_${key}` : `preview_field_${index}`),
+        }
+        if (typeof bind === 'string' && bind.trim()) cleanCmp.bind = bind
+        if (typeof schemaIf === 'string' && schemaIf.trim()) cleanCmp.if = schemaIf
+        else if (typeof schemaIf === 'boolean') cleanCmp.if = schemaIf
+        return cleanCmp
+      }
+
       const {
         $formkit,
         label,

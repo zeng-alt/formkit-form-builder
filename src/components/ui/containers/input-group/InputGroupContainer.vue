@@ -90,8 +90,12 @@ const emitUpdateNormalized = () => {
   dnd.emitUpdate()
 }
 
-const title = computed(() => (typeof props.label === 'string' && props.label.trim() ? props.label.trim() : ''))
-const helpText = computed(() => (typeof props.help === 'string' && props.help.trim() ? props.help.trim() : ''))
+const title = computed(() =>
+  typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
+)
+const helpText = computed(() =>
+  typeof props.help === 'string' && props.help.trim() ? props.help.trim() : '',
+)
 const showHeader = computed(() => Boolean(title.value || helpText.value))
 
 const onSelect = (child: any, _index: number) => {
