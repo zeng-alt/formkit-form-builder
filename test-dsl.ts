@@ -1,6 +1,7 @@
 import { dslToSchema, schemaToDsl } from './src/dsl'
 import type { FormDefinition, FieldNode, ContainerNode, LayoutNode } from './src/dsl'
 import { evalExpr } from './src/dsl'
+import { formSchema } from './src/state/form-schema'
 
 const assert = (cond: boolean, msg: string) => {
   if (!cond) {
@@ -294,4 +295,59 @@ const { dslNode: tabsDsl } = assertNodeRoundTrip('tabs 布局', tabsNode)
 assert(tabsDsl.category === 'layout' && tabsDsl.type === 'tabs', 'tabs 布局分类')
 const panes = (tabsDsl as LayoutNode).children
 assert(panes.length === 1 && panes[0].type === 'tabsPane' && panes[0].key === 'pane_1', 'tabs pane 保留 __key')
+
+// ─── P3-1：状态层 DSL 化 ────────────────────────────────────────────────────────
+// schemaToDsl→dslToSchema 对真实画布状态（form 包装 + 各类节点）往返无损；
+// 验证同步桥 / DSL 导入导出 / 未注册节点 meta 透传。
+
+console.log('\n── P3-1 状态层 DSL 化 ──')
+
+const defaultCanvasState = [
+  {
+    $formkit: 'form',
+    name: 'form',
+    props: { labelPosition: 'top', labelWidth: 80, columns: 12, layout: 'vertical' },
+    children: [
+      { $formkit: 'submit', outerClass: 'col-span-12 pt-2', type: 'submit', name: 'submit_button', label: 'Submit' },
+      textField,
+      listNode,
+      cardNode,
+      tabsNode,
+    ],
+  },
+]
+const realDef = schemaToDsl(defaultCanvasState, { id: 'canvas' })
+assert(realDef.settings.labelAlign === 'top' && realDef.settings.labelWidth === 80, 'form 设置进入 DSL settings')
+const realBack = dslToSchema(realDef)
+assert(
+  JSON.stringify(canonical(realBack)) === JSON.stringify(canonical(defaultCanvasState)),
+  '真实画布状态 schemaToDsl→dslToSchema 恒等',
+)
+
+const defaultWrapped = [
+  {
+    $formkit: 'form',
+    name: 'form',
+    props: { labelPosition: 'top', labelWidth: 80, columns: 12, layout: 'vertical' },
+    children: formSchema.value as any[],
+  },
+]
+const defaultBack = dslToSchema(schemaToDsl(defaultWrapped, { id: 'default' }))
+assert(
+  JSON.stringify(canonical(defaultBack)) === JSON.stringify(canonical(defaultWrapped)),
+  '默认 formSchema 状态往返恒等',
+)
+
+const exportJson = JSON.stringify(realDef)
+const imported = schemaToDsl(dslToSchema(JSON.parse(exportJson)))
+assert(JSON.stringify(norm(imported)) === JSON.stringify(norm(realDef)), 'DSL JSON 导出→导入 恒等')
+
+const unknownNode = { $el: 'video', attrs: { src: 'x.mp4' }, children: [] }
+const unknownSchema = schemaToDsl([{ $formkit: 'form', name: 'form', props: {}, children: [unknownNode] }])
+assert(unknownSchema.root.children[0]?.meta?.rawSchema != null, '未注册节点保留到 meta.rawSchema')
+const unknownRound = dslToSchema(unknownSchema)
+assert(
+  JSON.stringify((unknownRound[0] as any)?.children) === JSON.stringify([unknownNode]),
+  '未注册节点 meta 透传回 schema',
+)
 

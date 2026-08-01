@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { NModal, NInput, NButton, NSpace } from 'naive-ui'
-import { formMeta, formSchema } from '@/state/form-schema'
+import { formMeta } from '@/state/form-schema'
+import { formDefinition } from '@/state/form-definition'
+import { dslToSchema } from '@/dsl'
 import { commitSchema } from '../composables/schema-history'
 import type { FormKitSchemaFormKit } from '@formkit/core'
+import type { FormDefinition } from '@/types/dsl'
 import { toast } from 'vue-sonner'
 import { useFormBuilderI18n } from '../i18n/context'
 
@@ -20,24 +23,27 @@ const { t } = useFormBuilderI18n()
 const jsonContent = ref('')
 
 const exportSchema = (): FormKitSchemaFormKit[] => {
-  return [
-    {
-      $formkit: 'form',
-      name: formMeta.value.name,
-      props: {
-        labelPosition: formMeta.value.labelPosition,
-        labelWidth: formMeta.value.labelWidth,
-      },
-      children: formSchema.value as any,
-    } as any,
-  ]
+  return dslToSchema(formDefinition.value) as FormKitSchemaFormKit[]
+}
+
+const isDslDefinition = (value: unknown): value is FormDefinition => {
+  const v = value as any
+  return (
+    v !== null &&
+    typeof v === 'object' &&
+    !Array.isArray(v) &&
+    typeof v.version === 'number' &&
+    v.root !== null &&
+    typeof v.root === 'object' &&
+    Array.isArray(v.root.children)
+  )
 }
 
 watch(
   () => props.show,
   (newVal) => {
     if (newVal) {
-      jsonContent.value = JSON.stringify(exportSchema(), null, 2)
+      jsonContent.value = JSON.stringify(formDefinition.value, null, 2)
     }
   }
 )
@@ -49,6 +55,20 @@ const handleClose = () => {
 const handleSaveAndImport = () => {
   try {
     const parsed = JSON.parse(jsonContent.value)
+    // 规范 DSL 导入：FormDefinition → dslToSchema → formMeta + schema
+    if (isDslDefinition(parsed)) {
+      const wrapped = dslToSchema(parsed)
+      const wrapper: any = wrapped[0]
+      formMeta.value = {
+        name: typeof wrapper?.name === 'string' && wrapper.name.trim() ? wrapper.name : 'form',
+        labelPosition: wrapper?.props?.labelPosition === 'left' ? 'left' : 'top',
+        labelWidth: Number.isFinite(Number(wrapper?.props?.labelWidth)) ? Number(wrapper?.props?.labelWidth) : 120,
+      }
+      commitSchema((wrapper?.children as FormKitSchemaFormKit[]) ?? [], { reason: 'import' })
+      toast.success(t('importExport.importSuccess'))
+      handleClose()
+      return
+    }
     if (!Array.isArray(parsed)) {
       throw new Error(t('importExport.schemaMustBeArray'))
     }

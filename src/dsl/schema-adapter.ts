@@ -16,6 +16,9 @@ export function dslToSchema(form: FormDefinition): FormKitSchemaFormKit[] {
   const convert = (node: FormNode): SchemaNode => {
     const def = getElementTypeDef(node.type)
     if (!def) {
+      // 未注册类型：若来自 schemaToDsl 的 fallback（meta.rawSchema），原样透传，保证渲染不崩
+      const raw = (node as { meta?: { rawSchema?: unknown } }).meta?.rawSchema
+      if (raw && typeof raw === 'object') return raw as SchemaNode
       throw new Error(`[dslToSchema] 未注册的 DSL 类型: ${node.category}/${node.type}`)
     }
     const hasChildren = (node.category === 'container' || node.category === 'layout') && Array.isArray((node as { children?: FormNode[] }).children)

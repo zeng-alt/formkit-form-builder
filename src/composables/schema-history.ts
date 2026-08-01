@@ -1,6 +1,7 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { computed, ref } from 'vue'
 import { formSchema, selectedIndex, selectedKey } from '@/state/form-schema'
+import { syncFormDefinition } from '@/state/form-definition'
 import { generateKey } from '../utils/dnd/schema'
 
 type SchemaSnapshot = FormKitSchemaFormKit[]
@@ -116,6 +117,7 @@ export function commitSchema(
 
   migrateExpressionKeys(nextSchema)
   formSchema.value = nextSchema
+  syncFormDefinition()
   if (prevSelectedKey) {
     const rootIndex = findRootIndexForKey(nextSchema as any[], prevSelectedKey)
     if (rootIndex >= 0) {
@@ -139,6 +141,7 @@ export function undo() {
 
   lastCommit.value = null
   formSchema.value = cloneSchema(previous)
+  syncFormDefinition()
   clampSelectedIndex(formSchema.value.length)
 }
 
@@ -153,6 +156,7 @@ export function redo() {
 
   lastCommit.value = null
   formSchema.value = cloneSchema(next)
+  syncFormDefinition()
   clampSelectedIndex(formSchema.value.length)
 }
 
