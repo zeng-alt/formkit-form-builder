@@ -24,7 +24,7 @@ export type {
   EventBinding,
 } from '../types/dsl'
 
-export { dslToSchema, schemaToDsl, schemaNodeToDslNode } from './schema-adapter'
+export { dslToSchema, schemaToDsl, schemaNodeToDslNode, reconcileDslTree } from './schema-adapter'
 export type { SchemaToDslOptions } from './schema-adapter'
 
 export {

@@ -1,4 +1,4 @@
-import { dslToSchema, schemaToDsl, schemaNodeToDslNode } from './src/dsl'
+import { dslToSchema, schemaToDsl, schemaNodeToDslNode, reconcileDslTree } from './src/dsl'
 import { findDslNodeByKey, updateDslNodeAtKey } from './src/utils/schema/dsl-tree'
 import type { FormDefinition, FieldNode, ContainerNode, LayoutNode } from './src/dsl'
 import { evalExpr } from './src/dsl'
@@ -441,5 +441,71 @@ assert(
 )
 const nestedBack = dslToSchema({ ...nestedDef, root: { ...nestedDef.root, children: nestedRoot } })[0] as any
 assert(nestedBack.children[0].children[0].placeholder === '嵌套占位', '嵌套字段属性 patch 生效')
+
+// ─── P3-2C：DnD/画布差异调和写路径 ──────────────────────────────────────────────
+// 复刻 commitSchemaReconcile 核心：只转换变更节点，未变子树（含引用）原样复用。
+console.log('\n── P3-2C 差异调和写路径 ──')
+
+const dndDef = schemaToDsl(
+  [{ $formkit: 'form', name: 'form', props: {}, children: [textField, selectField] }],
+  { id: 'dnd' },
+)
+const dndSchema = dslToSchema(dndDef)[0] as any
+const dndChildren = JSON.parse(JSON.stringify(dndSchema.children))
+
+const reorderResult = reconcileDslTree(dndDef.root.children, dndSchema.children, [dndChildren[1], dndChildren[0]])
+assert(reorderResult.length === 2, '仅换序时节点数不变')
+assert(reorderResult[0] === dndDef.root.children[1] && reorderResult[1] === dndDef.root.children[0], '仅换序未变节点原样复用')
+assert(reorderResult[0].key === 'role_k' && reorderResult[1].key === 'abc', '换序后 key 顺序正确')
+
+const resizedNode = { ...dndChildren[0], outerClass: 'col-span-4' }
+const resizeResult = reconcileDslTree(dndDef.root.children, dndSchema.children, [resizedNode, dndChildren[1]])
+assert(resizeResult[0].layout?.colspan === 4, 'resize 节点转换出 layout.colspan=4')
+assert(resizeResult[0].id === 'field_abc' && resizeResult[0].key === 'abc', 'resize 节点保留 id/key')
+assert(resizeResult[1] === dndDef.root.children[1], 'resize 未变兄弟原样复用')
+const resizeBack = dslToSchema({ ...dndDef, root: { ...dndDef.root, children: resizeResult } })[0] as any
+assert(resizeBack.children[0].outerClass === 'col-span-4', 'reconcile 结果渲染回 schema 正确')
+
+// 移入容器：list 子节点变化 → 容器转换、子节点按 key 复用；根级移除原字段
+const listDef = schemaToDsl(
+  [
+    {
+      $formkit: 'form',
+      name: 'form',
+      props: {},
+      children: [
+        { ...textField, __key: 'k_text' },
+        listNode,
+      ],
+    },
+  ],
+  { id: 'dnd-list' },
+)
+const listSchema = dslToSchema(listDef)[0] as any
+const nextRoot = [
+  {
+    $cmp: 'list',
+    __key: 'list_abc',
+    name: 'items',
+    label: '明细',
+    outerClass: 'col-span-12',
+    props: { listKey: 'list_abc', modelValue: [textField, selectField] },
+    children: [textField, selectField],
+  },
+]
+const movedInto = reconcileDslTree(listDef.root.children, listSchema.children, nextRoot)
+assert(movedInto.length === 1 && movedInto[0].category === 'container', '移入容器后根级只剩容器')
+const movedList = movedInto[0] as ContainerNode
+assert(movedList.children.length === 2, '容器子节点数量正确')
+assert(movedList.children[0].key === 'abc' && movedList.children[1].key === 'role_k', '移入字段与原有子节点 key 保留')
+assert(movedList.id === 'list_abc', '容器 id 稳定')
+const movedBack = dslToSchema({ ...listDef, root: { ...listDef.root, children: movedInto } })[0] as any
+assert(movedBack.children[0].props.listKey === 'list_abc', '容器 listKey 写回不变')
+assert(movedBack.children[0].children.length === 2, '容器 children 写回正确')
+
+// 根级删除：节点从 nextSchema 消失即从 DSL 移除
+const deleteResult = reconcileDslTree(listDef.root.children, listSchema.children, [listSchema.children[1]])
+assert(deleteResult.length === 1 && deleteResult[0].key === 'list_abc', '根级删除生效')
+
 
 

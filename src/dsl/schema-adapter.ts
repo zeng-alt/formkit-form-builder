@@ -121,6 +121,77 @@ export function schemaNodeToDslNode(node: SchemaNode): FormNode {
   return convert(node)
 }
 
+function keyOfSchemaNode(s: SchemaNode): string | undefined {
+  const anyS: any = s
+  if (typeof anyS?.__key === 'string' && anyS.__key) return anyS.__key
+  if (typeof anyS?.id === 'string' && anyS.id) return anyS.id
+  return undefined
+}
+
+function schemaChildrenOf(s: SchemaNode): SchemaNode[] {
+  const anyS: any = s
+  const children = Array.isArray(anyS?.children) ? anyS.children : anyS?.props?.modelValue
+  return Array.isArray(children) ? children : []
+}
+
+// DnD/画布写路径：按 key 对 DSL 树做差异调和，仅转换变更节点，未变子树原样复用
+export function reconcileDslTree(
+  currentDslChildren: FormNode[],
+  currentSchema: FormKitSchemaFormKit[],
+  nextSchema: FormKitSchemaFormKit[],
+): FormNode[] {
+  const dslIndex = new Map<string, FormNode>()
+  const walkDsl = (nodes: FormNode[]) => {
+    for (const n of nodes) {
+      if (n.key) dslIndex.set(n.key, n)
+      if (n.id) dslIndex.set(n.id, n)
+      const children = (n as { children?: FormNode[] }).children
+      if (Array.isArray(children)) walkDsl(children)
+    }
+  }
+  walkDsl(currentDslChildren)
+
+  const schemaIndex = new Map<string, SchemaNode>()
+  const walkSchema = (nodes: SchemaNode[]) => {
+    for (const n of nodes) {
+      const k = keyOfSchemaNode(n)
+      if (k) schemaIndex.set(k, n)
+      const children = schemaChildrenOf(n)
+      if (children.length) walkSchema(children)
+    }
+  }
+  walkSchema(currentSchema as SchemaNode[])
+
+  const reconcile = (children: FormNode[], nextNodes: SchemaNode[]): FormNode[] => {
+    return nextNodes.map((schemaNode) => {
+      const key = keyOfSchemaNode(schemaNode)
+      if (!key) return schemaNodeToDslNode(schemaNode)
+      const existing = dslIndex.get(key)
+      const oldSchema = schemaIndex.get(key)
+      if (existing && oldSchema && JSON.stringify(oldSchema) === JSON.stringify(schemaNode)) {
+        return existing
+      }
+      const converted = schemaNodeToDslNode(schemaNode)
+      if (!existing) return converted
+      const next: Record<string, unknown> = { ...converted }
+      next.id = existing.id
+      next.key = existing.key
+      if (existing.category === 'container' || existing.category === 'layout') {
+        const existingChildren = existing.children
+        const newChildren = schemaChildrenOf(schemaNode)
+        if (oldSchema && JSON.stringify(schemaChildrenOf(oldSchema)) === JSON.stringify(newChildren)) {
+          next.children = existingChildren
+        } else {
+          next.children = reconcile(existingChildren, newChildren)
+        }
+      }
+      return next as unknown as FormNode
+    })
+  }
+
+  return reconcile(currentDslChildren, nextSchema as SchemaNode[])
+}
+
 function parseFormSettings(props: unknown): Partial<FormSettings> {
   const p: any = props ?? {}
   const settings: Partial<FormSettings> = {}

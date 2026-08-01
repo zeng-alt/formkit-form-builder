@@ -4,7 +4,7 @@ import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
 import { customInsertPlugin } from '@/utils/custom-insert-plugin'
 import { formMeta, formSchema, selectedIndex, selectedKey, selectedTarget } from '@/state/form-schema'
-import { commitSchema } from '@/composables/schema-history'
+import { commitSchemaReconcile } from '@/composables/schema-history'
 import { findNodeByKey, updateAtPath } from '@/utils/schema/tree'
 import { canvasSchemaLibrary } from '@/builder/containers'
 import { createDefaultInsertPointElement } from '@/utils/dnd/insert-point-element'
@@ -40,7 +40,7 @@ export function useCanvasSchema() {
   // ── 删除根节点 ───────────────────────────────────────────────────────────────
   const deleteField = (index: number) => {
     const nextSchema = formSchema.value.filter((_, i) => i !== index)
-    commitSchema(nextSchema as FormKitSchemaFormKit[], { reason: 'delete' })
+    commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], { reason: 'delete' })
     fields.value = fields.value.filter((_, i) => i !== index)
   }
 
@@ -112,7 +112,7 @@ export function useCanvasSchema() {
       if (merged.props && typeof merged.props === 'object') delete merged.props.modelValue
     }
     const nextSchema = updateAtPath(prunedSchema as unknown[], found.path, merged) as FormKitSchemaFormKit[]
-    commitSchema(nextSchema as FormKitSchemaFormKit[], { reason: 'container-children', merge: true })
+    commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], { reason: 'container-children', merge: true })
   }
 
   // ── 选中 ─────────────────────────────────────────────────────────────────────
@@ -173,7 +173,7 @@ export function useCanvasSchema() {
   }
 
   const onResizeEnd = () => {
-    commitSchema(fields.value as FormKitSchemaFormKit[], { reason: 'resize', merge: true })
+    commitSchemaReconcile(fields.value as FormKitSchemaFormKit[], { reason: 'resize', merge: true })
   }
 
   // ── 渲染上下文（提供给容器组件）────────────────────────────────────────────

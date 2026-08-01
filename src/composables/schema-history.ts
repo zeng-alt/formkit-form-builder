@@ -1,9 +1,10 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { computed, ref } from 'vue'
 import { formDefinition, commitSchemaChildren } from '@/state/form-definition'
-import { selectedIndex, selectedKey } from '@/state/form-schema'
+import { formSchema, selectedIndex, selectedKey } from '@/state/form-schema'
 import { generateKey } from '../utils/dnd/schema'
 import { findDslNodeByKey } from '../utils/schema/dsl-tree'
+import { reconcileDslTree } from '@/dsl'
 import type { FormDefinition, FormNode } from '@/types/dsl'
 
 type DefSnapshot = FormDefinition
@@ -125,6 +126,22 @@ export function commitSchema(
   const working = cloneDef(nextSchema as unknown as DefSnapshot) as unknown as FormKitSchemaFormKit[]
   migrateExpressionKeys(working)
   commitFormDefinition(commitSchemaChildren(working), options)
+}
+
+// 画布/DnD 写路径：迁移后按 key 差异调和 DSL 树（仅转换变更节点，未变子树原样复用）
+export function commitSchemaReconcile(
+  nextSchema: FormKitSchemaFormKit[],
+  options?: { reason?: string; merge?: boolean },
+) {
+  const working = cloneDef(nextSchema as unknown as DefSnapshot) as unknown as FormKitSchemaFormKit[]
+  migrateExpressionKeys(working)
+  const def = formDefinition.value
+  const nextChildren = reconcileDslTree(
+    dslRoot(def),
+    formSchema.value as FormKitSchemaFormKit[],
+    working,
+  )
+  commitFormDefinition({ ...def, root: { ...def.root, children: nextChildren } }, options)
 }
 
 export function undo() {

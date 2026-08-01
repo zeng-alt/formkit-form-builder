@@ -15,7 +15,7 @@ import {
   setParentValues,
 } from '@formkit/drag-and-drop'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { commitSchema } from '@/composables/schema-history'
+import { commitSchemaReconcile } from '@/composables/schema-history'
 import { formSchema } from '@/state/form-schema'
 import { insertState } from './insert-state'
 import { getVisualRows, setColSpan, adjustColSpansForInsertAtRow } from './grid'
@@ -386,7 +386,7 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
 
   const nextSchema = rootValues.map((node: any) => applyListMap(node)) as FormKitSchemaFormKit[]
 
-  commitSchema(nextSchema, { reason: 'dnd' })
+  commitSchemaReconcile(nextSchema, { reason: 'dnd' })
 
   if (insertPoint) insertPoint.el.style.display = 'none'
 
