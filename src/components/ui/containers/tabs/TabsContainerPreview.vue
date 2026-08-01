@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { FormKitSchema } from '@formkit/vue'
 import { NEmpty, NTabPane, NTabs } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
+import { getPreviewSchemaLibrary } from '@/containers/registry'
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[]
@@ -18,6 +19,8 @@ const props = defineProps<{
 }>()
 
 const { t } = useFormBuilderI18n()
+
+const schemaLibrary = getPreviewSchemaLibrary()
 
 const modelValue = computed(() => {
   if (Array.isArray(props.modelValue)) return props.modelValue
@@ -58,7 +61,7 @@ const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false))
         :closable="paneClosable"
       >
         <div class="w-full grid grid-cols-12 gap-x-4 gap-y-2">
-          <FormKitSchema :schema="Array.isArray((child as any)?.children) ? (child as any).children : []" />
+          <FormKitSchema :schema="Array.isArray((child as any)?.children) ? (child as any).children : []" :library="schemaLibrary" />
         </div>
       </n-tab-pane>
     </n-tabs>

@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { FormKitSchema } from '@formkit/vue'
 import { NInputGroup, NEmpty } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
+import { getPreviewSchemaLibrary } from '@/containers/registry'
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[]
@@ -13,6 +14,8 @@ const props = defineProps<{
 }>()
 
 const { t } = useFormBuilderI18n()
+
+const schemaLibrary = getPreviewSchemaLibrary()
 
 const title = computed(() => (typeof props.label === 'string' && props.label.trim() ? props.label.trim() : ''))
 const helpText = computed(() => (typeof props.help === 'string' && props.help.trim() ? props.help.trim() : ''))
@@ -31,7 +34,7 @@ const modelValue = computed(() => {
       <div v-if="helpText" class="text-xs text-muted-foreground">{{ helpText }}</div>
     </div>
     <n-input-group class="w-full">
-      <FormKitSchema v-if="modelValue.length" :schema="modelValue" />
+      <FormKitSchema v-if="modelValue.length" :schema="modelValue" :library="schemaLibrary" />
       <n-empty v-else :description="t('builder.listDropHere')" />
     </n-input-group>
   </div>

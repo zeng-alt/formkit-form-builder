@@ -4,6 +4,7 @@ import { inject, computed } from 'vue'
 import { FormKitSchema } from '@formkit/vue'
 import { NButton, NButtonGroup, NTooltip, NEmpty } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
+import { getPreviewSchemaLibrary } from '@/containers/registry'
 
 const props = defineProps<{
   nodeKey?: string
@@ -32,6 +33,8 @@ const restore = inject(
 )
 
 const { t } = useFormBuilderI18n()
+
+const schemaLibrary = getPreviewSchemaLibrary()
 
 const title = computed(() => (typeof props.label === 'string' && props.label.trim() ? props.label.trim() : ''))
 const showHeader = computed(() => !!title.value || props.isPlaceholder !== true)
@@ -77,7 +80,7 @@ const wrapperClass = computed(() => (showAddButton.value ? 'p-2 relative pb-10' 
         </div>
       </div>
       <div v-else class="w-full grid grid-cols-12 gap-x-4 gap-y-2">
-        <FormKitSchema v-if="modelValue.length" :schema="modelValue" />
+        <FormKitSchema v-if="modelValue.length" :schema="modelValue" :library="schemaLibrary" />
         <n-empty v-else :description="t('builder.listDropHere')" />
       </div>
       <div v-if="showAddButton" class="absolute bottom-2 left-2">

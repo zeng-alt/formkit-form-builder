@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { FormKitSchema } from '@formkit/vue'
 import { NCard, NEmpty } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
+import { getPreviewSchemaLibrary } from '@/containers/registry'
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[]
@@ -17,6 +18,8 @@ const props = defineProps<{
 }>()
 
 const { t } = useFormBuilderI18n()
+
+const schemaLibrary = getPreviewSchemaLibrary()
 
 const title = computed(() => (typeof props.label === 'string' && props.label.trim() ? props.label.trim() : ''))
 const helpText = computed(() => (typeof props.help === 'string' && props.help.trim() ? props.help.trim() : ''))
@@ -49,7 +52,7 @@ const showHeader = computed(() => Boolean(title.value || helpText.value))
       </div>
     </template>
     <div class="w-full grid grid-cols-12 gap-x-4 gap-y-2">
-      <FormKitSchema v-if="modelValue.length" :schema="modelValue" />
+      <FormKitSchema v-if="modelValue.length" :schema="modelValue" :library="schemaLibrary" />
       <n-empty v-else :description="t('builder.listDropHere')" />
     </div>
   </n-card>
