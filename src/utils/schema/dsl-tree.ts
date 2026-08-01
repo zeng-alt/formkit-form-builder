@@ -30,3 +30,29 @@ export function findDslNodeByKey(nodes: FormNode[], key: string): DslPathNode | 
   }
   return null
 }
+
+// 以 key 定位并替换 DSL 树中的节点（返回新树，不改原树）
+export function updateDslNodeAtKey(
+  nodes: FormNode[],
+  key: string,
+  nextNode: FormNode,
+): { nodes: FormNode[]; found: boolean } {
+  let found = false
+  const next = nodes.map((node) => {
+    if (!node) return node
+    if (node.key === key || node.id === key) {
+      found = true
+      return nextNode
+    }
+    const children = dslChildrenOf(node)
+    if (children.length) {
+      const result = updateDslNodeAtKey(children, key, nextNode)
+      if (result.found) {
+        found = true
+        return { ...node, children: result.nodes } as FormNode
+      }
+    }
+    return node
+  })
+  return { nodes: next, found }
+}

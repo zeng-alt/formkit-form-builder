@@ -21,7 +21,9 @@ export function dslToSchema(form: FormDefinition): FormKitSchemaFormKit[] {
       if (raw && typeof raw === 'object') return raw as SchemaNode
       throw new Error(`[dslToSchema] 未注册的 DSL 类型: ${node.category}/${node.type}`)
     }
-    const hasChildren = (node.category === 'container' || node.category === 'layout') && Array.isArray((node as { children?: FormNode[] }).children)
+    const hasChildren =
+      (node.category === 'container' || node.category === 'layout') &&
+      Array.isArray((node as { children?: FormNode[] }).children)
     const children: SchemaNode[] | undefined = hasChildren
       ? (node as { children: FormNode[] }).children.map(convert)
       : undefined
@@ -51,7 +53,10 @@ export interface SchemaToDslOptions {
   name?: string
 }
 
-export function schemaToDsl(schema: FormKitSchemaFormKit[], options?: SchemaToDslOptions): FormDefinition {
+export function schemaToDsl(
+  schema: FormKitSchemaFormKit[],
+  options?: SchemaToDslOptions,
+): FormDefinition {
   registerBuiltinElementTypes()
 
   let children: SchemaNode[] = schema as SchemaNode[]
@@ -95,6 +100,25 @@ export function schemaToDsl(schema: FormKitSchemaFormKit[], options?: SchemaToDs
     },
     settings,
   }
+}
+
+// 单节点 schema → DSL（编辑写路径用：只转换被编辑节点，避免整树往返）
+export function schemaNodeToDslNode(node: SchemaNode): FormNode {
+  registerBuiltinElementTypes()
+  const convert = (n: SchemaNode): FormNode => {
+    for (const def of getElementTypeDefs()) {
+      if (!def.match?.(n)) continue
+      if (def.fromSchema) {
+        const converted = def.fromSchema(n, {
+          children: (sc) => (Array.isArray(sc) ? sc.map(convert) : []),
+        })
+        if (converted) return converted
+      }
+      break
+    }
+    return fallbackToNode(n)
+  }
+  return convert(node)
 }
 
 function parseFormSettings(props: unknown): Partial<FormSettings> {

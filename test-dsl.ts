@@ -1,4 +1,5 @@
-import { dslToSchema, schemaToDsl } from './src/dsl'
+import { dslToSchema, schemaToDsl, schemaNodeToDslNode } from './src/dsl'
+import { findDslNodeByKey, updateDslNodeAtKey } from './src/utils/schema/dsl-tree'
 import type { FormDefinition, FieldNode, ContainerNode, LayoutNode } from './src/dsl'
 import { evalExpr } from './src/dsl'
 import { formSchema } from './src/state/form-schema'
@@ -357,4 +358,88 @@ assert(
   JSON.stringify((bindRound[0] as any)?.children?.[0]?.__bind) === JSON.stringify(bindField.__bind),
   '__bind 事件绑定 schemaToDsl→dslToSchema 往返恒等',
 )
+
+// ─── P3-2：编辑写路径（单节点 patch，不再整树往返）──────────────────────────────
+// 复刻 form-fields.ts commitNodePatch 的步骤：改投影节点 → schemaNodeToDslNode →
+// 保留现有 id/key/容器 children → updateDslNodeAtKey 定位打补丁 → 整树重渲。
+console.log('\n── P3-2 节点级编辑写路径 ──')
+
+const editDef = schemaToDsl(
+  [
+    {
+      $formkit: 'form',
+      name: 'form',
+      props: {},
+      children: [
+        { ...textField, label: '用户名', name: 'username', __key: 'k_user' },
+        {
+          $cmp: 'card',
+          __key: 'k_card',
+          props: { cardKey: 'field_k_card', title: '卡片', modelValue: [selectField] },
+          children: [selectField],
+        },
+      ],
+    },
+  ],
+  { id: 'edit' },
+)
+const cardKeyBefore = (editDef.root.children[1] as LayoutNode).id
+const userKeyDsl = findDslNodeByKey(editDef.root.children, 'k_user')?.node as FieldNode
+
+const { nodes: patchedRoot, found } = updateDslNodeAtKey(
+  editDef.root.children,
+  'k_user',
+  {
+    ...schemaNodeToDslNode({
+      ...textField,
+      label: '用户名',
+      name: 'username',
+      __key: 'k_user',
+      placeholder: '请输入用户名',
+    }),
+    id: userKeyDsl.id,
+    key: 'k_user',
+  },
+)
+assert(found, 'updateDslNodeAtKey 命中 key')
+const patchedDef: FormDefinition = { ...editDef, root: { ...editDef.root, children: patchedRoot } }
+const patchedSchema = dslToSchema(patchedDef)[0] as any
+const patchedUser = patchedSchema.children[0] as any
+assert(patchedUser.placeholder === '请输入用户名', '节点属性修改生效')
+assert(patchedUser.name === 'username' && patchedUser.label === '用户名', '同节点其余属性保留')
+assert((patchedDef.root.children[1] as LayoutNode).id === cardKeyBefore, '容器 id 保持稳定')
+assert((patchedSchema.children[1] as any).props.cardKey === cardKeyBefore, '容器 cardKey 写回不变')
+const patchedSelect = patchedSchema.children[1]?.children?.[0] as any
+assert(Array.isArray(patchedSelect?.options) && patchedSelect.options.length === 2, '兄弟节点子树无损')
+
+// 嵌套容器内节点按 key 定位 patch（不需要根下标）
+const nestedDef = schemaToDsl(
+  [
+    {
+      $formkit: 'form',
+      name: 'form',
+      props: {},
+      children: [{ $cmp: 'list', __key: 'k_list', props: { listKey: 'list_k', modelValue: [textField] }, children: [textField] }],
+    },
+  ],
+  { id: 'nested' },
+)
+const nestedFieldKey = 'abc'
+const { nodes: nestedRoot, found: nestedFound } = updateDslNodeAtKey(
+  nestedDef.root.children,
+  nestedFieldKey,
+  {
+    ...schemaNodeToDslNode({ ...textField, placeholder: '嵌套占位' }),
+    id: 'field_abc',
+    key: nestedFieldKey,
+  },
+)
+assert(nestedFound, '嵌套字段按 key 定位命中')
+assert(
+  ((nestedRoot[0] as ContainerNode).children[0] as FieldNode).key === nestedFieldKey,
+  '嵌套字段位置与兄弟结构保留',
+)
+const nestedBack = dslToSchema({ ...nestedDef, root: { ...nestedDef.root, children: nestedRoot } })[0] as any
+assert(nestedBack.children[0].children[0].placeholder === '嵌套占位', '嵌套字段属性 patch 生效')
+
 

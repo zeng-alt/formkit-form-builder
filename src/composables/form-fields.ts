@@ -1,9 +1,19 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { WritableComputedRef } from 'vue'
 import { computed } from 'vue'
-import { formMeta, formSchema, selectedIndex, selectedKey, selectedTarget } from '@/state/form-schema'
-import { findNodeByKey, getNodeAtPath, updateAtPath } from '@/utils/schema/tree'
-import { commitSchema } from './schema-history'
+import {
+  formMeta,
+  formSchema,
+  selectedIndex,
+  selectedKey,
+  selectedTarget,
+} from '@/state/form-schema'
+import { formDefinition } from '@/state/form-definition'
+import { findNodeByKey, getNodeAtPath } from '@/utils/schema/tree'
+import { findDslNodeByKey, updateDslNodeAtKey } from '@/utils/schema/dsl-tree'
+import { commitFormDefinition } from './schema-history'
+import { schemaNodeToDslNode } from '@/dsl'
+import type { FormNode } from '@/types/dsl'
 
 export const selectedField = computed(() => {
   const key = selectedKey.value
@@ -18,9 +28,57 @@ type SchemaWithButtonProps = FormKitSchemaFormKit & {
   buttonProps?: Record<string, unknown>
 }
 
+const toDslNode = (patchedNode: FormKitSchemaFormKit, key?: string | null): FormNode => {
+  const converted = schemaNodeToDslNode(patchedNode)
+  const existing = key ? findDslNodeByKey(formDefinition.value.root.children, key)?.node : undefined
+  const next: Record<string, unknown> = { ...converted }
+  if (existing?.id) next.id = existing.id
+  if (existing?.key) next.key = existing.key
+  if (
+    (existing?.category === 'container' || existing?.category === 'layout') &&
+    Array.isArray(existing.children)
+  ) {
+    next.children = existing.children
+  }
+  return next as unknown as FormNode
+}
+
+const commitNodePatch = (patchedNode: FormKitSchemaFormKit) => {
+  const def = formDefinition.value
+  const root = Array.isArray(def?.root?.children) ? def.root.children : []
+  const key =
+    selectedKey.value ??
+    (patchedNode as any)?.__key ??
+    root[selectedIndex.value]?.key ??
+    root[selectedIndex.value]?.id
+  if (key) {
+    const { nodes: nextRoot, found } = updateDslNodeAtKey(root, key, toDslNode(patchedNode, key))
+    if (found) {
+      commitFormDefinition(
+        { ...def, root: { ...def.root, children: nextRoot } },
+        { reason: 'field-edit', merge: true },
+      )
+      return
+    }
+  }
+  if (root[selectedIndex.value]) {
+    const nextRoot = root.map((n, i) =>
+      i === selectedIndex.value ? toDslNode(patchedNode, n?.key ?? n?.id) : n,
+    )
+    commitFormDefinition(
+      { ...def, root: { ...def.root, children: nextRoot } },
+      { reason: 'field-edit', merge: true },
+    )
+  }
+}
+
 export function useFormField() {
   const normalizeName = (value: string) => {
-    let name = value.trim().replace(/[^a-zA-Z0-9_]+/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '')
+    let name = value
+      .trim()
+      .replace(/[^a-zA-Z0-9_]+/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '')
     if (!name) return ''
     if (/^\d/.test(name)) name = `field_${name}`
     return name
@@ -31,12 +89,22 @@ export function useFormField() {
       const selected = selectedKey.value
       const found = selected ? findNodeByKey(formSchema.value as any[], selected) : null
       const path = found?.path
-      const currentNode = path ? getNodeAtPath(formSchema.value as any[], path) : formSchema.value[selectedIndex.value]
+      const currentNode = path
+        ? getNodeAtPath(formSchema.value as any[], path)
+        : formSchema.value[selectedIndex.value]
       if (!currentNode) return
 
       const current = { ...(currentNode as Record<string, unknown>) }
       const isCmp = typeof (current as any)?.$cmp === 'string' && Boolean((current as any)?.$cmp)
-      const propKeys = new Set(['label', 'help', 'placeholder', 'bordered', 'embedded', 'hoverable', 'size'])
+      const propKeys = new Set([
+        'label',
+        'help',
+        'placeholder',
+        'bordered',
+        'embedded',
+        'hoverable',
+        'size',
+      ])
       if (isCmp && propKeys.has(key)) {
         const nextProps: any = { ...(((current as any).props ?? {}) as any) }
         if (value === undefined) delete nextProps[key]
@@ -47,14 +115,7 @@ export function useFormField() {
       } else {
         ;(current as any)[key] = value
       }
-      const nextSchema = path
-        ? updateAtPath(formSchema.value as any[], path, current as FormKitSchemaFormKit)
-        : (() => {
-            const updatedSchema = [...formSchema.value]
-            updatedSchema[selectedIndex.value] = current as FormKitSchemaFormKit
-            return updatedSchema
-          })()
-      commitSchema(nextSchema as FormKitSchemaFormKit[], { reason: 'field-edit', merge: true })
+      commitNodePatch(current as FormKitSchemaFormKit)
     }
   }
 
@@ -63,7 +124,11 @@ export function useFormField() {
       const selected = selectedKey.value
       const found = selected ? findNodeByKey(formSchema.value as any[], selected) : null
       const path = found?.path
-      const current = (path ? getNodeAtPath(formSchema.value as any[], path) : formSchema.value[selectedIndex.value]) as SchemaWithButtonProps
+      const current = (
+        path
+          ? getNodeAtPath(formSchema.value as any[], path)
+          : formSchema.value[selectedIndex.value]
+      ) as SchemaWithButtonProps
       if (!current) return
       const nextButtonProps = {
         ...current?.buttonProps,
@@ -73,14 +138,7 @@ export function useFormField() {
         ...current,
         buttonProps: nextButtonProps,
       } as FormKitSchemaFormKit
-      const nextSchema = path
-        ? updateAtPath(formSchema.value as any[], path, nextNode)
-        : (() => {
-            const updatedSchema = [...formSchema.value]
-            updatedSchema[selectedIndex.value] = nextNode
-            return updatedSchema
-          })()
-      commitSchema(nextSchema as FormKitSchemaFormKit[], { reason: 'field-edit', merge: true })
+      commitNodePatch(nextNode)
     }
   }
 
@@ -89,20 +147,20 @@ export function useFormField() {
       const selected = selectedKey.value
       const found = selected ? findNodeByKey(formSchema.value as any[], selected) : null
       const path = found?.path
-      const current = (path ? getNodeAtPath(formSchema.value as any[], path) : formSchema.value[selectedIndex.value]) as any
+      const current = (
+        path
+          ? getNodeAtPath(formSchema.value as any[], path)
+          : formSchema.value[selectedIndex.value]
+      ) as any
       if (!current) return
       const nextProps: any = { ...(((current as any).props ?? {}) as any) }
       if (value === undefined) delete nextProps[key]
       else nextProps[key] = value
-      const nextNode: any = { ...current, props: Object.keys(nextProps).length ? nextProps : undefined }
-      const nextSchema = path
-        ? updateAtPath(formSchema.value as any[], path, nextNode)
-        : (() => {
-            const updatedSchema = [...formSchema.value]
-            updatedSchema[selectedIndex.value] = nextNode
-            return updatedSchema
-          })()
-      commitSchema(nextSchema as FormKitSchemaFormKit[], { reason: 'field-edit', merge: true })
+      const nextNode: any = {
+        ...current,
+        props: Object.keys(nextProps).length ? nextProps : undefined,
+      }
+      commitNodePatch(nextNode)
     }
   }
 
@@ -206,7 +264,8 @@ export function useFormField() {
   const label = computed({
     get: () => {
       const current: any = selectedField.value as any
-      if (typeof current?.$cmp === 'string' && current.$cmp) return String(current?.props?.label ?? '')
+      if (typeof current?.$cmp === 'string' && current.$cmp)
+        return String(current?.props?.label ?? '')
       return (selectedField.value as any)?.label || ''
     },
     set: (newLabel: string) => setFieldProp('label', newLabel),
@@ -228,7 +287,8 @@ export function useFormField() {
   const placeholder = computed({
     get: () => {
       const current: any = selectedField.value as any
-      if (typeof current?.$cmp === 'string' && current.$cmp) return String(current?.props?.placeholder ?? '')
+      if (typeof current?.$cmp === 'string' && current.$cmp)
+        return String(current?.props?.placeholder ?? '')
       return (selectedField.value as any)?.placeholder || ''
     },
     set: (newPlaceholder: string) => setFieldProp('placeholder', newPlaceholder),
@@ -314,7 +374,8 @@ export function useFormField() {
   const help = computed({
     get: () => {
       const current: any = selectedField.value as any
-      if (typeof current?.$cmp === 'string' && current.$cmp) return String(current?.props?.help ?? '')
+      if (typeof current?.$cmp === 'string' && current.$cmp)
+        return String(current?.props?.help ?? '')
       return (selectedField.value as any)?.help || ''
     },
     set: (newHelp: string) => setFieldProp('help', newHelp),
@@ -323,97 +384,58 @@ export function useFormField() {
   const whichNumber = computed<string>({
     get: () => selectedField.value?.number || 'integer',
     set: (value: string) => {
-      if (value === 'integer') {
-        if (formSchema.value.length > 0) {
-          const updatedSchema = [...formSchema.value]
-          updatedSchema[selectedIndex.value] = {
-            ...updatedSchema[selectedIndex.value],
-            number: value,
-            step: '1',
-          } as FormKitSchemaFormKit
-          commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-        }
-      } else {
-        if (formSchema.value.length > 0) {
-          const updatedSchema = [...formSchema.value]
-          updatedSchema[selectedIndex.value] = {
-            ...updatedSchema[selectedIndex.value],
-            number: value,
-            step: '0.1',
-          } as FormKitSchemaFormKit
-          commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-        }
-      }
+      const current = selectedField.value
+      if (!current) return
+      commitNodePatch({
+        ...current,
+        number: value,
+        step: value === 'integer' ? '1' : '0.1',
+      } as FormKitSchemaFormKit)
     },
   })
 
   const numOfFiles = computed({
     get: () => selectedField.value?.multiple || 'false',
     set: (value: string) => {
-      if (formSchema.value.length > 0) {
-        const updatedSchema = [...formSchema.value]
-        updatedSchema[selectedIndex.value] = {
-          ...updatedSchema[selectedIndex.value],
-          multiple: value,
-        } as FormKitSchemaFormKit
-        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-      }
+      const current = selectedField.value
+      if (!current) return
+      commitNodePatch({ ...current, multiple: value } as FormKitSchemaFormKit)
     },
   })
 
   const modelValue = computed<string[]>({
     get: () => selectedField.value?.options || [],
     set: (newOptions: string[]) => {
-      if (formSchema.value.length > 0) {
-        const updatedSchema = [...formSchema.value]
-        updatedSchema[selectedIndex.value] = {
-          ...updatedSchema[selectedIndex.value],
-          options: newOptions,
-        } as FormKitSchemaFormKit
-        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-      }
+      const current = selectedField.value
+      if (!current) return
+      commitNodePatch({ ...current, options: newOptions } as FormKitSchemaFormKit)
     },
   })
 
   const optionsRaw = computed<unknown>({
     get: () => selectedField.value?.options ?? [],
     set: (newOptions: unknown) => {
-      if (formSchema.value.length > 0) {
-        const updatedSchema = [...formSchema.value]
-        updatedSchema[selectedIndex.value] = {
-          ...updatedSchema[selectedIndex.value],
-          options: newOptions,
-        } as FormKitSchemaFormKit
-        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-      }
+      const current = selectedField.value
+      if (!current) return
+      commitNodePatch({ ...current, options: newOptions } as FormKitSchemaFormKit)
     },
   })
 
   const min = computed<number | undefined>({
     get: () => selectedField.value?.min,
     set: (newMin: number | undefined) => {
-      if (formSchema.value.length > 0) {
-        const updatedSchema = [...formSchema.value]
-        updatedSchema[selectedIndex.value] = {
-          ...updatedSchema[selectedIndex.value],
-          min: newMin,
-        } as FormKitSchemaFormKit
-        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-      }
+      const current = selectedField.value
+      if (!current) return
+      commitNodePatch({ ...current, min: newMin } as FormKitSchemaFormKit)
     },
   })
 
   const max = computed<number | undefined>({
     get: () => selectedField.value?.max,
     set: (newMax: number | undefined) => {
-      if (formSchema.value.length > 0) {
-        const updatedSchema = [...formSchema.value]
-        updatedSchema[selectedIndex.value] = {
-          ...updatedSchema[selectedIndex.value],
-          max: newMax,
-        } as FormKitSchemaFormKit
-        commitSchema(updatedSchema, { reason: 'field-edit', merge: true })
-      }
+      const current = selectedField.value
+      if (!current) return
+      commitNodePatch({ ...current, max: newMax } as FormKitSchemaFormKit)
     },
   })
 
@@ -496,9 +518,15 @@ export function useFormField() {
       let classes = typeof currentOuterClass === 'string' ? currentOuterClass : ''
 
       if (nextSpan === 1) {
-        classes = classes.replace(/\brow-span-\d+\b/g, '').replace(/\s+/g, ' ').trim()
+        classes = classes
+          .replace(/\brow-span-\d+\b/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
       } else if (/\brow-span-\d+\b/.test(classes)) {
-        classes = classes.replace(/\brow-span-\d+\b/g, `row-span-${nextSpan}`).replace(/\s+/g, ' ').trim()
+        classes = classes
+          .replace(/\brow-span-\d+\b/g, `row-span-${nextSpan}`)
+          .replace(/\s+/g, ' ')
+          .trim()
       } else {
         classes = `${classes} row-span-${nextSpan}`.replace(/\s+/g, ' ').trim()
       }
