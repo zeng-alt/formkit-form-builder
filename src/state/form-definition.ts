@@ -1,13 +1,34 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { FormDefinition } from '../types/dsl'
-import { schemaToDsl } from '../dsl'
-import { formSchema, formMeta } from './form-schema'
+import { dslToSchema, schemaToDsl } from '../dsl'
 
-// 规范表单定义：与 legacy formSchema + formMeta 保持同步（唯一写点是 schema-history 的 commit/undo/redo）
-// form 级设置（name / labelPosition / labelWidth）由 formMeta 提供，其余节点来自画布 schema
+export type FormLabelPosition = 'top' | 'left'
 
-function buildWrappedSchema(): FormKitSchemaFormKit[] {
+// 默认画布初始节点（带稳定 __key，保证投影 / 选中一致）
+const DEFAULT_CHILDREN: FormKitSchemaFormKit[] = [
+  {
+    $formkit: 'submit',
+    outerClass: 'col-span-12 pt-2',
+    type: 'submit',
+    name: 'submit_button',
+    label: 'Submit',
+    __key: 'submit_default',
+  },
+]
+
+// 表单级设置（name / labelPosition / labelWidth）
+export const formMeta = ref<{
+  name: string
+  labelPosition: FormLabelPosition
+  labelWidth: number
+}>({
+  name: 'form',
+  labelPosition: 'top',
+  labelWidth: 80,
+})
+
+function buildWrappedSchema(children: FormKitSchemaFormKit[]): FormKitSchemaFormKit[] {
   return [
     {
       $formkit: 'form',
@@ -16,16 +37,22 @@ function buildWrappedSchema(): FormKitSchemaFormKit[] {
         labelPosition: formMeta.value.labelPosition,
         labelWidth: formMeta.value.labelWidth,
       },
-      children: formSchema.value as any,
+      children: children as any,
     },
   ]
 }
 
-export const formDefinition = ref<FormDefinition>(schemaToDsl(buildWrappedSchema()))
+// 规范表单定义：唯一真源。画布 / DnD 的 schema（formSchema）是其只读投影。
+export const formDefinition = ref<FormDefinition>(schemaToDsl(buildWrappedSchema(DEFAULT_CHILDREN)))
 
-// 从当前 schema + formMeta 重建规范 DSL（画布状态变更后由 schema-history 调用）
-export function syncFormDefinition(): void {
-  formDefinition.value = schemaToDsl(buildWrappedSchema(), {
-    id: formDefinition.value?.id,
-  })
+// schema 投影（只读）：渲染 / DnD / 画布使用，由 DSL 派生
+export const formSchema = computed<FormKitSchemaFormKit[]>(() => {
+  const wrapped = dslToSchema(formDefinition.value)
+  const children = wrapped[0]?.children
+  return Array.isArray(children) ? (children as FormKitSchemaFormKit[]) : []
+})
+
+// 由 schema 投影提交 → 转回 DSL（供 DnD / 容器更新 / legacy 导入使用）
+export function commitSchemaChildren(children: FormKitSchemaFormKit[]): FormDefinition {
+  return schemaToDsl(buildWrappedSchema(children), { id: formDefinition.value?.id })
 }

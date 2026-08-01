@@ -81,7 +81,6 @@ const FIELD_KNOWN_KEYS = new Set([
   '__key',
   '__preview_placeholder',
   'bind',
-  '__bind',
   'props',
 ])
 

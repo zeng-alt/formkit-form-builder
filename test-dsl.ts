@@ -351,3 +351,10 @@ assert(
   '未注册节点 meta 透传回 schema',
 )
 
+const bindField = { ...textField, __bind: { click: '() => console.log(1)' } }
+const bindRound = dslToSchema(schemaToDsl([{ $formkit: 'form', name: 'form', props: {}, children: [bindField] }]))
+assert(
+  JSON.stringify((bindRound[0] as any)?.children?.[0]?.__bind) === JSON.stringify(bindField.__bind),
+  '__bind 事件绑定 schemaToDsl→dslToSchema 往返恒等',
+)
+

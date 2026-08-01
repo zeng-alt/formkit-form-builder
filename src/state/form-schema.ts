@@ -1,16 +1,9 @@
-import type { FormKitSchemaFormKit } from '@formkit/core'
 import { ref } from 'vue'
 
-// 全局表单 Schema 状态：当前构建的画布数据
-export const formSchema = ref<FormKitSchemaFormKit[]>([
-  {
-    $formkit: 'submit',
-    outerClass: 'col-span-12 pt-2',
-    type: 'submit',
-    name: 'submit_button',
-    label: 'Submit',
-  },
-])
+// 状态门面：formSchema / formMeta 已迁到 form-definition.ts（DSL 真源 + 只读投影），
+// 这里统一 re-export，避免既有消费方改动。
+export { formSchema, formMeta } from './form-definition'
+export type { FormLabelPosition } from './form-definition'
 
 // 选中的根节点下标（未用 __key 定位时的回退）
 export const selectedIndex = ref(0)
@@ -18,15 +11,3 @@ export const selectedIndex = ref(0)
 export const selectedKey = ref<string | null>(null)
 // 当前编辑目标：'form'（表单设置）| 'field'（字段/容器）
 export const selectedTarget = ref<'field' | 'form'>('form')
-
-export type FormLabelPosition = 'top' | 'left'
-
-export const formMeta = ref<{
-  name: string
-  labelPosition: FormLabelPosition
-  labelWidth: number
-}>({
-  name: 'form',
-  labelPosition: 'top',
-  labelWidth: 80,
-})
