@@ -3,6 +3,7 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NText } from 'naive-ui'
 import { computed } from 'vue'
 import { getSchemaProps } from './schema-props'
+import InlineEditableText from '../formkit/InlineEditableText.vue'
 
 const props = defineProps<{
   context: FormKitFrameworkContext
@@ -16,7 +17,7 @@ const text = computed(() => {
   return String(props.context._value ?? '')
 })
 
-const type = computed(() => uiProps.value.type as any)
+const theme = computed(() => uiProps.value.theme as any)
 const depth = computed(() => {
   const raw = uiProps.value.depth as unknown
   if (typeof raw === 'number' && Number.isFinite(raw)) return raw
@@ -36,7 +37,7 @@ const code = computed(() => Boolean((uiProps.value.code as boolean | undefined) 
 
 <template>
   <NText
-    :type="type"
+    :type="theme"
     :depth="depth as any"
     :tag="tag"
     :strong="strong"
@@ -45,6 +46,6 @@ const code = computed(() => Boolean((uiProps.value.code as boolean | undefined) 
     :delete="del"
     :code="code"
   >
-    {{ text }}
+    <InlineEditableText :context="props.context" prop-key="text" :value="text" />
   </NText>
 </template>

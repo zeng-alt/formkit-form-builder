@@ -131,14 +131,8 @@ const resizeHandleClass = computed(() => {
       @pointerdown.self="props.onSelectBlank?.()"
       @dragover.capture="props.setNestedParentOnRoot?.(true)"
       @dragstart.capture="isDragging = true"
-      @dragend.capture="
-        isDragging = false,
-        props.setNestedParentOnRoot?.(false)
-      "
-      @drop="
-        isDragging = false,
-        props.setNestedParentOnRoot?.(false)
-      "
+      @dragend.capture="((isDragging = false), props.setNestedParentOnRoot?.(false))"
+      @drop="((isDragging = false), props.setNestedParentOnRoot?.(false))"
     >
       <li v-if="props.items.value.length === 0" :class="emptyPlaceholderClass">
         <n-empty :description="props.emptyText" />

@@ -54,3 +54,20 @@ export const ensureUniqueName = (base: string, existing: Set<string>) => {
   existing.add(name)
   return name
 }
+
+// 生成字段 name（作为提交后端的数据字段名）：field_1、field_2 ...
+// 扫描现有 field_<n> 取最大序列号 +1，保证唯一且连续递增。
+export const generateNextFieldName = (existing: Set<string>) => {
+  let max = 0
+  for (const name of existing) {
+    const m = /^field_(\d+)$/.exec(name)
+    if (m) max = Math.max(max, Number(m[1]))
+  }
+  let candidate = `field_${max + 1}`
+  while (existing.has(candidate)) {
+    max++
+    candidate = `field_${max + 1}`
+  }
+  existing.add(candidate)
+  return candidate
+}

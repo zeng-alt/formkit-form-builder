@@ -13,6 +13,7 @@ export type {
   FormSettings,
   NodeCategory,
   NodeLayout,
+  RenderKind,
   Expr,
   ExprLiteral,
   ExprField,
@@ -24,7 +25,7 @@ export type {
   EventBinding,
 } from '../types/dsl'
 
-export { dslToSchema, schemaToDsl, schemaNodeToDslNode, reconcileDslTree } from './schema-adapter'
+export { dslToSchema, dslToOutputSchema, schemaToDsl, schemaNodeToDslNode, reconcileDslTree } from './schema-adapter'
 export type { SchemaToDslOptions } from './schema-adapter'
 
 export {
@@ -35,10 +36,17 @@ export {
   containerType,
   layoutType,
   staticType,
+  tabsPaneType,
+  elementTypeFromSchema,
 } from './registry'
-export type { ElementTypeDef, DslToSchemaCtx } from './registry'
+export type {
+  ElementTypeDef,
+  ElementTemplate,
+  ElementCatalogEntry,
+  DslToSchemaCtx,
+} from './registry'
 
-export { registerBuiltinElementTypes, FIELD_TYPES } from './definitions'
+export { registerBuiltinElementTypes } from './definitions'
 export { getBuiltin, isBuiltin } from './expr-builtins'
 export type { BuiltinFn } from './expr-builtins'
 export { exprToJs, resolveValidation, resolveEvents } from './compile'

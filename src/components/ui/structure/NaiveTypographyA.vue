@@ -3,6 +3,7 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NA } from 'naive-ui'
 import { computed } from 'vue'
 import { getSchemaProps } from './schema-props'
+import InlineEditableText from '../formkit/InlineEditableText.vue'
 
 const props = defineProps<{
   context: FormKitFrameworkContext
@@ -22,6 +23,6 @@ const target = computed(() => uiProps.value.target as any)
 
 <template>
   <NA :href="href" :target="target">
-    {{ text }}
+    <InlineEditableText :context="props.context" prop-key="text" :value="text" />
   </NA>
 </template>

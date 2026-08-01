@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
-import LabelHelpSection from '../common/LabelHelpSection.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 
@@ -22,7 +21,6 @@ const buttonType = createButtonProp<string>('type', 'default')
 </script>
 
 <template>
-  <LabelHelpSection />
   <SelectInput
     label="align"
     :value="buttonAlign"

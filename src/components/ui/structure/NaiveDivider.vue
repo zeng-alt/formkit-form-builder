@@ -3,6 +3,7 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NDivider } from 'naive-ui'
 import { computed } from 'vue'
 import { getSchemaProps } from './schema-props'
+import InlineEditableText from '../formkit/InlineEditableText.vue'
 
 const props = defineProps<{
   context: FormKitFrameworkContext
@@ -27,6 +28,6 @@ const title = computed(() => {
 
 <template>
   <NDivider :title-placement="titlePlacement" :dashed="dashed" :vertical="vertical">
-    {{ title }}
+    <InlineEditableText :context="props.context" prop-key="title" :value="title" />
   </NDivider>
 </template>

@@ -18,7 +18,7 @@ import { commitSchemaReconcile } from '@/composables/schema-history'
 import { formSchema } from '@/state/form-schema'
 import { insertState } from './insert-state'
 import { getVisualRows, setColSpan, adjustColSpansForInsertAtRow } from './grid'
-import { collectSchemaNames, ensureUniqueName, generateKey, toSafeName } from './schema'
+import { collectSchemaNames, generateKey, generateNextFieldName } from './schema'
 import { eq } from '@/utils/utils'
 
 function widthClassFromSpan(span: number) {
@@ -97,10 +97,17 @@ function normalizeInsertValues(
         delete val.children
       }
       const nextKey = typeof val.__key === 'string' && val.__key ? val.__key : generateKey()
-      const base = toSafeName(val.name || val.$formkit || val.$cmp || 'field')
-      const nextName = val.$formkit === 'submit' ? val.name : ensureUniqueName(base, existingNames)
+      const nextName =
+        val.$formkit === 'submit' ? val.name : generateNextFieldName(existingNames)
       if (val.$formkit === 'submit')
         return { ...valObj, __key: nextKey, outerClass: 'col-span-12 pt-2' }
+      // $cmp 节点的语义 name 在 props.name（DSL 回读取 props），顶层 name 仅画布展示，需同步
+      if (typeof val.$cmp === 'string') {
+        val.props =
+          val.props && typeof val.props === 'object'
+            ? { ...val.props, name: nextName }
+            : { name: nextName }
+      }
       if (val.$cmp === 'list' || val.$formkit === 'list') {
         const props = { ...val.props, listKey: nextKey }
         return {

@@ -3,7 +3,6 @@ import { useFormField } from '../../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../../i18n/context'
 import TextInput from './TextInput.vue'
 
-
 const { label, help } = useFormField()
 const { t } = useFormBuilderI18n()
 </script>

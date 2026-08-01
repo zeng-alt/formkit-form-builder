@@ -1,40 +1,22 @@
 import type { ElementDefinition } from '../types'
-import CustomButton from '@/components/ui/fields/CustomButton.vue'
-import NaiveTypographyText from '@/components/ui/structure/NaiveTypographyText.vue'
-import NaiveTypographyP from '@/components/ui/structure/NaiveTypographyP.vue'
-import NaiveTypographyA from '@/components/ui/structure/NaiveTypographyA.vue'
-import NaiveTypographyBlockquote from '@/components/ui/structure/NaiveTypographyBlockquote.vue'
-import NaiveTypographyHeader from '@/components/ui/structure/NaiveTypographyHeader.vue'
-import NaiveTypographyUl from '@/components/ui/structure/NaiveTypographyUl.vue'
-import NaiveTypographyOl from '@/components/ui/structure/NaiveTypographyOl.vue'
-import NaiveTypographyLi from '@/components/ui/structure/NaiveTypographyLi.vue'
-import NaiveDivider from '@/components/ui/structure/NaiveDivider.vue'
-import NaiveAlert from '@/components/ui/structure/NaiveAlert.vue'
-import NaiveBackTop from '@/components/ui/structure/NaiveBackTop.vue'
 
-const buttonProps = ['buttonProps', 'buttonText', 'label', 'type', '__bind']
+// 纯数据目录：不 import 任何 .vue。FormKit 组件绑定在 elements/formkit.ts（按 type 索引）。
+// 按钮类按钮配置已展平进 props（原 buttonProps 嵌套废除）。
 
-const buttonFormkit = {
-  component: CustomButton,
-  wrap: false,
-  props: buttonProps,
-} as const
-
-// 标题类静态元素（naiveH1 ~ naiveH6 共用 NaiveTypographyHeader）
-const heading = (depth: number, icon: string, tooltipKey: string, editor: string) => ({
+// 标题类静态元素（naiveH1 ~ naiveH6 共用 NaiveTypographyHeader 组件绑定）
+const heading = (depth: number, icon: string, tooltipKey: string, editor: string): ElementDefinition => ({
   type: `naiveH${depth}`,
-  category: 'static' as const,
+  category: 'static',
   icon,
   tooltipKey,
   editor: () => import(editor),
-  formkit: { component: NaiveTypographyHeader, libraryName: 'NaiveTypographyHeader' },
   schema: {
-    $cmp: `NaiveH${depth}`,
+    renderAs: 'cmp',
+
     outerClass: 'col-span-12',
     props: { text: 'text' },
     nameKey: `elements.naiveH${depth}.name`,
     descriptionKey: `elements.naiveH${depth}.description`,
-    id: `naive_h${depth}_static`,
   },
 })
 
@@ -45,11 +27,9 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-send-horizontal',
     tooltipKey: 'fieldProps.tooltip.submit',
     editor: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
-    formkit: buttonFormkit,
     schema: {
-      $cmp: 'NaiveSubmit',
+      renderAs: 'cmp',
       outerClass: 'col-span-12 pt-2',
-      type: 'submit',
       nameKey: 'elements.submit.name',
       descriptionKey: 'elements.submit.description',
       labelKey: 'elements.submit.label',
@@ -61,11 +41,9 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-rotate-ccw',
     tooltipKey: 'fieldProps.tooltip.reset',
     editor: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
-    formkit: buttonFormkit,
     schema: {
-      $cmp: 'NaiveReset',
+      renderAs: 'cmp',
       outerClass: 'col-span-12 pt-2',
-      type: 'reset',
       nameKey: 'elements.reset.name',
       descriptionKey: 'elements.reset.description',
       labelKey: 'elements.reset.label',
@@ -77,11 +55,10 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-square-mouse-pointer',
     tooltipKey: 'fieldProps.tooltip.naiveButton',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveButtonEditor.vue'),
-    formkit: buttonFormkit,
     schema: {
-      $cmp: 'NaiveButton',
+      renderAs: 'cmp',
       outerClass: 'col-span-12 pt-2',
-      buttonProps: {
+      props: {
         block: false,
         bordered: true,
         circle: false,
@@ -107,13 +84,12 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-letter-text',
     tooltipKey: 'fieldProps.tooltip.naiveText',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveTextEditor.vue'),
-    formkit: { component: NaiveTypographyText, libraryName: 'NaiveTypographyText' },
     schema: {
-      $cmp: 'NaiveTypographyText',
+      renderAs: 'cmp',
       outerClass: 'col-span-12',
       props: {
         text: 'text',
-        type: 'default',
+        theme: 'default',
         depth: 1,
         strong: false,
         italic: false,
@@ -123,7 +99,6 @@ export const staticElements: ElementDefinition[] = [
       },
       nameKey: 'elements.naiveText.name',
       descriptionKey: 'elements.naiveText.description',
-      id: 'naive_text_static',
     },
   },
   {
@@ -132,19 +107,17 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-letter-text',
     tooltipKey: 'fieldProps.tooltip.naiveP',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveParagraphEditor.vue'),
-    formkit: { component: NaiveTypographyP, libraryName: 'NaiveTypographyP' },
     schema: {
-      $cmp: 'NaiveTypographyP',
+      renderAs: 'cmp',
       outerClass: 'col-span-12',
       props: {
-        type: 'default',
+        theme: 'default',
         depth: 1,
         align: 'start',
         text: 'text',
       },
       nameKey: 'elements.naiveP.name',
       descriptionKey: 'elements.naiveP.description',
-      id: 'naive_p_static',
     },
   },
   {
@@ -153,9 +126,8 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-link-2',
     tooltipKey: 'fieldProps.tooltip.naiveA',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveLinkEditor.vue'),
-    formkit: { component: NaiveTypographyA, libraryName: 'NaiveTypographyA' },
     schema: {
-      $cmp: 'NaiveTypographyA',
+      renderAs: 'cmp',
       outerClass: 'col-span-12',
       props: {
         text: 'text',
@@ -164,7 +136,6 @@ export const staticElements: ElementDefinition[] = [
       },
       nameKey: 'elements.naiveA.name',
       descriptionKey: 'elements.naiveA.description',
-      id: 'naive_a_static',
     },
   },
   {
@@ -173,68 +144,34 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-letter-text',
     tooltipKey: 'fieldProps.tooltip.naiveBlockquote',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveBlockquoteEditor.vue'),
-    formkit: { component: NaiveTypographyBlockquote, libraryName: 'NaiveTypographyBlockquote' },
     schema: {
-      $cmp: 'NaiveTypographyBlockquote',
+      renderAs: 'cmp',
       outerClass: 'col-span-12',
       props: {
         text: 'text',
       },
       nameKey: 'elements.naiveBlockquote.name',
       descriptionKey: 'elements.naiveBlockquote.description',
-      id: 'naive_blockquote_static',
     },
   },
-  heading(
-    1,
-    'i-lucide-heading-1',
-    'fieldProps.tooltip.naiveH1',
-    '@/components/sidebar-right/edits/editors/NaiveH1Editor.vue',
-  ),
-  heading(
-    2,
-    'i-lucide-heading-2',
-    'fieldProps.tooltip.naiveH2',
-    '@/components/sidebar-right/edits/editors/NaiveH2Editor.vue',
-  ),
-  heading(
-    3,
-    'i-lucide-heading-3',
-    'fieldProps.tooltip.naiveH3',
-    '@/components/sidebar-right/edits/editors/NaiveH3Editor.vue',
-  ),
-  heading(
-    4,
-    'i-lucide-heading-4',
-    'fieldProps.tooltip.naiveH4',
-    '@/components/sidebar-right/edits/editors/NaiveH4Editor.vue',
-  ),
-  heading(
-    5,
-    'i-lucide-heading-5',
-    'fieldProps.tooltip.naiveH5',
-    '@/components/sidebar-right/edits/editors/NaiveH5Editor.vue',
-  ),
-  heading(
-    6,
-    'i-lucide-heading-6',
-    'fieldProps.tooltip.naiveH6',
-    '@/components/sidebar-right/edits/editors/NaiveH6Editor.vue',
-  ),
+  heading(1, 'i-lucide-heading-1', 'fieldProps.tooltip.naiveH1', '@/components/sidebar-right/edits/editors/NaiveH1Editor.vue'),
+  heading(2, 'i-lucide-heading-2', 'fieldProps.tooltip.naiveH2', '@/components/sidebar-right/edits/editors/NaiveH2Editor.vue'),
+  heading(3, 'i-lucide-heading-3', 'fieldProps.tooltip.naiveH3', '@/components/sidebar-right/edits/editors/NaiveH3Editor.vue'),
+  heading(4, 'i-lucide-heading-4', 'fieldProps.tooltip.naiveH4', '@/components/sidebar-right/edits/editors/NaiveH4Editor.vue'),
+  heading(5, 'i-lucide-heading-5', 'fieldProps.tooltip.naiveH5', '@/components/sidebar-right/edits/editors/NaiveH5Editor.vue'),
+  heading(6, 'i-lucide-heading-6', 'fieldProps.tooltip.naiveH6', '@/components/sidebar-right/edits/editors/NaiveH6Editor.vue'),
   {
     type: 'naiveUl',
     category: 'static',
     icon: 'i-lucide-list',
     tooltipKey: 'fieldProps.tooltip.naiveUl',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveUlEditor.vue'),
-    formkit: { component: NaiveTypographyUl, libraryName: 'NaiveTypographyUl' },
     schema: {
-      $cmp: 'NaiveTypographyUl',
+      renderAs: 'cmp',
       outerClass: 'col-span-12',
       options: ['Item 1', 'Item 2', 'Item 3'],
       nameKey: 'elements.naiveUl.name',
       descriptionKey: 'elements.naiveUl.description',
-      id: 'naive_ul_static',
     },
   },
   {
@@ -243,14 +180,12 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-list',
     tooltipKey: 'fieldProps.tooltip.naiveOl',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveOlEditor.vue'),
-    formkit: { component: NaiveTypographyOl, libraryName: 'NaiveTypographyOl' },
     schema: {
-      $cmp: 'NaiveTypographyOl',
+      renderAs: 'cmp',
       outerClass: 'col-span-12',
       options: ['Item 1', 'Item 2', 'Item 3'],
       nameKey: 'elements.naiveOl.name',
       descriptionKey: 'elements.naiveOl.description',
-      id: 'naive_ol_static',
     },
   },
   {
@@ -259,14 +194,12 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-list',
     tooltipKey: 'fieldProps.tooltip.naiveLi',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveLiEditor.vue'),
-    formkit: { component: NaiveTypographyLi, libraryName: 'NaiveTypographyLi' },
     schema: {
-      $cmp: 'NaiveTypographyLi',
+      renderAs: 'cmp',
       outerClass: 'col-span-12',
       value: 'List Item',
       nameKey: 'elements.naiveLi.name',
       descriptionKey: 'elements.naiveLi.description',
-      id: 'naive_li_static',
     },
   },
   {
@@ -275,9 +208,8 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-sliders-horizontal',
     tooltipKey: 'fieldProps.tooltip.naiveDivider',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveDividerEditor.vue'),
-    formkit: { component: NaiveDivider, libraryName: 'NaiveDivider' },
     schema: {
-      $cmp: 'NaiveDivider',
+      renderAs: 'cmp',
       outerClass: 'col-span-12',
       props: {
         title: 'Divider',
@@ -287,7 +219,6 @@ export const staticElements: ElementDefinition[] = [
       },
       nameKey: 'elements.naiveDivider.name',
       descriptionKey: 'elements.naiveDivider.description',
-      id: 'naive_divider_static',
     },
   },
   {
@@ -296,14 +227,13 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-triangle-alert',
     tooltipKey: 'fieldProps.tooltip.naiveAlert',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveAlertEditor.vue'),
-    formkit: { component: NaiveAlert, libraryName: 'NaiveAlert' },
     schema: {
-      $cmp: 'NaiveAlert',
+      renderAs: 'cmp',
       outerClass: 'col-span-12',
       props: {
         title: 'Title',
         content: 'Alert',
-        type: 'default',
+        theme: 'default',
         closable: false,
         bordered: false,
         showIcon: true,
@@ -311,7 +241,6 @@ export const staticElements: ElementDefinition[] = [
       nameKey: 'elements.naiveAlert.name',
       labelKey: 'elements.naiveAlert.label',
       descriptionKey: 'elements.naiveAlert.description',
-      id: 'naive_alert_static',
     },
   },
   {
@@ -320,9 +249,8 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-arrow-up-to-line',
     tooltipKey: 'fieldProps.tooltip.naiveBackTop',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveBackTopEditor.vue'),
-    formkit: { component: NaiveBackTop, libraryName: 'NaiveBackTop' },
     schema: {
-      $cmp: 'NaiveBackTop',
+      renderAs: 'cmp',
       outerClass: 'col-span-12',
       props: {
         show: true,
@@ -332,7 +260,6 @@ export const staticElements: ElementDefinition[] = [
       },
       nameKey: 'elements.naiveBackTop.name',
       descriptionKey: 'elements.naiveBackTop.description',
-      id: 'naive_back_top_static',
     },
   },
 ]

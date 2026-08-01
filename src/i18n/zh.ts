@@ -132,6 +132,12 @@ export default {
     maxLabel: '最大值',
   },
   edits: {
+    content: {
+      text: '内容',
+      title: '标题',
+      content: '内容',
+    },
+    inlineEditHint: '双击编辑内容',
     placeholder: {
       label: '请输入 Label',
       help: '请输入帮助文本',
@@ -188,7 +194,8 @@ export default {
   fieldProps: {
     category: {
       fields: '字段',
-      structure: '结构',
+      containers: '容器',
+      layouts: '布局',
       static: '静态',
     },
     tooltip: {

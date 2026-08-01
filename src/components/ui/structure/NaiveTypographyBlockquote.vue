@@ -3,6 +3,7 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NBlockquote } from 'naive-ui'
 import { computed } from 'vue'
 import { getSchemaProps } from './schema-props'
+import InlineEditableText from '../formkit/InlineEditableText.vue'
 
 const props = defineProps<{
   context: FormKitFrameworkContext
@@ -18,5 +19,7 @@ const text = computed(() => {
 </script>
 
 <template>
-  <NBlockquote>{{ text }}</NBlockquote>
+  <NBlockquote>
+    <InlineEditableText :context="props.context" prop-key="text" :value="text" />
+  </NBlockquote>
 </template>

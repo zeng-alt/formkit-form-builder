@@ -287,7 +287,7 @@ const visibleValidations = computed(() => {
 </script>
 
 <template>
-  <div v-if="(selectedField as any)?.$formkit !== 'submit'">
+  <div v-if="selectedField?.type !== 'submit'">
     <span class="text-sm">{{ t('validation.rulesTitle') }}</span>
   </div>
 

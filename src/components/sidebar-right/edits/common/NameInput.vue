@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { fieldProps } from '@/elements'
-import { useFormField, selectedField } from '@/composables/form-fields'
-import { formSchema, selectedKey } from '@/state/form-schema'
+import { useFormField } from '@/composables/form-fields'
+import { formSchema, selectedIndex, selectedKey } from '@/state/form-schema'
 import { useFormBuilderI18n } from '@/i18n/context'
 import TextInput from './TextInput.vue'
 
@@ -12,18 +12,19 @@ const { t } = useFormBuilderI18n()
 const isFieldsCategory = computed(() => {
   if (!currentFieldType.value) return false
   const prop = fieldProps.find((p) => p.name === currentFieldType.value)
-  return (prop?.category || 'fields') === 'fields'
+  return (prop?.category || 'field') === 'field'
 })
 
 const currentFieldKey = computed(() => selectedKey.value ?? undefined)
 
 const isNameTaken = (name: string) => {
+  const currentIndex = selectedIndex.value
   const walk = (schema: any[]): boolean => {
     for (const field of schema) {
       if (field?.name === name) {
         const key = field?.__key as string | undefined
         if (currentFieldKey.value && key && key !== currentFieldKey.value) return true
-        if (!currentFieldKey.value && field !== selectedField.value) return true
+        if (!currentFieldKey.value && field !== formSchema.value[currentIndex]) return true
       }
       if (Array.isArray(field?.children) && walk(field.children)) return true
     }

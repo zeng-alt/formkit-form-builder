@@ -48,6 +48,63 @@ export function dslToSchema(form: FormDefinition): FormKitSchemaFormKit[] {
   return [formNode as FormKitSchemaFormKit]
 }
 
+/** 公开 API：将 DSL 转为含 Group 包裹的 FormKit schema，子节点嵌套为 JSON object 数据 */
+export function dslToOutputSchema(form: FormDefinition): FormKitSchemaFormKit[] {
+  const raw = dslToSchema(form)
+  const wrapped = raw.map((node) => wrapFormChildren(node))
+  return wrapped
+}
+
+/** 将表单 children 中的容器/布局节点包裹在 $formkit: 'group' 中 */
+function wrapFormChildren(schemaNode: FormKitSchemaFormKit): FormKitSchemaFormKit {
+  const n: any = schemaNode as any
+  if (!n || typeof n !== 'object') return schemaNode
+  if (Array.isArray(n.children)) {
+    n.children = n.children.map((child: any) => wrapNodeWithGroup(child))
+  }
+  return schemaNode
+}
+
+function wrapNodeWithGroup(node: any): any {
+  if (!node || typeof node !== 'object') return node
+
+  // 递归处理子节点
+  if (Array.isArray(node.children)) {
+    node.children = node.children.map((c: any) => wrapNodeWithGroup(c))
+  }
+
+  // 跳过已包裹的节点
+  if (node.$formkit === 'group' || node.$formkit === 'form' || node.$formkit === 'list') return node
+  if (node.$formkit === 'submit' || node.$formkit === 'reset') return node
+
+  const hasChildren = Array.isArray(node.children) && node.children.length > 0
+  const isContainerOrLayout =
+    (typeof node.$cmp === 'string' && node.$cmp !== '') || (typeof node.$el === 'string' && hasChildren)
+  if (!isContainerOrLayout) return node
+
+  const nodeName = node.props?.name ?? node.name
+  const original = { ...node }
+  // 容器/布局自身不再携带 name（由外层 group 提供）
+  if (original.props && original.props.name) delete original.props.name
+  delete original.name
+  const outerClass = original.outerClass
+  delete original.outerClass
+
+  const group: any = {
+    $formkit: 'group',
+    children: [original],
+    outerClass: [
+      outerClass || 'col-span-12',
+      '!border-0', '!p-0', '!m-0',
+      '[&>.formkit-wrapper]:!border-0', '[&>.formkit-wrapper]:!p-0', '[&>.formkit-wrapper]:!m-0',
+      '[&>.formkit-wrapper>fieldset]:!border-0', '[&>.formkit-wrapper>fieldset]:!p-0', '[&>.formkit-wrapper>fieldset]:!m-0',
+    ].join(' '),
+  }
+  if (typeof nodeName === 'string' && nodeName.trim()) group.name = nodeName
+
+  return group
+}
+
 export interface SchemaToDslOptions {
   id?: string
   name?: string
@@ -95,6 +152,7 @@ export function schemaToDsl(
       id: 'root',
       category: 'container',
       type: 'group',
+      renderAs: 'formkit',
       dataType: 'object',
       children: children.map(convert),
     },

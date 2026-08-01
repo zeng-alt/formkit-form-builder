@@ -1,24 +1,15 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
-import { useFormBuilderI18n } from '../../../../i18n/context'
 import TextInput from '../common/TextInput.vue'
 import SelectInput from '../common/SelectInput.vue'
 
 const { createPropsProp } = useFormField()
-const { t } = useFormBuilderI18n()
 
-const typographyText = createPropsProp<string>('text', 'text')
 const linkHref = createPropsProp<string>('href', 'https://www.example.com')
 const linkTarget = createPropsProp<string>('target', '_blank')
 </script>
 
 <template>
-  <TextInput
-    label="text"
-    :placeholder="t('edits.placeholder.text')"
-    :value="typographyText"
-    @update:value="(v) => (typographyText = v)"
-  />
   <TextInput
     label="href"
     placeholder="https://..."

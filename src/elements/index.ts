@@ -1,29 +1,34 @@
-// 元素注册中心：集中管理所有可拖拽元素（字段 / 容器 / 静态展示）。
-// 新增元素只需在 definitions/ 中添加一条 ElementDefinition，即可同时驱动：
-//   - 左侧元素面板（icon / tooltip / category / 默认 schema）
-//   - 画布渲染（formkit input 注册）
-//   - 右侧属性编辑面板（editor）
-import { fieldElements } from './definitions/fields'
-import { staticElements } from './definitions/static'
-import { containerElements } from './definitions/containers'
-import { registerElements } from './registry'
-
-registerElements([...fieldElements, ...staticElements, ...containerElements])
-
+// 元素注册中心：统一 DSL 注册表（src/dsl/registry.ts）之上的公共访问层。
+// 元素目录（elements/definitions/*）为纯数据，经 dsl/definitions.ts 注册；
+// 渲染层绑定：formkit.ts（字段/静态组件）、canvas.ts（容器画布/预览）。
 export * from './types'
 export * from './constants'
 export {
-  registerElement,
-  registerElements,
   getElementDefinition,
   getElementDefinitions,
   getFieldEditorComponent,
   createFieldProps,
   fieldProps,
   createDefaultFormElements,
+  getElementTypeBySchema,
+} from './registry'
+export {
   buildFormkitInputs,
   buildElementSchemaLibrary,
   getElementCmpName,
-  getElementTypeBySchema,
+  registerFormkitBinding,
+  getFormkitBinding,
   SHARED_FORMKIT_PROPS,
-} from './registry'
+  BUTTON_PROPS,
+  formkitBindings,
+} from './formkit'
+export {
+  getContainerDefinition,
+  normalizeContainerNode,
+  formatContainerPreviewNode,
+  getCanvasSchemaLibrary,
+  getPreviewSchemaLibrary,
+  registerContainerDefinition,
+} from './canvas'
+export type { ContainerDefinition, ContainerFormatCtx } from './canvas'
+export type { FormkitBinding } from './formkit'

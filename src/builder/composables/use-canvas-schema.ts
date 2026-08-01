@@ -9,7 +9,7 @@ import { commitSchemaReconcile } from '@/composables/schema-history'
 import { findNodeByKey, updateAtPath } from '@/utils/schema/tree'
 import { canvasSchemaLibrary } from '@/builder/containers'
 import { createDefaultInsertPointElement } from '@/utils/dnd/insert-point-element'
-import { collectSchemaNames, ensureUniqueName, generateKey, toSafeName } from '@/utils/dnd/schema'
+import { collectSchemaNames, generateKey, generateNextFieldName } from '@/utils/dnd/schema'
 import { toCanvasSchemaNode } from '@/utils/canvas-schema'
 import { normalizeContainerNode } from '@/containers/registry'
 import { provideCanvasSchemaContext } from './canvas-schema-context'
@@ -60,9 +60,8 @@ export function useCanvasSchema() {
         return node
       }
       const nextKey = generateKey()
-      const base = toSafeName(node.$formkit || node.name || 'field')
       const nextName =
-        node.$formkit === 'submit' ? node.name : ensureUniqueName(base, existingNames)
+        node.$formkit === 'submit' ? node.name : generateNextFieldName(existingNames)
       const next: any =
         node.$formkit === 'submit'
           ? { ...node, __key: nextKey, outerClass: node.outerClass || 'col-span-12 pt-2' }
@@ -71,6 +70,15 @@ export function useCanvasSchema() {
               __key: nextKey,
               name: nextName,
               id: `field_${nextKey}`,
+              // $cmp 节点的语义 name 在 props.name（DSL 回读取 props），顶层 name 仅画布展示
+              ...(typeof node.$cmp === 'string'
+                ? {
+                    props:
+                      node.props && typeof node.props === 'object'
+                        ? { ...node.props, name: nextName }
+                        : { name: nextName },
+                  }
+                : {}),
               outerClass: node.outerClass || 'col-span-12',
             }
       if (Array.isArray(node.children))
@@ -136,6 +144,20 @@ export function useCanvasSchema() {
     selectedTarget.value = 'field'
     selectedIndex.value = found.rootIndex
     selectedKey.value = key
+  }
+
+  // ── 画布内联编辑写回（静态元素 text 内容等）─────────────────────────────────
+  const updateNodePropsByKey = (key: string, props: Record<string, unknown>) => {
+    const found = findNodeByKey(formSchema.value as unknown[], key)
+    if (!found) return
+    const node: any = { ...(found.node as any) }
+    node.props = { ...node.props, ...props }
+    const nextSchema = updateAtPath(
+      formSchema.value as unknown[],
+      found.path,
+      node,
+    ) as FormKitSchemaFormKit[]
+    commitSchemaReconcile(nextSchema, { reason: 'inline-edit', merge: true })
   }
 
   // ── 根级 DnD ────────────────────────────────────────────────────────────────
@@ -207,6 +229,7 @@ export function useCanvasSchema() {
     renderNode: renderCanvasSchemaNode,
     updateContainerChildren,
     selectByKey,
+    updateNodePropsByKey,
   })
 
   return {

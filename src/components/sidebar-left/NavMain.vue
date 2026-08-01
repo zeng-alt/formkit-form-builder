@@ -7,7 +7,6 @@ import { getElementTypeBySchema } from '@/elements'
 import DraggableList from './DraggableList.vue'
 import { useFormBuilderI18n } from '../../i18n/context'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { getContainerKind } from '../../utils/schema/containers'
 
 const searchInput = inject('searchInput', ref(''))
 const collapsed = inject('sidebarCollapsed', ref(false)) as Ref<boolean>
@@ -31,28 +30,27 @@ const filteredFormElements = computed(() => {
   )
 })
 
-type ElementCategory = 'fields' | 'structure' | 'static'
+type ElementCategory = 'field' | 'container' | 'layout' | 'static'
 
 const categories = computed<{ id: ElementCategory; label: string }[]>(() => [
-  { id: 'fields', label: t('fieldProps.category.fields') },
-  { id: 'structure', label: t('fieldProps.category.structure') },
+  { id: 'field', label: t('fieldProps.category.fields') },
+  { id: 'container', label: t('fieldProps.category.containers') },
+  { id: 'layout', label: t('fieldProps.category.layouts') },
   { id: 'static', label: t('fieldProps.category.static') },
 ])
 
 const groupedElements = computed(() => {
   const groups: Record<ElementCategory, FormKitSchemaFormKit[]> = {
-    fields: [],
-    structure: [],
+    field: [],
+    container: [],
+    layout: [],
     static: [],
   }
 
   filteredFormElements.value.forEach((item) => {
-    const kind = getContainerKind(item)
-    const typeName = kind
-      ? kind
-      : (getElementTypeBySchema(item) ?? String((item as any).$formkit ?? (item as any).$cmp ?? ''))
+    const typeName = getElementTypeBySchema(item) ?? String((item as any).$formkit ?? (item as any).$cmp ?? '')
     const prop = fieldProps.value.find((p) => p.name === typeName)
-    const category = (prop?.category || 'fields') as ElementCategory
+    const category = (prop?.category || 'field') as ElementCategory
     if (groups[category]) {
       groups[category].push(item)
     }

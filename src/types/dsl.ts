@@ -2,11 +2,16 @@
 // 语义化、版本化、JSON-safe 的表单描述，与 FormKit 渲染层完全解耦。
 // 后端（如 Java）可直接反序列化：version 用于兼容迁移，category 用于多态判别。
 
-export const DSL_VERSION = 1
+export const DSL_VERSION = 2
 
 // ─── 语义分层标识 ───────────────────────────────────────────────────────────────
 // 替代旧的 kind: 'formkit' | 'cmp' | 'el' 与 form: 'field' | 'container' | 'static'
 export type NodeCategory = 'field' | 'container' | 'layout' | 'static'
+
+// ─── 渲染原语 ──────────────────────────────────────────────────────────────────
+// 每个节点显式声明它对应 FormKit schema 的哪种原语，toSchema 时据此产出
+// $formkit / $cmp / $el 节点；字段 / 容器 / 静态展示均可使用任意一种。
+export type RenderKind = 'formkit' | 'cmp' | 'el'
 
 // ─── 可移植表达式 AST（JSON-safe，Java 可解析/生成/校验）────────────────────────
 export type StaticValue = any
@@ -99,6 +104,10 @@ export interface BaseNode {
   /** 组件类型标识（见注册表：field / container / layout / static 各自的 type） */
   type: string
   category: NodeCategory
+  /** 渲染原语：formkit → $formkit: type；cmp → $cmp: target；el → $el: target */
+  renderAs: RenderKind
+  /** 渲染目标：renderAs='cmp' 时为 $cmp 组件名，'el' 时为标签名；'formkit' 时缺省即 type */
+  target?: string
   /** 类型级扩展点：各 type 专有属性 */
   props?: Record<string, unknown>
   /** 条件显示：布尔表达式 AST */

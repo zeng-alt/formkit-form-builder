@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
 import { computed } from 'vue'
-import { useFormBuilderI18n } from '../../../../i18n/context'
-import TextInput from '../common/TextInput.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 
 const { createPropsProp } = useFormField()
-const { t } = useFormBuilderI18n()
 
-const typoType = createPropsProp<string>('type', 'default')
+const typoTheme = createPropsProp<string>('theme', 'default')
 const typoDepthRaw = createPropsProp<unknown>('depth', 1)
 const typoDepth = computed({
   get: () => {
@@ -28,19 +25,12 @@ const typoItalic = createPropsProp<boolean>('italic', false)
 const typoUnderline = createPropsProp<boolean>('underline', false)
 const typoDelete = createPropsProp<boolean>('delete', false)
 const typoCode = createPropsProp<boolean>('code', false)
-const typographyText = createPropsProp<string>('text', 'text')
 </script>
 
 <template>
-  <TextInput
-    label="text"
-    :placeholder="t('edits.placeholder.text')"
-    :value="typographyText"
-    @update:value="(v) => (typographyText = v)"
-  />
   <SelectInput
-    label="type"
-    :value="typoType"
+    label="theme"
+    :value="typoTheme"
     :options="[
       { label: 'default', value: 'default' },
       { label: 'primary', value: 'primary' },
@@ -49,7 +39,7 @@ const typographyText = createPropsProp<string>('text', 'text')
       { label: 'warning', value: 'warning' },
       { label: 'error', value: 'error' },
     ]"
-    @update:value="(v) => (typoType = v)"
+    @update:value="(v) => (typoTheme = v)"
   />
   <SelectInput
     label="depth"

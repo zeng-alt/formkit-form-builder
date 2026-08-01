@@ -1,80 +1,73 @@
 import type { ElementDefinition } from '../types'
 
-// 容器结构元素（$cmp 渲染，通过 containers/registry 的 schemaLibrary 映射到画布/预览组件）
+// 纯数据目录：不 import 任何 .vue。容器画布/预览组件绑定在 elements/canvas.ts（按 type 索引）。
+// list/inputGroup 归类 container（数据结构），card/tabs 归类 layout（纯布局）。
+// 画布组件需要的 listKey/cardKey/modelValue 等内部键由 canvas normalize / toSchema 生成，不入模板。
+
 export const containerElements: ElementDefinition[] = [
   {
     type: 'list',
-    category: 'structure',
+    category: 'container',
     icon: 'i-lucide-list-tree',
     tooltipKey: 'fieldProps.tooltip.list',
     editor: () => import('@/components/sidebar-right/edits/editors/GroupEditor.vue'),
     schema: {
-      $cmp: 'list',
+      renderAs: 'cmp',
       nameKey: 'elements.list.name',
       labelKey: 'elements.list.label',
-      id: 'list_field',
       outerClass: 'col-span-12',
+      props: { showActions: false },
       descriptionKey: 'elements.list.description',
-      children: [],
-      props: { showActions: false, modelValue: [], listKey: '' },
+    },
+  },
+  {
+    type: 'inputGroup',
+    category: 'container',
+    icon: 'i-lucide-align-horizontal-justify-start',
+    tooltipKey: 'fieldProps.tooltip.inputGroup',
+    editor: () => import('@/components/sidebar-right/edits/editors/InputGroupEditor.vue'),
+    schema: {
+      renderAs: 'cmp',
+      nameKey: 'elements.inputGroup.name',
+      labelKey: 'elements.inputGroup.label',
+      outerClass: 'col-span-12',
+      props: {},
+      descriptionKey: 'elements.inputGroup.description',
     },
   },
   {
     type: 'card',
-    category: 'structure',
+    category: 'layout',
     icon: 'i-lucide-credit-card',
     tooltipKey: 'fieldProps.tooltip.card',
     editor: () => import('@/components/sidebar-right/edits/editors/CardEditor.vue'),
     schema: {
-      $cmp: 'card',
+      renderAs: 'cmp',
       nameKey: 'elements.card.name',
       labelKey: 'elements.card.label',
-      id: 'card_container',
       outerClass: 'col-span-12',
       props: {
         size: 'medium',
         bordered: true,
         embedded: false,
         hoverable: false,
-        modelValue: [],
-        cardKey: '',
       },
       descriptionKey: 'elements.card.description',
-      children: [],
-    },
-  },
-  {
-    type: 'inputGroup',
-    category: 'structure',
-    icon: 'i-lucide-align-horizontal-justify-start',
-    tooltipKey: 'fieldProps.tooltip.inputGroup',
-    editor: () => import('@/components/sidebar-right/edits/editors/InputGroupEditor.vue'),
-    schema: {
-      $cmp: 'inputGroup',
-      nameKey: 'elements.inputGroup.name',
-      labelKey: 'elements.inputGroup.label',
-      id: 'input_group_container',
-      outerClass: 'col-span-12',
-      props: { modelValue: [], inputGroupKey: '' },
-      descriptionKey: 'elements.inputGroup.description',
-      children: [],
     },
   },
   {
     type: 'tabs',
-    category: 'structure',
+    category: 'layout',
     icon: 'i-lucide-panel-top',
     tooltipKey: 'fieldProps.tooltip.tabs',
     editor: () => import('@/components/sidebar-right/edits/editors/TabsEditor.vue'),
     schema: {
-      $cmp: 'tabs',
+      renderAs: 'cmp',
       nameKey: 'elements.tabs.name',
       labelKey: 'elements.tabs.label',
-      id: 'tabs_container',
       outerClass: 'col-span-12',
-      props: { modelValue: [], tabsKey: '' },
+      props: {},
       descriptionKey: 'elements.tabs.description',
-      children: [],
     },
   },
 ]

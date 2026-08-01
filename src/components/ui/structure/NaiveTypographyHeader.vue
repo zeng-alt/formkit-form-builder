@@ -3,6 +3,7 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NH1, NH2, NH3, NH4, NH5, NH6 } from 'naive-ui'
 import { computed } from 'vue'
 import { getSchemaProps } from './schema-props'
+import InlineEditableText from '../formkit/InlineEditableText.vue'
 
 const props = defineProps<{
   context: FormKitFrameworkContext
@@ -28,5 +29,7 @@ const HeaderCmp = computed(() => {
 </script>
 
 <template>
-  <component :is="HeaderCmp">{{ text }}</component>
+  <component :is="HeaderCmp">
+    <InlineEditableText :context="props.context" prop-key="text" :value="text" />
+  </component>
 </template>

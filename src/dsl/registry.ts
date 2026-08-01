@@ -3,190 +3,416 @@
 //   - DSL → FormKit schema（toSchema）
 //   - FormKit schema → DSL（match + fromSchema）
 //   - 新建节点的默认 DSL（defaults）
-//   - 画布 / 预览 / 右侧编辑器（canvas / preview / editor）
+// 画布/预览组件与 FormKit input 绑定属于渲染层，见 src/elements/（keyed by type），
+// 本模块保持纯净（不含 .vue），保证 test-dsl 等纯 DSL 消费方可直接使用。
 
-import type { Component } from 'vue'
-import type { FormNode, NodeCategory, FormDefinition, LayoutType } from '../types/dsl'
-import { generateKey } from '../utils/dnd/schema'
+import type { Component } from "vue";
+import type {
+  FormNode,
+  NodeCategory,
+  FormDefinition,
+  LayoutType,
+  LayoutNode,
+  RenderKind,
+} from "../types/dsl";
+import { generateKey } from "../utils/dnd/schema";
 import {
-  fieldNodeToSchema,
-  fieldNodeFromSchema,
-  containerNodeToSchema,
-  containerNodeFromSchema,
-  layoutNodeToSchema,
-  layoutNodeFromSchema,
-  staticNodeToSchema,
-  staticNodeFromSchema,
+  nodeToSchemaByCategory,
+  nodeFromSchemaByCategory,
+  matchSchemaKind,
   tabsPaneToSchema,
   tabsPaneFromSchema,
+  parseValidation,
   type SchemaNode,
   type ChildrenConvertCtx,
-} from './convert-common'
+  type RenderTarget,
+} from "./convert-common";
 
 export interface DslToSchemaCtx {
-  form?: FormDefinition
-  children?: SchemaNode[]
+  form?: FormDefinition;
+  children?: SchemaNode[];
+}
+
+/** 元素默认模板（DSL 形态，纯数据）：palette 建节点 / 画布默认 schema 的唯一来源 */
+export interface ElementTemplate {
+  renderAs: RenderKind;
+  /** $cmp 组件名 / $el 标签名；缺省即 type（el 的 HTML 标签通常需要显式指定） */
+  target?: string;
+  /** 组件配置（$cmp/$el 收进 props/attrs；formkit 时按 FIELD_TOP_PROPS 拆分） */
+  props?: Record<string, unknown>;
+  outerClass?: string;
+  nameKey: string;
+  labelKey?: string;
+  placeholderKey?: string;
+  helpKey?: string;
+  descriptionKey: string;
+  value?: unknown;
+  options?: unknown[];
+  validation?: string;
+  /** 自定义 DSL→schema；缺省按 category+renderAs 走内置转换 */
+  toSchema?: (node: FormNode, ctx: DslToSchemaCtx) => SchemaNode;
+  /** 自定义 schema→DSL；缺省按 category 走内置转换 */
+  fromSchema?: (schema: SchemaNode, ctx: ChildrenConvertCtx) => FormNode | null;
+  /** 自定义反向识别；缺省按 renderAs+type 推断（含 legacy $cmp 别名） */
+  match?: (schema: SchemaNode) => boolean;
+}
+
+/** 元素目录条目（elements/definitions/* 的纯数据形态，注册表据此派生 ElementTypeDef） */
+export interface ElementCatalogEntry {
+  type: string;
+  category: NodeCategory;
+  icon?: string;
+  tooltipKey?: string;
+  editor?: () => Promise<{ default: Component }>;
+  schema: ElementTemplate;
 }
 
 export interface ElementTypeDef {
-  type: string
-  category: NodeCategory
-  /** $cmp 组件名：toSchema 时输出 $cmp: '<cmp>'（空则输出 $formkit: type） */
-  cmp?: string
+  type: string;
+  category: NodeCategory;
+  /** 渲染原语 */
+  renderAs: RenderKind;
+  /** $cmp 组件名 / $el 标签名 */
+  target?: string;
+  /** 默认模板（palette / 新建节点） */
+  template?: ElementTemplate;
   /** 新建节点默认 DSL */
-  defaults: () => FormNode
-  toSchema: (node: FormNode, ctx: DslToSchemaCtx) => SchemaNode
+  defaults: () => FormNode;
+  toSchema: (node: FormNode, ctx: DslToSchemaCtx) => SchemaNode;
   /** 反向识别：schema 是否属于该类型 */
-  match?: (schema: SchemaNode) => boolean
-  fromSchema?: (schema: SchemaNode, ctx: ChildrenConvertCtx) => FormNode | null
-  normalize?: (schema: SchemaNode) => SchemaNode
-  /** 画布容器组件 */
-  canvas?: { libraryKey: string; component: Component }
-  /** 预览容器组件 */
-  preview?: { libraryKey: string; component: Component }
-  editor?: () => Promise<{ default: Component }>
-  icon?: string
-  tooltipKey?: string
+  match?: (schema: SchemaNode) => boolean;
+  fromSchema?: (schema: SchemaNode, ctx: ChildrenConvertCtx) => FormNode | null;
+  normalize?: (schema: SchemaNode) => SchemaNode;
+  editor?: () => Promise<{ default: Component }>;
+  icon?: string;
+  tooltipKey?: string;
 }
 
-const defs = new Map<string, ElementTypeDef>()
+const defs = new Map<string, ElementTypeDef>();
 
-export function registerElementType(def: ElementTypeDef): void {
+export function registerElementType(def: ElementTypeDef, overwrite = false): void {
   if (defs.has(def.type)) {
-    throw new Error(`[formkit-form-builder] DSL 元素类型 "${def.type}" 重复注册`)
+    if (!overwrite) {
+      throw new Error(`[formkit-form-builder] DSL 元素类型 "${def.type}" 重复注册`);
+    }
+    defs.delete(def.type);
   }
-  defs.set(def.type, def)
+  defs.set(def.type, def);
 }
 
 export function getElementTypeDef(type: string | undefined): ElementTypeDef | undefined {
-  if (!type) return undefined
-  return defs.get(type)
+  if (!type) return undefined;
+  return defs.get(type);
 }
 
 export function getElementTypeDefs(): ElementTypeDef[] {
-  return Array.from(defs.values())
+  return Array.from(defs.values());
+}
+
+// ─── legacy $cmp 别名（$cmp = type 统一前的旧 schema 兼容）─────────────────────
+// 旧版本内置元素以 Naive* 组件名作为 $cmp；统一为 type 后仍需识别旧数据。
+const LEGACY_CMP_TYPE: Record<string, string> = {
+  NaiveTextInput: "text",
+  NaiveTextarea: "textarea",
+  NaiveEmailInput: "email",
+  NaiveNumberInput: "number",
+  NaiveUrlInput: "url",
+  NaiveCheckboxGroup: "checkbox",
+  NaiveColorPicker: "color",
+  NaiveDatePicker: "date",
+  NaiveTimePicker: "time",
+  NaiveDateTimePicker: "naiveDateTime",
+  NaiveUpload: "file",
+  NaivePasswordInput: "password",
+  NaiveRadioGroup: "radio",
+  NaiveSlider: "range",
+  NaiveSelect: "select",
+  NaiveCascader: "naiveCascader",
+  NaiveTreeSelect: "naiveTreeSelect",
+  NaiveMention: "naiveMention",
+  NaiveRate: "naiveRate",
+  NaiveSwitch: "naiveSwitch",
+  NaiveAvatar: "naiveAvatar",
+  NaiveImage: "naiveImage",
+  NaiveTelInput: "tel",
+  NaiveSubmit: "submit",
+  NaiveReset: "reset",
+  NaiveButton: "naiveButton",
+  NaiveTypographyText: "naiveText",
+  NaiveTypographyP: "naiveP",
+  NaiveTypographyA: "naiveA",
+  NaiveTypographyBlockquote: "naiveBlockquote",
+  NaiveH1: "naiveH1",
+  NaiveH2: "naiveH2",
+  NaiveH3: "naiveH3",
+  NaiveH4: "naiveH4",
+  NaiveH5: "naiveH5",
+  NaiveH6: "naiveH6",
+  NaiveTypographyUl: "naiveUl",
+  NaiveTypographyOl: "naiveOl",
+  NaiveTypographyLi: "naiveLi",
+  NaiveDivider: "naiveDivider",
+  NaiveAlert: "naiveAlert",
+  NaiveBackTop: "naiveBackTop",
+};
+
+/** schema 节点的 legacy $cmp 名 → 统一后的 type */
+function legacyCmpTypeOf(s: SchemaNode): string | undefined {
+  const cmp = (s as any)?.$cmp;
+  if (typeof cmp !== "string") return undefined;
+  return LEGACY_CMP_TYPE[cmp];
+}
+
+// ─── 渲染原语构造 ───────────────────────────────────────────────────────────────
+
+/** cmp 提示 → RenderTarget；target 缺省 = type（type+renderAs 组合，无需显式 target） */
+function rtOf(
+  cmp: string | undefined,
+  type: string,
+  fallbackKind: RenderKind,
+  target?: string,
+): RenderTarget {
+  const resolved = target ?? cmp ?? type;
+  return cmp ? { renderAs: "cmp", target: resolved } : { renderAs: fallbackKind, target: resolved };
+}
+
+// ─── 从纯数据目录派生（elements/definitions/* 的注册入口）──────────────────────
+
+export function elementTypeFromSchema(entry: ElementCatalogEntry): ElementTypeDef {
+  const { type, category, schema } = entry;
+  // target 缺省 = type：renderAs + type 即可决定 $formkit/$cmp/$el
+  const rt: RenderTarget = {
+    renderAs: schema.renderAs,
+    target: schema.target ?? type,
+  };
+  return {
+    type,
+    category,
+    renderAs: rt.renderAs,
+    target: rt.target,
+    template: schema,
+    icon: entry.icon,
+    tooltipKey: entry.tooltipKey,
+    editor: entry.editor,
+    defaults: () => defaultFormNode(entry),
+    toSchema: schema.toSchema ?? ((node, ctx) => nodeToSchemaByCategory(node, category, rt, ctx)),
+    // 兼容 $formkit === type 与 legacy $cmp 名（如 NaiveTextInput → text）
+    match:
+      schema.match ??
+      ((s) =>
+        matchSchemaKind(s, rt) || (s as any).$formkit === type || legacyCmpTypeOf(s) === type),
+    fromSchema: schema.fromSchema ?? ((s, ctx) => nodeFromSchemaByCategory(s, category, ctx, type)),
+  };
+}
+
+function defaultFormNode(entry: ElementCatalogEntry): FormNode {
+  const { type, category, schema } = entry;
+  const base: any = {
+    id: generateKey(),
+    category,
+    type,
+    renderAs: schema.renderAs,
+  };
+  if (schema.target && schema.target !== type) base.target = schema.target;
+  if (schema.outerClass) base.outerClass = schema.outerClass;
+
+  const props = { ...schema.props };
+  if (category === "field") {
+    if (schema.value !== undefined) base.value = schema.value;
+    if (Array.isArray(schema.options)) base.options = schema.options;
+    const rules = parseValidation(schema.validation);
+    if (rules?.length) base.validation = rules;
+  } else {
+    if (schema.value !== undefined) props.value = schema.value;
+    if (schema.options !== undefined) props.options = schema.options;
+  }
+  if (Object.keys(props).length) base.props = props;
+  if (category === "container" || category === "layout") base.children = [];
+  return base as FormNode;
 }
 
 // ─── 构造器：字段 ───────────────────────────────────────────────────────────────
 
-export function fieldType(type: string, extra?: Partial<ElementTypeDef>): ElementTypeDef {
-  const cmp = extra?.cmp
+export function fieldType(
+  type: string,
+  extra?: Partial<ElementTypeDef> & { cmp?: string; target?: string },
+): ElementTypeDef {
+  const rt = rtOf(extra?.cmp, type, "formkit", extra?.target);
   const def: ElementTypeDef = {
     type,
-    category: 'field',
-    defaults: () => ({ id: generateKey(), category: 'field', type }),
-    toSchema: (node, _ctx) => fieldNodeToSchema(node as never, cmp),
-    match: (s) => (s as any).$formkit === type || (cmp ? (s as any).$cmp === cmp : false),
-    fromSchema: (s) => fieldNodeFromSchema(s, type),
+    category: "field",
+    renderAs: rt.renderAs,
+    target: rt.target,
+    defaults: () => ({
+      id: generateKey(),
+      category: "field",
+      type,
+      renderAs: rt.renderAs,
+      ...(rt.target && rt.target !== type ? { target: rt.target } : {}),
+    }),
+    toSchema: (node) => nodeToSchemaByCategory(node, "field", rt, undefined),
+    match: (s) => matchSchemaKind(s, rt),
+    fromSchema: (s) => nodeFromSchemaByCategory(s, "field", undefined, type),
     ...extra,
-  }
-  return def
+  };
+  return def;
 }
 
 // ─── 构造器：容器 ───────────────────────────────────────────────────────────────
 
 export function containerType(
   type: string,
-  extra?: Partial<ElementTypeDef> & { dataType?: 'object' | 'array' },
+  extra?: Partial<ElementTypeDef> & {
+    dataType?: "object" | "array";
+    cmp?: string;
+    target?: string;
+  },
 ): ElementTypeDef {
-  const dataType = extra?.dataType ?? 'object'
+  const dataType = extra?.dataType ?? "object";
+  // group 走 $formkit，list/inputGroup 走 $cmp
+  const cmp = extra?.cmp;
+  const renderAs: RenderKind =
+    cmp != null || extra?.target != null || type === "list" || type === "inputGroup"
+      ? "cmp"
+      : "formkit";
+  const rt: RenderTarget = { renderAs, target: extra?.target ?? cmp ?? type };
   const def: ElementTypeDef = {
     type,
-    category: 'container',
+    category: "container",
+    renderAs: rt.renderAs,
+    target: rt.target,
     defaults: () => ({
       id: generateKey(),
-      category: 'container',
+      category: "container",
       type,
+      renderAs: rt.renderAs,
+      ...(rt.target && rt.target !== type ? { target: rt.target } : {}),
       dataType,
       children: [],
     }),
-    toSchema: (node, ctx) => containerNodeToSchema(node as never, ctx.children),
-    match: (s) => s.$formkit === type || s.$cmp === type,
-    fromSchema: (s, ctx) => containerNodeFromSchema(s, ctx),
+    toSchema: (node, ctx) => nodeToSchemaByCategory(node, "container", rt, ctx),
+    match: (s) => matchSchemaKind(s, rt) || (s as any).$cmp === type,
+    fromSchema: (s, ctx) => nodeFromSchemaByCategory(s, "container", ctx, type),
     ...extra,
-  }
-  return def
+  };
+  return def;
 }
 
 // ─── 构造器：布局 ───────────────────────────────────────────────────────────────
 
-export function layoutType(type: string, extra?: Partial<ElementTypeDef>): ElementTypeDef {
+export function layoutType(
+  type: string,
+  extra?: Partial<ElementTypeDef> & { cmp?: string; target?: string },
+): ElementTypeDef {
+  const cmp = extra?.cmp;
+  const rt: RenderTarget = {
+    renderAs: cmp != null || type === "card" || type === "tabs" ? "cmp" : "el",
+    target: extra?.target ?? cmp ?? type,
+  };
   const def: ElementTypeDef = {
     type,
-    category: 'layout',
+    category: "layout",
+    renderAs: rt.renderAs,
+    target: rt.target,
     defaults: () => ({
       id: generateKey(),
-      category: 'layout',
+      category: "layout",
       type: type as LayoutType,
+      renderAs: rt.renderAs,
+      ...(rt.target && rt.target !== type ? { target: rt.target } : {}),
       children: [],
     }),
-    toSchema: (node, ctx) => layoutNodeToSchema(node as never, ctx.children),
+    toSchema: (node, ctx) => nodeToSchemaByCategory(node, "layout", rt, ctx),
     match: (s) => {
-      const anyS: any = s
-      if (type === 'card') return anyS.$cmp === 'card' || anyS.$formkit === 'card'
-      if (type === 'tabs') return anyS.$cmp === 'tabs' || anyS.$formkit === 'tabs'
-      if (type === 'grid')
+      const anyS: any = s;
+      if (type === "card") return anyS.$cmp === "card" || anyS.$formkit === "card";
+      if (type === "tabs") return anyS.$cmp === "tabs" || anyS.$formkit === "tabs";
+      if (type === "grid")
         return (
-          anyS.$el === 'div' &&
-          typeof anyS.attrs?.class === 'string' &&
-          String(anyS.attrs.class).includes('grid-cols')
-        )
-      if (type === 'row')
+          anyS.$el === "div" &&
+          typeof anyS.attrs?.class === "string" &&
+          String(anyS.attrs.class).includes("grid-cols")
+        );
+      if (type === "row")
         return (
-          anyS.$el === 'div' &&
-          typeof anyS.attrs?.class === 'string' &&
-          String(anyS.attrs.class).includes('flex-row')
-        )
-      if (type === 'column')
+          anyS.$el === "div" &&
+          typeof anyS.attrs?.class === "string" &&
+          String(anyS.attrs.class).includes("flex-row")
+        );
+      if (type === "column")
         return (
-          anyS.$el === 'div' &&
-          typeof anyS.attrs?.class === 'string' &&
-          String(anyS.attrs.class).includes('flex-col')
-        )
-      return anyS.$cmp === type
+          anyS.$el === "div" &&
+          typeof anyS.attrs?.class === "string" &&
+          String(anyS.attrs.class).includes("flex-col")
+        );
+      return anyS.$cmp === type;
     },
-    fromSchema: (s, ctx) => layoutNodeFromSchema(s, ctx),
+    fromSchema: (s, ctx) => nodeFromSchemaByCategory(s, "layout", ctx, type),
     ...extra,
-  }
-  return def
+  };
+  return def;
 }
 
 // ─── 构造器：静态 ───────────────────────────────────────────────────────────────
 
-export function staticType(type: string, extra?: Partial<ElementTypeDef>): ElementTypeDef {
-  const cmp = extra?.cmp
+export function staticType(
+  type: string,
+  extra?: Partial<ElementTypeDef> & { cmp?: string; target?: string },
+): ElementTypeDef {
+  const rt = rtOf(
+    extra?.cmp,
+    type,
+    type === "submit" || type === "reset" ? "formkit" : "el",
+    extra?.target,
+  );
   const def: ElementTypeDef = {
     type,
-    category: 'static',
-    defaults: () => ({ id: generateKey(), category: 'static', type }),
-    toSchema: (node, _ctx) => staticNodeToSchema(node as never, cmp),
+    category: "static",
+    renderAs: rt.renderAs,
+    target: rt.target,
+    defaults: () => ({
+      id: generateKey(),
+      category: "static",
+      type,
+      renderAs: rt.renderAs,
+      ...(rt.target && rt.target !== type ? { target: rt.target } : {}),
+    }),
+    toSchema: (node) => nodeToSchemaByCategory(node, "static", rt, undefined),
     match: (s) => {
-      const anyS: any = s
-      if (cmp) {
-        if (anyS.$cmp === cmp) return true
-        if (anyS.$formkit === type) return true
-        return false
+      const anyS: any = s;
+      if (rt.renderAs === "cmp") {
+        if (anyS.$cmp === rt.target) return true;
+        if (anyS.$formkit === type) return true;
+        return false;
       }
-      if (type === 'submit') return anyS.$formkit === 'submit'
-      return anyS.$el === type
+      if (type === "submit") return anyS.$formkit === "submit";
+      if (type === "reset") return anyS.$formkit === "reset";
+      return anyS.$el === type;
     },
-    fromSchema: (s) => staticNodeFromSchema(s, type),
+    fromSchema: (s) => nodeFromSchemaByCategory(s, "static", undefined, type),
     ...extra,
-  }
-  return def
+  };
+  return def;
 }
 
 // tabs 布局的 pane 特殊处理（非独立布局类型，由 tabs 容器内部使用）
 export function tabsPaneType(): ElementTypeDef {
   return {
-    type: 'tabsPane',
-    category: 'layout',
-    defaults: () => ({ id: generateKey(), category: 'layout', type: 'tabsPane', children: [] }),
-    toSchema: (node, ctx) => tabsPaneToSchema(node as never, ctx.children),
+    type: "tabsPane",
+    category: "layout",
+    renderAs: "el",
+    defaults: () => ({
+      id: generateKey(),
+      category: "layout",
+      type: "tabsPane",
+      renderAs: "el",
+      children: [],
+    }),
+    toSchema: (node, ctx) => tabsPaneToSchema(node as LayoutNode, ctx.children),
     match: (s) => {
-      const anyS: any = s
-      return typeof anyS.__key === 'string' && !anyS.$formkit && !anyS.$cmp && !anyS.$el
+      const anyS: any = s;
+      return typeof anyS.__key === "string" && !anyS.$formkit && !anyS.$cmp && !anyS.$el;
     },
     fromSchema: (s, ctx) => tabsPaneFromSchema(s, ctx),
-  }
+  };
 }

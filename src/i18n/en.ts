@@ -174,6 +174,12 @@ export default {
     maxLabel: 'Max',
   },
   edits: {
+    content: {
+      text: 'Content',
+      title: 'Title',
+      content: 'Content',
+    },
+    inlineEditHint: 'Double-click to edit content',
     placeholder: {
       label: 'Enter label',
       help: 'Enter help text',
@@ -230,7 +236,8 @@ export default {
   fieldProps: {
     category: {
       fields: 'Fields',
-      structure: 'Structure',
+      containers: 'Containers',
+      layouts: 'Layouts',
       static: 'Static',
     },
     tooltip: {

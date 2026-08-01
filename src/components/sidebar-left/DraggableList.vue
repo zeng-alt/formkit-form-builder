@@ -6,7 +6,6 @@ import { getElementTypeBySchema } from '@/elements'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useFormBuilderI18n } from '../../i18n/context'
 import { customInsertPlugin } from '../../utils/custom-insert-plugin'
-import { getContainerKind } from '../../utils/schema/containers'
 
 const props = defineProps<{
   elements: FormKitSchemaFormKit[]
@@ -58,8 +57,6 @@ const [parentRef, items] = useDragAndDrop(
 ) as unknown as [Ref<HTMLElement | null>, Ref<FormKitSchemaFormKit[]>]
 
 const getTypeName = (item: any) => {
-  const kind = getContainerKind(item)
-  if (kind) return kind
   return getElementTypeBySchema(item) ?? String(item?.$formkit ?? item?.$cmp ?? '')
 }
 

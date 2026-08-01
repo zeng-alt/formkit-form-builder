@@ -1,558 +1,518 @@
-import type { FormKitSchemaFormKit } from '@formkit/core'
-import type { WritableComputedRef } from 'vue'
-import { computed } from 'vue'
-import { formSchema, selectedIndex, selectedKey, selectedTarget } from '@/state/form-schema'
-import { formDefinition } from '@/state/form-definition'
-import { findNodeByKey, getNodeAtPath } from '@/utils/schema/tree'
-import { findDslNodeByKey, updateDslNodeAtKey } from '@/utils/schema/dsl-tree'
-import { commitFormDefinition } from './schema-history'
-import { schemaNodeToDslNode } from '@/dsl'
-import type { FormNode } from '@/types/dsl'
+import type { WritableComputedRef } from "vue";
+import { computed } from "vue";
+import { selectedIndex, selectedKey, selectedTarget } from "@/state/form-schema";
+import { formDefinition } from "@/state/form-definition";
+import { findDslNodeByKey, updateDslNodeAtKey } from "@/utils/schema/dsl-tree";
+import { commitFormDefinition } from "./schema-history";
+import { exprToJs, resolveValidation, parseExprString, parseValidation } from "@/dsl";
+import { isExprValue } from "@/dsl/compile";
+import type { FieldNode, FormNode, OptionItem } from "@/types/dsl";
 
-export const selectedField = computed(() => {
-  const key = selectedKey.value
-  if (key) {
-    const found = findNodeByKey(formSchema.value as unknown[], key)
-    if (found) return found.node
-  }
-  return formSchema.value[selectedIndex.value]
-})
-
-type SchemaWithButtonProps = FormKitSchemaFormKit & {
-  buttonProps?: Record<string, unknown>
-}
-
-const toDslNode = (patchedNode: FormKitSchemaFormKit, key?: string | null): FormNode => {
-  const converted = schemaNodeToDslNode(patchedNode)
-  const existing = key ? findDslNodeByKey(formDefinition.value.root.children, key)?.node : undefined
-  const next: Record<string, unknown> = { ...converted }
-  if (existing?.id) next.id = existing.id
-  if (existing?.key) next.key = existing.key
-  if (
-    (existing?.category === 'container' || existing?.category === 'layout') &&
-    Array.isArray(existing.children)
-  ) {
-    next.children = existing.children
-  }
-  return next as unknown as FormNode
-}
-
-const commitNodePatch = (patchedNode: FormKitSchemaFormKit) => {
-  const def = formDefinition.value
-  const root = Array.isArray(def?.root?.children) ? def.root.children : []
-  const key =
-    selectedKey.value ??
-    (patchedNode as any)?.__key ??
-    root[selectedIndex.value]?.key ??
-    root[selectedIndex.value]?.id
-  if (key) {
-    const { nodes: nextRoot, found } = updateDslNodeAtKey(root, key, toDslNode(patchedNode, key))
-    if (found) {
-      commitFormDefinition(
-        { ...def, root: { ...def.root, children: nextRoot } },
-        { reason: 'field-edit', merge: true },
-      )
-      return
-    }
-  }
-  if (root[selectedIndex.value]) {
-    const nextRoot = root.map((n, i) =>
-      i === selectedIndex.value ? toDslNode(patchedNode, n?.key ?? n?.id) : n,
-    )
-    commitFormDefinition(
-      { ...def, root: { ...def.root, children: nextRoot } },
-      { reason: 'field-edit', merge: true },
-    )
-  }
-}
+// 当前选中节点：直接读 DSL 真源（formDefinition），而非 FormKit schema 投影。
+export const selectedField = computed<FormNode | undefined>(() => {
+  const root = formDefinition.value?.root?.children;
+  if (!Array.isArray(root)) return undefined;
+  const key = selectedKey.value;
+  if (key) return findDslNodeByKey(root, key)?.node;
+  return root[selectedIndex.value];
+});
 
 export function useFormField() {
   const normalizeName = (value: string) => {
     let name = value
       .trim()
-      .replace(/[^a-zA-Z0-9_]+/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_+|_+$/g, '')
-    if (!name) return ''
-    if (/^\d/.test(name)) name = `field_${name}`
-    return name
-  }
+      .replace(/[^a-zA-Z0-9_]+/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+    if (!name) return "";
+    if (/^\d/.test(name)) name = `field_${name}`;
+    return name;
+  };
 
-  const setFieldProp = (key: string, value: unknown) => {
-    if (formSchema.value.length > 0) {
-      const selected = selectedKey.value
-      const found = selected ? findNodeByKey(formSchema.value as any[], selected) : null
-      const path = found?.path
-      const currentNode = path
-        ? getNodeAtPath(formSchema.value as any[], path)
-        : formSchema.value[selectedIndex.value]
-      if (!currentNode) return
+  // DSL 写路径：克隆选中节点 → 应用变更 → 按 key 打补丁提交（不原地改真源，保证 undo 快照正确）
+  const patchSelected = (mutate: (node: FormNode) => FormNode) => {
+    const def = formDefinition.value;
+    const root = Array.isArray(def?.root?.children) ? def.root.children : [];
+    if (!root.length) return;
+    const idx = Math.max(0, Math.min(selectedIndex.value, root.length - 1));
+    const key = selectedKey.value ?? root[idx]?.key ?? root[idx]?.id;
+    const target = key ? (findDslNodeByKey(root, key)?.node ?? root[idx]) : root[idx];
+    if (!target) return;
+    const nextNode = mutate({ ...target } as FormNode) as FormNode;
+    nextNode.id = target.id;
+    const nextChildren = key
+      ? updateDslNodeAtKey(root, key, nextNode).nodes
+      : root.map((n, i) => (i === idx ? nextNode : n));
+    commitFormDefinition(
+      { ...def, root: { ...def.root, children: nextChildren } },
+      { reason: "field-edit", merge: true },
+    );
+  };
 
-      const current = { ...(currentNode as Record<string, unknown>) }
-      const isCmp = typeof (current as any)?.$cmp === 'string' && Boolean((current as any)?.$cmp)
-      const propKeys = new Set([
-        'label',
-        'help',
-        'placeholder',
-        'bordered',
-        'embedded',
-        'hoverable',
-        'size',
-      ])
-      if (isCmp && propKeys.has(key)) {
-        const nextProps: any = { ...(((current as any).props ?? {}) as any) }
-        if (value === undefined) delete nextProps[key]
-        else nextProps[key] = value
-        ;(current as any).props = Object.keys(nextProps).length ? nextProps : undefined
-      } else if (value === undefined) {
-        delete (current as any)[key]
-      } else {
-        ;(current as any)[key] = value
-      }
-      commitNodePatch(current as FormKitSchemaFormKit)
-    }
-  }
-
-  const setButtonProp = (key: string, value: unknown) => {
-    if (formSchema.value.length > 0) {
-      const selected = selectedKey.value
-      const found = selected ? findNodeByKey(formSchema.value as any[], selected) : null
-      const path = found?.path
-      const current = (
-        path
-          ? getNodeAtPath(formSchema.value as any[], path)
-          : formSchema.value[selectedIndex.value]
-      ) as SchemaWithButtonProps
-      if (!current) return
-      const nextButtonProps = {
-        ...current?.buttonProps,
-        [key]: value,
-      }
-      const nextNode = {
-        ...current,
-        buttonProps: nextButtonProps,
-      } as FormKitSchemaFormKit
-      commitNodePatch(nextNode)
-    }
-  }
+  const setFieldProp = (key: keyof FormNode, value: unknown) => {
+    patchSelected((node) => {
+      const record = node as unknown as Record<string, unknown>;
+      if (value === undefined) delete record[key];
+      else record[key] = value;
+      return node;
+    });
+  };
 
   const setPropsProp = (key: string, value: unknown) => {
-    if (formSchema.value.length > 0) {
-      const selected = selectedKey.value
-      const found = selected ? findNodeByKey(formSchema.value as any[], selected) : null
-      const path = found?.path
-      const current = (
-        path
-          ? getNodeAtPath(formSchema.value as any[], path)
-          : formSchema.value[selectedIndex.value]
-      ) as any
-      if (!current) return
-      const nextProps: any = { ...(((current as any).props ?? {}) as any) }
-      if (value === undefined) delete nextProps[key]
-      else nextProps[key] = value
-      const nextNode: any = {
-        ...current,
-        props: Object.keys(nextProps).length ? nextProps : undefined,
-      }
-      commitNodePatch(nextNode)
-    }
-  }
-
-  const createButtonProp = <T>(key: string, defaultValue: T): WritableComputedRef<T, T> => {
-    return computed({
-      get: () => {
-        const current = selectedField.value as SchemaWithButtonProps
-        const value = current?.buttonProps?.[key]
-        return (value ?? defaultValue) as T
-      },
-      set: (value: T) => setButtonProp(key, value),
-    })
-  }
+    patchSelected((node) => {
+      const props = { ...node.props };
+      if (value === undefined) delete props[key];
+      else props[key] = value;
+      node.props = Object.keys(props).length ? props : undefined;
+      return node;
+    });
+  };
 
   const createPropsProp = <T>(key: string, defaultValue: T): WritableComputedRef<T, T> => {
     return computed({
       get: () => {
-        const current: any = selectedField.value as any
-        const value = current?.props?.[key]
-        return (value ?? defaultValue) as T
+        const value = selectedField.value?.props?.[key];
+        return (value ?? defaultValue) as T;
       },
       set: (value: T) => setPropsProp(key, value),
-    })
-  }
+    });
+  };
+
+  const createButtonProp = <T>(key: string, defaultValue: T): WritableComputedRef<T, T> => {
+    return computed({
+      get: () => {
+        const value = selectedField.value?.props?.[key];
+        return (value ?? defaultValue) as T;
+      },
+      set: (value: T) => setPropsProp(key, value),
+    });
+  };
+
+  // ─── 校验（DSL 存 ValidationRule[]，编辑层仍走 pipe 字符串）───────────────────
+  const validationString = computed({
+    get: () => {
+      const rules = (selectedField.value as FieldNode | undefined)?.validation;
+      return resolveValidation(rules).validation ?? "";
+    },
+    set: (value: string) => {
+      const next = value.trim();
+      patchSelected((node) => {
+        if (node.category !== "field") return node;
+        const field = node as FieldNode;
+        if (next) {
+          const rules = (parseValidation(next) ?? []).filter((r) => r.rule);
+          field.validation = rules.length ? rules : undefined;
+        } else {
+          field.validation = undefined;
+        }
+        return node;
+      });
+    },
+  });
+
+  const validationStringLength = computed(() => {
+    if (!validationString.value) return 0;
+    return validationString.value.split("|").length;
+  });
 
   const createValidationValue = (validationType: string, active: boolean = true) => {
     return computed({
       get: () => getParameterizedValidation(validationType),
       set: (value: string) => {
-        updateValidationString(`${validationType}:${value}`, active)
+        updateValidationString(`${validationType}:${value}`, active);
       },
-    })
-  }
+    });
+  };
 
   const createValidationMessageValue = (validationType: string) => {
     return computed<string>({
       get: () => {
-        const current: any = selectedField.value as any
-        const msgs = current?.validationMessages
-        if (!msgs || typeof msgs !== 'object') return ''
-        const v = (msgs as any)[validationType]
-        if (v === null || v === undefined) return ''
-        return String(v)
+        const rules = (selectedField.value as FieldNode | undefined)?.validation;
+        const rule = rules?.find((r) => r.rule === validationType);
+        return rule?.message ?? "";
       },
       set: (value: string) => {
-        const current: any = selectedField.value as any
-        const prev = current?.validationMessages
-        const next: Record<string, unknown> =
-          prev && typeof prev === 'object' ? { ...(prev as Record<string, unknown>) } : {}
-        const trimmed = value.trim()
-        if (!trimmed) delete next[validationType]
-        else next[validationType] = trimmed
-        setFieldProp('validationMessages', Object.keys(next).length ? next : undefined)
+        patchSelected((node) => {
+          if (node.category !== "field") return node;
+          const field = node as FieldNode;
+          const rules = [...(field.validation ?? [])];
+          const idx = rules.findIndex((r) => r.rule === validationType);
+          const trimmed = value.trim();
+          if (idx >= 0) {
+            const next = { ...rules[idx]! };
+            if (trimmed) next.message = trimmed;
+            else delete next.message;
+            rules[idx] = next;
+          } else if (trimmed) {
+            rules.push({ rule: validationType, message: trimmed });
+          }
+          field.validation = rules.length ? rules : undefined;
+          return node;
+        });
       },
-    })
-  }
+    });
+  };
 
+  // ─── 基础属性 ─────────────────────────────────────────────────────────────────
   const fieldName = computed({
-    get: () => selectedField.value?.name || '',
+    get: () => selectedField.value?.name || "",
     set: (newName: string) => {
-      const nextName = normalizeName(newName)
-      setFieldProp('name', nextName || undefined)
+      const nextName = normalizeName(newName);
+      setFieldProp("name", nextName || undefined);
     },
-  })
-
-  const useExpressionValue = computed({
-    get: () => {
-      const current = selectedField.value as any
-      return Boolean(current?.useExpressionValue)
-    },
-    set: (value: boolean) => setFieldProp('useExpressionValue', value ? true : undefined),
-  })
-
-  const valueExpression = computed<string>({
-    get: () => {
-      const current = selectedField.value as any
-      const value = current?.__raw__valueExpression ?? current?.valueExpression
-      if (typeof value !== 'string') return ''
-      return value
-    },
-    set: (value: string) => {
-      setFieldProp('__raw__valueExpression', value.trim() ? value : undefined)
-      setFieldProp('valueExpression', undefined)
-    },
-  })
-
-  const ifExpression = computed<string>({
-    get: () => {
-      const current = selectedField.value as any
-      const raw = current?.__raw__ifExpression ?? current?.if
-      if (typeof raw !== 'string') return ''
-      return raw
-    },
-    set: (value: string) => {
-      const next = value.trim()
-      setFieldProp('__raw__ifExpression', next ? next : undefined)
-      setFieldProp('if', next ? next : undefined)
-    },
-  })
+  });
 
   const label = computed({
-    get: () => {
-      const current: any = selectedField.value as any
-      if (typeof current?.$cmp === 'string' && current.$cmp)
-        return String(current?.props?.label ?? '')
-      return (selectedField.value as any)?.label || ''
+    get: () => selectedField.value?.label || "",
+    set: (newLabel: string) => {
+      patchSelected((node) => {
+        const v = newLabel.trim();
+        if (v) node.label = v;
+        else delete node.label;
+        return node;
+      });
     },
-    set: (newLabel: string) => setFieldProp('label', newLabel),
-  })
+  });
 
-  const buttonText = computed<string>({
+  const help = computed({
     get: () => {
-      const current = selectedField.value as any
-      const value = current?.buttonText
-      if (typeof value !== 'string') return ''
-      return value
+      const value = selectedField.value?.props?.help;
+      return typeof value === "string" ? value : "";
     },
-    set: (value: string) => {
-      const next = value.trim()
-      setFieldProp('buttonText', next ? next : undefined)
-    },
-  })
+    set: (newHelp: string) => setPropsProp("help", newHelp.trim() || undefined),
+  });
 
   const placeholder = computed({
     get: () => {
-      const current: any = selectedField.value as any
-      if (typeof current?.$cmp === 'string' && current.$cmp)
-        return String(current?.props?.placeholder ?? '')
-      return (selectedField.value as any)?.placeholder || ''
+      const value = selectedField.value?.props?.placeholder;
+      return typeof value === "string" ? value : "";
     },
-    set: (newPlaceholder: string) => setFieldProp('placeholder', newPlaceholder),
-  })
+    set: (newPlaceholder: string) =>
+      setPropsProp("placeholder", newPlaceholder.trim() || undefined),
+  });
 
+  const buttonText = computed<string>({
+    get: () => {
+      const value = selectedField.value?.props?.buttonText;
+      return typeof value === "string" ? value : "";
+    },
+    set: (value: string) => {
+      const next = value.trim();
+      setPropsProp("buttonText", next || undefined);
+    },
+  });
+
+  // ─── 值 / 表达式 ─────────────────────────────────────────────────────────────
   const fieldValue = computed<string>({
     get: () => {
-      const current = selectedField.value as unknown as { value?: unknown }
-      const value = current?.value
-      if (value === null || value === undefined) return ''
-      return String(value)
+      const node: any = selectedField.value;
+      if (!node) return "";
+      const value = node.value;
+      if (isExprValue(value)) return "";
+      if (value !== undefined && value !== null) return String(value);
+      const propValue = node.props?.value ?? node.props?.text;
+      if (propValue !== undefined && propValue !== null) return String(propValue);
+      return "";
     },
     set: (newValue: string) => {
-      setFieldProp('value', newValue === '' ? undefined : newValue)
+      patchSelected((node) => {
+        if (node.category === "field") {
+          (node as FieldNode).value = newValue === "" ? undefined : newValue;
+        } else {
+          const props = { ...node.props };
+          const targetKey = "value" in props || !("text" in props) ? "value" : "text";
+          if (newValue === "") delete props[targetKey];
+          else props[targetKey] = newValue;
+          node.props = Object.keys(props).length ? props : undefined;
+        }
+        return node;
+      });
     },
-  })
+  });
 
-  const validationString = computed({
-    get: () => selectedField.value?.validation || '',
+  const useExpressionValue = computed({
+    get: () => isExprValue((selectedField.value as FieldNode | undefined)?.value),
+    set: (value: boolean) => {
+      patchSelected((node) => {
+        if (node.category !== "field") return node;
+        const field = node as FieldNode;
+        if (value) {
+          if (!isExprValue(field.value)) {
+            const current = field.value;
+            const raw = current !== undefined && current !== null ? String(current) : "";
+            field.value = { $expr: parseExprString(raw || "$") };
+          }
+        } else if (isExprValue(field.value)) {
+          field.value = undefined;
+        }
+        return node;
+      });
+    },
+  });
+
+  const valueExpression = computed<string>({
+    get: () => {
+      const value = (selectedField.value as FieldNode | undefined)?.value;
+      if (!isExprValue(value)) return "";
+      return exprToJs(value.$expr, "var");
+    },
     set: (value: string) => {
-      const next = value.trim()
-      setFieldProp('validation', next ? next : undefined)
+      patchSelected((node) => {
+        if (node.category !== "field") return node;
+        const field = node as FieldNode;
+        if (value.trim()) field.value = { $expr: parseExprString(value) };
+        else field.value = undefined;
+        return node;
+      });
     },
-  })
+  });
 
-  const validationStringLength = computed(() => {
-    if (!validationString.value) return 0
-    const validation = selectedField.value?.validation
-    if (typeof validation !== 'string') return 0
-    return validation.split('|').length
-  })
+  const ifExpression = computed<string>({
+    get: () => {
+      const visibleIf = selectedField.value?.visibleIf;
+      if (!visibleIf) return "";
+      return exprToJs(visibleIf);
+    },
+    set: (value: string) => {
+      const next = value.trim();
+      setFieldProp("visibleIf", next ? parseExprString(next) : undefined);
+    },
+  });
 
+  // ─── 数字 / 文件 / 范围 ───────────────────────────────────────────────────────
+  const whichNumber = computed<string>({
+    get: () => {
+      const value = selectedField.value?.props?.number;
+      return typeof value === "string" ? value : "integer";
+    },
+    set: (value: string) => {
+      patchSelected((node) => {
+        const props = { ...node.props };
+        props.number = value;
+        props.step = value === "integer" ? "1" : "0.1";
+        node.props = Object.keys(props).length ? props : undefined;
+        return node;
+      });
+    },
+  });
+
+  const numOfFiles = computed({
+    get: () => {
+      const value = selectedField.value?.props?.multiple;
+      return typeof value === "string" ? value : "false";
+    },
+    set: (value: string) => setPropsProp("multiple", value),
+  });
+
+  const min = computed<number | undefined>({
+    get: () => selectedField.value?.props?.min as number | undefined,
+    set: (newMin: number | undefined) => setPropsProp("min", newMin),
+  });
+
+  const max = computed<number | undefined>({
+    get: () => selectedField.value?.props?.max as number | undefined,
+    set: (newMax: number | undefined) => setPropsProp("max", newMax),
+  });
+
+  // ─── 选项 ─────────────────────────────────────────────────────────────────────
+  const modelValue = computed<string[]>({
+    get: () => {
+      const node: any = selectedField.value;
+      const options = node?.options ?? node?.props?.options;
+      return Array.isArray(options) ? (options as string[]) : [];
+    },
+    set: (newOptions: string[]) => {
+      patchSelected((node) => {
+        if (node.category === "field") {
+          (node as FieldNode).options = newOptions as unknown as OptionItem[];
+        } else {
+          const props = { ...node.props };
+          props.options = newOptions;
+          node.props = Object.keys(props).length ? props : undefined;
+        }
+        return node;
+      });
+    },
+  });
+
+  const optionsRaw = computed<unknown>({
+    get: () => {
+      const node: any = selectedField.value;
+      return node?.options ?? node?.props?.options ?? [];
+    },
+    set: (newOptions: unknown) => {
+      patchSelected((node) => {
+        if (node.category === "field") {
+          (node as FieldNode).options = newOptions as OptionItem[];
+        } else {
+          const props = { ...node.props };
+          props.options = newOptions;
+          node.props = Object.keys(props).length ? props : undefined;
+        }
+        return node;
+      });
+    },
+  });
+
+  // ─── 校验字符串工具（保持 pipe 字符串语义）────────────────────────────────────
   const updateValidationString = (value: string, active: boolean = true) => {
-    const currentValidation = validationString.value.split('|').filter(Boolean)
-    let newValidation: string[]
+    const currentValidation = validationString.value.split("|").filter(Boolean);
+    let newValidation: string[];
 
-    if (!value.includes(':')) {
+    if (!value.includes(":")) {
       if (currentValidation.includes(value)) {
-        newValidation = currentValidation.filter((item: string) => item !== value)
+        newValidation = currentValidation.filter((item: string) => item !== value);
       } else {
-        newValidation = [...currentValidation, value]
+        newValidation = [...currentValidation, value];
       }
-      validationString.value = newValidation.join('|')
-      return
+      validationString.value = newValidation.join("|");
+      return;
     } else {
-      const [validationType, validationValue] = value.split(':')
+      const [validationType, validationValue] = value.split(":");
       if (currentValidation.includes(value) && !active) {
-        newValidation = currentValidation.filter((item: string) => item !== value)
+        newValidation = currentValidation.filter((item: string) => item !== value);
       } else {
         const indexOfType = currentValidation.findIndex((item: string) =>
           item.startsWith(`${validationType}:`),
-        )
+        );
         if (indexOfType === -1) {
-          newValidation = [...currentValidation, value]
+          newValidation = [...currentValidation, value];
         } else {
           newValidation = [
             ...currentValidation.slice(0, indexOfType),
             `${validationType}:${validationValue}`,
             ...currentValidation.slice(indexOfType + 1),
-          ]
+          ];
         }
       }
-      validationString.value = newValidation.join('|')
-      return
+      validationString.value = newValidation.join("|");
+      return;
     }
-  }
+  };
 
   const isActive = (fn: (arg0: string) => boolean, strVal: string) => {
-    return computed(() => fn(strVal))
-  }
+    return computed(() => fn(strVal));
+  };
 
   const getParameterizedValidation = (validationType: string) => {
-    if (!validationString.value) return ''
+    if (!validationString.value) return "";
 
-    const validations = validationString.value.split('|')
-    const validation = validations.find((item: string) => item.startsWith(`${validationType}`))
+    const validations = validationString.value.split("|");
+    const validation = validations.find((item: string) => item.startsWith(`${validationType}`));
 
-    if (!validation) return ''
+    if (!validation) return "";
 
-    return validation.replace(`${validationType}:`, '')
-  }
+    return validation.replace(`${validationType}:`, "");
+  };
 
-  const help = computed({
-    get: () => {
-      const current: any = selectedField.value as any
-      if (typeof current?.$cmp === 'string' && current.$cmp)
-        return String(current?.props?.help ?? '')
-      return (selectedField.value as any)?.help || ''
-    },
-    set: (newHelp: string) => setFieldProp('help', newHelp),
-  })
-
-  const whichNumber = computed<string>({
-    get: () => selectedField.value?.number || 'integer',
-    set: (value: string) => {
-      const current = selectedField.value
-      if (!current) return
-      commitNodePatch({
-        ...current,
-        number: value,
-        step: value === 'integer' ? '1' : '0.1',
-      } as FormKitSchemaFormKit)
-    },
-  })
-
-  const numOfFiles = computed({
-    get: () => selectedField.value?.multiple || 'false',
-    set: (value: string) => {
-      const current = selectedField.value
-      if (!current) return
-      commitNodePatch({ ...current, multiple: value } as FormKitSchemaFormKit)
-    },
-  })
-
-  const modelValue = computed<string[]>({
-    get: () => selectedField.value?.options || [],
-    set: (newOptions: string[]) => {
-      const current = selectedField.value
-      if (!current) return
-      commitNodePatch({ ...current, options: newOptions } as FormKitSchemaFormKit)
-    },
-  })
-
-  const optionsRaw = computed<unknown>({
-    get: () => selectedField.value?.options ?? [],
-    set: (newOptions: unknown) => {
-      const current = selectedField.value
-      if (!current) return
-      commitNodePatch({ ...current, options: newOptions } as FormKitSchemaFormKit)
-    },
-  })
-
-  const min = computed<number | undefined>({
-    get: () => selectedField.value?.min,
-    set: (newMin: number | undefined) => {
-      const current = selectedField.value
-      if (!current) return
-      commitNodePatch({ ...current, min: newMin } as FormKitSchemaFormKit)
-    },
-  })
-
-  const max = computed<number | undefined>({
-    get: () => selectedField.value?.max,
-    set: (newMax: number | undefined) => {
-      const current = selectedField.value
-      if (!current) return
-      commitNodePatch({ ...current, max: newMax } as FormKitSchemaFormKit)
-    },
-  })
-
-  const selectedIsForm = computed(() => selectedTarget.value === 'form')
-  const hasField = computed(() => selectedIsForm.value || !!formSchema.value[selectedIndex.value])
+  // ─── 状态 ─────────────────────────────────────────────────────────────────────
+  const selectedIsForm = computed(() => selectedTarget.value === "form");
+  const hasField = computed(() => selectedIsForm.value || !!selectedField.value);
 
   const isValidationChecked = (validationType: string) => {
-    if (!hasField.value) return false
-    const validationStr = selectedField?.value?.validation
-    if (!validationStr || typeof validationStr !== 'string') return false
-
-    const validations = validationStr.split('|')
-    return validations.some((validation: string) => {
-      if (validation === validationType) return true
-
-      const [type] = validation.split(':')
-      return type === validationType
-    })
-  }
+    if (!hasField.value) return false;
+    const rules = (selectedField.value as FieldNode | undefined)?.validation;
+    if (!rules?.length) return false;
+    return rules.some((r) => r.rule === validationType);
+  };
 
   const currentFieldType = computed(() => {
-    if (!hasField.value) return null
-    if (selectedIsForm.value) return 'form'
-    const current: any = selectedField.value as any
-    if (typeof current?.$formkit === 'string' && current.$formkit) return current.$formkit
-    if (typeof current?.$cmp === 'string' && current.$cmp) return current.$cmp
-    return null
-  })
+    if (!hasField.value) return null;
+    if (selectedIsForm.value) return "form";
+    const node = selectedField.value;
+    if (!node) return null;
+    return node.type;
+  });
 
   const formName = computed<string>({
-    get: () => formDefinition.value?.name ?? 'form',
+    get: () => formDefinition.value?.name ?? "form",
     set: (value: string) => {
-      const next = value.trim()
-      const def = formDefinition.value
-      commitFormDefinition({ ...def, name: next || 'form' }, { reason: 'form-name', merge: true })
+      const next = value.trim();
+      const def = formDefinition.value;
+      commitFormDefinition({ ...def, name: next || "form" }, { reason: "form-name", merge: true });
     },
-  })
+  });
 
-  const formLabelPosition = computed<'top' | 'left'>({
-    get: () => (formDefinition.value?.settings?.labelAlign === 'left' ? 'left' : 'top'),
-    set: (value: 'top' | 'left') => {
-      const def = formDefinition.value
+  const formLabelPosition = computed<"top" | "left">({
+    get: () => (formDefinition.value?.settings?.labelAlign === "left" ? "left" : "top"),
+    set: (value: "top" | "left") => {
+      const def = formDefinition.value;
       commitFormDefinition(
         { ...def, settings: { ...def.settings, labelAlign: value } },
-        { reason: 'form-label-position', merge: true },
-      )
+        { reason: "form-label-position", merge: true },
+      );
     },
-  })
+  });
 
   const formLabelWidth = computed<number>({
     get: () => formDefinition.value?.settings?.labelWidth ?? 80,
     set: (value: number) => {
-      const n = Number(value)
-      const next = Number.isFinite(n) ? Math.max(0, Math.min(2000, Math.round(n))) : 120
-      const def = formDefinition.value
+      const n = Number(value);
+      const next = Number.isFinite(n) ? Math.max(0, Math.min(2000, Math.round(n))) : 120;
+      const def = formDefinition.value;
       commitFormDefinition(
         { ...def, settings: { ...def.settings, labelWidth: next } },
-        { reason: 'form-label-width', merge: true },
-      )
+        { reason: "form-label-width", merge: true },
+      );
     },
-  })
+  });
 
   const availableFieldNames = computed(() => {
-    const extractNames = (schema: FormKitSchemaFormKit[]): string[] => {
-      let names: string[] = []
-      for (const field of schema) {
-        if (field.name && typeof field.name === 'string') {
-          names.push(field.name)
-        }
-        if (field.children && Array.isArray(field.children)) {
-          names = names.concat(extractNames(field.children as FormKitSchemaFormKit[]))
-        }
+    const names = new Set<string>();
+    const walk = (nodes: FormNode[]) => {
+      for (const node of nodes) {
+        if (node.name && typeof node.name === "string") names.add(node.name);
+        const children = (node as { children?: FormNode[] }).children;
+        if (Array.isArray(children)) walk(children);
       }
-      return names
-    }
-    return Array.from(new Set(extractNames(formSchema.value)))
-  })
+    };
+    walk(formDefinition.value?.root?.children ?? []);
+    return Array.from(names);
+  });
 
   const rowSpan = computed<number>({
     get: () => {
-      const outerClass = selectedField.value?.outerClass
-      if (typeof outerClass !== 'string') return 1
-      const match = outerClass.match(/\brow-span-(\d+)\b/)
-      return match ? parseInt(match[1]!, 10) : 1
+      const node = selectedField.value;
+      return node?.layout?.rowspan ?? 1;
     },
     set: (value: number) => {
-      const nextSpan = Math.max(1, Math.min(6, Math.round(value)))
-      const currentOuterClass = selectedField.value?.outerClass
-      let classes = typeof currentOuterClass === 'string' ? currentOuterClass : ''
-
-      if (nextSpan === 1) {
-        classes = classes
-          .replace(/\brow-span-\d+\b/g, '')
-          .replace(/\s+/g, ' ')
-          .trim()
-      } else if (/\brow-span-\d+\b/.test(classes)) {
-        classes = classes
-          .replace(/\brow-span-\d+\b/g, `row-span-${nextSpan}`)
-          .replace(/\s+/g, ' ')
-          .trim()
-      } else {
-        classes = `${classes} row-span-${nextSpan}`.replace(/\s+/g, ' ').trim()
-      }
-
-      setFieldProp('outerClass', classes || undefined)
+      const nextSpan = Math.max(1, Math.min(6, Math.round(value)));
+      patchSelected((node) => {
+        const layout = { ...node.layout };
+        if (nextSpan > 1) layout.rowspan = nextSpan;
+        else delete layout.rowspan;
+        node.layout = Object.keys(layout).length ? layout : undefined;
+        let classes = typeof node.outerClass === "string" ? node.outerClass : "";
+        if (nextSpan > 1) {
+          if (/\brow-span-\d+\b/.test(classes)) {
+            classes = classes.replace(/\brow-span-\d+\b/g, `row-span-${nextSpan}`);
+          } else {
+            classes = `${classes} row-span-${nextSpan}`.replace(/\s+/g, " ").trim();
+          }
+        } else {
+          classes = classes
+            .replace(/\brow-span-\d+\b/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
+        }
+        if (classes) node.outerClass = classes;
+        else delete node.outerClass;
+        return node;
+      });
     },
-  })
+  });
 
   const bindEvents = computed<Record<string, unknown>>({
     get: () => {
-      const current: any = selectedField.value as any
-      const value = current?.__bind
-      if (value && typeof value === 'object') return value as Record<string, unknown>
-      const legacy = current?.bind
-      if (legacy && typeof legacy === 'object') return legacy as Record<string, unknown>
-      return {}
+      const value = selectedField.value?.props?.__bind;
+      if (value && typeof value === "object") return value as Record<string, unknown>;
+      return {};
     },
     set: (value: Record<string, unknown>) => {
-      const hasAny = value && typeof value === 'object' && Object.keys(value).length > 0
-      setFieldProp('__bind', hasAny ? value : undefined)
-      setFieldProp('bind', undefined)
+      const hasAny = value && typeof value === "object" && Object.keys(value).length > 0;
+      setPropsProp("__bind", hasAny ? value : undefined);
     },
-  })
+  });
 
   return {
     fieldName,
@@ -588,5 +548,5 @@ export function useFormField() {
     createPropsProp,
     rowSpan,
     bindEvents,
-  }
+  };
 }

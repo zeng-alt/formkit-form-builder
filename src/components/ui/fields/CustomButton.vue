@@ -2,15 +2,17 @@
 import { computed } from 'vue'
 import { NButton } from 'naive-ui'
 import { createSchemaRuntimeContext, runBindCode } from '@/utils/bind-runtime'
+import InlineEditableText from '../formkit/InlineEditableText.vue'
 
 const props = defineProps<{
   context: any
 }>()
 
-const buttonProps = computed(() => {
+// 按钮配置已展平进 node.props（原 buttonProps 嵌套已废除）
+const flat = computed(() => {
   return (
-    props.context?.attrs?.buttonProps ||
-    props.context?.node?.props?.buttonProps ||
+    props.context?.node?.props ||
+    props.context?.attrs ||
     props.context?.buttonProps ||
     {}
   )
@@ -18,19 +20,16 @@ const buttonProps = computed(() => {
 
 const text = computed(() => {
   return (
-    buttonProps.value?.text ??
-    props.context?.attrs?.buttonText ??
-    props.context?.node?.props?.buttonText ??
-    props.context?.buttonText ??
-    props.context?.attrs?.label ??
-    props.context?.node?.props?.label ??
+    flat.value?.text ??
+    flat.value?.buttonText ??
+    flat.value?.label ??
     props.context?.label ??
     ''
   )
 })
 
 const type = computed(() => {
-  const configuredType = buttonProps.value?.type
+  const configuredType = flat.value?.type
   if (configuredType && configuredType !== 'submit' && configuredType !== 'button')
     return configuredType
   const formkitType = props.context.node.props.type
@@ -43,21 +42,21 @@ const attrType = computed(() => {
   return 'button'
 })
 
-const size = computed(() => buttonProps.value?.size || 'medium')
+const size = computed(() => flat.value?.size || 'medium')
 
-const align = computed(() => buttonProps.value?.align || 'left')
+const align = computed(() => flat.value?.align || 'left')
 
 const booleans = computed(() => ({
-  block: !!buttonProps.value?.block,
-  bordered: buttonProps.value?.bordered ?? true,
-  circle: !!buttonProps.value?.circle,
-  dashed: !!buttonProps.value?.dashed,
-  disabled: buttonProps.value?.disabled ?? props.context?.disabled ?? false,
-  focusable: buttonProps.value?.focusable ?? true,
-  fullWidth: !!buttonProps.value?.fullWidth,
-  ghost: !!buttonProps.value?.ghost,
-  round: !!buttonProps.value?.round,
-  secondary: !!buttonProps.value?.secondary,
+  block: !!flat.value?.block,
+  bordered: flat.value?.bordered ?? true,
+  circle: !!flat.value?.circle,
+  dashed: !!flat.value?.dashed,
+  disabled: flat.value?.disabled ?? props.context?.disabled ?? false,
+  focusable: flat.value?.focusable ?? true,
+  fullWidth: !!flat.value?.fullWidth,
+  ghost: !!flat.value?.ghost,
+  round: !!flat.value?.round,
+  secondary: !!flat.value?.secondary,
 }))
 
 async function handleClick(e: MouseEvent) {
@@ -106,7 +105,7 @@ async function handleClick(e: MouseEvent) {
       :secondary="booleans.secondary"
       @click="handleClick"
     >
-      {{ text }}
+      <InlineEditableText :context="props.context" prop-key="text" :value="text" />
     </NButton>
   </div>
 </template>

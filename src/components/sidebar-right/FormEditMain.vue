@@ -19,7 +19,7 @@ const isFieldsCategory = computed(() => {
   if (selectedIsForm.value) return false
   if (!currentFieldType.value) return false
   const prop = fieldProps.value.find((p) => p.name === currentFieldType.value)
-  return (prop?.category || 'fields') === 'fields'
+  return (prop?.category || 'field') === 'field'
 })
 </script>
 

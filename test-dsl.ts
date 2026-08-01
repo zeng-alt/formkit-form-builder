@@ -1,6 +1,6 @@
-import { dslToSchema, schemaToDsl, schemaNodeToDslNode, reconcileDslTree } from './src/dsl'
+import { dslToSchema, schemaToDsl, schemaNodeToDslNode, reconcileDslTree, registerElementType, elementTypeFromSchema } from './src/dsl'
 import { findDslNodeByKey, updateDslNodeAtKey } from './src/utils/schema/dsl-tree'
-import type { FormDefinition, FieldNode, ContainerNode, LayoutNode } from './src/dsl'
+import type { FormDefinition, FieldNode, ContainerNode, LayoutNode, StaticNode } from './src/dsl'
 import { evalExpr } from './src/dsl'
 import { formSchema } from './src/state/form-schema'
 
@@ -19,13 +19,14 @@ const field = (name: string, type = 'text', extra: Partial<FieldNode> = {}): Fie
   id: `f_${name}`,
   category: 'field',
   type,
+  renderAs: 'cmp',
   name,
   label: name,
   ...extra,
 })
 
 const dsl: FormDefinition = {
-  version: 1,
+  version: 2,
   id: 'login',
   name: '登录',
   settings: { layout: 'vertical', labelWidth: 120, labelAlign: 'left', columns: 12 },
@@ -33,6 +34,7 @@ const dsl: FormDefinition = {
     id: 'root',
     category: 'container',
     type: 'group',
+    renderAs: 'formkit',
     dataType: 'object',
     children: [
       field('username', 'text', {
@@ -55,6 +57,7 @@ const dsl: FormDefinition = {
         id: 'addr_group',
         category: 'container',
         type: 'group',
+        renderAs: 'formkit',
         dataType: 'object',
         name: 'address',
         label: '地址',
@@ -64,6 +67,7 @@ const dsl: FormDefinition = {
         id: 'list_box',
         category: 'container',
         type: 'list',
+        renderAs: 'cmp',
         dataType: 'array',
         name: 'items',
         label: '明细',
@@ -73,6 +77,7 @@ const dsl: FormDefinition = {
         id: 'card_box',
         category: 'layout',
         type: 'card',
+        renderAs: 'cmp',
         label: '卡片',
         children: [field('note', 'textarea', { layout: { colspan: 6 } })],
       } as LayoutNode,
@@ -80,6 +85,8 @@ const dsl: FormDefinition = {
         id: 'grid_box',
         category: 'layout',
         type: 'grid',
+        renderAs: 'el',
+        target: 'div',
         props: { columns: 12, gap: 4 },
         children: [field('a1', 'text', { layout: { colspan: 4 } }), field('a2', 'text', { layout: { colspan: 8 } })],
       } as LayoutNode,
@@ -87,9 +94,10 @@ const dsl: FormDefinition = {
         id: 'tabs_box',
         category: 'layout',
         type: 'tabs',
+        renderAs: 'cmp',
         children: [
-          { id: 'pane1', category: 'layout', type: 'tabsPane', label: 'Tab1', children: [field('t1', 'text')] },
-          { id: 'pane2', category: 'layout', type: 'tabsPane', label: 'Tab2', children: [field('t2', 'email')] },
+          { id: 'pane1', category: 'layout', type: 'tabsPane', renderAs: 'el', label: 'Tab1', children: [field('t1', 'text')] },
+          { id: 'pane2', category: 'layout', type: 'tabsPane', renderAs: 'el', label: 'Tab2', children: [field('t2', 'email')] },
         ],
       } as LayoutNode,
     ],
@@ -206,7 +214,7 @@ const assertNodeRoundTrip = (label: string, node: any) => {
 
 // 文本字段（$cmp 化：FormKit 语义键在 props 内，name/__key/outerClass 留顶层）
 const textField = {
-  $cmp: 'NaiveTextInput',
+  $cmp: 'text',
   name: 'username',
   id: 'field_abc',
   __key: 'abc',
@@ -225,7 +233,7 @@ const textField = {
 
 // 下拉字段（options）
 const selectField = {
-  $cmp: 'NaiveSelect',
+  $cmp: 'select',
   name: 'role',
   id: 'field_role',
   __key: 'role_k',
@@ -243,53 +251,53 @@ const selectField = {
 
 const realNodes: Record<string, any> = {
   submit: {
-    $cmp: 'NaiveSubmit',
+    $cmp: 'submit',
     name: 'submit_button',
     outerClass: 'col-span-12 pt-2',
     props: { name: 'submit_button', label: 'Submit', type: 'submit' },
   },
   reset: {
-    $cmp: 'NaiveReset',
+    $cmp: 'reset',
     name: 'reset_button',
     outerClass: 'col-span-12 pt-2',
     props: { name: 'reset_button', label: 'Reset', type: 'reset' },
   },
   naiveP: {
-    $cmp: 'NaiveTypographyP',
+    $cmp: 'naiveP',
     name: '段落',
     id: 'naive_p_static',
     outerClass: 'col-span-12',
     props: { name: '段落', id: 'naive_p_static', type: 'default', depth: 1, align: 'start', text: 'text' },
   },
   naiveH2: {
-    $cmp: 'NaiveH2',
+    $cmp: 'naiveH2',
     name: '标题',
     id: 'naive_h2_static',
     outerClass: 'col-span-12',
     props: { name: '标题', id: 'naive_h2_static', text: 'text' },
   },
   naiveButton: {
-    $cmp: 'NaiveButton',
+    $cmp: 'naiveButton',
     name: '按钮',
     outerClass: 'col-span-12 pt-2',
-    props: { name: '按钮', label: '按钮', buttonProps: { block: false, size: 'medium' } },
+    props: { name: '按钮', label: '按钮', block: false, size: 'medium' },
   },
   naiveUl: {
-    $cmp: 'NaiveTypographyUl',
+    $cmp: 'naiveUl',
     name: '列表',
     id: 'naive_ul_static',
     outerClass: 'col-span-12',
     props: { name: '列表', id: 'naive_ul_static', options: ['Item 1', 'Item 2'] },
   },
   naiveDivider: {
-    $cmp: 'NaiveDivider',
+    $cmp: 'naiveDivider',
     name: '分割线',
     id: 'naive_divider_static',
     outerClass: 'col-span-12',
     props: { name: '分割线', id: 'naive_divider_static', title: 'Divider', dashed: false },
   },
   naiveAlert: {
-    $cmp: 'NaiveAlert',
+    $cmp: 'naiveAlert',
     name: '提示',
     id: 'naive_alert_static',
     outerClass: 'col-span-12',
@@ -302,6 +310,62 @@ const realNodes: Record<string, any> = {
 for (const [label, node] of Object.entries(realNodes)) {
   assertNodeRoundTrip(label, node)
 }
+
+// legacy $cmp 别名（$cmp = type 统一前的旧 schema）识别为统一 type
+const legacySubmit = [
+  {
+    $formkit: 'form',
+    name: 'f',
+    props: {},
+    children: [{ $cmp: 'NaiveSubmit', name: 'sb', props: { name: 'sb', label: 'Submit', type: 'submit' } }],
+  },
+]
+const legacyDsl = schemaToDsl(legacySubmit)
+const legacyNode = legacyDsl.root.children[0] as StaticNode
+assert(legacyNode.type === 'submit' && legacyNode.renderAs === 'cmp', 'legacy $cmp:NaiveSubmit → type submit')
+const legacyBack = dslToSchema(legacyDsl)[0] as any
+assert(legacyBack.children[0].$cmp === 'submit', 'legacy 识别后统一输出 $cmp:submit')
+
+// 模板自定义 toSchema/fromSchema 钩子（扩展元素无需改库代码）
+const customTagDef = elementTypeFromSchema({
+  type: 'customTag',
+  category: 'static',
+  icon: '',
+  tooltipKey: '',
+  schema: {
+    renderAs: 'el',
+    nameKey: '',
+    descriptionKey: '',
+    toSchema: (node: any) => ({ $el: 'section', attrs: { 'data-mark': node.props?.mark ?? '' } }),
+    match: (s) => (s as any).$el === 'section',
+    fromSchema: (s: any) => ({
+      id: 'custom_1',
+      category: 'static',
+      type: 'customTag',
+      renderAs: 'el',
+      props: { mark: s.attrs?.['data-mark'] },
+    }),
+  },
+})
+registerElementType(customTagDef)
+const customDsl: FormDefinition = {
+  version: 2,
+  id: 'custom_form',
+  name: '自定义',
+  settings: { layout: 'vertical' },
+  root: {
+    id: 'root',
+    category: 'container',
+    type: 'group',
+    renderAs: 'formkit',
+    children: [{ id: 'n1', category: 'static', type: 'customTag', renderAs: 'el', props: { mark: 'hi' } }],
+  },
+}
+const customSchema = dslToSchema(customDsl)
+assert(customSchema[0].children[0].$el === 'section' && customSchema[0].children[0].attrs['data-mark'] === 'hi', '模板 toSchema 钩子生效')
+const customBack = schemaToDsl(customSchema)
+const customBackNode = customBack.root.children[0] as StaticNode
+assert(customBackNode.type === 'customTag' && customBackNode.props?.mark === 'hi', '模板 fromSchema 钩子生效')
 
 // __key 保留
 const { dsl: dslWithKey } = roundTrip([textField])
@@ -358,7 +422,7 @@ const defaultCanvasState = [
     props: { labelPosition: 'top', labelWidth: 80, columns: 12, layout: 'vertical' },
     children: [
       {
-        $cmp: 'NaiveSubmit',
+        $cmp: 'submit',
         name: 'submit_button',
         outerClass: 'col-span-12 pt-2',
         props: { name: 'submit_button', label: 'Submit', type: 'submit' },
