@@ -193,7 +193,11 @@ export function useFormField() {
 
   const buttonText = computed<string>({
     get: () => {
-      const value = selectedField.value?.props?.buttonText;
+      const node = selectedField.value;
+      const value =
+        node?.props?.buttonText ??
+        node?.props?.text ??
+        node?.label;
       return typeof value === "string" ? value : "";
     },
     set: (value: string) => {

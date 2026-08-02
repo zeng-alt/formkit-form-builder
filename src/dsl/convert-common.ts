@@ -349,7 +349,7 @@ export function containerNodeToSchema(
   if (node.type === 'list' || node.type === 'inputGroup') {
     const keyProp = node.type === 'list' ? 'listKey' : 'inputGroupKey'
     const containerProps: Record<string, unknown> = {
-      [keyProp]: node.id,
+      [keyProp]: node.key ?? node.id,
       name: node.name ?? node.id,
       modelValue: ch,
       ...node.props,
@@ -479,7 +479,7 @@ export function layoutNodeToSchema(
     case 'card': {
       const schema: any = {
         $cmp: 'card',
-        props: { cardKey: node.id, name: node.name, modelValue: ch, ...node.props },
+        props: { cardKey: node.key ?? node.id, name: node.name, modelValue: ch, ...node.props },
       }
       if (label) schema.props = { ...schema.props, label }
       if (node.key) schema.__key = node.key
@@ -497,7 +497,7 @@ export function layoutNodeToSchema(
       }))
       const schema: any = {
         $cmp: 'tabs',
-        props: { tabsKey: node.id, name: node.name, modelValue: panes, ...node.props },
+        props: { tabsKey: node.key ?? node.id, name: node.name, modelValue: panes, ...node.props },
       }
       if (label) schema.props = { ...schema.props, label }
       if (node.key) schema.__key = node.key
@@ -700,7 +700,8 @@ export function staticNodeToSchema(node: StaticNode, rt?: RenderTarget): SchemaN
       set('label', node.label ?? (native === 'submit' ? 'Submit' : 'Reset'))
       set('type', native)
       applyByKind(base, anyProps, kind)
-      base.outerClass = 'col-span-12 pt-2'
+      const outer = nodeOuterClass(node)
+      base.outerClass = outer === 'col-span-12' && !node.outerClass && !node.layout ? 'col-span-12 pt-2' : outer
       break
     }
     case 'button': {

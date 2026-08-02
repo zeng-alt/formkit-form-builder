@@ -222,27 +222,25 @@ function formatContainer(
   const containerName = ((normalized as any).props?.name as string | undefined)
     ?? (normalized as any).name as string | undefined
 
-  // list 容器：使用 FormKit 原生 $formkit: 'list' + group 模板，每条记录为 object
+  // list 容器：渲染 ListContainerPreview.vue（动态 FormKit list，内置 +/删除 交互），
+  // 每条记录为 object，整体数据形态为数组 [{...},{...}]
   if (cmp === 'list') {
-    const groupTemplate: any = {
-      $formkit: 'group',
-      children: children.length
-        ? [{ $el: 'div', attrs: { class: 'grid grid-cols-12 gap-x-4 gap-y-2' }, children }]
-        : [],
+    const containerProps = { ...(normalized as any).props }
+    delete containerProps.modelValue
+    const containerNode: any = {
+      $cmp: 'list',
+      props: {
+        ...containerProps,
+        listKey: ((normalized as any).props?.listKey as string | undefined) ?? key ?? '',
+        name: containerName,
+        modelValue: children,
+        isPlaceholder: ctx.isPlaceholder,
+      },
     }
-    if (containerName) groupTemplate.name = containerName
-    const listNode: any = {
-      $formkit: 'list',
-      name: containerName || `list_${key ?? ''}`,
-      children: [groupTemplate],
-    }
-    if (key) listNode.__key = key
-    if ((normalized as any).props?.label) listNode.label = (normalized as any).props.label
-    if ((normalized as any).props?.help) listNode.help = (normalized as any).props.help
     const nextNode: any = {
       $el: 'div',
       attrs: { class: (normalized as any).outerClass || 'col-span-12' },
-      children: [listNode],
+      children: [containerNode],
     }
     if (typeof schemaIf === 'string' && schemaIf.trim()) nextNode.if = schemaIf
     else if (typeof schemaIf === 'boolean') nextNode.if = schemaIf

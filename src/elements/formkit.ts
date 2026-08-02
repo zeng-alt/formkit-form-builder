@@ -192,12 +192,32 @@ export function buildFormkitInputs(): Record<string, ReturnType<typeof createInp
 // ─── $cmp schema 组件库（画布 / 预览 FormKitSchema 用）──────────────────────────
 // 每个元素的 schema 以 $cmp: '<target>' 表达；这里把 target 映射到一层薄的 FormKit 包装组件，
 // 内部按 createInput 注册的 input type 渲染，从而保留 context / label / 校验 / 值绑定。
+
+// 按钮类静态元素：自定义配置（buttonText/block/size...）经 attrs 进入 FormKit 节点，
+// 但 FormKit 只在节点创建时把这些 attrs 同步进 node.props；节点创建后新增的 prop
+// （如编辑面板写入 buttonText）不会同步，画布因此不更新。这里给按钮的 FormKit 组件加
+// 内容 key —— 配置变化时 key 变化 → FormKit 节点重建 → 配置完整进入 node.props。
+const FORCE_RECREATE_TYPES = new Set(['submit', 'reset', 'naiveButton'])
+
+function stableAttrsKey(attrs: Record<string, unknown>): string {
+  try {
+    return JSON.stringify(attrs, Object.keys(attrs).sort())
+  } catch {
+    return ''
+  }
+}
+
 function createElementCmpWrapper(type: string): Component {
+  const forceRecreate = FORCE_RECREATE_TYPES.has(type)
   return markRaw(
     defineComponent({
       inheritAttrs: false,
       setup(_props, { attrs }) {
-        return () => h(FormKit, { ...(attrs as Record<string, unknown>), type } as never)
+        return () => {
+          const a = attrs as Record<string, unknown>
+          const contentKey = forceRecreate ? stableAttrsKey(a) : ''
+          return h(FormKit, { ...a, type, ...(contentKey ? { key: contentKey } : {}) } as never)
+        }
       },
     }),
   ) as unknown as Component

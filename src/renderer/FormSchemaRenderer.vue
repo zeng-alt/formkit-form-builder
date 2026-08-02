@@ -308,6 +308,8 @@ const collectSchemaNamesSafe = (schema: FormKitSchemaFormKit[], names: Set<strin
   })
 }
 
+provide('previewListInteractive', props.interactiveContainers)
+
 provide('previewListDuplicate', (key: string) => {
   if (!props.interactiveContainers) return
   const found = findSchemaNodeByKey(internalSchema.value as any[], key)

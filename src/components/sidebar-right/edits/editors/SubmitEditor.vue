@@ -2,8 +2,9 @@
 import { useFormField } from '../../../../composables/form-fields'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
+import TextInput from '../common/TextInput.vue'
 
-const { createButtonProp } = useFormField()
+const { createButtonProp, buttonText } = useFormField()
 
 const buttonBlock = createButtonProp<boolean>('block', false)
 const buttonBordered = createButtonProp<boolean>('bordered', true)
@@ -21,6 +22,7 @@ const buttonType = createButtonProp<string>('type', 'default')
 </script>
 
 <template>
+  <TextInput label="text" placeholder="Button text" :value="buttonText" @update:value="(v) => (buttonText = v)" />
   <SelectInput
     label="align"
     :value="buttonAlign"

@@ -423,7 +423,8 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
     }
 
     if (Array.isArray(next.children)) {
-      next.children = next.children.map((c: any) => applyListMap(c))
+      const nextChildren = next.children.map((c: any) => applyListMap(c))
+      next = { ...next, children: nextChildren }
     }
     return next
   }

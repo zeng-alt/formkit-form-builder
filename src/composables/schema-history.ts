@@ -1,6 +1,7 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { computed, ref } from 'vue'
 import { formDefinition, commitSchemaChildren } from '@/state/form-definition'
+import { dslToSchema } from '@/dsl'
 import { formSchema, selectedIndex, selectedKey } from '@/state/form-schema'
 import { generateKey } from '../utils/dnd/schema'
 import { findDslNodeByKey } from '../utils/schema/dsl-tree'
@@ -160,9 +161,19 @@ export function commitSchemaReconcile(
   ) as unknown as FormKitSchemaFormKit[]
   migrateExpressionKeys(working)
   const def = formDefinition.value
+  // 以 DSL 真源重新投影作为“旧 schema”基线：formSchema.value 是缓存投影，可能被画布
+  // DnD 的共享引用原地改写，导致 reconcile 误判为“无变更”而复用旧 DSL 子树。
+  const currentProjection = (() => {
+    try {
+      const wrapped = dslToSchema(def)
+      return (wrapped[0]?.children as FormKitSchemaFormKit[]) ?? []
+    } catch {
+      return formSchema.value
+    }
+  })()
   const nextChildren = reconcileDslTree(
     dslRoot(def),
-    formSchema.value as FormKitSchemaFormKit[],
+    currentProjection,
     working,
   )
   commitFormDefinition({ ...def, root: { ...def.root, children: nextChildren } }, options)

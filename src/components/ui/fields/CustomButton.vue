@@ -10,18 +10,20 @@ const props = defineProps<{
 
 // 按钮配置已展平进 node.props（原 buttonProps 嵌套已废除）
 const flat = computed(() => {
-  return (
+  const f =
     props.context?.node?.props ||
     props.context?.attrs ||
     props.context?.buttonProps ||
     {}
-  )
+  return f
 })
 
 const text = computed(() => {
+  // 优先 buttonText（编辑面板统一写入该键）；text 兼容旧数据（画布内联编辑遗留）；
+  // label / context.label 兜底（默认 submit/reset 无 buttonText 时显示默认文案）
   return (
-    flat.value?.text ??
     flat.value?.buttonText ??
+    flat.value?.text ??
     flat.value?.label ??
     props.context?.label ??
     ''
@@ -105,7 +107,7 @@ async function handleClick(e: MouseEvent) {
       :secondary="booleans.secondary"
       @click="handleClick"
     >
-      <InlineEditableText :context="props.context" prop-key="text" :value="text" />
+      <InlineEditableText :context="props.context" prop-key="buttonText" :value="text" />
     </NButton>
   </div>
 </template>

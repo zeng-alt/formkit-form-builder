@@ -91,6 +91,7 @@
     "npm-run-all2": "^8.0.4",
     "oxfmt": "^0.42.0",
     "oxlint": "~1.57.0",
+    "playwright-core": "^1.49.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "~6.0.0",
