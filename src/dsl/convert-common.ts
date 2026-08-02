@@ -579,10 +579,19 @@ export function layoutNodeFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx): La
 
   parseOuterClass(anyS.outerClass, node)
 
+  // name 是数据字段名，提升到 DSL 顶层（与字段/容器一致）；props.name 仅是组件接收层
+  const nodeName =
+    typeof anyS.name === 'string' && anyS.name
+      ? anyS.name
+      : typeof anyS.props?.name === 'string'
+        ? anyS.props.name
+        : undefined
+  if (typeof nodeName === 'string' && nodeName && nodeName !== node.id) node.name = nodeName
+
   const props: Record<string, unknown> = {}
   if (anyS.props && typeof anyS.props === 'object') {
     for (const [key, value] of Object.entries(anyS.props)) {
-      if (CONTAINER_INTERNAL_PROPS.has(key)) continue
+      if (CONTAINER_INTERNAL_PROPS.has(key) || key === 'name') continue
       if (value === undefined) continue
       props[key] = value
     }

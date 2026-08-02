@@ -1,19 +1,30 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { fieldProps } from '@/elements'
+import { getElementTypeDef } from '@/dsl'
 import { useFormField } from '@/composables/form-fields'
 import { formSchema, selectedIndex, selectedKey } from '@/state/form-schema'
 import { useFormBuilderI18n } from '@/i18n/context'
 import TextInput from './TextInput.vue'
 
-const { currentFieldType, fieldName, hasField } = useFormField()
+const { currentFieldType, fieldName, label, hasField } = useFormField()
 const { t } = useFormBuilderI18n()
 
-const isFieldsCategory = computed(() => {
-  if (!currentFieldType.value) return false
-  const prop = fieldProps.find((p) => p.name === currentFieldType.value)
-  return (prop?.category || 'field') === 'field'
+// 类型 → 分类（直接查注册表，覆盖无 template 的 group / grid / tabsPane 等）
+const category = computed(() => {
+  if (!currentFieldType.value) return null
+  return getElementTypeDef(currentFieldType.value)?.category ?? null
 })
+
+// tabsPane 无独立目录项（无 fieldProps），但其"名称" = tab 标题（node.label）
+const isTabsPane = computed(() => currentFieldType.value === 'tabsPane')
+
+// 字段 / 容器 / 布局 + tab pane 都提供 name 编辑
+const isNamedNode = computed(() => {
+  const c = category.value
+  return c === 'field' || c === 'container' || c === 'layout' || isTabsPane.value
+})
+
+const isFieldsCategory = computed(() => category.value === 'field')
 
 const currentFieldKey = computed(() => selectedKey.value ?? undefined)
 
@@ -34,9 +45,12 @@ const isNameTaken = (name: string) => {
   return walk(formSchema.value as any[])
 }
 
+// 字段：必填 + 格式 + 唯一；容器/布局：可选，有值时校验格式与唯一
 const nameError = computed(() => {
-  if (!isFieldsCategory.value) return ''
-  if (!fieldName.value) return 'Name 不能为空'
+  if (isTabsPane.value) return ''
+  if (!isNamedNode.value) return ''
+  if (isFieldsCategory.value && !fieldName.value) return 'Name 不能为空'
+  if (!fieldName.value) return ''
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName.value))
     return 'Name 只能包含字母/数字/_ 且不能以数字开头'
   if (isNameTaken(fieldName.value)) return 'Name 已存在'
@@ -46,7 +60,14 @@ const nameError = computed(() => {
 
 <template>
   <TextInput
-    v-if="hasField && isFieldsCategory"
+    v-if="hasField && isTabsPane"
+    label="Label"
+    :placeholder="t('edits.placeholder.label')"
+    :value="label"
+    @update:value="(v) => (label = v)"
+  />
+  <TextInput
+    v-else-if="hasField && isNamedNode"
     label="Name"
     :placeholder="t('edits.placeholder.fieldName')"
     :value="fieldName"

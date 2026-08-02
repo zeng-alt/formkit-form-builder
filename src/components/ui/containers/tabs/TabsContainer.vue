@@ -120,7 +120,10 @@ const tabLabel = (pane: TabsPane | undefined, idx: number) => {
 
 const selectTab = (idx: number) => {
   activeIndex.value = idx
-  activeKey.value = panes.value[idx]?.__key ?? null
+  const key = panes.value[idx]?.__key ?? null
+  activeKey.value = key
+  // 选中 tab 时同步选中对应 pane，右侧属性面板显示其 name（= tab 标题）编辑器
+  if (key && canvasCtx?.selectByKey) canvasCtx.selectByKey(key)
 }
 
 const addTab = () => {

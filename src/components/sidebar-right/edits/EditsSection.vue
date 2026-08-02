@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import { useFormField } from '../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../i18n/context'
-import { fieldProps, getFieldEditorComponent } from '@/elements'
+import { getFieldEditorComponent } from '@/elements'
+import { getElementTypeDef } from '@/dsl'
 import NameInput from './common/NameInput.vue'
 import StaticContentSection from './common/StaticContentSection.vue'
 
@@ -11,8 +12,7 @@ const { t } = useFormBuilderI18n()
 
 const isStatic = computed(() => {
   if (!currentFieldType.value) return false
-  const prop = fieldProps.find((p) => p.name === currentFieldType.value)
-  return (prop?.category || 'field') === 'static'
+  return getElementTypeDef(currentFieldType.value)?.category === 'static'
 })
 
 const editorComponent = computed(() => {
