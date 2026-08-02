@@ -100,6 +100,63 @@ function normalizeInputGroup(node: SchemaNode): SchemaNode {
   return next
 }
 
+// 输入组预览：children 的宽度按 layout.colspan 展示（4 → 33%、6 → 50%）。
+// 逐个 child 读 col-span，改写成对应的 w-[xx%] 外框类，并去掉网格类/按钮 pt-2。
+// 这些 w-[xx%] 类已出现在 ContainerChildrenGrid 的 safelist 里，Tailwind 会生成。
+const INPUT_GROUP_WIDTH_CLASS: Record<number, string> = {
+  1: 'w-[8.33%]',
+  2: 'w-[16.67%]',
+  3: 'w-[25%]',
+  4: 'w-[33.33%]',
+  5: 'w-[41.67%]',
+  6: 'w-[50%]',
+  7: 'w-[58.33%]',
+  8: 'w-[66.67%]',
+  9: 'w-[75%]',
+  10: 'w-[83.33%]',
+  11: 'w-[91.67%]',
+  12: 'w-[100%]',
+}
+const stripGridWidthClasses = (outerClass: unknown) =>
+  (typeof outerClass === 'string' ? outerClass : '')
+    .replace(/\bcol-span-\d+\b/g, '')
+    .replace(/\bw-\[[^\]]+\]/g, '')
+    .replace(/\bpt-2\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+function inputGroupSpanOf(child: any): number {
+  const layoutSpan = child?.layout?.colspan
+  if (typeof layoutSpan === 'number' && Number.isFinite(layoutSpan) && layoutSpan > 0) {
+    return Math.max(1, Math.min(12, Math.round(layoutSpan)))
+  }
+  const outerClass = typeof child?.outerClass === 'string' ? child.outerClass : ''
+  const match = outerClass.match(/\bcol-span-(\d+)\b/)
+  return match ? Math.max(1, Math.min(12, parseInt(match[1]!, 10))) : 12
+}
+
+function decorateInputGroupChild(child: FormKitSchemaFormKit): FormKitSchemaFormKit {
+  const anyChild = child as any
+  const span = inputGroupSpanOf(anyChild)
+  const widthClass = INPUT_GROUP_WIDTH_CLASS[span] ?? 'w-[100%]'
+  const base = stripGridWidthClasses(anyChild?.outerClass)
+  const outerClass = `${widthClass} ${base}`.trim()
+  const next: any = { ...child, outerClass: outerClass || undefined }
+  // $cmp 节点：FormKitSchema 把嵌套 props 传给包装组件再透传 FormKit，外框类在
+  // props.outerClass 里同样要改写/去网格类，否则预览仍按旧 outerClass 渲染
+  if (anyChild && typeof anyChild === 'object' && anyChild.props && typeof anyChild.props === 'object') {
+    const props = { ...anyChild.props }
+    const propsBase = stripGridWidthClasses((props as any).outerClass)
+    props.outerClass = outerClass || propsBase
+    next.props = props
+  }
+  return next as FormKitSchemaFormKit
+}
+
+function decorateInputGroupChildren(children: FormKitSchemaFormKit[]): FormKitSchemaFormKit[] {
+  return children.map(decorateInputGroupChild)
+}
+
 // ─── tabs ──────────────────────────────────────────────────────────────────────
 
 function isTabsContainer(node: any) {
@@ -147,7 +204,14 @@ const defs: ContainerDefinition[] = [
     preview: { libraryKey: 'inputGroup', component: InputGroupContainerPreview as any },
     normalize: normalizeInputGroup,
     formatPreview: (node, ctx) =>
-      formatContainer(node, ctx, 'inputGroup', normalizeInputGroup, 'inputGroupKey'),
+      formatContainer(
+        node,
+        ctx,
+        'inputGroup',
+        normalizeInputGroup,
+        'inputGroupKey',
+        decorateInputGroupChildren,
+      ),
   },
   {
     id: 'tabs',
@@ -212,12 +276,14 @@ function formatContainer(
   cmp: string,
   normalize: (n: SchemaNode) => SchemaNode,
   keyProp: string,
+  transformChildren?: (children: FormKitSchemaFormKit[]) => FormKitSchemaFormKit[],
 ): FormKitSchemaFormKit {
   const key = (node as any)?.__key as string | undefined
   const normalized = normalize(node)
-  const children = Array.isArray(normalized.children)
+  const rawChildren = Array.isArray(normalized.children)
     ? (normalized.children as FormKitSchemaFormKit[]).map((c, i) => ctx.format(c, i))
     : []
+  const children = transformChildren ? transformChildren(rawChildren) : rawChildren
   const schemaIf = (normalized as any).if
   const containerName = ((normalized as any).props?.name as string | undefined)
     ?? (normalized as any).name as string | undefined

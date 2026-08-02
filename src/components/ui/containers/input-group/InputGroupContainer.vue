@@ -7,7 +7,7 @@ import { selectedKey } from '@/state/form-schema'
 import { useContainerDragAndDrop } from '@/builder/composables/use-container-drag-and-drop'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
 import ContainerChildrenGrid from '@/components/ui/containers/shared/ContainerChildrenGrid.vue'
-import { getColSpan } from '@/utils/dnd/grid'
+import { getColSpan, setColSpan, rebalanceRowSpans, stripInputGroupOuterClass } from '@/utils/dnd/grid'
 
 const props = defineProps<{
   inputGroupKey?: string
@@ -28,50 +28,29 @@ const initial = computed(() => (Array.isArray(props.modelValue) ? props.modelVal
 
 const canvasCtx = useCanvasSchemaContext()
 
-const widthClassFromSpan = (span: number) => {
-  const safeSpan = Math.max(1, Math.min(12, Math.round(span)))
-  const map: Record<number, string> = {
-    1: 'w-[8.33%]',
-    2: 'w-[16.67%]',
-    3: 'w-[25%]',
-    4: 'w-[33.33%]',
-    5: 'w-[41.67%]',
-    6: 'w-[50%]',
-    7: 'w-[58.33%]',
-    8: 'w-[66.67%]',
-    9: 'w-[75%]',
-    10: 'w-[83.33%]',
-    11: 'w-[91.67%]',
-    12: 'w-[100%]',
-  }
-  return map[safeSpan] ?? 'w-[100%]'
-}
-
-const withWidthClass = (field: FormKitSchemaFormKit, span: number) => {
-  const currentOuterClass = typeof field.outerClass === 'string' ? field.outerClass : ''
-  let classes = currentOuterClass
-    .replace(/\bw-\[[^\]]+\]\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-  classes = `${classes} ${widthClassFromSpan(span)}`.replace(/\s+/g, ' ').trim()
-  return { ...(field as any), outerClass: classes || undefined } as FormKitSchemaFormKit
-}
-
 const normalizeChildren = (values: FormKitSchemaFormKit[]) => {
   const list = Array.isArray(values) ? values : []
   if (list.length === 0) return []
-  if (list.length === 1) return [withWidthClass(list[0]!, 12)]
-  return list.map((f) => {
-    const oc = typeof f.outerClass === 'string' ? f.outerClass : ''
-    const match = oc.match(/\bw-\[([0-9.]+%)\]\b/)
-    if (match?.[1]) {
-      const percent = Number.parseFloat(match[1])
-      const span = Number.isFinite(percent) ? Math.round((percent / 100) * 12) : getColSpan(f)
-      return withWidthClass(f, span)
-    }
-    const span = getColSpan(f)
-    return withWidthClass(f, span)
-  })
+  if (list.length === 1) {
+    const only = list[0] as any
+    setColSpan(only, 12)
+    return [stripInputGroupOuterClass(only)]
+  }
+  // 输入组单行：总 col-span 不得超过 12（一行网格上限），超出按比例缩放。
+  // 宽度只记 layout.colspan，内层元素不再带 outerClass 宽度类（w-[xx%]/pt-2）
+  rebalanceRowSpans(list, 12)
+  return list.map((f: any) => stripInputGroupOuterClass(f))
+}
+
+// 输入组单行：当前项 span 最大只能占到 12 - 其余各项之和（至少 1），
+// 拖拽放大到总宽 = 12 后无法再向外，只能向左缩小
+const inputGroupMaxSpan = (index: number, items: FormKitSchemaFormKit[]) => {
+  let sum = 0
+  for (let i = 0; i < items.length; i++) {
+    if (i === index) continue
+    sum += Math.max(1, Math.min(12, getColSpan(items[i])))
+  }
+  return Math.max(1, 12 - sum)
 }
 
 const dnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
@@ -134,9 +113,28 @@ const deleteChild = (index: number) => {
           :on-select="onSelect"
           :on-delete="deleteChild"
           :on-resize-end="emitUpdateNormalized"
+          :max-span-for="inputGroupMaxSpan"
           ul-class="p-0"
         />
       </n-input-group>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 输入组是单行复合控件（如 输入框 + 按钮）：隐藏字段的 label/help，
+   否则字段比按钮高出一截、按钮无法与输入框上下对齐 */
+:deep(.n-input-group .formkit-label),
+:deep(.n-input-group .formkit-help) {
+  display: none;
+}
+
+/* 画布上元素宽度由 li 的 col-span 决定：让元素的外框撑满自己的 li（自身宽度），
+   忽略 DSL 里遗留的 w-[xx%]（否则多元素均分后输入框只有 li 的一半宽）。
+   pt-2 是提交按钮在表单根部的间距约定，输入组内单行时要去掉，保证与输入框对齐 */
+:deep(.n-input-group li .formkit-outer) {
+  width: 100% !important;
+  padding-top: 0 !important;
+}
+</style>
+

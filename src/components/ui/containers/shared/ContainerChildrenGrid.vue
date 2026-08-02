@@ -28,6 +28,8 @@ const props = defineProps<{
   onSelectBlank?: () => void
   onDelete: (index: number) => void
   onResizeEnd: () => void
+  /** 拖拽调整宽度时的 span 上限（如输入组：当前项 ≤ 12 - 其余项之和） */
+  maxSpanFor?: (index: number, items: FormKitSchemaFormKit[]) => number
 }>()
 
 const isDragging = ref(false)
@@ -78,6 +80,7 @@ const { resizingIndex, startResize } = useGridSpanResize({
   items: props.items,
   containerRef: props.containerRef,
   onResizeEnd: props.onResizeEnd,
+  maxSpanFor: props.maxSpanFor,
 })
 
 const layout = computed(() => props.layout ?? 'grid')
@@ -99,8 +102,15 @@ const emptyPlaceholderClass = computed(() => {
 const itemStyle = (child: any) => {
   if (layout.value === 'row') {
     if (props.items.value.length === 1) return { width: '100%', flex: '0 0 auto' }
+    // 输入组（row 布局）：按 col-span/12 显示宽度（4 → 33%、6 → 50%）。
+    // 仅当历史数据总宽 > 12 时按比例缩放兜底，避免元素溢出容器、右侧按钮被裁掉
+    const spans = props.items.value.map((c: any) =>
+      Math.max(1, Math.min(12, getColSpan(c))),
+    )
+    const totalSpan = spans.reduce((a, b) => a + b, 0) || 1
     const span = Math.max(1, Math.min(12, getColSpan(child)))
-    return { width: `${(span / 12) * 100}%`, flex: '0 0 auto' }
+    const pct = totalSpan > 12 ? (span / totalSpan) * 100 : (span / 12) * 100
+    return { width: `${pct}%`, flex: '0 0 auto' }
   }
   return {
     gridColumn: `span ${getColSpan(child)} / span ${getColSpan(child)}`,

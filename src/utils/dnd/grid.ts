@@ -1,5 +1,9 @@
-// 从 outerClass 中解析 col-span，默认 12
+// 从 outerClass 中解析 col-span，默认 12；优先 DSL layout.colspan（输入组语义宽度来源）
 export function getColSpan(item: any): number {
+  const layoutSpan = item?.layout?.colspan
+  if (typeof layoutSpan === 'number' && Number.isFinite(layoutSpan) && layoutSpan > 0) {
+    return Math.max(1, Math.min(12, Math.round(layoutSpan)))
+  }
   const outerClass = item?.outerClass
   if (typeof outerClass !== 'string') return 12
   const match = outerClass.match(/col-span-(\d+)/)
@@ -18,6 +22,25 @@ export function setColSpan(item: any, span: number) {
   item.outerClass = classes
 }
 
+// 输入组内层元素：宽度只由 layout.colspan 决定（经 outerClass.col-span-N 往返回读 layout），
+// 去掉 outerClass 里的 w-[xx%] 宽度类与按钮的 pt-2，避免遗留宽度类撑乱画布/预览。
+// 保留 col-span-N / row-span-N 以便 fromSchema 把宽度解析回 layout.colspan。
+export function stripInputGroupOuterClass(child: any): any {
+  if (!child || typeof child !== 'object') return child
+  const clean = (oc?: string) =>
+    (typeof oc === 'string' ? oc : '')
+      .replace(/\bw-\[[^\]]+\]/g, '')
+      .replace(/\bpt-2\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  const next: any = { ...child, outerClass: clean(child.outerClass) || undefined }
+  // $cmp 节点：FormKitSchema 把嵌套 props 透传组件，props.outerClass 同样要去掉宽度类
+  if (child.props && typeof child.props === 'object') {
+    next.props = { ...child.props, outerClass: clean(child.props.outerClass) || undefined }
+  }
+  return next
+}
+
 // 从 outerClass 中解析 row-span，默认 1
 export function getRowSpan(item: any): number {
   const outerClass = item?.outerClass
@@ -25,6 +48,30 @@ export function getRowSpan(item: any): number {
   const match = outerClass.match(/\brow-span-(\d+)\b/)
   const parsed = match ? parseInt(match[1]!, 10) : 1
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
+}
+
+// 输入组（单行 flex-nowrap）总 col-span 不得超过 maxSpan（默认 12 = 一行网格上限）。
+// 超出时按比例缩放各元素 span（每项至少 1），四舍五入后仍超限则从最大的项逐项减 1，
+// 保证总和 ≤ maxSpan，避免元素溢出容器、右侧 resize/删除按钮被裁掉。
+export function rebalanceRowSpans(values: any[], maxSpan = 12): void {
+  if (!Array.isArray(values) || values.length === 0) return
+  const spans = values.map((v) => Math.max(1, Math.min(maxSpan, getColSpan(v))))
+  const total = spans.reduce((a, b) => a + b, 0)
+  if (total <= maxSpan) return
+  const scale = maxSpan / total
+  const next = spans.map((s) => Math.max(1, Math.round(s * scale)))
+  let used = next.reduce((a, b) => a + b, 0)
+  const order = next.map((s, i) => [s, i] as [number, number]).sort((a, b) => b[0]! - a[0]!)
+  let k = 0
+  while (used > maxSpan && k < order.length) {
+    const i = order[k]![1]
+    if (next[i]! > 1) {
+      next[i] = next[i]! - 1
+      used--
+    }
+    k++
+  }
+  values.forEach((v, i) => setColSpan(v, next[i]!))
 }
 
 export type Placement = {

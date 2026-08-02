@@ -17,39 +17,9 @@ import type { FormKitSchemaFormKit } from '@formkit/core'
 import { commitSchemaReconcile } from '@/composables/schema-history'
 import { formSchema } from '@/state/form-schema'
 import { insertState } from './insert-state'
-import { getVisualRows, setColSpan, adjustColSpansForInsertAtRow } from './grid'
+import { getVisualRows, setColSpan, adjustColSpansForInsertAtRow, rebalanceRowSpans, stripInputGroupOuterClass } from './grid'
 import { collectSchemaNames, generateKey, generateNextFieldName } from './schema'
 import { eq } from '@/utils/utils'
-
-function widthClassFromSpan(span: number) {
-  const safeSpan = Math.max(1, Math.min(12, Math.round(span)))
-  const map: Record<number, string> = {
-    1: 'w-[8.33%]',
-    2: 'w-[16.67%]',
-    3: 'w-[25%]',
-    4: 'w-[33.33%]',
-    5: 'w-[41.67%]',
-    6: 'w-[50%]',
-    7: 'w-[58.33%]',
-    8: 'w-[66.67%]',
-    9: 'w-[75%]',
-    10: 'w-[83.33%]',
-    11: 'w-[91.67%]',
-    12: 'w-[100%]',
-  }
-  return map[safeSpan] ?? 'w-[100%]'
-}
-
-function withWidthClass(field: any, widthClass: string) {
-  const current = typeof field?.outerClass === 'string' ? field.outerClass : ''
-  const nextOuterClass = `${current
-    .replace(/\bw-\[[^\]]+\]\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()} ${widthClass}`
-    .replace(/\s+/g, ' ')
-    .trim()
-  return { ...(field as any), outerClass: nextOuterClass || undefined } as any
-}
 
 function normalizeInputGroupChildren(children: FormKitSchemaFormKit[]) {
   const list = Array.isArray(children) ? children : []
@@ -57,18 +27,12 @@ function normalizeInputGroupChildren(children: FormKitSchemaFormKit[]) {
   if (list.length === 1) {
     const only = list[0] as any
     setColSpan(only, 12)
-    return [withWidthClass(only, 'w-[100%]') as any]
+    return [stripInputGroupOuterClass(only) as any]
   }
-  return list.map((child: any) => {
-    const span = (() => {
-      const outerClass = child?.outerClass
-      if (typeof outerClass !== 'string') return 12
-      const match = outerClass.match(/\bcol-span-(\d+)\b/)
-      return match ? parseInt(match[1]!, 10) : 12
-    })()
-    setColSpan(child, span)
-    return withWidthClass(child, widthClassFromSpan(span)) as any
-  })
+  // 输入组单行：总 col-span 不得超过 12（一行网格上限），超出按比例缩放，避免溢出容器。
+  // 宽度只记 layout.colspan（经 col-span-N 往返回读），不再往 outerClass 写 w-[xx%]
+  rebalanceRowSpans(list, 12)
+  return list.map((child: any) => stripInputGroupOuterClass(child))
 }
 
 function getContainerKey(el: HTMLElement | null | undefined): string | null {

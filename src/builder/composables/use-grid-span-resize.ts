@@ -21,6 +21,8 @@ export function useGridSpanResize(params: {
   items: Ref<FormKitSchemaFormKit[]>
   containerRef: Ref<unknown>
   onResizeEnd: () => void
+  /** 当前项的 span 上限（返回 -1 或忽略则不限）。输入组用于保证总宽 ≤ 12 */
+  maxSpanFor?: (index: number, items: FormKitSchemaFormKit[]) => number
 }) {
   const resizingIndex = ref<number | null>(null)
   const resizingPointerId = ref<number | null>(null)
@@ -57,7 +59,13 @@ export function useGridSpanResize(params: {
     if (!columnWidth.value) return
     const deltaX = e.clientX - startX.value
     const deltaSpan = Math.round(deltaX / columnWidth.value)
-    setColSpanAt(resizingIndex.value, startSpan.value + deltaSpan)
+    let nextSpan = startSpan.value + deltaSpan
+    // 输入组：当前项最大只能占到 12 - 其余项之和，向外拖（放大）超限时被钳制
+    if (params.maxSpanFor && resizingIndex.value !== null) {
+      const max = Math.max(1, params.maxSpanFor(resizingIndex.value, params.items.value))
+      nextSpan = Math.min(nextSpan, max)
+    }
+    setColSpanAt(resizingIndex.value, nextSpan)
   }
 
   const onPointerUp = (e: PointerEvent) => {
