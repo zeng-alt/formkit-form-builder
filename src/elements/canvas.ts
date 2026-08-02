@@ -287,7 +287,9 @@ function formatTabs(node: SchemaNode, ctx: ContainerFormatCtx): FormKitSchemaFor
           ? (pane.children as FormKitSchemaFormKit[]).map((c, i) => ctx.format(c, i))
           : []
         const paneLabel = pane?.label as string | undefined
-        // 每个 pane 的内容包裹在 group 中，提供 JSON object 数据
+        const paneName = pane?.name as string | undefined
+        // 每个 pane 的内容包裹在 group 中，提供 JSON object 数据；组名用 pane 的 name
+        //（数据字段名），未设置时回退 label
         const groupNode: any = {
           $formkit: 'group',
           children: paneChildren.length
@@ -295,7 +297,8 @@ function formatTabs(node: SchemaNode, ctx: ContainerFormatCtx): FormKitSchemaFor
             : [],
           outerClass: '!border-0 !p-0 !m-0 ![&>.formkit-wrapper]:border-0 ![&>.formkit-wrapper]:p-0 ![&>.formkit-wrapper]:m-0 ![&>.formkit-wrapper>fieldset]:border-0 ![&>.formkit-wrapper>fieldset]:p-0 ![&>.formkit-wrapper>fieldset]:m-0',
         }
-        if (paneLabel) groupNode.name = paneLabel
+        const paneDataKey = paneName ?? paneLabel
+        if (paneDataKey) groupNode.name = paneDataKey
         return { ...pane, label: paneLabel, children: [groupNode], __key: pane?.__key ?? `${idx}` } as any
       })
     : []

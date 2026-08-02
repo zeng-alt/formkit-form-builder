@@ -635,6 +635,7 @@ function inferLayoutType(s: SchemaNode): LayoutType {
 export function tabsPaneToSchema(node: LayoutNode, children?: SchemaNode[]): SchemaNode {
   const schema: any = { __key: node.key ?? node.id }
   if (node.label) schema.label = node.label
+  if (node.name) schema.name = node.name
   const ch = children ?? []
   if (ch.length) schema.children = ch
   schema.outerClass = nodeOuterClass(node)
@@ -652,6 +653,7 @@ export function tabsPaneFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx): Layo
     children: ctx.children ? ctx.children(childrenArr) : [],
   }
   if (typeof anyS.__key === 'string' && anyS.__key) node.key = anyS.__key
+  if (typeof anyS.name === 'string' && anyS.name) node.name = anyS.name
   if (typeof anyS.label === 'string' && anyS.label) node.label = anyS.label
   parseOuterClass(anyS.outerClass, node)
   return node as LayoutNode

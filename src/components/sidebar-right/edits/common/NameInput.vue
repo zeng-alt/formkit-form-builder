@@ -45,9 +45,8 @@ const isNameTaken = (name: string) => {
   return walk(formSchema.value as any[])
 }
 
-// 字段：必填 + 格式 + 唯一；容器/布局：可选，有值时校验格式与唯一
+// 字段：必填 + 格式 + 唯一；容器/布局/tab pane：可选，有值时校验格式与唯一
 const nameError = computed(() => {
-  if (isTabsPane.value) return ''
   if (!isNamedNode.value) return ''
   if (isFieldsCategory.value && !fieldName.value) return 'Name 不能为空'
   if (!fieldName.value) return ''
@@ -59,13 +58,22 @@ const nameError = computed(() => {
 </script>
 
 <template>
-  <TextInput
-    v-if="hasField && isTabsPane"
-    label="Label"
-    :placeholder="t('edits.placeholder.label')"
-    :value="label"
-    @update:value="(v) => (label = v)"
-  />
+  <!-- tab pane：Name（数据字段名）+ Label（tab 标题） -->
+  <template v-if="hasField && isTabsPane">
+    <TextInput
+      label="Name"
+      :placeholder="t('edits.placeholder.fieldName')"
+      :value="fieldName"
+      :error="nameError"
+      @update:value="(v) => (fieldName = v)"
+    />
+    <TextInput
+      label="Label"
+      :placeholder="t('edits.placeholder.label')"
+      :value="label"
+      @update:value="(v) => (label = v)"
+    />
+  </template>
   <TextInput
     v-else-if="hasField && isNamedNode"
     label="Name"

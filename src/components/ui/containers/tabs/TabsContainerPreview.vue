@@ -59,13 +59,14 @@ const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false))
         :name="(child as any)?.__key || idx"
         :tab="tabLabel(child, idx)"
         :closable="paneClosable"
+        display-directive="show:lazy"
       >
-        <div class="w-full grid grid-cols-12 gap-x-4 gap-y-2">
-          <FormKitSchema
-            :schema="Array.isArray((child as any)?.children) ? (child as any).children : []"
-            :library="schemaLibrary"
-          />
-        </div>
+        <!-- pane 内容由 formatTabs 包装为单个 group（内含 grid grid-cols-12），
+             直接渲染即可，不要再套一层 grid，否则 group 占不到整行、字段 colspan 失效 -->
+        <FormKitSchema
+          :schema="Array.isArray((child as any)?.children) ? (child as any).children : []"
+          :library="schemaLibrary"
+        />
       </n-tab-pane>
     </n-tabs>
   </div>
