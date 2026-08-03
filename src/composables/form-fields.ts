@@ -275,7 +275,8 @@ export function useFormField() {
     get: () => {
       const visibleIf = selectedField.value?.visibleIf;
       if (!visibleIf) return "";
-      return exprToJs(visibleIf);
+      // var 模式：编辑器显示 $field（与表达式求值器 / FormKit schema 一致）
+      return exprToJs(visibleIf, "var");
     },
     set: (value: string) => {
       const next = value.trim();
@@ -506,6 +507,40 @@ export function useFormField() {
     },
   });
 
+  const colSpan = computed<number>({
+    get: () => {
+      const node = selectedField.value
+      return node?.layout?.colspan ?? 12
+    },
+    set: (value: number) => {
+      const nextSpan = Math.max(1, Math.min(12, Math.round(value)))
+      patchSelected((node) => {
+        const layout = { ...node.layout }
+        if (nextSpan < 12) layout.colspan = nextSpan
+        else delete layout.colspan
+        node.layout = Object.keys(layout).length ? layout : undefined
+        // 同步 outerClass 里的 col-span-N：nodeOuterClass 优先用原始字符串，
+        // 只改 layout 不改类名会导致画布仍按旧 col-span-N 渲染
+        let classes = typeof node.outerClass === 'string' ? node.outerClass : ''
+        if (nextSpan < 12) {
+          if (/\bcol-span-\d+\b/.test(classes)) {
+            classes = classes.replace(/\bcol-span-\d+\b/g, `col-span-${nextSpan}`)
+          } else {
+            classes = `${classes} col-span-${nextSpan}`.replace(/\s+/g, ' ').trim()
+          }
+        } else {
+          classes = classes
+            .replace(/\bcol-span-\d+\b/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
+        }
+        if (classes) node.outerClass = classes
+        else delete node.outerClass
+        return node
+      })
+    },
+  })
+
   const bindEvents = computed<Record<string, unknown>>({
     get: () => {
       const value = selectedField.value?.props?.__bind;
@@ -551,6 +586,7 @@ export function useFormField() {
     createButtonProp,
     createPropsProp,
     rowSpan,
+    colSpan,
     bindEvents,
   };
 }

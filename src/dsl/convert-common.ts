@@ -128,7 +128,7 @@ function buildNodeHead(node: FormNode, kind: RenderKind, target?: string): any {
         ? { $el: target ?? node.type }
         : { $formkit: node.type }
   if (node.key) base.__key = node.key
-  if (node.visibleIf) base.if = exprToJs(node.visibleIf, 'formData')
+  if (node.visibleIf) base.if = exprToJs(node.visibleIf, 'var')
   const events = resolveEvents(node.events)
   if (events && Object.keys(events).length) applyByKind(base, events, kind)
   if (node.label) putByKind(base, 'label', node.label, kind)
@@ -339,7 +339,7 @@ export function containerNodeToSchema(
     if (node.id) schema.id = node.id
     if (node.key) schema.__key = node.key
     if (label) schema.label = label
-    if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'formData')
+    if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
     if (node.props) Object.assign(schema, node.props)
     if (ch.length) schema.children = ch
     schema.outerClass = nodeOuterClass(node)
@@ -357,7 +357,7 @@ export function containerNodeToSchema(
     if (label) containerProps.label = label
     const schema: any = { $cmp: node.type, props: containerProps }
     if (node.key) schema.__key = node.key
-    if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'formData')
+    if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
     // 画布/面板读取顶层 name（key 兜底 / 唯一命名）；组件经 props.name 接收
     if (typeof schema.props?.name === 'string') schema.name = schema.props.name
     schema.children = ch
@@ -483,7 +483,7 @@ export function layoutNodeToSchema(
       }
       if (label) schema.props = { ...schema.props, label }
       if (node.key) schema.__key = node.key
-      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'formData')
+      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
       // 画布/面板读取顶层 name；组件经 props.name 接收
       if (typeof schema.props?.name === 'string') schema.name = schema.props.name
       schema.children = ch
@@ -501,7 +501,7 @@ export function layoutNodeToSchema(
       }
       if (label) schema.props = { ...schema.props, label }
       if (node.key) schema.__key = node.key
-      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'formData')
+      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
       // 画布/面板读取顶层 name；组件经 props.name 接收
       if (typeof schema.props?.name === 'string') schema.name = schema.props.name
       schema.children = panes
@@ -513,7 +513,7 @@ export function layoutNodeToSchema(
       const gap = Number((node.props as any)?.gap) || 4
       const schema: any = { $el: 'div', attrs: { class: `grid grid-cols-${columns} gap-${gap}` } }
       if (node.key) schema.__key = node.key
-      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'formData')
+      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
       if (ch.length) schema.children = ch
       schema.outerClass = nodeOuterClass(node)
       return schema as SchemaNode
@@ -521,7 +521,7 @@ export function layoutNodeToSchema(
     case 'row': {
       const schema: any = { $el: 'div', attrs: { class: 'flex flex-row flex-wrap gap-2' } }
       if (node.key) schema.__key = node.key
-      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'formData')
+      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
       if (ch.length) schema.children = ch
       schema.outerClass = nodeOuterClass(node)
       return schema as SchemaNode
@@ -529,7 +529,7 @@ export function layoutNodeToSchema(
     case 'column': {
       const schema: any = { $el: 'div', attrs: { class: 'flex flex-col gap-2' } }
       if (node.key) schema.__key = node.key
-      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'formData')
+      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
       if (ch.length) schema.children = ch
       schema.outerClass = compileLayout(node.layout)
       return schema as SchemaNode
@@ -749,7 +749,7 @@ export function staticNodeToSchema(node: StaticNode, rt?: RenderTarget): SchemaN
   }
 
   if (node.key) base.__key = node.key
-  if (node.visibleIf) base.if = exprToJs(node.visibleIf, 'formData')
+  if (node.visibleIf) base.if = exprToJs(node.visibleIf, 'var')
   const events = resolveEvents(node.events)
   if (events && Object.keys(events).length) applyByKind(base, events, kind)
   if (kind === 'cmp') {

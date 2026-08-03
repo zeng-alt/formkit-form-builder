@@ -263,7 +263,7 @@ const resizeHandleClass = computed(() => {
           <span
             class="bg-[#a277ff] text-white text-xs font-medium px-2.5 py-1 rounded-lg tracking-wide"
           >
-            {{ ((getColSpan(child) / 12) * 100).toFixed(0) }}%
+            {{ getColSpan(child) }}
           </span>
         </div>
       </li>

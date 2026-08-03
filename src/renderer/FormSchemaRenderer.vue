@@ -2,6 +2,7 @@
 import type { Component } from 'vue'
 import { computed, provide, ref, watch, watchEffect } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
+import { getNode } from '@formkit/core'
 import { FormKit, FormKitSchema } from '@formkit/vue'
 import createFormattedSchema from '@/utils/format-schema'
 import { evalExpression } from '@/utils/expression-eval'
@@ -46,16 +47,12 @@ const safeClone = <T>(value: T): T => {
 const internalSchema = ref<FormKitSchemaFormKit[]>([])
 const data = ref<ModelValue>({})
 const listItemSeq = ref<Record<string, number>>({})
-const lastComputedValueByName = ref<Record<string, string>>({})
-const lastDepsSigByName = ref<Record<string, string>>({})
 
 watch(
   () => props.schema,
   (next) => {
     internalSchema.value = safeClone(Array.isArray(next) ? next : [])
     listItemSeq.value = {}
-    lastComputedValueByName.value = {}
-    lastDepsSigByName.value = {}
   },
   { immediate: true, deep: true },
 )
@@ -407,29 +404,21 @@ watchEffect(() => {
     if (typeof expr !== 'string' || !expr.trim()) return
 
     const evalResult = evalExpression(expr, currentData)
-    const depsSig = evalResult.deps
-      .filter((k) => k !== field.name)
-      .map((k) => `${k}:${String(currentData[k] ?? '')}`)
-      .join('|')
-    if (lastDepsSigByName.value[field.name] === depsSig) return
-    lastDepsSigByName.value = { ...lastDepsSigByName.value, [field.name]: depsSig }
-
     if (!evalResult.ok) return
     const result =
       evalResult.value === null || evalResult.value === undefined ? '' : String(evalResult.value)
 
-    const currentValue = currentData[field.name]
-    const lastComputedValue = lastComputedValueByName.value[field.name]
-    const shouldApply =
-      currentValue === null ||
-      currentValue === undefined ||
-      String(currentValue) === '' ||
-      (lastComputedValue !== undefined && String(currentValue) === lastComputedValue)
-
-    if (shouldApply && String(currentValue ?? '') !== result) {
+    // 优先直接写 FormKit 节点（输入钩子只同步当前字段，避免 v-model 双向同步把计算值
+    // 覆盖回旧值导致表达式值不刷新）；节点地址含表单名前缀（testForm.computed），
+    // 未注册（初始挂载竞态）时回落到 data 兜底，让 FormKit 挂载后从 modelValue 初始化。
+    // 只在当前值 != 计算结果时才写，收敛后不再触发；async=true 延迟提交避免递归告警。
+    const addr = resolvedFormName ? `${resolvedFormName}.${field.name}` : field.name
+    const node = getNode(addr) ?? getNode(field.name)
+    if (node) {
+      if (String(node.value ?? '') !== result) node.input(result, true)
+    } else if (String(currentData[field.name] ?? '') !== result) {
       if (!nextData) nextData = { ...currentData }
       nextData[field.name] = result
-      lastComputedValueByName.value = { ...lastComputedValueByName.value, [field.name]: result }
     }
   })
 

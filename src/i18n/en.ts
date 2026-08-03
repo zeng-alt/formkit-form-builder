@@ -230,6 +230,7 @@ export default {
     },
     grid: {
       rowSpanLabel: 'Row span',
+      colSpanLabel: 'Column span',
     },
     optionsLabel: 'Add Items to List',
   },

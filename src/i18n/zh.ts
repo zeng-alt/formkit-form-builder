@@ -188,6 +188,7 @@ export default {
     },
     grid: {
       rowSpanLabel: '占用行数',
+      colSpanLabel: '占用列数',
     },
     optionsLabel: '添加选项',
   },

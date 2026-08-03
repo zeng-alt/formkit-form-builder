@@ -11,10 +11,11 @@ export function isExprValue(v: FieldValue): v is { $expr: Expr } {
 
 /**
  * 编译表达式 AST 为 JS 表达式字符串。
- * - formData 模式：字段引用编译为 `$formData.name`（FormKit schema 的 if / bind 上下文）
- * - var 模式：字段引用编译为 `$name`（兼容旧表达式解释器 / 计算值特性）
+ * - var 模式（默认）：字段引用编译为 `$name`。FormKit v2 schema 表达式把 `$name` 解析到
+ *   FormKitSchema 的 data 上（表单数据），`if` 与计算值都用它；`$formData.` 前缀不是
+ *   FormKit 表达式变量，解析恒为 undefined，因此不再使用 formData 模式。
  */
-export function exprToJs(expr: Expr, mode: FieldRefMode = 'formData'): string {
+export function exprToJs(expr: Expr, mode: FieldRefMode = 'var'): string {
   switch (expr.type) {
     case 'literal':
       return expr.value === undefined ? 'undefined' : JSON.stringify(expr.value)

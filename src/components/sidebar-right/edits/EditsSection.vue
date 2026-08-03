@@ -6,8 +6,9 @@ import { getFieldEditorComponent } from '@/elements'
 import { getElementTypeDef } from '@/dsl'
 import NameInput from './common/NameInput.vue'
 import StaticContentSection from './common/StaticContentSection.vue'
+import ColSpanSection from './common/ColSpanSection.vue'
 
-const { hasField, currentFieldType } = useFormField()
+const { hasField, currentFieldType, selectedIsForm } = useFormField()
 const { t } = useFormBuilderI18n()
 
 const isStatic = computed(() => {
@@ -28,6 +29,7 @@ const editorComponent = computed(() => {
     <div class="p-2">
       <div class="space-y-2 md:space-y-3">
         <NameInput />
+        <ColSpanSection v-if="!selectedIsForm" />
         <StaticContentSection v-if="isStatic" />
         <component :is="editorComponent" v-if="editorComponent" />
       </div>
