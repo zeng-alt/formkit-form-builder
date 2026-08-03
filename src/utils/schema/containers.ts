@@ -1,7 +1,7 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { getContainerDefinition, normalizeContainerNode } from '@/containers/registry'
 
-export type ContainerKind = 'list' | 'card' | 'inputGroup'
+export type ContainerKind = 'list' | 'card' | 'inputGroup' | 'group'
 
 export function getContainerKind(node: unknown): ContainerKind | null {
   const def = getContainerDefinition(node)

@@ -289,6 +289,7 @@ export default {
       card: 'Card container',
       inputGroup: 'Input group (NInputGroup)',
       tabs: 'Tabs container',
+      group: 'Nested object field group',
     },
   },
   elements: {
@@ -411,5 +412,10 @@ export default {
       description: 'Naive UI NInputGroup container (horizontal only)',
     },
     tabs: { name: 'Tabs', label: 'Tabs', description: 'Naive UI Tabs container' },
+    group: {
+      name: 'Group',
+      label: 'Group',
+      description: 'Nested object field group (FormKit group)',
+    },
   },
 } as const

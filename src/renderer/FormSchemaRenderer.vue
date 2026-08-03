@@ -277,6 +277,9 @@ const cloneNodeWithFreshIdentity = (node: any, existingNames: Set<string>, listS
         listKey: nextKey,
         modelValue: Array.isArray(next.children) ? next.children : [],
       }
+    } else if (kind === 'group') {
+      // group 预览为原生 $formkit: 'group'，无需容器 key；只更新 children 即可
+      next.props = baseProps
     } else {
       next.props = {
         ...baseProps,
@@ -412,7 +415,7 @@ watchEffect(() => {
     // 覆盖回旧值导致表达式值不刷新）；节点地址含表单名前缀（testForm.computed），
     // 未注册（初始挂载竞态）时回落到 data 兜底，让 FormKit 挂载后从 modelValue 初始化。
     // 只在当前值 != 计算结果时才写，收敛后不再触发；async=true 延迟提交避免递归告警。
-    const addr = resolvedFormName ? `${resolvedFormName}.${field.name}` : field.name
+    const addr = resolvedFormName.value ? `${resolvedFormName.value}.${field.name}` : field.name
     const node = getNode(addr) ?? getNode(field.name)
     if (node) {
       if (String(node.value ?? '') !== result) node.input(result, true)

@@ -3,4 +3,6 @@
 </script>
 
   <!-- 标题内容由统一"内容"编辑区块（StaticContentSection）编辑 -->
-<template></template>
+<template>
+  <div class="hidden"></div>
+</template>

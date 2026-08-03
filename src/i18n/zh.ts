@@ -247,6 +247,7 @@ export default {
       card: '卡片容器',
       inputGroup: '输入组（NInputGroup）',
       tabs: 'Tabs 容器',
+      group: '嵌套对象字段组',
     },
   },
   elements: {
@@ -357,5 +358,10 @@ export default {
       description: 'Naive UI NInputGroup 容器（仅左右拖拽）',
     },
     tabs: { name: 'Tabs', label: 'Tabs', description: 'Naive UI Tabs 容器' },
+    group: {
+      name: '分组',
+      label: '分组',
+      description: '嵌套对象字段组（FormKit group）',
+    },
   },
 } as const

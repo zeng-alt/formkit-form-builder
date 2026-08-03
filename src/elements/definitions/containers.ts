@@ -10,7 +10,7 @@ export const containerElements: ElementDefinition[] = [
     category: 'container',
     icon: 'i-lucide-list-tree',
     tooltipKey: 'fieldProps.tooltip.list',
-    editor: () => import('@/components/sidebar-right/edits/editors/GroupEditor.vue'),
+    editor: () => import('@/components/sidebar-right/edits/editors/ListEditor.vue'),
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.list.name',
