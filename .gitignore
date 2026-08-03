@@ -29,6 +29,10 @@ coverage
 
 *.tsbuildinfo
 
+# Auto-import / components 自动生成
+auto-imports.d.ts
+components.d.ts
+
 .eslintcache
 .package-lock.json
 # Cypress

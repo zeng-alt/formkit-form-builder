@@ -1,0 +1,45 @@
+{
+  "after tabs drop": [
+    "SubmitSubmit",
+    "TabsTab 1 + 拖拽字段到这里"
+  ],
+  "after text in tab1": [
+    "客户姓名请输入姓名这是帮助文本"
+  ],
+  "preview inputs": {
+    "inputs": [
+      {
+        "type": "text",
+        "value": "",
+        "placeholder": "请输入姓名"
+      },
+      {
+        "type": "text",
+        "value": "",
+        "placeholder": "请输入姓名"
+      }
+    ],
+    "outers": [
+      {
+        "cls": "col-span-12",
+        "w": 744
+      },
+      {
+        "cls": "col-span-12",
+        "w": 744
+      },
+      {
+        "cls": "col-span-12",
+        "w": 744
+      }
+    ],
+    "tabs": [
+      "Tab 1"
+    ]
+  },
+  "tab1 input value after switch": [
+    "hello-tab1",
+    ""
+  ],
+  "data panel": "{\n  \"slots\": {},\n  \"Tab 1\": {\n    \"field_3\": \"hello-tab1\"\n  }\n}"
+}
