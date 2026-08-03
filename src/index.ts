@@ -23,6 +23,8 @@ export type {
   LayoutType,
   FormSettings,
 } from './types/dsl'
+// 自定义主题：FormBuilder / FormRenderer 共用的 theme prop 类型
+export type { BuilderTheme } from './types/theme'
 // 元素模板 / 目录类型（编写扩展元素用）
 export type { ElementTemplate, ElementCatalogEntry, ElementTypeDef, DslToSchemaCtx } from './dsl/registry'
 export type { ElementDefinition, ElementCategory, ElementPaletteProp } from './elements'

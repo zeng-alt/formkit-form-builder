@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, watch } from 'vue'
-import { NConfigProvider, NLayout, darkTheme, type ConfigProviderProps } from 'naive-ui'
-import { useColorMode, usePreferredDark } from '@vueuse/core'
+import { NLayout, type ConfigProviderProps } from 'naive-ui'
+import type { BuilderTheme } from '@/types/theme'
 import { changeLocale } from '@formkit/vue'
 
 import SidebarLeft from '../components/sidebar-left/SidebarLeft.vue'
@@ -14,6 +14,7 @@ import type { FormBuilderConfig } from '../types/env'
 import { provideFormBuilderI18n } from '../i18n/context'
 import { provideRuntimeLocale, type RuntimeLocale } from '../i18n/runtime-locale'
 import { provideFormBuilderState } from '@/state/create-form-builder-state'
+import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 import type { FormDefinition } from '@/types/dsl'
 
 defineSlots<{
@@ -37,22 +38,14 @@ const props = defineProps<
     modelValue?: FormDefinition
     /** 本实例配置；传了则自给（registerElements + provide），不传回落外层 BuilderProvider 注入 */
     config?: FormBuilderConfig
-  } & Partial<ConfigProviderProps>
+    /** 自定义主题：内部映射到 naive-ui 的 darkTheme / lightTheme；缺省自动跟随系统 */
+    theme?: BuilderTheme
+  } & Omit<Partial<ConfigProviderProps>, 'theme'>
 >()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: FormDefinition): void
 }>()
-
-const colorMode = useColorMode()
-const preferredDark = usePreferredDark()
-const resolvedIsDark = computed(
-  () => colorMode.value === 'dark' || (colorMode.value === 'auto' && preferredDark.value),
-)
-const activeTheme = computed(() => {
-  if (props.theme !== undefined) return props.theme
-  return resolvedIsDark.value ? darkTheme : null
-})
 
 // ── 实例状态：每个 FormBuilder 独立的 formDefinition / 历史 / 选中 / 画布 ──
 const state = provideFormBuilderState()
@@ -145,14 +138,13 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
 </script>
 
 <template>
-  <n-config-provider
-    :theme="activeTheme"
-    :theme-overrides="themeOverrides"
+  <BuilderThemeScope
+    :theme="props.theme"
     :locale="runtimeLocale.naiveLocale.value"
     :date-locale="runtimeLocale.naiveDateLocale.value"
+    :theme-overrides="themeOverrides"
     :breakpoints="breakpoints"
     :cls-prefix="clsPrefix"
-    :abstract="abstract"
     :inline-theme-disabled="inlineThemeDisabled"
     :preflight-style-disabled="preflightStyleDisabled"
   >
@@ -192,5 +184,5 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
         <SidebarRight />
       </n-layout>
     </n-layout>
-  </n-config-provider>
+  </BuilderThemeScope>
 </template>

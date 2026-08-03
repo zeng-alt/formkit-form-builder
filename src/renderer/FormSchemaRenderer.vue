@@ -3,7 +3,8 @@ import type { Component } from 'vue'
 import { computed, provide, ref, watch, watchEffect } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { getNode } from '@formkit/core'
-import { FormKit, FormKitSchema } from '@formkit/vue'
+import { FormKit, FormKitSchema, changeLocale } from '@formkit/vue'
+import { NButton, type ConfigProviderProps } from 'naive-ui'
 import createFormattedSchema from '@/utils/format-schema'
 import { evalExpression } from '@/utils/expression-eval'
 import { collectSchemaNames, generateKey, toSafeName } from '@/utils/dnd/schema'
@@ -12,43 +13,86 @@ import { getContainerSpec } from '@/elements/container-spec'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
 import { dslToOutputSchema, dslToSchema } from '@/dsl'
 import type { FormDefinition } from '@/types/dsl'
+import type { BuilderTheme } from '@/types/theme'
+import { useRuntimeLocale } from '@/i18n/runtime-locale'
+import { useFormBuilderI18n } from '@/i18n/context'
+import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 
 type ModelValue = Record<string, unknown>
 
+/** #actions 槽作用域：可由外部自定义操作区按钮，复用表单提交/重置 */
+export type FormActionsScope = {
+  submit: () => void
+  reset: () => void
+  loading: boolean
+}
+
 const props = withDefaults(
-  defineProps<{
-    /** 主输入：版本化 DSL 表单定义（设计器导出的 JSON），内部 dslToSchema 转换 */
-    definition?: FormDefinition
-    /** 备选输入：裸 FormKit schema 数组（灵活通道）；与 definition 同传时优先 definition */
-    schema?: FormKitSchemaFormKit[]
-    /** 有 definition 时的数据输出结构：flat 扁平 | nested 容器转 group 嵌套 */
-    dataStructure?: 'flat' | 'nested'
-    modelValue?: ModelValue
-    actions?: boolean
-    formClass?: string
-    formName?: string
-    labelPosition?: 'top' | 'left'
-    labelWidth?: number
-    schemaLibrary?: Record<string, Component>
-    interactiveContainers?: boolean
-  }>(),
+  defineProps<
+    {
+      /** 主输入：版本化 DSL 表单定义（设计器导出的 JSON），内部 dslToSchema 转换 */
+      definition?: FormDefinition
+      /** 备选输入：裸 FormKit schema 数组（灵活通道）；与 definition 同传时优先 definition */
+      schema?: FormKitSchemaFormKit[]
+      /** 有 definition 时的数据输出结构：flat 扁平 | nested 容器转 group 嵌套 */
+      dataStructure?: 'flat' | 'nested'
+      modelValue?: ModelValue
+      /** 渲染默认操作区（提交/重置两按钮）；false 则不显示，配合 #actions 槽自定义 */
+      actions?: boolean
+      /** 默认提交按钮文案（缺省 i18n：提交 / Submit） */
+      submitLabel?: string
+      /** 默认重置按钮文案（缺省 i18n：重置 / Reset） */
+      resetLabel?: string
+      /** 默认提交按钮透传属性（naive NButton props） */
+      submitAttrs?: Record<string, unknown>
+      /** 默认重置按钮透传属性（naive NButton props） */
+      resetAttrs?: Record<string, unknown>
+      /** 默认操作区按钮对齐方式 */
+      actionsJustify?: 'start' | 'center' | 'end' | 'space-between'
+      formClass?: string
+      formName?: string
+      labelPosition?: 'top' | 'left'
+      labelWidth?: number
+      schemaLibrary?: Record<string, Component>
+      interactiveContainers?: boolean
+      /** 自定义主题：内部映射到 naive-ui 的 darkTheme / lightTheme；缺省自动跟随系统 */
+      theme?: BuilderTheme
+    } & Omit<Partial<ConfigProviderProps>, 'theme'>
+  >(),
   {
     dataStructure: 'flat',
     actions: false,
+    actionsJustify: 'start',
     formClass: 'w-full !grid !grid-cols-12 gap-x-4 gap-y-2',
     interactiveContainers: true,
   },
 )
 
 defineSlots<{
-  /** 自定义提交/操作区（对应 FormKit 的 #actions） */
-  actions?: () => unknown
+  /** 自定义操作区（覆盖默认提交/重置两按钮）。作用域提供 submit / reset / loading */
+  actions?: (props: FormActionsScope) => unknown
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: ModelValue): void
   (e: 'submit', value: ModelValue): void
 }>()
+
+// ── locale：读取所在 Builder 实例/Provider 注入的运行时代码，缺省 zh-CN ──
+const runtimeLocale = useRuntimeLocale()
+const resolvedNaiveLocale = computed(() => props.locale ?? runtimeLocale.naiveLocale.value)
+const resolvedNaiveDateLocale = computed(
+  () => props.dateLocale ?? runtimeLocale.naiveDateLocale.value,
+)
+
+// 同步 FormKit 全局语言（提交按钮 / 校验文案），与 BuilderMain 同一套逻辑
+watch(
+  () => runtimeLocale.locale.value,
+  (next) => {
+    changeLocale(next === 'en' ? 'en' : 'zh')
+  },
+  { immediate: true },
+)
 
 const safeClone = <T>(value: T): T => {
   try {
@@ -462,21 +506,80 @@ watchEffect(() => {
 const handleSubmit = (formData: Record<string, unknown>) => {
   emit('submit', formData)
 }
+
+// ── 操作区：submit / reset 经 FormKit 组件实例（expose 了 node）触发 ──
+const formKitRef = ref<InstanceType<typeof FormKit> | null>(null)
+
+const formNode = computed(() => {
+  const inst = formKitRef.value as { node?: { submit?: () => void; reset?: () => void } } | null
+  return inst?.node ?? null
+})
+
+/** 提交表单（未填必填校验时不触发 submit 事件） */
+const submit = () => formNode.value?.submit?.()
+/** 重置表单到初始值 */
+const reset = () => formNode.value?.reset?.()
+
+const loading = ref(false)
+
+defineExpose({ submit, reset, loading })
+
+const { t } = useFormBuilderI18n()
+
+const resolvedSubmitLabel = computed(
+  () => props.submitLabel ?? t('elements.submit.label'),
+)
+const resolvedResetLabel = computed(
+  () => props.resetLabel ?? t('elements.reset.label'),
+)
 </script>
 
 <template>
-  <FormKit
-    type="form"
-    :name="resolvedFormName"
-    :actions="props.actions"
-    v-model="data"
-    @submit="handleSubmit"
-    :form-class="resolvedFormClass"
-    :style="{ '--fk-label-width': `${resolvedLabelWidth}px` }"
+  <BuilderThemeScope
+    :theme="props.theme"
+    :locale="resolvedNaiveLocale"
+    :date-locale="resolvedNaiveDateLocale"
+    :theme-overrides="themeOverrides"
+    :breakpoints="breakpoints"
+    :cls-prefix="clsPrefix"
+    :inline-theme-disabled="inlineThemeDisabled"
+    :preflight-style-disabled="preflightStyleDisabled"
   >
-    <FormKitSchema :schema="formattedSchema" :data="data" :library="schemaLibrary" />
-    <template v-if="$slots.actions" #actions>
-      <slot name="actions" />
-    </template>
-  </FormKit>
+    <FormKit
+      ref="formKitRef"
+      type="form"
+      :name="resolvedFormName"
+      :actions="false"
+      v-model="data"
+      @submit="handleSubmit"
+      :form-class="resolvedFormClass"
+      :style="{ '--fk-label-width': `${resolvedLabelWidth}px` }"
+    >
+      <FormKitSchema :schema="formattedSchema" :data="data" :library="schemaLibrary" />
+      <template v-if="$slots.actions">
+        <slot name="actions" :submit="submit" :reset="reset" :loading="loading" />
+      </template>
+      <template v-else-if="actions">
+        <div
+          :class="[
+            'col-span-12',
+            'flex',
+            'gap-3',
+            actionsJustify === 'center'
+              ? 'justify-center'
+              : actionsJustify === 'end'
+                ? 'justify-end'
+                : actionsJustify === 'space-between'
+                  ? 'justify-between'
+                  : 'justify-start',
+          ]"
+        >
+          <NButton type="primary" attr-type="submit" v-bind="submitAttrs ?? {}" :loading="loading">
+            {{ resolvedSubmitLabel }}
+          </NButton>
+          <NButton v-bind="resetAttrs ?? {}" @click="reset">{{ resolvedResetLabel }}</NButton>
+        </div>
+      </template>
+    </FormKit>
+  </BuilderThemeScope>
 </template>

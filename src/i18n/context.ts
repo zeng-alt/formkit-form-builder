@@ -10,12 +10,34 @@ type I18nContext = {
 
 const I18N_KEY = Symbol('FormBuilderI18n')
 
+function isObject(item: any): boolean {
+  return item !== null && typeof item === 'object' && !Array.isArray(item)
+}
+
+// 递归深合并（对齐 camunda7-ui 的国际化语义）：
+// 后传的 messages 逐 key 覆写前面的，未覆写的沿用原值；数组整体替换。
+function deepMerge(target: any, ...sources: any[]): any {
+  if (!sources.length) return target
+  const source = sources.shift()
+  if (isObject(target) && isObject(source)) {
+    for (const key in source) {
+      if (isObject(source[key]) && isObject(target[key])) {
+        deepMerge(target[key], source[key])
+      } else {
+        target[key] = source[key]
+      }
+    }
+  }
+  return deepMerge(target, ...sources)
+}
+
 function mergeMessages(base: AnyMessages, overrides: AnyMessages) {
-  const out: AnyMessages = { ...base }
+  const out: AnyMessages = {}
+  for (const locale of Object.keys(base)) {
+    out[locale] = deepMerge({}, base[locale])
+  }
   for (const locale of Object.keys(overrides)) {
-    const baseLocale = base[locale] ?? {}
-    const overrideLocale = overrides[locale] ?? {}
-    out[locale] = { ...baseLocale, ...overrideLocale }
+    out[locale] = deepMerge(out[locale] ?? {}, overrides[locale] ?? {})
   }
   return out
 }
