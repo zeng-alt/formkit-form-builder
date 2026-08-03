@@ -32,6 +32,15 @@ const initial = computed(() =>
 
 const canvasCtx = useCanvasSchemaContext();
 
+// 按钮组只接收按钮类静态元素（submit/reset/naiveButton），其余元素拖入被拒
+const BUTTON_TYPES = new Set(["submit", "reset", "naiveButton"]);
+const isButtonNode = (value: unknown): boolean => {
+  if (!value || typeof value !== "object") return false;
+  const n = value as { $cmp?: unknown; $formkit?: unknown };
+  const type = n.$cmp ?? n.$formkit;
+  return typeof type === "string" && BUTTON_TYPES.has(type);
+};
+
 const normalizeChildren = (values: FormKitSchemaFormKit[]) => {
   const list = Array.isArray(values) ? values : [];
   return list.map((f: any) => stripInputGroupOuterClass(f));
@@ -39,6 +48,7 @@ const normalizeChildren = (values: FormKitSchemaFormKit[]) => {
 
 const dnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
   modelValue: initial,
+  accepts: isButtonNode,
   onUpdateModelValue: (value) => {
     const next = normalizeChildren(value);
     const k = props.buttonGroupKey;
@@ -109,5 +119,11 @@ const deleteChild = (index: number) => {
 :deep(.n-button-group .formkit-label),
 :deep(.n-button-group .formkit-help) {
   display: none;
+}
+
+/* 子按钮填满各自的等分 flex 槽位（此前按钮保持内容宽，只显示一部分）。
+   只作用于 formkit-inner 内的真实按钮，不影响删除/选中等操作按钮 */
+:deep(.n-button-group .formkit-inner .n-button) {
+  width: 100% !important;
 }
 </style>

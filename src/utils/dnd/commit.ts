@@ -166,7 +166,25 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
     let current = el instanceof HTMLElement ? el : null
     while (current) {
       const data = parents.get(current)
-      if (data) return { el: current, data } as any as ParentRecord<T>
+      if (data) {
+        const candidate = { el: current, data } as any as ParentRecord<T>
+        // 目标容器配置了 accepts 但拒绝了被拖节点（如按钮组只收按钮）：
+        // 不能直接落入该容器，继续向上找下一个可接收的父级（通常是根 drop-area）
+        const accepts = (data.config as any)?.accepts
+        if (typeof accepts === 'function') {
+          let accepted = true
+          try {
+            accepted = accepts(candidate, state.initialParent, state.currentParent, state)
+          } catch {
+            accepted = true
+          }
+          if (!accepted) {
+            current = current.parentElement
+            continue
+          }
+        }
+        return candidate
+      }
       current = current.parentElement
     }
     return state.currentParent

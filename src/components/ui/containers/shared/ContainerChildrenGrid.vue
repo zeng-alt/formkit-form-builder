@@ -113,6 +113,9 @@ const emptyPlaceholderClass = computed(() => {
 const itemStyle = (child: any) => {
   if (layout.value === 'row') {
     if (props.autoWidth) return { width: 'auto', flex: '0 0 auto' }
+    // 纵向按钮组：column 下 flex-basis 控制的是高度，width:0% 会把宽度压扁，
+    // 改为每个按钮占满整列宽度、不纵向拉伸
+    if (props.equalWidth && props.vertical) return { width: '100%', flex: '0 0 auto' }
     // 按钮组：子按钮等分整行宽度（有多少个就平分多少）
     if (props.equalWidth) return { flex: '1 1 0%', width: '0%' }
     if (props.items.value.length === 1) return { width: '100%', flex: '0 0 auto' }

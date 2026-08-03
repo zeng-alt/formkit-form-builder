@@ -12,6 +12,8 @@ export function useContainerDragAndDrop<T>(params: {
   insertPoint?: () => HTMLElement
   enabled?: boolean | ComputedRef<boolean>
   dragHandle?: string | ComputedRef<string | undefined>
+  /** 拖入校验：返回 false 时该容器拒绝接收被拖节点（如按钮组只收按钮） */
+  accepts?: (value: T) => boolean
 }) {
   const rootSelector = computed(() => params.rootSelector ?? '[data-testid="drop-area"]')
   const insertPoint = computed(() => params.insertPoint ?? createDefaultInsertPointElement)
@@ -21,7 +23,21 @@ export function useContainerDragAndDrop<T>(params: {
   const [containerRef, items, updateConfig] = useDragAndDrop<T>(params.modelValue.value, {
     group: 'form-builder',
     nativeDrag: true,
-    accepts: () => true,
+    // 校验被拖节点类型。值来源优先级：activeState（拖拽起始节点）→ currentTargetValue
+    // → draggedNodes（drop 提交路径 handleEnd 里 activeState 已清空，靠它兜底）
+    accepts: (_target, _initial, _current, state) => {
+      if (!params.accepts) return true
+      const s = state as {
+        activeState?: { node?: { data?: { value?: T } } }
+        currentTargetValue?: T
+        draggedNodes?: Array<{ data?: { value?: T } }>
+      }
+      const value =
+        s.activeState?.node?.data?.value ??
+        s.currentTargetValue ??
+        s.draggedNodes?.[0]?.data?.value
+      return params.accepts(value as T)
+    },
     sortable: enabled.value,
     draggable: () => true,
     disabled: !enabled.value,

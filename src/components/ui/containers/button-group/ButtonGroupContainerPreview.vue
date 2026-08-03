@@ -41,11 +41,14 @@ const modelValue = computed(() => {
 </template>
 
 <style scoped>
-/* 按钮组：子按钮等分整行宽度（有多少个就平分多少）；隐藏 label/help */
-:deep(.n-button-group .formkit-outer),
-:deep(.n-button-group .formkit-wrapper) {
-  width: 0% !important;
+/* 按钮组：子按钮等分整行宽度（flex 槽位均分，有多少个就平分多少）；
+   按钮本身撑满槽位 —— 此前 width:0% 把内容链压成 0 宽，按钮只露出内容宽的部分 */
+:deep(.n-button-group .formkit-outer) {
   flex: 1 1 0% !important;
+}
+:deep(.n-button-group .formkit-wrapper),
+:deep(.n-button-group .formkit-inner .n-button) {
+  width: 100% !important;
 }
 :deep(.n-button-group .formkit-label),
 :deep(.n-button-group .formkit-help) {
