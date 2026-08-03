@@ -35,5 +35,5 @@ Public API is `src/index.ts` only — everything else is internal. Note `Rendere
 - The library is built once (`vite build`) and `external`s the peerDependencies `vue`/`naive-ui`/`@vueuse/core` for both ES and UMD (vite.config.ts). Never import externalized deps as internal modules. `index.d.ts` is bundled by `rollupTypes` via `tsconfig.build.json` (rootDir `src`, declarationDir `dist` — do not set `outDir` there or the rollup silently emits an empty declaration).
 - `tsconfig.app.json` enables `noUncheckedIndexedAccess` (index access yields `T | undefined`). `@typescript-eslint/no-explicit-any` is disabled (eslint.config.ts:26).
 - `dist/` is gitignored; never commit build output.
-- Dev entry is `playground/src/`; `src/App.vue` is leftover and excluded from the build (tsconfig.build.json:4).
+- Dev entry is `playground/src/`.
 - Commit messages follow conventional commits, mixing English and Chinese (see `git log`).
