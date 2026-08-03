@@ -5,62 +5,78 @@ import { useFormBuilderI18n } from '../i18n/context'
 import BuilderPreview from './BuilderPreview.vue'
 import AiPrompt from '../components/ai-prompt/AiPrompt.vue'
 import ThemeSwitcher from '../components/ui/theme-switcher/ThemeSwitcher.vue'
-import { canRedo, canUndo, commitSchema, redo, undo } from '../composables/schema-history'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
 
+// 所属 FormBuilder 实例状态：undo/redo / 清空提交绑定到各自实例。
+const { canRedo, canUndo, commitSchema, redo, undo } = useFormBuilderState()
 const { t } = useFormBuilderI18n()
 
 const clearForm = () => {
   commitSchema([], { reason: 'clear' })
 }
 const showPreview = ref(false)
+
+defineSlots<{
+  /** 顶栏左侧区（清除 / 预览） */
+  left?: () => unknown
+  /** 顶栏中间区（AI 提示） */
+  center?: () => unknown
+  /** 顶栏右侧区（undo/redo / 主题） */
+  right?: () => unknown
+}>()
 </script>
 
 <template>
   <header class="sticky top-0 md:top-5 flex h-14 shrink-0 items-center rounded-2xl z-[1000] px-4">
     <div class="w-full grid grid-cols-3 items-center gap-3">
       <div class="flex items-center gap-2 justify-start">
-        <n-popconfirm @positive-click="clearForm">
-          <template #trigger>
-            <n-tooltip>
-              <template #trigger>
-                <n-button secondary circle size="small" class="h-5 w-5 !p-2">
-                  <template #icon
-                    ><span class="i-lucide-trash-2 h-4 w-4 dark:text-green-200"></span
-                  ></template>
-                </n-button>
-              </template>
-              {{ t('builder.clearForm') }}
-            </n-tooltip>
-          </template>
-          {{ t('builder.clearConfirm') }}
-        </n-popconfirm>
+        <slot name="left">
+          <n-popconfirm @positive-click="clearForm">
+            <template #trigger>
+              <n-tooltip>
+                <template #trigger>
+                  <n-button secondary circle size="small" class="h-5 w-5 !p-2">
+                    <template #icon
+                      ><span class="i-lucide-trash-2 h-4 w-4 dark:text-green-200"></span
+                    ></template>
+                  </n-button>
+                </template>
+                {{ t('builder.clearForm') }}
+              </n-tooltip>
+            </template>
+            {{ t('builder.clearConfirm') }}
+          </n-popconfirm>
 
-        <n-tooltip>
-          <template #trigger>
-            <n-button
-              secondary
-              circle
-              size="small"
-              @click="showPreview = true"
-              class="h-5 w-5 !p-2"
-            >
-              <template #icon
-                ><span class="i-lucide-eye h-4 w-4 dark:text-green-200"></span
-              ></template>
-            </n-button>
-          </template>
-          {{ t('builder.previewForm') }}
-        </n-tooltip>
-        <BuilderPreview v-model:show="showPreview" />
+          <n-tooltip>
+            <template #trigger>
+              <n-button
+                secondary
+                circle
+                size="small"
+                @click="showPreview = true"
+                class="h-5 w-5 !p-2"
+              >
+                <template #icon
+                  ><span class="i-lucide-eye h-4 w-4 dark:text-green-200"></span
+                ></template>
+              </n-button>
+            </template>
+            {{ t('builder.previewForm') }}
+          </n-tooltip>
+          <BuilderPreview v-model:show="showPreview" />
+        </slot>
       </div>
 
       <div class="flex justify-center">
-        <div class="w-full max-w-[560px]">
-          <AiPrompt />
-        </div>
+        <slot name="center">
+          <div class="w-full max-w-[560px]">
+            <AiPrompt />
+          </div>
+        </slot>
       </div>
 
       <div class="flex items-center gap-2 justify-end">
+        <slot name="right">
         <n-button-group class="bg-card shadow-sm rounded-lg border border-border/50">
           <n-tooltip placement="bottom">
             <template #trigger>
@@ -98,6 +114,7 @@ const showPreview = ref(false)
           </n-tooltip>
         </n-button-group>
         <ThemeSwitcher />
+        </slot>
       </div>
     </div>
   </header>

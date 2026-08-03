@@ -3,11 +3,14 @@ import { computed } from "vue";
 import type { FormKitSchemaFormKit } from "@formkit/core";
 import { NButtonGroup } from "naive-ui";
 import { useFormBuilderI18n } from "@/i18n/context";
-import { selectedKey } from "@/state/form-schema";
+import { useFormBuilderState } from "@/state/create-form-builder-state";
 import { useContainerDragAndDrop } from "@/builder/composables/use-container-drag-and-drop";
 import { useCanvasSchemaContext } from "@/builder/composables/canvas-schema-context";
 import ContainerChildrenGrid from "@/components/ui/containers/shared/ContainerChildrenGrid.vue";
 import { applyGroupDisabled, stripInputGroupOuterClass } from "@/utils/dnd/grid";
+
+// 所属 FormBuilder 实例状态：选中高亮绑定到各自画布实例。
+const { selectedKey } = useFormBuilderState();
 
 // 按钮组容器（NButtonGroup）：纯展示容器，无 label/help。
 // 子项为按钮类静态元素，宽度自适应内容，整体 disabled 时注入到各子按钮。

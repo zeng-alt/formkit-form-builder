@@ -3,10 +3,13 @@ import { computed } from "vue";
 import type { FormKitSchemaFormKit } from "@formkit/core";
 import { NInputGroup } from "naive-ui";
 import { useFormBuilderI18n } from "@/i18n/context";
-import { selectedKey } from "@/state/form-schema";
+import { useFormBuilderState } from "@/state/create-form-builder-state";
 import { useContainerDragAndDrop } from "@/builder/composables/use-container-drag-and-drop";
 import { useCanvasSchemaContext } from "@/builder/composables/canvas-schema-context";
 import ContainerChildrenGrid from "@/components/ui/containers/shared/ContainerChildrenGrid.vue";
+
+// 所属 FormBuilder 实例状态：选中高亮绑定到各自画布实例。
+const { selectedKey } = useFormBuilderState();
 import {
   getColSpan,
   setColSpan,

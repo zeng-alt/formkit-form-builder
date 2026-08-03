@@ -3,9 +3,8 @@ import type { Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
 import { customInsertPlugin } from '@/utils/custom-insert-plugin'
-import { formSchema, selectedIndex, selectedKey, selectedTarget } from '@/state/form-schema'
-import { formDefinition } from '@/state/form-definition'
-import { commitSchemaReconcile } from '@/composables/schema-history'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
+import type { DndContext } from '@/utils/dnd/context'
 import { findNodeByKey, updateAtPath } from '@/utils/schema/tree'
 import { canvasSchemaLibrary } from '@/builder/containers'
 import { createDefaultInsertPointElement } from '@/utils/dnd/insert-point-element'
@@ -16,6 +15,17 @@ import { provideCanvasSchemaContext } from './canvas-schema-context'
 
 // 画布（根 DropArea）组合函数：负责根级 DnD 列表 + schema 变更/选中逻辑
 export function useCanvasSchema() {
+  // 所属 FormBuilder 实例状态：多设计器并存时各自独立。
+  const state = useFormBuilderState()
+  const {
+    formDefinition,
+    formSchema,
+    selectedIndex,
+    selectedKey,
+    selectedTarget,
+    commitSchemaReconcile,
+  } = state
+
   // ── 画布表单样式 ────────────────────────────────────────────────────────────
   const canvasFormClass = computed(() => {
     const common = ['[&_.formkit-label]:text-xs', '[&_.formkit-label]:font-bold'].join(' ')
@@ -161,6 +171,11 @@ export function useCanvasSchema() {
   }
 
   // ── 根级 DnD ────────────────────────────────────────────────────────────────
+  // 根 drop-area 的 DnD 上下文：提交 / 插入定位绑定到本画布实例。
+  const dndContext: DndContext = {
+    formSchema: state.formSchema,
+    commitSchemaReconcile: state.commitSchemaReconcile,
+  }
   const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.value, {
     group: 'form-builder',
     nativeDrag: true,
@@ -172,11 +187,14 @@ export function useCanvasSchema() {
       data.targetData.node.el.setAttribute('draggable', 'true')
     },
     plugins: [
-      customInsertPlugin({
-        insertPoint: () => {
-          return createDefaultInsertPointElement()
+      customInsertPlugin(
+        {
+          insertPoint: () => {
+            return createDefaultInsertPointElement()
+          },
         },
-      }),
+        dndContext,
+      ),
     ],
   })
 
@@ -243,5 +261,7 @@ export function useCanvasSchema() {
     onSelectBlank,
     onDelete: deleteField,
     onResizeEnd,
+    /** 实例标识：画布根 drop-area 的 testid 后缀，保证多设计器并存时 DnD 作用域隔离 */
+    instanceId: state.instanceId,
   }
 }

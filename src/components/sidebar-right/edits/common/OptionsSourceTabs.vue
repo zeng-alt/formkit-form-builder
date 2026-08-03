@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { NButton, NInput, NTabPane, NTabs } from 'naive-ui'
-import { selectedIndex, selectedKey } from '@/state/form-schema'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormField } from '../../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../../i18n/context'
 import EditsLayout from './EditsLayout.vue'
@@ -11,6 +11,8 @@ import TagsInput from './TagsInput.vue'
 type SourceType = 'label' | 'pair' | 'json' | 'endpoint'
 type PairRow = { label: string; value: string }
 
+// 所属 FormBuilder 实例状态：选中 token 绑定到各自实例。
+const { selectedIndex, selectedKey } = useFormBuilderState()
 const { optionsRaw } = useFormField()
 const { t } = useFormBuilderI18n()
 

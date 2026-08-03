@@ -2,10 +2,12 @@
 import { computed } from 'vue'
 import { getElementTypeDef } from '@/dsl'
 import { useFormField } from '@/composables/form-fields'
-import { formSchema, selectedIndex, selectedKey } from '@/state/form-schema'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormBuilderI18n } from '@/i18n/context'
 import TextInput from './TextInput.vue'
 
+// 所属 FormBuilder 实例状态：name 唯一性校验 / 选中定位绑定到各自实例。
+const { formSchema, selectedIndex, selectedKey } = useFormBuilderState()
 const { currentFieldType, fieldName, label, hasField } = useFormField()
 const { t } = useFormBuilderI18n()
 

@@ -17,7 +17,7 @@ pnpm i vue naive-ui @vueuse/core
 ## 样式引入
 
 ```ts
-import "@zeng-alt/formkit-form-builder/style.css";
+import "@zeng-alt/formkit-form-builder/builder.css";
 ```
 
 ## 快速开始
@@ -41,7 +41,7 @@ createApp(App).use(formkitPlugin, formkitConfig).mount("#app");
 ```vue
 <script setup lang="ts">
 import { FormBuilder, BuilderProvider } from "formkit-form-builder";
-import "formkit-form-builder/style.css";
+import "formkit-form-builder/builder.css";
 
 const config = {
   locale: "zh-CN",

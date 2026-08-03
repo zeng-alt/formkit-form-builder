@@ -4,8 +4,8 @@ Vue 3 + FormKit 2 visual form-builder, published as the npm library `@zeng-alt/f
 
 ## Commands
 
-- `pnpm dev` — Vite dev server. The Vite `root` is `./playground`, **not** the repo root (vite.config.ts:11); playground imports the library via the `@/` → `src/` alias.
-- `pnpm build` — runs `type-check` and the library build (in parallel). Emits ESM/CJS + `.d.ts` to `dist/`. Library entries: `src/index.ts` and a separate `src/style-entry.ts` → `dist/style.css`.
+- `pnpm dev` — Vite dev server. The Vite `root` is `./playground`, **not** the repo root (vite.config.ts:25); playground imports the library via the real package name `@zeng-alt/formkit-form-builder` (aliased to `src/index.ts` in vite.config.ts + tsconfig.app.json paths), so playground code matches real consumer usage and the README examples.
+- `pnpm build` — runs `type-check` and the library build (in parallel). **Single** `vite build` emits exactly four files to `dist/`: `builder.es.js` (ESM), `builder.umd.js` (UMD, same externals as ESM), `index.d.ts` (single bundled declaration via `rollupTypes`), `builder.css`. Only `vue`/`naive-ui`/`@vueuse/core` (peerDependencies) are externalized — everything else is bundled, so UMD script-tag users must also load those three as globals (`Vue`, `naiveUi`, `VueUse`). CSS is imported from `src/index.ts` (`uno.css` + `./style.css`), so the ESM entry auto-loads styles; the `./builder.css` subpath export stays for UMD/script-tag users.
 - `pnpm type-check` — `vue-tsc --build` over project references (`tsconfig.node.json`, `tsconfig.app.json`); tsbuildinfo goes to `node_modules/.tmp`.
 - `pnpm lint` — `oxlint . --fix` then `eslint . --fix --cache`. Both auto-fix; run after changing files.
 - `pnpm format` — `oxfmt src/`. Repo style is **no semicolons, single quotes** (`.oxfmtrc.json`) — not prettier defaults.
@@ -32,7 +32,7 @@ Public API is `src/index.ts` only — everything else is internal. Note `Rendere
 
 ## Gotchas
 
-- The library build `external`s `vue`, `@formkit/core`, `naive-ui`, `@vueuse/core`, `vue-sonner`, `openai` (vite.config.ts:52) — never import these as internal modules.
+- The library is built once (`vite build`) and `external`s the peerDependencies `vue`/`naive-ui`/`@vueuse/core` for both ES and UMD (vite.config.ts). Never import externalized deps as internal modules. `index.d.ts` is bundled by `rollupTypes` via `tsconfig.build.json` (rootDir `src`, declarationDir `dist` — do not set `outDir` there or the rollup silently emits an empty declaration).
 - `tsconfig.app.json` enables `noUncheckedIndexedAccess` (index access yields `T | undefined`). `@typescript-eslint/no-explicit-any` is disabled (eslint.config.ts:26).
 - `dist/` is gitignored; never commit build output.
 - Dev entry is `playground/src/`; `src/App.vue` is leftover and excluded from the build (tsconfig.build.json:4).

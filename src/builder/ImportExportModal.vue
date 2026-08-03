@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { NModal, NInput, NButton, NSpace } from 'naive-ui'
-import { formDefinition } from '@/state/form-definition'
 import { dslToSchema } from '@/dsl'
-import { commitFormDefinition, commitSchema } from '../composables/schema-history'
 import { generateKey } from '@/utils/dnd/schema'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { FormDefinition } from '@/types/dsl'
 import { toast } from 'vue-sonner'
 import { useFormBuilderI18n } from '../i18n/context'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
 
 const props = defineProps<{
   show: boolean
@@ -19,6 +18,9 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useFormBuilderI18n()
+
+// 所属 FormBuilder 实例状态：导入/导出绑定到各自实例的 DSL 与提交漏斗。
+const { formDefinition, commitFormDefinition, commitSchema } = useFormBuilderState()
 
 const jsonContent = ref('')
 

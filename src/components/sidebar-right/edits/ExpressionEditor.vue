@@ -2,10 +2,12 @@
 import { computed, ref, watch } from 'vue'
 import { NSwitch, NInput, NAlert } from 'naive-ui'
 import { useFormField } from '../../../composables/form-fields'
-import { selectedIndex, selectedKey } from '@/state/form-schema'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { evalExpression } from '../../../utils/expression-eval'
 import { useFormBuilderI18n } from '../../../i18n/context'
 
+// 所属 FormBuilder 实例状态：选中 token 绑定到各自实例。
+const { selectedIndex, selectedKey } = useFormBuilderState()
 const { availableFieldNames, useExpressionValue, valueExpression, fieldValue } = useFormField()
 const { t } = useFormBuilderI18n()
 

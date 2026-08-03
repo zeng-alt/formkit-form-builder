@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { FormBuilderConfig } from '@/types/env'
-import { BuilderProvider, FormBuilder } from '@/index'
+import type { FormBuilderConfig } from '@zeng-alt/formkit-form-builder'
+import { BuilderProvider, FormBuilder } from '@zeng-alt/formkit-form-builder'
 
 const formBuilderConfig = computed<FormBuilderConfig>(() => ({
   apiKey: 'xxxxxxx',
@@ -13,4 +13,3 @@ const formBuilderConfig = computed<FormBuilderConfig>(() => ({
     <FormBuilder />
   </BuilderProvider>
 </template>
-

@@ -2,11 +2,14 @@
 import { computed, ref, watch } from "vue";
 import type { FormKitSchemaFormKit } from "@formkit/core";
 import { useFormBuilderI18n } from "@/i18n/context";
-import { selectedKey } from "@/state/form-schema";
+import { useFormBuilderState } from "@/state/create-form-builder-state";
 import { useContainerDragAndDrop } from "@/builder/composables/use-container-drag-and-drop";
 import { useCanvasSchemaContext } from "@/builder/composables/canvas-schema-context";
 import ContainerChildrenGrid from "../shared/ContainerChildrenGrid.vue";
 import { generateKey } from "@/utils/dnd/schema";
+
+// 所属 FormBuilder 实例状态：选中高亮绑定到各自画布实例。
+const { selectedKey } = useFormBuilderState();
 
 type TabsPane = {
   __key: string;

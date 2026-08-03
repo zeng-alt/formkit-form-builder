@@ -1,8 +1,8 @@
 import { createApp } from "vue";
 import { plugin } from "@formkit/vue";
+import { formkitConfig } from "@zeng-alt/formkit-form-builder";
 import App from "./App.vue";
-import config from "../../src/formkit.config.ts";
 import "uno.css";
 import "./style.css";
 
-createApp(App).use(plugin, config).mount("#app");
+createApp(App).use(plugin, formkitConfig()).mount("#app");

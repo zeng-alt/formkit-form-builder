@@ -42,14 +42,18 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { NModal } from 'naive-ui'
-import { formDefinition } from '@/state/form-definition'
 import { dslToSchema } from '@/dsl'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useFormBuilderI18n } from '@/i18n/context'
-import { canvasView, type CanvasView } from '@/state/canvas-ui'
+import type { CanvasView } from '@/state/canvas-ui'
 import FormSchemaRenderer from '@/renderer/FormSchemaRenderer.vue'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
 
 const { t } = useFormBuilderI18n()
+
+// 所属 FormBuilder 实例状态：预览快照 / 视口绑定到各自实例；
+// 独立使用（传入 schema prop）时回落到默认实例。
+const { formDefinition, canvasView } = useFormBuilderState()
 
 type ModelValue = Record<string, unknown>
 

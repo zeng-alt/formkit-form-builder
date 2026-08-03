@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { selectedIndex, selectedKey } from '@/state/form-schema'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormField } from '../../../../composables/form-fields'
 import JsonTextarea from './JsonTextarea.vue'
 
+// 所属 FormBuilder 实例状态：选中 token 绑定到各自实例。
+const { selectedIndex, selectedKey } = useFormBuilderState()
 const { optionsRaw } = useFormField()
 
 const draft = ref('')

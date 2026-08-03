@@ -1,20 +1,22 @@
+import type { Component } from "vue";
 import type { ElementDefinition } from "../types";
 
 // 纯数据目录：不 import 任何 .vue。FormKit 组件绑定在 elements/formkit.ts（按 type 索引）。
 // 按钮类按钮配置已展平进 props（原 buttonProps 嵌套废除）。
 
 // 标题类静态元素（naiveH1 ~ naiveH6 共用 NaiveTypographyHeader 组件绑定）
+// editor 用静态 import() 便于库构建时内联进单一产物
 const heading = (
   depth: number,
   icon: string,
   tooltipKey: string,
-  editor: string,
+  editor: () => Promise<{ default: Component }>,
 ): ElementDefinition => ({
   type: `naiveH${depth}`,
   category: "static",
   icon,
   tooltipKey,
-  editor: () => import(/* @vite-ignore */ editor),
+  editor,
   schema: {
     renderAs: "cmp",
     outerClass: "col-span-12",
@@ -168,37 +170,37 @@ export const staticElements: ElementDefinition[] = [
     1,
     "i-lucide-heading-1",
     "fieldProps.tooltip.naiveH1",
-    "@/components/sidebar-right/edits/editors/NaiveH1Editor.vue",
+    () => import("@/components/sidebar-right/edits/editors/NaiveH1Editor.vue"),
   ),
   heading(
     2,
     "i-lucide-heading-2",
     "fieldProps.tooltip.naiveH2",
-    "@/components/sidebar-right/edits/editors/NaiveH2Editor.vue",
+    () => import("@/components/sidebar-right/edits/editors/NaiveH2Editor.vue"),
   ),
   heading(
     3,
     "i-lucide-heading-3",
     "fieldProps.tooltip.naiveH3",
-    "@/components/sidebar-right/edits/editors/NaiveH3Editor.vue",
+    () => import("@/components/sidebar-right/edits/editors/NaiveH3Editor.vue"),
   ),
   heading(
     4,
     "i-lucide-heading-4",
     "fieldProps.tooltip.naiveH4",
-    "@/components/sidebar-right/edits/editors/NaiveH4Editor.vue",
+    () => import("@/components/sidebar-right/edits/editors/NaiveH4Editor.vue"),
   ),
   heading(
     5,
     "i-lucide-heading-5",
     "fieldProps.tooltip.naiveH5",
-    "@/components/sidebar-right/edits/editors/NaiveH5Editor.vue",
+    () => import("@/components/sidebar-right/edits/editors/NaiveH5Editor.vue"),
   ),
   heading(
     6,
     "i-lucide-heading-6",
     "fieldProps.tooltip.naiveH6",
-    "@/components/sidebar-right/edits/editors/NaiveH6Editor.vue",
+    () => import("@/components/sidebar-right/edits/editors/NaiveH6Editor.vue"),
   ),
   {
     type: "naiveUl",

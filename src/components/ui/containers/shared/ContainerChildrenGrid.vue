@@ -162,7 +162,9 @@ const resizeHandleClass = computed(() => {
       @drop="((isDragging = false), props.setNestedParentOnRoot?.(false))"
     >
       <li v-if="props.items.value.length === 0" :class="emptyPlaceholderClass">
-        <n-empty :description="props.emptyText" />
+        <slot name="empty">
+          <n-empty :description="props.emptyText" />
+        </slot>
       </li>
       <li
         v-for="(child, idx) in props.items.value"

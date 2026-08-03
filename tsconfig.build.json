@@ -5,9 +5,8 @@
   "compilerOptions": {
     "declaration": true,
     "emitDeclarationOnly": true,
-    "declarationMap": false,
-    "outDir": "./dist",
-    "noEmit": false,
+    "declarationDir": "./dist",
+    "rootDir": "./src",
     "stripInternal": true
   }
 }

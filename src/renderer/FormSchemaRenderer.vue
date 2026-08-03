@@ -10,12 +10,19 @@ import { collectSchemaNames, generateKey, toSafeName } from '@/utils/dnd/schema'
 import { getContainerKind } from '@/utils/schema/containers'
 import { getContainerSpec } from '@/elements/container-spec'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
+import { dslToOutputSchema, dslToSchema } from '@/dsl'
+import type { FormDefinition } from '@/types/dsl'
 
 type ModelValue = Record<string, unknown>
 
 const props = withDefaults(
   defineProps<{
-    schema: FormKitSchemaFormKit[]
+    /** 主输入：版本化 DSL 表单定义（设计器导出的 JSON），内部 dslToSchema 转换 */
+    definition?: FormDefinition
+    /** 备选输入：裸 FormKit schema 数组（灵活通道）；与 definition 同传时优先 definition */
+    schema?: FormKitSchemaFormKit[]
+    /** 有 definition 时的数据输出结构：flat 扁平 | nested 容器转 group 嵌套 */
+    dataStructure?: 'flat' | 'nested'
     modelValue?: ModelValue
     actions?: boolean
     formClass?: string
@@ -26,11 +33,17 @@ const props = withDefaults(
     interactiveContainers?: boolean
   }>(),
   {
+    dataStructure: 'flat',
     actions: false,
     formClass: 'w-full !grid !grid-cols-12 gap-x-4 gap-y-2',
     interactiveContainers: true,
   },
 )
+
+defineSlots<{
+  /** 自定义提交/操作区（对应 FormKit 的 #actions） */
+  actions?: () => unknown
+}>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: ModelValue): void
@@ -49,8 +62,28 @@ const internalSchema = ref<FormKitSchemaFormKit[]>([])
 const data = ref<ModelValue>({})
 const listItemSeq = ref<Record<string, number>>({})
 
+// definition / schema 二选一：优先 definition（版本化 DSL），内部转 schema。
+let warnedBoth = false
+const sourceSchema = computed<FormKitSchemaFormKit[]>(() => {
+  if (props.definition) {
+    if (props.schema && Array.isArray(props.schema) && !warnedBoth) {
+      warnedBoth = true
+      console.warn('[FormRenderer] both "definition" and "schema" provided — using "definition"')
+    }
+    const toSchema = props.dataStructure === 'nested' ? dslToOutputSchema : dslToSchema
+    try {
+      const next = toSchema(props.definition)
+      return Array.isArray(next) ? next : []
+    } catch (e) {
+      console.error('[FormRenderer] dslToSchema failed', e)
+      return []
+    }
+  }
+  return Array.isArray(props.schema) ? props.schema : []
+})
+
 watch(
-  () => props.schema,
+  sourceSchema,
   (next) => {
     internalSchema.value = safeClone(Array.isArray(next) ? next : [])
     listItemSeq.value = {}
@@ -442,5 +475,8 @@ const handleSubmit = (formData: Record<string, unknown>) => {
     :style="{ '--fk-label-width': `${resolvedLabelWidth}px` }"
   >
     <FormKitSchema :schema="formattedSchema" :data="data" :library="schemaLibrary" />
+    <template v-if="$slots.actions" #actions>
+      <slot name="actions" />
+    </template>
   </FormKit>
 </template>

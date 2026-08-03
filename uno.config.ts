@@ -1,8 +1,23 @@
 import { defineConfig, presetWind3 } from "unocss";
 import presetIcons from "unocss/preset-icons";
 import { presetTwAnimate } from "unocss-tw-animate-css";
+import { getIconData, iconToHTML, iconToSVG, replaceIDs, type IconifyJSON } from "@iconify/utils";
 import lucide from "@iconify-json/lucide/icons.json";
 import stash from "@iconify-json/stash/icons.json";
+
+// 直接以 icons.json 作为 presetIcons 的 custom collection 时，@iconify/utils 的
+// getCustomIcon 只认「扁平 iconName → svg 字符串」的映射；而默认的 node loader 在
+// VS Code 终端（VSCODE_CWD 被设置）下会被 @unocss/preset-icons 跳过，导致全部图标加载失败。
+// 因此这里把每个图标集转成一个惰性 loader 函数，返回可直接使用的 SVG 字符串，
+// 在任何环境（含 VS Code 终端）都能稳定加载。
+function createIconLoader(iconSet: IconifyJSON) {
+  return (icon: string): string | undefined => {
+    const data = getIconData(iconSet, icon);
+    if (!data) return undefined;
+    const { body, attributes } = iconToSVG(data, {});
+    return iconToHTML(replaceIDs(body), attributes);
+  };
+}
 
 export default defineConfig({
   safelist: [
@@ -70,11 +85,17 @@ export default defineConfig({
     presetWind3(),
     presetIcons({
       collections: {
-        lucide: lucide as any,
-        stash: stash as any,
+        lucide: createIconLoader(lucide),
+        stash: createIconLoader(stash),
       },
       scale: 1.2,
       warn: true,
+      // 统一图标基线与尺寸（随 font-size 缩放），显式 w-/h- 类优先级更高可覆盖
+      extraProperties: {
+        display: "inline-block",
+        width: "1em",
+        height: "1em",
+      },
     }),
     presetTwAnimate(),
   ],

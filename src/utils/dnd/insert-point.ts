@@ -1,9 +1,9 @@
 import type { InsertState, NodeRecord, ParentRecord } from '@formkit/drag-and-drop'
 import { state } from '@formkit/drag-and-drop'
-import { formSchema } from '@/state/form-schema'
 import { findSchemaByKey } from './schema'
 import { computePlacements, findInsertIndexForCell, getRowSpan } from './grid'
 import { getRealCoords } from './range'
+import type { DndContext } from './context'
 
 // 创建插入提示线 DOM
 export function createInsertPoint<T>(parent: ParentRecord<T>, insertState: InsertState<T>) {
@@ -40,6 +40,11 @@ export function positionInsertPoint<T>(
   node: NodeRecord<T>,
   insertState: InsertState<T>,
 ) {
+  // 所属画布实例的 schema 投影：精确插入定位需按最新 DSL 计算 row-span / 占位。
+  // 多实例时从目标 parent 的 config 读取各自画布投影，避免读到别的画布。
+  const ctx = (parent.data.config as any)?.dndContext as DndContext | undefined
+  const liveSchema = (ctx?.formSchema.value ?? []) as any[]
+
   if (insertState.insertPoint?.parent.el !== parent.el) {
     removeInsertPoint(insertState)
     createInsertPoint(parent, insertState)
@@ -92,7 +97,7 @@ export function positionInsertPoint<T>(
     const targetKey = (node.data.value as any)?.__key
     const schemaValue =
       typeof targetKey === 'string' && targetKey
-        ? findSchemaByKey(formSchema.value as any[], targetKey)
+        ? findSchemaByKey(liveSchema, targetKey)
         : undefined
     const targetRowSpan = getRowSpan(schemaValue ?? latestValue ?? node.data.value)
     const draggedRowSpan = (insertState as any).draggedRowSpan ?? 1
@@ -109,7 +114,7 @@ export function positionInsertPoint<T>(
           ? latestValues.map((v: any) => {
               const k = v?.__key
               if (typeof k === 'string' && k)
-                return findSchemaByKey(formSchema.value as any[], k) ?? v
+                return findSchemaByKey(liveSchema, k) ?? v
               return v
             })
           : []

@@ -17,6 +17,7 @@ import type { FormKitSchemaFormKit } from '@formkit/core'
 import { commitSchemaReconcile } from '@/composables/schema-history'
 import { formSchema } from '@/state/form-schema'
 import { insertState } from './insert-state'
+import { findRootDropAreaEl, type DndContext } from './context'
 import { getVisualRows, setColSpan, adjustColSpansForInsertAtRow, rebalanceRowSpans, stripInputGroupOuterClass } from './grid'
 import { collectSchemaNames, generateKey, generateNextFieldName } from './schema'
 import { getContainerSpec } from '@/elements/container-spec'
@@ -52,10 +53,11 @@ function getContainerKey(el: HTMLElement | null | undefined): string | null {
 function normalizeInsertValues(
   insertValues: FormKitSchemaFormKit[],
   isSource: boolean,
+  existingSchema: FormKitSchemaFormKit[],
 ): FormKitSchemaFormKit[] {
   if (!isSource) return insertValues
   const existingNames = new Set<string>()
-  collectSchemaNames(formSchema.value, existingNames)
+  collectSchemaNames(existingSchema, existingNames)
   return insertValues.map((value: any) => {
     const valObj = JSON.parse(JSON.stringify(value))
     if (typeof valObj === 'object' && valObj !== null) {
@@ -192,6 +194,11 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
 
   const targetParent = resolveTargetParent()
 
+  // 所属画布实例的 DnD 上下文：拖放提交可能来自调色板（无上下文），
+  // 但目标 parent 一定在某个画布内，其 config 上挂着该画布的 formSchema / 提交漏斗。
+  const ctx = (targetParent.data.config as any)?.dndContext as DndContext | undefined
+  const schemaForNames = ctx?.formSchema.value ?? formSchema.value
+
   const sourceListKey = getContainerKey(sourceParent.el as any)
   const targetListKey = getContainerKey(targetParent.el as any)
 
@@ -238,7 +245,7 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
         }) as any as FormKitSchemaFormKit[])
       : (draggedValues as any as FormKitSchemaFormKit[])
 
-  const insertValues = normalizeInsertValues(insertValuesRaw, isSource)
+  const insertValues = normalizeInsertValues(insertValuesRaw, isSource, schemaForNames)
 
   let sourceNextValues: FormKitSchemaFormKit[] | null = null
   let targetNextValues: FormKitSchemaFormKit[] | null = null
@@ -296,7 +303,8 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
     targetNextValues = nextTargetValues as any
   }
 
-  const rootEl = document.querySelector('[data-testid="drop-area"]') as HTMLElement | null
+  // 从目标向上找所属画布根（多实例时各自作用域，不再全局 querySelector）。
+  const rootEl = findRootDropAreaEl(targetParent.el as HTMLElement | null)
   const rootData = rootEl ? parents.get(rootEl) : undefined
   if (!rootEl || !rootData) return
 
@@ -306,7 +314,7 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
 
   const listMap = new Map<string, FormKitSchemaFormKit[]>()
   const listEls = Array.from(
-    document.querySelectorAll<HTMLElement>(
+    rootEl.querySelectorAll<HTMLElement>(
       '[data-list-key],[data-card-key],[data-input-group-key],[data-button-group-key],[data-tabs-key],[data-tabs-pane-key],[data-group-key]',
     ),
   )
@@ -379,7 +387,9 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
 
   const nextSchema = rootValues.map((node: any) => applyListMap(node)) as FormKitSchemaFormKit[]
 
-  commitSchemaReconcile(nextSchema, { reason: 'dnd' })
+  // 用所属画布实例的提交漏斗写回（未解析到上下文时回落到默认实例，保持既有行为）。
+  const commit = ctx?.commitSchemaReconcile ?? commitSchemaReconcile
+  commit(nextSchema, { reason: 'dnd' })
 
   if (insertPoint) insertPoint.el.style.display = 'none'
 

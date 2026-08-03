@@ -4,13 +4,15 @@ import instructions from './Instructions.txt?raw'
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { isLoading } from '@/state/canvas-ui'
 import { cn } from '../../utils/utils'
 import { NButton, NInput, NPopover, NTooltip } from 'naive-ui'
 import { useFormBuilderConfig } from '../../composables/use-config'
 import { useFormBuilderI18n } from '../../i18n/context'
 import { useMediaQuery } from '@vueuse/core'
-import { commitSchema } from '../../composables/schema-history'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
+
+// 所属 FormBuilder 实例状态：AI 生成写回各自实例的 schema / 加载态。
+const { isLoading, commitSchema } = useFormBuilderState()
 
 const isMobile = useMediaQuery('(max-width: 768px)')
 

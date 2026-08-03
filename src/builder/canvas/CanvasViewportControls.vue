@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { NButton, NButtonGroup, NTooltip } from 'naive-ui'
-import { canvasView } from '@/state/canvas-ui'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormBuilderI18n } from '@/i18n/context'
 
+// 所属 FormBuilder 实例状态：画布视口绑定到各自实例。
+const { canvasView } = useFormBuilderState()
 const { t } = useFormBuilderI18n()
 
 const views = [

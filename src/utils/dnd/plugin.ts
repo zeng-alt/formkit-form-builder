@@ -20,10 +20,10 @@ import {
   state,
 } from '@formkit/drag-and-drop'
 import { watch } from 'vue'
-import { formSchema } from '@/state/form-schema'
 import { handleEnd } from './commit'
 import { insertState } from './insert-state'
 import { positionInsertPoint, createInsertPoint } from './insert-point'
+import { isRootDropArea, type DndContext } from './context'
 import { defineRanges } from './range'
 import { eventCoordinates, pd } from '../utils'
 
@@ -327,8 +327,9 @@ function findClosest<T>(enabledNodes: NodeRecord<T>[], state: DragState<T>) {
   return foundRange
 }
 
-// 对外暴露：在画布 DnD 里作为插件传入
-export function customInsertPlugin<T>(insertConfig: InsertConfig<T>) {
+// 对外暴露：在画布 DnD 里作为插件传入。deps 为所属画布实例的 DnD 上下文，
+// 挂到该 parent 的 config 上，供提交（handleEnd）与插入定位（positionInsertPoint）运行时读取。
+export function customInsertPlugin<T>(insertConfig: InsertConfig<T>, deps?: DndContext) {
   return (parent: HTMLElement) => {
     const parentData = parents.get(parent)
     if (!parentData) return
@@ -336,6 +337,7 @@ export function customInsertPlugin<T>(insertConfig: InsertConfig<T>) {
     const insertParentConfig = {
       ...parentData.config,
       insertConfig,
+      dndContext: deps,
     }
 
     return {
@@ -372,9 +374,11 @@ export function customInsertPlugin<T>(insertConfig: InsertConfig<T>) {
           defineRanges(parent)
         })
 
-        if (parent.getAttribute('data-testid') === 'drop-area') {
+        // 根 drop-area：把所属画布的 formSchema 投影同步为父级列表值。
+        // 多实例时每个画布根用各自实例的投影，testid 以 drop-area 开头即根。
+        if (deps && isRootDropArea(parent)) {
           watch(
-            formSchema,
+            deps.formSchema,
             (newSchema) => {
               if (newSchema) {
                 setParentValues(parent, parentData, [...newSchema])

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 import { NConfigProvider, NLayout, darkTheme, type ConfigProviderProps } from 'naive-ui'
 import { useColorMode, usePreferredDark } from '@vueuse/core'
 import { changeLocale } from '@formkit/vue'
@@ -8,13 +8,41 @@ import SidebarLeft from '../components/sidebar-left/SidebarLeft.vue'
 import SidebarRight from '../components/sidebar-right/SidebarRight.vue'
 import BuilderCanvas from './canvas/BuilderCanvas.vue'
 import BuilderHeader from './BuilderHeader.vue'
-import { useFormBuilderConfig } from '../composables/use-config'
+import { useFormBuilderConfig, provideFormBuilderConfig } from '../composables/use-config'
+import { registerElements } from '../plugin/register-element'
 import type { FormBuilderConfig } from '../types/env'
 import { provideFormBuilderI18n } from '../i18n/context'
 import { provideRuntimeLocale, type RuntimeLocale } from '../i18n/runtime-locale'
-import { selectedKey, selectedTarget } from '@/state/form-schema'
+import { provideFormBuilderState } from '@/state/create-form-builder-state'
+import type { FormDefinition } from '@/types/dsl'
 
-const props = defineProps<ConfigProviderProps>()
+defineSlots<{
+  /** 整个顶栏（含默认内容） */
+  header?: () => unknown
+  /** 顶栏左侧区（清除 / 预览），不传则用默认 */
+  'header-left'?: () => unknown
+  /** 顶栏中间区（AI 提示），不传则用默认 */
+  'header-center'?: () => unknown
+  /** 顶栏右侧区（undo/redo / 主题），不传则用默认 */
+  'header-right'?: () => unknown
+  /** 画布空状态，不传则用默认 NEmpty */
+  empty?: () => unknown
+  /** 右侧操作列（导入导出 / 语言切换），不传则用默认 */
+  toolbar?: () => unknown
+}>()
+
+const props = defineProps<
+  {
+    /** 表单定义：v-model 双向绑定，预载已有表单并实时吐出编辑结果 */
+    modelValue?: FormDefinition
+    /** 本实例配置；传了则自给（registerElements + provide），不传回落外层 BuilderProvider 注入 */
+    config?: FormBuilderConfig
+  } & Partial<ConfigProviderProps>
+>()
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: FormDefinition): void
+}>()
 
 const colorMode = useColorMode()
 const preferredDark = usePreferredDark()
@@ -26,7 +54,17 @@ const activeTheme = computed(() => {
   return resolvedIsDark.value ? darkTheme : null
 })
 
-const cfg = useFormBuilderConfig() as FormBuilderConfig
+// ── 实例状态：每个 FormBuilder 独立的 formDefinition / 历史 / 选中 / 画布 ──
+const state = provideFormBuilderState()
+const { formDefinition, setFormDefinition } = state
+
+// ── 配置：prop 优先，否则回落注入（BuilderProvider 提供）──
+const injectedCfg = useFormBuilderConfig()
+if (props.config) {
+  registerElements(props.config.elements)
+  provideFormBuilderConfig(props.config)
+}
+const cfg = (props.config ?? injectedCfg) as FormBuilderConfig
 
 const initialLocale: RuntimeLocale = cfg?.locale === 'en' ? 'en' : 'zh-CN'
 const runtimeLocale = provideRuntimeLocale(initialLocale)
@@ -44,6 +82,50 @@ provideFormBuilderI18n({
   messages: computed(() => cfg?.messages as Record<string, any> | undefined),
 })
 
+// ── v-model 双向同步 ────────────────────────────────────────────────────────
+// syncingFromProps：外部 modelValue 变更（预载 / 父级替换）正在落到内部状态，不回吐。
+// syncingToProps：内部变更刚吐出，父级回声的 modelValue 直接忽略，避免死循环。
+let syncingFromProps = false
+let syncingToProps = false
+
+const safeClone = <T>(value: T): T => {
+  try {
+    return structuredClone(value)
+  } catch {
+    return JSON.parse(JSON.stringify(value)) as T
+  }
+}
+
+// 外部 → 内部：预载 / 替换表单。resetHistory 重置内部 undo 栈（父级权威）。
+watch(
+  () => props.modelValue,
+  (next) => {
+    if (!next) return
+    if (syncingToProps) return
+    if (next === formDefinition.value) return
+    syncingFromProps = true
+    setFormDefinition(safeClone(next), { resetHistory: true })
+    nextTick(() => {
+      syncingFromProps = false
+    })
+  },
+  { immediate: true },
+)
+
+// 内部 → 外部：任何编辑 / 拖拽 / undo / redo 后吐出当前表单定义。
+watch(
+  formDefinition,
+  (def) => {
+    if (syncingFromProps) return
+    syncingToProps = true
+    emit('update:modelValue', safeClone(def))
+    nextTick(() => {
+      syncingToProps = false
+    })
+  },
+  { deep: false },
+)
+
 const onBuilderBlankPointerDown = (e: PointerEvent) => {
   const el = e.target as HTMLElement | null
   if (!el) return
@@ -57,8 +139,8 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
     return
   if (el.closest('.n-button,.n-input,.n-select,.n-switch,.n-dropdown,.n-popover')) return
 
-  selectedTarget.value = 'form'
-  selectedKey.value = null
+  state.selectedTarget.value = 'form'
+  state.selectedKey.value = null
 }
 </script>
 
@@ -83,8 +165,28 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
           @pointerdown.capture="onBuilderBlankPointerDown"
         >
           <div class="p-4 flex flex-1 min-h-0 flex-col">
-            <BuilderHeader />
-            <BuilderCanvas class="flex-1 min-h-0" />
+            <slot name="header">
+              <BuilderHeader>
+                <template v-if="$slots['header-left']" #left>
+                  <slot name="header-left" />
+                </template>
+                <template v-if="$slots['header-center']" #center>
+                  <slot name="header-center" />
+                </template>
+                <template v-if="$slots['header-right']" #right>
+                  <slot name="header-right" />
+                </template>
+              </BuilderHeader>
+            </slot>
+
+            <BuilderCanvas class="flex-1 min-h-0">
+              <template v-if="$slots['toolbar']" #toolbar>
+                <slot name="toolbar" />
+              </template>
+              <template v-if="$slots['empty']" #empty>
+                <slot name="empty" />
+              </template>
+            </BuilderCanvas>
           </div>
         </n-layout>
         <SidebarRight />

@@ -8,7 +8,9 @@
 
     // Path mapping for cleaner imports.
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      // playground 以真实发布包名引包，走 src/index.ts 公共入口
+      "@zeng-alt/formkit-form-builder": ["./src/index.ts"]
     },
 
     // `vue-tsc --build` produces a .tsbuildinfo file for incremental type-checking.

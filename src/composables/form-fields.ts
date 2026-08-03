@@ -1,23 +1,26 @@
 import type { WritableComputedRef } from "vue";
 import { computed } from "vue";
-import { selectedIndex, selectedKey, selectedTarget } from "@/state/form-schema";
-import { formDefinition } from "@/state/form-definition";
 import { findDslNodeByKey, updateDslNodeAtKey } from "@/utils/schema/dsl-tree";
-import { commitFormDefinition } from "./schema-history";
 import { exprToJs, resolveValidation, parseExprString, parseValidation } from "@/dsl";
 import { isExprValue } from "@/dsl/compile";
+import { useFormBuilderState } from "@/state/create-form-builder-state";
 import type { FieldNode, FormNode, OptionItem } from "@/types/dsl";
 
-// 当前选中节点：直接读 DSL 真源（formDefinition），而非 FormKit schema 投影。
-export const selectedField = computed<FormNode | undefined>(() => {
-  const root = formDefinition.value?.root?.children;
-  if (!Array.isArray(root)) return undefined;
-  const key = selectedKey.value;
-  if (key) return findDslNodeByKey(root, key)?.node;
-  return root[selectedIndex.value];
-});
-
 export function useFormField() {
+  // 所属 FormBuilder 实例状态：选中 / 真源 / 提交漏斗全部绑定到各自实例。
+  const state = useFormBuilderState()
+  const { formDefinition, selectedIndex, selectedKey, selectedTarget } = state
+  const { commitFormDefinition } = state
+
+  // 当前选中节点：直接读 DSL 真源（formDefinition），而非 FormKit schema 投影。
+  const selectedField = computed<FormNode | undefined>(() => {
+    const root = formDefinition.value?.root?.children;
+    if (!Array.isArray(root)) return undefined;
+    const key = selectedKey.value;
+    if (key) return findDslNodeByKey(root, key)?.node;
+    return root[selectedIndex.value];
+  });
+
   const normalizeName = (value: string) => {
     let name = value
       .trim()
@@ -563,6 +566,7 @@ export function useFormField() {
   });
 
   return {
+    selectedField,
     fieldName,
     useExpressionValue,
     valueExpression,

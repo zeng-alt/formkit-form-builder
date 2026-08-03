@@ -2,10 +2,13 @@
 import { computed } from "vue";
 import type { FormKitSchemaFormKit } from "@formkit/core";
 import { useFormBuilderI18n } from "@/i18n/context";
-import { selectedKey } from "@/state/form-schema";
+import { useFormBuilderState } from "@/state/create-form-builder-state";
 import { useContainerDragAndDrop } from "@/builder/composables/use-container-drag-and-drop";
 import { useCanvasSchemaContext } from "@/builder/composables/canvas-schema-context";
 import ContainerChildrenGrid from "../shared/ContainerChildrenGrid.vue";
+
+// 所属 FormBuilder 实例状态：选中高亮绑定到各自画布实例。
+const { selectedKey } = useFormBuilderState();
 
 // group 容器（对应 FormKit 原生 $formkit: 'group'）：嵌套 object 数据结构。
 // 画布上以虚线框承载子字段，预览时由 formatContainer（规格 primitive:group）还原为原生 FormKit group。

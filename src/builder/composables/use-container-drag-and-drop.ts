@@ -4,6 +4,8 @@ import { parents, setParentValues } from '@formkit/drag-and-drop'
 import { customInsertPlugin } from '@/utils/custom-insert-plugin'
 import { eq } from '@/utils/utils'
 import { createDefaultInsertPointElement } from '@/utils/dnd/insert-point-element'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
+import type { DndContext } from '@/utils/dnd/context'
 
 export function useContainerDragAndDrop<T>(params: {
   modelValue: ComputedRef<T[]>
@@ -15,10 +17,21 @@ export function useContainerDragAndDrop<T>(params: {
   /** 拖入校验：返回 false 时该容器拒绝接收被拖节点（如按钮组只收按钮） */
   accepts?: (value: T) => boolean
 }) {
-  const rootSelector = computed(() => params.rootSelector ?? '[data-testid="drop-area"]')
+  // 所属画布实例状态：多设计器并存时，容器的根 / 提交漏斗绑定到各自实例。
+  // 预览等非 Builder 子树内调用会回落到默认实例，DnD 禁用时不影响。
+  const state = useFormBuilderState()
+  const rootSelector = computed(
+    () => params.rootSelector ?? `[data-testid="drop-area-${state.instanceId}"]`,
+  )
   const insertPoint = computed(() => params.insertPoint ?? createDefaultInsertPointElement)
   const enabled = computed(() => unref(params.enabled) ?? true)
   const dragHandle = computed(() => unref(params.dragHandle))
+
+  // 挂到本容器 parent 的 config 上，供提交/插入定位读取所属画布实例。
+  const dndContext: DndContext = {
+    formSchema: state.formSchema,
+    commitSchemaReconcile: state.commitSchemaReconcile,
+  }
 
   const [containerRef, items, updateConfig] = useDragAndDrop<T>(params.modelValue.value, {
     group: 'form-builder',
@@ -43,9 +56,12 @@ export function useContainerDragAndDrop<T>(params: {
     disabled: !enabled.value,
     dragHandle: dragHandle.value,
     plugins: [
-      customInsertPlugin({
-        insertPoint: insertPoint.value,
-      }),
+      customInsertPlugin(
+        {
+          insertPoint: insertPoint.value,
+        },
+        dndContext,
+      ),
     ],
     handleNodePointerup(data) {
       data.targetData.node.el.setAttribute('draggable', 'true')

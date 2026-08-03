@@ -4,10 +4,10 @@ import SingleParamValidation from './SingleParamValidation.vue'
 import DoubleParamValidation from './DoubleParamValidation.vue'
 import { computed } from 'vue'
 import { useFormBuilderI18n } from '../../../i18n/context'
-import { useFormField, selectedField } from '../../../composables/form-fields'
+import { useFormField } from '../../../composables/form-fields'
 
 const { t } = useFormBuilderI18n()
-const { currentFieldType } = useFormField()
+const { currentFieldType, selectedField } = useFormField()
 
 const validations = computed(() => ({
   singleValue: [

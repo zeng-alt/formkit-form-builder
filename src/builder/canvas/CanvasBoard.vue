@@ -3,13 +3,17 @@ import { NCard, NSpin } from 'naive-ui'
 import type { Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import ContainerChildrenGrid from '@/components/ui/containers/shared/ContainerChildrenGrid.vue'
-import { selectedKey } from '@/state/form-schema'
-import { formDefinition } from '@/state/form-definition'
-import { canvasView, isLoading } from '@/state/canvas-ui'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { cn } from '@/utils/utils'
 import { useFormBuilderI18n } from '@/i18n/context'
 
 const { t } = useFormBuilderI18n()
+
+// 所属 FormBuilder 实例状态（多设计器并存时各自作用域）。
+const state = useFormBuilderState()
+const { selectedKey, formDefinition, canvasView, isLoading } = state
+// 根 drop-area testid 带实例后缀：DnD 提交 / 插入定位按此找到所属画布根。
+const rootDropAreaAttrs = { 'data-testid': `drop-area-${state.instanceId}` }
 
 defineProps<{
   containerRef: Ref<unknown>
@@ -20,6 +24,11 @@ defineProps<{
   onSelectBlank: () => void
   onDelete: (index: number) => void
   onResizeEnd: () => void
+}>()
+
+defineSlots<{
+  /** 画布空状态 */
+  empty?: () => unknown
 }>()
 </script>
 
@@ -42,7 +51,7 @@ defineProps<{
         cn(
           'relative min-h-[80%] !h-fit rounded-xl shadow-md transition-[width] duration-300 flex flex-col',
           canvasFormClass,
-          canvasView === 'desktop' ? 'w-full lg:w-[80%]' : '',
+          canvasView === 'desktop' ? 'w-full lg:w-[94%]' : '',
           canvasView === 'tablet' ? 'w-[768px]' : '',
           canvasView === 'mobile' ? 'w-[375px]' : '',
         )
@@ -55,13 +64,17 @@ defineProps<{
         :selected-key="selectedKey"
         :empty-text="t('builder.listDropHere')"
         :delete-aria-label="t('builder.deleteField')"
-        :data-attrs="{ 'data-testid': 'drop-area' }"
+        :data-attrs="rootDropAreaAttrs"
         :ul-class="`${ulClass} min-h-full`"
         :on-select="onSelect"
         :on-select-blank="onSelectBlank"
         :on-delete="onDelete"
         :on-resize-end="onResizeEnd"
-      />
+      >
+        <template v-if="$slots['empty']" #empty>
+          <slot name="empty" />
+        </template>
+      </ContainerChildrenGrid>
     </n-card>
   </div>
 </template>
