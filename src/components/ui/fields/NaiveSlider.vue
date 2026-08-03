@@ -2,22 +2,20 @@
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { NSlider } from 'naive-ui'
 import { computed } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 
-const props = defineProps<{
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
+const { config, props } = useSchemaAttrs(context)
 
-const disabled = computed<boolean>(() =>
-  Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
-)
+const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 
-const min = computed(() => (props.context.min as number | undefined) ?? 0)
-const max = computed(() => (props.context.max as number | undefined) ?? 100)
+const min = computed(() => (config.min as number | undefined) ?? 0)
+const max = computed(() => (config.max as number | undefined) ?? 100)
 const step = computed(() => {
-  const raw = props.context.step as string | number | undefined
+  const raw = config.step as string | number | undefined
   if (raw === undefined) return 1
   if (typeof raw === 'number') return raw
   const parsed = Number(raw)
@@ -25,19 +23,20 @@ const step = computed(() => {
 })
 
 const value = computed(() => {
-  const raw = props.context._value as unknown
+  const raw = context._value as unknown
   if (raw === null || raw === undefined || raw === '') return min.value
   const parsed = typeof raw === 'number' ? raw : Number(raw)
   return Number.isFinite(parsed) ? parsed : min.value
 })
 
 function handleUpdateValue(next: number) {
-  props.context.node.input(next)
+  context.node.input(next)
 }
 </script>
 
 <template>
   <NSlider
+    v-bind="props"
     :value="value"
     :min="min"
     :max="max"

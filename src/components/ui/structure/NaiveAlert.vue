@@ -3,48 +3,36 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import type { AlertProps } from 'naive-ui'
 import { NAlert } from 'naive-ui'
 import { computed } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import InlineEditableText from '../formkit/InlineEditableText.vue'
 
-const props = defineProps<{
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
+// title/content 是插槽内容、theme 映射到 NAlert 的 type，均不走 props；
+// closable/bordered/showIcon 与 NAlert 同名 prop 且默认一致，经 props 透传
+const { config, props } = useSchemaAttrs(context, { omit: ['title', 'content', 'theme'] })
 
 const title = computed(() => {
-  const raw = uiProps.value.title
+  const raw = config.title
   if (typeof raw === 'string') return raw
-  return String(props.context._value ?? '')
+  return String(context._value ?? '')
 })
-const theme = computed(() => (uiProps.value.theme as AlertProps['type']) ?? 'default')
-const closable = computed<boolean>(() =>
-  Boolean((uiProps.value.closable as boolean | undefined) ?? false),
-)
-const bordered = computed<boolean>(() =>
-  Boolean((uiProps.value.bordered as boolean | undefined) ?? false),
-)
-const showIcon = computed<boolean>(() =>
-  Boolean((uiProps.value.showIcon as boolean | undefined) ?? true),
-)
+const theme = computed(() => (config.theme as AlertProps['type']) ?? 'default')
 
 const content = computed(() => {
-  const raw = uiProps.value.content
+  const raw = config.content
   if (typeof raw === 'string') return raw
-  return String(props.context._value ?? '')
+  return String(context._value ?? '')
 })
 </script>
 
 <template>
-  <NAlert
-    :type="theme"
-    :closable="closable"
-    :bordered="bordered"
-    :show-icon="showIcon"
-  >
+  <NAlert v-bind="props" :type="theme">
     <template #header>
-      <InlineEditableText :context="props.context" prop-key="title" :value="title" />
+      <InlineEditableText :context="context" prop-key="title" :value="title" />
     </template>
-    <InlineEditableText :context="props.context" prop-key="content" :value="content" />
+    <InlineEditableText :context="context" prop-key="content" :value="content" />
   </NAlert>
 </template>

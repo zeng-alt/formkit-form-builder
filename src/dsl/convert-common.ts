@@ -19,6 +19,7 @@ import type {
 } from '../types/dsl'
 import { generateKey } from '../utils/dnd/schema'
 import { exprToJs, resolveValidation, resolveEvents } from './compile'
+import { getContainerSpec, type ContainerSpec } from '../elements/container-spec'
 
 export type SchemaNode = FormKitSchemaFormKit & Record<string, unknown>
 
@@ -32,6 +33,8 @@ export interface RenderTarget {
   renderAs: RenderKind
   /** $cmp 组件名 / $el 标签名；formkit 时缺省回退节点 type */
   target?: string
+  /** 容器数据结构规格（list/card/group/inputGroup/buttonGroup/tabs），驱动 keyProp 注入与 group/list 包裹 */
+  container?: ContainerSpec
 }
 
 /** 从 schema 节点推断渲染原语 */
@@ -334,28 +337,24 @@ export function containerNodeToSchema(
 ): SchemaNode {
   const ch = children ?? []
   const label = node.label
+  const spec = rt?.container
 
-  if (node.type === 'group') {
-    const schema: any = { $formkit: 'group', name: node.name ?? node.id }
-    if (node.id) schema.id = node.id
-    if (node.key) schema.__key = node.key
-    if (label) schema.label = label
-    if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
-    if (node.props) Object.assign(schema, node.props)
-    if (ch.length) schema.children = ch
-    schema.outerClass = nodeOuterClass(node)
-    return schema as SchemaNode
-  }
-
-  if (node.type === 'list' || node.type === 'inputGroup' || node.type === 'buttonGroup') {
-    const keyProp =
-      node.type === 'list'
-        ? 'listKey'
-        : node.type === 'inputGroup'
-          ? 'inputGroupKey'
-          : 'buttonGroupKey'
+  // 容器规格驱动：group（primitive:'group'）→ 原生 $formkit:group；
+  // list/inputGroup/buttonGroup（primitive:'cmp'）→ $cmp:<type> + keyProp + modelValue
+  if (spec) {
+    if (spec.primitive === 'group') {
+      const schema: any = { $formkit: 'group', name: node.name ?? node.id }
+      if (node.id) schema.id = node.id
+      if (node.key) schema.__key = node.key
+      if (label) schema.label = label
+      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
+      if (node.props) Object.assign(schema, node.props)
+      if (ch.length) schema.children = ch
+      schema.outerClass = nodeOuterClass(node)
+      return schema as SchemaNode
+    }
     const containerProps: Record<string, unknown> = {
-      [keyProp]: node.key ?? node.id,
+      [spec.keyProp]: node.key ?? node.id,
       name: node.name ?? node.id,
       modelValue: ch,
       ...node.props,
@@ -371,7 +370,7 @@ export function containerNodeToSchema(
     return schema as SchemaNode
   }
 
-  // 未知容器类型：按渲染原语输出（默认 $cmp 透传）
+  // 未知/扩展容器类型：按渲染原语输出（默认 $cmp 透传）
   const kind = rt?.renderAs ?? 'cmp'
   const schema: any = buildNodeHead(node, kind, rt?.target)
   if (kind === 'cmp') {
@@ -412,6 +411,9 @@ export function containerNodeFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx):
       ? props.modelValue
       : []
 
+  // dataType 由容器规格的数据结构映射（object → 'object'，其余 → 'array'）
+  const spec = getContainerSpec(type)
+
   const node: any = {
     id:
       typeof anyS.id === 'string' && anyS.id
@@ -424,7 +426,14 @@ export function containerNodeFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx):
     category: 'container',
     type,
     renderAs: inferRenderTarget(s).renderAs,
-    dataType: type === 'group' ? 'object' : 'array',
+    dataType:
+      spec != null
+        ? spec.dataShape === 'object'
+          ? 'object'
+          : 'array'
+        : type === 'group'
+          ? 'object'
+          : 'array',
     children: ctx.children ? ctx.children(childrenArr) : [],
   }
   const rt = inferRenderTarget(s)
@@ -480,40 +489,35 @@ export function layoutNodeToSchema(
 ): SchemaNode {
   const ch = children ?? []
   const label = node.label
+  const spec = rt?.container
+
+  // 容器规格驱动：card/tabs 等有规格的 cmp 布局 → $cmp:<type> + keyProp + modelValue。
+  // objectOfObjects（tabs）的每个子节点（pane）补齐 __key，保证身份可辨。
+  if (spec) {
+    const panes =
+      spec.dataShape === 'objectOfObjects'
+        ? ch.map((p) => ({ ...(p as any), __key: (p as any)?.__key ?? generateKey() }))
+        : ch
+    const schema: any = {
+      $cmp: node.type,
+      props: {
+        [spec.keyProp]: node.key ?? node.id,
+        name: node.name,
+        modelValue: panes,
+        ...node.props,
+      },
+    }
+    if (label) schema.props = { ...schema.props, label }
+    if (node.key) schema.__key = node.key
+    if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
+    // 画布/面板读取顶层 name；组件经 props.name 接收
+    if (typeof schema.props?.name === 'string') schema.name = schema.props.name
+    schema.children = panes
+    schema.outerClass = nodeOuterClass(node)
+    return schema as SchemaNode
+  }
 
   switch (node.type) {
-    case 'card': {
-      const schema: any = {
-        $cmp: 'card',
-        props: { cardKey: node.key ?? node.id, name: node.name, modelValue: ch, ...node.props },
-      }
-      if (label) schema.props = { ...schema.props, label }
-      if (node.key) schema.__key = node.key
-      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
-      // 画布/面板读取顶层 name；组件经 props.name 接收
-      if (typeof schema.props?.name === 'string') schema.name = schema.props.name
-      schema.children = ch
-      schema.outerClass = nodeOuterClass(node)
-      return schema as SchemaNode
-    }
-    case 'tabs': {
-      const panes: any[] = ch.map((p) => ({
-        ...(p as any),
-        __key: (p as any)?.__key ?? generateKey(),
-      }))
-      const schema: any = {
-        $cmp: 'tabs',
-        props: { tabsKey: node.key ?? node.id, name: node.name, modelValue: panes, ...node.props },
-      }
-      if (label) schema.props = { ...schema.props, label }
-      if (node.key) schema.__key = node.key
-      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
-      // 画布/面板读取顶层 name；组件经 props.name 接收
-      if (typeof schema.props?.name === 'string') schema.name = schema.props.name
-      schema.children = panes
-      schema.outerClass = nodeOuterClass(node)
-      return schema as SchemaNode
-    }
     case 'grid': {
       const columns = Number((node.props as any)?.columns) || 12
       const gap = Number((node.props as any)?.gap) || 4
@@ -667,7 +671,7 @@ export function tabsPaneFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx): Layo
 
 // ─── 静态节点 ──────────────────────────────────────────────────────────────────
 
-// FormKit 语义键放顶层（SHARED_FORMKIT_PROPS + 按钮类），其余组件配置放 props 嵌套
+// FormKit 语义键放顶层（$formkit 渲染），其余组件配置放 props / attrs 嵌套
 const STATIC_TOP_PROPS = new Set([
   'options',
   'value',

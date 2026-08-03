@@ -11,7 +11,7 @@ import { canvasSchemaLibrary } from '@/builder/containers'
 import { createDefaultInsertPointElement } from '@/utils/dnd/insert-point-element'
 import { collectSchemaNames, generateKey, generateNextFieldName } from '@/utils/dnd/schema'
 import { toCanvasSchemaNode } from '@/utils/canvas-schema'
-import { normalizeContainerNode } from '@/containers/registry'
+import { normalizeContainerNode } from '@/elements/canvas'
 import { provideCanvasSchemaContext } from './canvas-schema-context'
 
 // 画布（根 DropArea）组合函数：负责根级 DnD 列表 + schema 变更/选中逻辑

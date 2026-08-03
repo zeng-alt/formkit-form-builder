@@ -1,37 +1,19 @@
 <script setup lang="ts">
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { NImage } from 'naive-ui'
-import { computed } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 
-const props = defineProps<{
+// 纯配置驱动、无需值绑定；context 仅作为配置来源传入 useSchemaAttrs
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
-
-const src = computed(() => uiProps.value.src as string | undefined)
-const alt = computed(() => uiProps.value.alt as string | undefined)
-
-const width = computed(() => uiProps.value.width as any)
-const height = computed(() => uiProps.value.height as any)
-const objectFit = computed(() => uiProps.value.objectFit as any)
-const previewDisabled = computed<boolean>(() =>
-  Boolean((uiProps.value.previewDisabled as boolean | undefined) ?? false),
-)
-const lazy = computed<boolean>(() => Boolean((uiProps.value.lazy as boolean | undefined) ?? false))
+// src/alt/width/height/objectFit/previewDisabled/lazy 均与 NImage 同名 prop 且默认一致，经 props 透传
+const { props } = useSchemaAttrs(context)
 </script>
 
 <template>
   <div class="w-full py-2">
-    <NImage
-      :src="src"
-      :alt="alt"
-      :width="width"
-      :height="height"
-      :object-fit="objectFit"
-      :preview-disabled="previewDisabled"
-      :lazy="lazy"
-    />
+    <NImage v-bind="props" />
   </div>
 </template>

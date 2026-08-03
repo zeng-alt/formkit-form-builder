@@ -2,23 +2,21 @@
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { NAvatar } from 'naive-ui'
 import { computed } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 
-const props = defineProps<{
+// 纯配置驱动、无需值绑定；context 仅作为配置来源传入 useSchemaAttrs
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
+// avatarSize 是本库配置键（映射到 NAvatar 的 size）；fallbackText 是插槽内容
+const { config, props } = useSchemaAttrs(context, { omit: ['avatarSize', 'fallbackText'] })
 
-const src = computed(() => uiProps.value.src as string | undefined)
-const round = computed<boolean>(() => Boolean((uiProps.value.round as boolean | undefined) ?? true))
-const bordered = computed<boolean>(() =>
-  Boolean((uiProps.value.bordered as boolean | undefined) ?? false),
-)
-const fallbackText = computed(() => (uiProps.value.fallbackText as string | undefined) ?? '')
+const round = computed<boolean>(() => Boolean((config.round as boolean | undefined) ?? true))
+const fallbackText = computed(() => (config.fallbackText as string | undefined) ?? '')
 
 const size = computed(() => {
-  const raw = uiProps.value.avatarSize as unknown
+  const raw = config.avatarSize as unknown
   if (typeof raw === 'number' && Number.isFinite(raw)) return raw
   if (typeof raw === 'string') {
     const parsed = Number(raw)
@@ -30,7 +28,7 @@ const size = computed(() => {
 
 <template>
   <div class="w-full py-2 flex items-center">
-    <NAvatar :src="src" :round="round" :size="size" :bordered="bordered">
+    <NAvatar v-bind="props" :round="round" :size="size">
       {{ fallbackText }}
     </NAvatar>
   </div>

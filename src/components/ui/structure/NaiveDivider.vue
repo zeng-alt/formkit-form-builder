@@ -2,32 +2,25 @@
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { NDivider } from 'naive-ui'
 import { computed } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import InlineEditableText from '../formkit/InlineEditableText.vue'
 
-const props = defineProps<{
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
-
-const titlePlacement = computed(() => uiProps.value.titlePlacement as any)
-const dashed = computed<boolean>(() =>
-  Boolean((uiProps.value.dashed as boolean | undefined) ?? false),
-)
-const vertical = computed<boolean>(() =>
-  Boolean((uiProps.value.vertical as boolean | undefined) ?? false),
-)
+// title 是插槽内容不走 props；titlePlacement/dashed/vertical 与 NDivider 同名 prop 且默认一致，经 props 透传
+const { config, props } = useSchemaAttrs(context, { omit: ['title'] })
 
 const title = computed(() => {
-  const raw = uiProps.value.title
+  const raw = config.title
   if (typeof raw === 'string') return raw
-  return String(props.context._value ?? '')
+  return String(context._value ?? '')
 })
 </script>
 
 <template>
-  <NDivider :title-placement="titlePlacement" :dashed="dashed" :vertical="vertical">
-    <InlineEditableText :context="props.context" prop-key="title" :value="title" />
+  <NDivider v-bind="props">
+    <InlineEditableText :context="context" prop-key="title" :value="title" />
   </NDivider>
 </template>

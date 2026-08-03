@@ -1,24 +1,17 @@
 <script setup lang="ts">
 import type { FormKitFrameworkContext } from '@formkit/core'
-import type { BackTopProps } from 'naive-ui'
 import { NBackTop } from 'naive-ui'
-import { computed } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 
-const props = defineProps<{
+// 纯配置驱动、无需值绑定；context 仅作为配置来源传入 useSchemaAttrs。
+// show/right/bottom/visibilityHeight 与 NBackTop 同名 prop 且默认一致，经 props 透传
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
-
-const show = computed<boolean | undefined>(() => uiProps.value.show as boolean | undefined)
-const right = computed<BackTopProps['right']>(() => (uiProps.value.right as any) ?? 40)
-const bottom = computed<BackTopProps['bottom']>(() => (uiProps.value.bottom as any) ?? 40)
-const visibilityHeight = computed<number>(
-  () => (uiProps.value.visibilityHeight as number | undefined) ?? 180,
-)
+const { props } = useSchemaAttrs(context)
 </script>
 
 <template>
-  <NBackTop :show="show" :right="right" :bottom="bottom" :visibility-height="visibilityHeight" />
+  <NBackTop v-bind="props" />
 </template>

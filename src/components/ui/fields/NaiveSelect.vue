@@ -3,36 +3,29 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import type { SelectOption, SelectProps } from 'naive-ui'
 import { NSelect } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 
-const props = defineProps<{
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
+const { config, props } = useSchemaAttrs(context)
 
-const size = computed<SelectProps['size']>(
-  () => (uiProps.value.size as SelectProps['size']) ?? 'medium',
-)
-const clearable = computed<boolean>(() => (uiProps.value.clearable as boolean | undefined) ?? true)
-const disabled = computed<boolean>(() =>
-  Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
-)
-const bordered = computed<boolean>(() => (uiProps.value.bordered as boolean | undefined) ?? true)
-const filterable = computed<boolean>(
-  () => (uiProps.value.filterable as boolean | undefined) ?? false,
-)
-const multiple = computed<boolean>(() => (uiProps.value.multiple as boolean | undefined) ?? false)
-
-const placeholder = computed(() => props.context.placeholder as string | undefined)
+const size = computed<SelectProps['size']>(() => (config.size as SelectProps['size']) ?? 'medium')
+const clearable = computed<boolean>(() => (config.clearable as boolean | undefined) ?? true)
+const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
+// multiple 供 value 计算（决定单值/数组）使用；透传给 NSelect 的仍是 props.multiple
+const multiple = computed<boolean>(() => (config.multiple as boolean | undefined) ?? false)
 
 type Primitive = string | number
 type SelectValue = Primitive | Primitive[] | null
 
 const remoteOptions = ref<SelectOption[]>([])
 
+const optionsRaw = computed(() => config.options as unknown)
+
 const endpoint = computed<string | null>(() => {
-  const raw = props.context.options as unknown
+  const raw = optionsRaw.value
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const url = (raw as any).endpoint
   return typeof url === 'string' && url.trim() ? url.trim() : null
@@ -75,7 +68,7 @@ watch(
 
 const options = computed<SelectOption[]>(() => {
   if (endpoint.value) return remoteOptions.value
-  const raw = props.context.options as unknown
+  const raw = optionsRaw.value
   if (!Array.isArray(raw)) return []
   return raw.reduce<SelectOption[]>((acc, opt) => {
     if (typeof opt === 'string' || typeof opt === 'number') {
@@ -94,7 +87,7 @@ const options = computed<SelectOption[]>(() => {
 })
 
 const value = computed<SelectValue>(() => {
-  const raw = props.context._value as unknown
+  const raw = context._value as unknown
   if (multiple.value) {
     if (Array.isArray(raw))
       return raw.filter((v): v is Primitive => typeof v === 'string' || typeof v === 'number')
@@ -110,22 +103,19 @@ const value = computed<SelectValue>(() => {
 })
 
 function handleUpdateValue(next: SelectValue) {
-  props.context.node.input(next)
+  context.node.input(next)
 }
 </script>
 
 <template>
   <NSelect
+    v-bind="props"
     :value="value"
     :size="size"
     :clearable="clearable"
     :disabled="disabled"
-    :filterable="filterable"
-    :multiple="multiple"
-    :placeholder="placeholder"
     :options="options"
     :input-props="{ id: context.id }"
-    :bordered="bordered"
     @update:value="handleUpdateValue"
     @blur="context.handlers.blur"
   />

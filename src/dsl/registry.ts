@@ -16,6 +16,7 @@ import type {
   RenderKind,
 } from "../types/dsl";
 import { generateKey } from "../utils/dnd/schema";
+import { getContainerSpec, type ContainerSpec } from "../elements/container-spec";
 import {
   nodeToSchemaByCategory,
   nodeFromSchemaByCategory,
@@ -65,6 +66,8 @@ export interface ElementCatalogEntry {
   tooltipKey?: string;
   editor?: () => Promise<{ default: Component }>;
   schema: ElementTemplate;
+  /** 容器元素的数据结构规格（list/card/group/inputGroup/buttonGroup/tabs；字段/静态/纯布局缺省） */
+  container?: ContainerSpec;
 }
 
 export interface ElementTypeDef {
@@ -76,6 +79,8 @@ export interface ElementTypeDef {
   target?: string;
   /** 默认模板（palette / 新建节点） */
   template?: ElementTemplate;
+  /** 容器元素的数据结构规格（见 container-spec.ts） */
+  container?: ContainerSpec;
   /** 新建节点默认 DSL */
   defaults: () => FormNode;
   toSchema: (node: FormNode, ctx: DslToSchemaCtx) => SchemaNode;
@@ -111,56 +116,30 @@ export function getElementTypeDefs(): ElementTypeDef[] {
 
 // ─── legacy $cmp 别名（$cmp = type 统一前的旧 schema 兼容）─────────────────────
 // 旧版本内置元素以 Naive* 组件名作为 $cmp；统一为 type 后仍需识别旧数据。
+// 本表只保留"组件已不存在、无法从 formkitBindings 派生"的历史名；
+// 当前组件名（NaiveTextInput → text 等）由渲染层 registerLegacyCmpAliases 注入，避免双重维护。
 const LEGACY_CMP_TYPE: Record<string, string> = {
-  NaiveTextInput: "text",
-  NaiveTextarea: "textarea",
-  NaiveEmailInput: "email",
-  NaiveNumberInput: "number",
-  NaiveUrlInput: "url",
-  NaiveCheckboxGroup: "checkbox",
-  NaiveColorPicker: "color",
-  NaiveDatePicker: "date",
-  NaiveTimePicker: "time",
-  NaiveDateTimePicker: "naiveDateTime",
-  NaiveUpload: "file",
-  NaivePasswordInput: "password",
-  NaiveRadioGroup: "radio",
-  NaiveSlider: "range",
-  NaiveSelect: "select",
-  NaiveCascader: "naiveCascader",
-  NaiveTreeSelect: "naiveTreeSelect",
-  NaiveMention: "naiveMention",
-  NaiveRate: "naiveRate",
-  NaiveSwitch: "naiveSwitch",
-  NaiveAvatar: "naiveAvatar",
-  NaiveImage: "naiveImage",
-  NaiveTelInput: "tel",
   NaiveSubmit: "submit",
   NaiveReset: "reset",
   NaiveButton: "naiveButton",
-  NaiveTypographyText: "naiveText",
-  NaiveTypographyP: "naiveP",
-  NaiveTypographyA: "naiveA",
-  NaiveTypographyBlockquote: "naiveBlockquote",
   NaiveH1: "naiveH1",
   NaiveH2: "naiveH2",
   NaiveH3: "naiveH3",
   NaiveH4: "naiveH4",
   NaiveH5: "naiveH5",
   NaiveH6: "naiveH6",
-  NaiveTypographyUl: "naiveUl",
-  NaiveTypographyOl: "naiveOl",
-  NaiveTypographyLi: "naiveLi",
-  NaiveDivider: "naiveDivider",
-  NaiveAlert: "naiveAlert",
-  NaiveBackTop: "naiveBackTop",
 };
+
+/** 渲染层注入 legacy $cmp 别名（由 formkitBindings 派生，单一来源） */
+export function registerLegacyCmpAliases(aliases: Record<string, string>): void {
+  Object.assign(LEGACY_CMP_TYPE, aliases)
+}
 
 /** schema 节点的 legacy $cmp 名 → 统一后的 type */
 function legacyCmpTypeOf(s: SchemaNode): string | undefined {
-  const cmp = (s as any)?.$cmp;
-  if (typeof cmp !== "string") return undefined;
-  return LEGACY_CMP_TYPE[cmp];
+  const cmp = (s as any)?.$cmp
+  if (typeof cmp !== "string") return undefined
+  return LEGACY_CMP_TYPE[cmp]
 }
 
 // ─── 渲染原语构造 ───────────────────────────────────────────────────────────────
@@ -181,15 +160,19 @@ function rtOf(
 export function elementTypeFromSchema(entry: ElementCatalogEntry): ElementTypeDef {
   const { type, category, schema } = entry;
   // target 缺省 = type：renderAs + type 即可决定 $formkit/$cmp/$el
+  // 容器规格（数据结构 + keyProp + 原语）：目录声明优先，缺省按 type 查 container-spec
+  const spec = entry.container ?? getContainerSpec(type);
   const rt: RenderTarget = {
     renderAs: schema.renderAs,
     target: schema.target ?? type,
+    ...(spec ? { container: spec } : {}),
   };
   return {
     type,
     category,
     renderAs: rt.renderAs,
     target: rt.target,
+    ...(spec ? { container: spec } : {}),
     template: schema,
     icon: entry.icon,
     tooltipKey: entry.tooltipKey,
@@ -269,18 +252,29 @@ export function containerType(
   },
 ): ElementTypeDef {
   const dataType = extra?.dataType ?? "object";
-  // group 走 $formkit，list/inputGroup 走 $cmp
   const cmp = extra?.cmp;
+  // 容器规格：声明数据结构 + keyProp + 渲染原语；缺省按 type 查 container-spec
+  // （group → 原生 $formkit；list/inputGroup/buttonGroup 等 → $cmp）
+  const spec = extra?.container ?? getContainerSpec(type);
   const renderAs: RenderKind =
-    cmp != null || extra?.target != null || type === "list" || type === "inputGroup"
-      ? "cmp"
-      : "formkit";
-  const rt: RenderTarget = { renderAs, target: extra?.target ?? cmp ?? type };
+    spec != null
+      ? spec.primitive === "group"
+        ? "formkit"
+        : "cmp"
+      : cmp != null || extra?.target != null
+        ? "cmp"
+        : "formkit";
+  const rt: RenderTarget = {
+    renderAs,
+    target: extra?.target ?? cmp ?? type,
+    ...(spec ? { container: spec } : {}),
+  };
   const def: ElementTypeDef = {
     type,
     category: "container",
     renderAs: rt.renderAs,
     target: rt.target,
+    container: spec ?? undefined,
     defaults: () => ({
       id: generateKey(),
       category: "container",
@@ -305,15 +299,19 @@ export function layoutType(
   extra?: Partial<ElementTypeDef> & { cmp?: string; target?: string },
 ): ElementTypeDef {
   const cmp = extra?.cmp;
+  // 容器规格：card/tabs 有规格 → $cmp；grid/row/column 纯布局无规格 → $el
+  const spec = extra?.container ?? getContainerSpec(type);
   const rt: RenderTarget = {
-    renderAs: cmp != null || type === "card" || type === "tabs" ? "cmp" : "el",
+    renderAs: cmp != null || spec != null ? "cmp" : "el",
     target: extra?.target ?? cmp ?? type,
+    ...(spec ? { container: spec } : {}),
   };
   const def: ElementTypeDef = {
     type,
     category: "layout",
     renderAs: rt.renderAs,
     target: rt.target,
+    container: spec ?? undefined,
     defaults: () => ({
       id: generateKey(),
       category: "layout",

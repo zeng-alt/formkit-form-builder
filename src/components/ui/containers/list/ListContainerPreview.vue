@@ -4,7 +4,7 @@ import { computed, inject } from "vue";
 import { FormKit, FormKitSchema } from "@formkit/vue";
 import { NButton, NTooltip, NEmpty } from "naive-ui";
 import { useFormBuilderI18n } from "@/i18n/context";
-import { getPreviewSchemaLibrary } from "@/containers/registry";
+import { getPreviewSchemaLibrary } from "@/elements/canvas";
 
 const props = defineProps<{
   nodeKey?: string;

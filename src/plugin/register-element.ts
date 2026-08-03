@@ -9,7 +9,8 @@ import type { Component } from 'vue'
 import type { ElementCatalogEntry, ElementTemplate } from '../dsl/registry'
 import { registerElementType, elementTypeFromSchema, getElementTypeDef } from '../dsl/registry'
 import type { ContainerDefinition } from '../elements/canvas'
-import { registerContainerDefinition } from '../elements/canvas'
+import { registerContainerDefinition, normalizeContainer, formatContainer } from '../elements/canvas'
+import type { ContainerSpec } from '../elements/container-spec'
 import { registerFormkitBinding } from '../elements/formkit'
 
 export interface RegisterElementInput extends Omit<ElementCatalogEntry, 'schema'> {
@@ -17,10 +18,6 @@ export interface RegisterElementInput extends Omit<ElementCatalogEntry, 'schema'
   schema: ElementTemplate
   /** FormKit 输入组件（field/static 必填；renderAs:'cmp' 时经 schema 库渲染） */
   component?: Component
-  /** createInput 包装选项（wrap=false 直连组件） */
-  wrap?: boolean
-  /** FormKit 透传 props 白名单 */
-  props?: string[]
   /** 容器画布组件（category==='container' 时可选） */
   canvas?: Component
   /** 容器预览组件（category==='container' 时可选） */
@@ -47,66 +44,28 @@ export function registerElement(input: RegisterElementInput): void {
   if (input.component) {
     registerFormkitBinding(type, {
       component: input.component,
-      wrap: input.wrap,
-      props: input.props,
       libraryName: input.schema.target ?? type,
     })
   }
 
   if (input.category === 'container' && (input.canvas || input.preview)) {
+    // 自定义容器：归一化/预览格式统一走通用实现。缺省按"无数据结构"（none）处理，
+    // 与旧 defaultContainerFormat 行为一致（不包 group）；需要产出 object/array 数据时，
+    // 在 input.container 里声明数据结构即可（与内置容器同一机制）。
+    const spec: ContainerSpec = input.container ?? {
+      dataShape: 'none',
+      keyProp: `${type}Key`,
+      primitive: 'cmp',
+    }
     const containerDef: ContainerDefinition = {
       id: type,
       match: containerMatch(type),
       canvas: input.canvas ? { libraryKey: type, component: input.canvas } : undefined,
       preview: input.preview ? { libraryKey: type, component: input.preview } : undefined,
-      normalize: input.normalize ?? defaultContainerNormalize(type),
-      formatPreview: input.formatPreview ?? defaultContainerFormat(type),
+      normalize: input.normalize ?? ((node) => normalizeContainer(node, type, spec)),
+      formatPreview: input.formatPreview ?? ((node, ctx) => formatContainer(node, ctx, type, spec)),
     }
     registerContainerDefinition(containerDef)
-  }
-}
-
-/** 通用容器归一化：补齐 keyProp / modelValue（与内置 list/card 约定一致） */
-function defaultContainerNormalize(type: string): NonNullable<ContainerDefinition['normalize']> {
-  const keyProp = `${type}Key`
-  return (node) => {
-    const next: any = { ...node }
-    next.$cmp = next.$cmp || type
-    next.children = Array.isArray(next.children) ? next.children : []
-    const props = typeof next.props === 'object' && next.props ? { ...next.props } : {}
-    props[keyProp] = typeof props[keyProp] === 'string' && props[keyProp] ? props[keyProp] : ((next.__key as string | undefined) ?? '')
-    props.modelValue = next.children
-    next.props = props
-    return next
-  }
-}
-
-/** 通用预览格式化：$el div 包裹 $cmp 容器（与内置 formatContainer 一致） */
-function defaultContainerFormat(type: string): NonNullable<ContainerDefinition['formatPreview']> {
-  const keyProp = `${type}Key`
-  return (node, ctx) => {
-    const normalized = defaultContainerNormalize(type)(node)
-    const children = Array.isArray(normalized.children)
-      ? (normalized.children as any[]).map((c, i) => ctx.format(c, i))
-      : []
-    const schemaIf = (normalized as any).if
-    const nextNode: any = {
-      $el: 'div',
-      attrs: { class: (normalized as any).outerClass || 'col-span-12' },
-      children: [
-        {
-          $cmp: type,
-          props: {
-            ...(normalized as any).props,
-            [keyProp]: ((normalized as any).props?.[keyProp] as string | undefined) ?? '',
-            modelValue: children,
-          },
-        },
-      ],
-    }
-    if (typeof schemaIf === 'string' && schemaIf.trim()) nextNode.if = schemaIf
-    else if (typeof schemaIf === 'boolean') nextNode.if = schemaIf
-    return nextNode as any
   }
 }
 

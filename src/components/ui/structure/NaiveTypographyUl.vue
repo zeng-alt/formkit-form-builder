@@ -2,14 +2,17 @@
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { NLi, NUl } from 'naive-ui'
 import { computed } from 'vue'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import InlineEditableText from '../formkit/InlineEditableText.vue'
 
-const props = defineProps<{
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
+const { config } = useSchemaAttrs(context)
+
 const items = computed(() => {
-  const raw = props.context.options as unknown
+  const raw = config.options as unknown
   if (!Array.isArray(raw)) return []
   return raw.map((v) => String(v))
 })
@@ -18,7 +21,7 @@ const items = computed(() => {
 <template>
   <NUl>
     <NLi v-for="(item, idx) in items" :key="idx">
-      <InlineEditableText :context="props.context" prop-key="options" :prop-index="idx" :value="item" />
+      <InlineEditableText :context="context" prop-key="options" :prop-index="idx" :value="item" />
     </NLi>
   </NUl>
 </template>

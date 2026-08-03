@@ -19,6 +19,7 @@ import { formSchema } from '@/state/form-schema'
 import { insertState } from './insert-state'
 import { getVisualRows, setColSpan, adjustColSpansForInsertAtRow, rebalanceRowSpans, stripInputGroupOuterClass } from './grid'
 import { collectSchemaNames, generateKey, generateNextFieldName } from './schema'
+import { getContainerSpec } from '@/elements/container-spec'
 import { eq } from '@/utils/utils'
 
 function normalizeInputGroupChildren(children: FormKitSchemaFormKit[]) {
@@ -74,67 +75,11 @@ function normalizeInsertValues(
             ? { ...val.props, name: nextName }
             : { name: nextName }
       }
-      if (val.$cmp === 'list' || val.$formkit === 'list') {
-        const props = { ...val.props, listKey: nextKey }
-        return {
-          ...valObj,
-          __key: nextKey,
-          name: nextName,
-          id: `field_${nextKey}`,
-          props,
-          children: Array.isArray(val.children) ? val.children : [],
-          outerClass: val.outerClass || 'col-span-12',
-        }
-      }
-      if (val.$cmp === 'card' || val.$formkit === 'card') {
-        const props = { ...val.props, cardKey: nextKey }
-        return {
-          ...valObj,
-          __key: nextKey,
-          name: nextName,
-          id: `field_${nextKey}`,
-          props,
-          children: Array.isArray(val.children) ? val.children : [],
-          outerClass: val.outerClass || 'col-span-12',
-        }
-      }
-      if (val.$cmp === 'inputGroup' || val.$formkit === 'inputGroup') {
-        const props = {
-          ...val.props,
-          inputGroupKey: nextKey,
-        }
-        if (props && typeof props === 'object') delete (props as any).modelValue
-        return {
-          ...valObj,
-          __key: nextKey,
-          name: nextName,
-          id: `field_${nextKey}`,
-          props,
-          children: Array.isArray(val.children) ? val.children : [],
-          outerClass: val.outerClass || 'col-span-12',
-        }
-      }
-      if (val.$cmp === 'buttonGroup' || val.$formkit === 'buttonGroup') {
-        const props = {
-          ...val.props,
-          buttonGroupKey: nextKey,
-        }
-        if (props && typeof props === 'object') delete (props as any).modelValue
-        return {
-          ...valObj,
-          __key: nextKey,
-          name: nextName,
-          id: `field_${nextKey}`,
-          props,
-          children: Array.isArray(val.children) ? val.children : [],
-          outerClass: val.outerClass || 'col-span-12',
-        }
-      }
-      if (val.$cmp === 'tabs' || val.$formkit === 'tabs') {
-        const props = {
-          ...val.props,
-          tabsKey: nextKey,
-        }
+      // 容器按规格注入各自的身份键（keyProp），不再逐个 kind 硬编码；
+      // modelValue 由 children 承载，统一从 props 删除（DSL 往返经 CONTAINER_INTERNAL_PROPS 剥离）
+      const spec = getContainerSpec(val.$cmp ?? val.$formkit)
+      if (spec && spec.primitive === 'cmp') {
+        const props = { ...val.props, [spec.keyProp]: nextKey }
         if (props && typeof props === 'object') delete (props as any).modelValue
         return {
           ...valObj,
@@ -396,12 +341,9 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
         if (next.props && typeof next.props === 'object') delete next.props.modelValue
       }
     } else {
-      const isList = node.$formkit === 'list' || node.$cmp === 'list'
-      const isCard = node.$formkit === 'card' || node.$cmp === 'card'
-      const isInputGroup = node.$formkit === 'inputGroup' || node.$cmp === 'inputGroup'
-      const isButtonGroup = node.$formkit === 'buttonGroup' || node.$cmp === 'buttonGroup'
-      const isTabs = node.$formkit === 'tabs' || node.$cmp === 'tabs'
-      if ((isList || isCard || isInputGroup || isButtonGroup || isTabs) && !Array.isArray(node.children)) {
+      // 有容器规格（非原生 group）且缺 children → 补空数组（group 用 name 作数据键，无需兜底）
+      const spec = getContainerSpec(node.$cmp ?? node.$formkit)
+      if (spec && spec.primitive === 'cmp' && !Array.isArray(node.children)) {
         next = { ...node, children: [] }
         if (next.$cmp) {
           next.props = { ...next.props }

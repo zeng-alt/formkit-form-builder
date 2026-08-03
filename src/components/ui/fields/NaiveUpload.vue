@@ -3,22 +3,20 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import type { UploadCustomRequestOptions, UploadFileInfo } from 'naive-ui'
 import { NUpload } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 
-const props = defineProps<{
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
+// size 只用于拖拽区字号 class，不作为 NUpload 属性传入
+const { config, props } = useSchemaAttrs(context, { omit: ['size'] })
 
-const size = computed(() => (uiProps.value.size as string | undefined) ?? 'medium')
-const disabled = computed<boolean>(() =>
-  Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
-)
+const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 
-const accept = computed(() => props.context.accept as string | undefined)
+const size = computed(() => (config.size as string | undefined) ?? 'medium')
 const multiple = computed(() => {
-  const raw = props.context.multiple as unknown
+  const raw = config.multiple as unknown
   if (typeof raw === 'boolean') return raw
   if (typeof raw === 'string') return raw === 'true'
   return false
@@ -56,7 +54,7 @@ function normalizeValue(raw: unknown): UploadFileInfo[] {
 const fileList = ref<UploadFileInfo[]>([])
 
 watch(
-  () => props.context._value as unknown,
+  () => context._value as unknown,
   (raw) => {
     fileList.value = normalizeValue(raw)
   },
@@ -66,7 +64,7 @@ watch(
 function handleUpdateFileList(next: UploadFileInfo[]) {
   fileList.value = next
   const files = next.map((f) => f.file).filter((f): f is File => f instanceof File)
-  props.context.node.input(multiple.value ? files : files[0] ? [files[0]] : [])
+  context.node.input(multiple.value ? files : files[0] ? [files[0]] : [])
 }
 
 function customRequest(options: UploadCustomRequestOptions) {
@@ -76,9 +74,9 @@ function customRequest(options: UploadCustomRequestOptions) {
 
 <template>
   <NUpload
+    v-bind="props"
     v-model:file-list="fileList"
     :disabled="disabled"
-    :accept="accept"
     :multiple="multiple"
     :custom-request="customRequest"
     :show-download-button="false"

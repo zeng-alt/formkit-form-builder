@@ -2,33 +2,32 @@
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { NRadio, NRadioGroup } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 
-const props = defineProps<{
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
+// horizontal 是布局键（wrapper class），不是 NRadioGroup 属性
+const { config, props } = useSchemaAttrs(context, { omit: ['horizontal'] })
 
 type GroupSize = 'small' | 'medium' | 'large'
 
 const size = computed<GroupSize>(() => {
-  const raw = uiProps.value.size as string | undefined
+  const raw = config.size as string | undefined
   if (raw === 'tiny') return 'small'
   if (raw === 'small' || raw === 'medium' || raw === 'large') return raw
   return 'medium'
 })
-const disabled = computed<boolean>(() =>
-  Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
-)
-const horizontal = computed<boolean>(
-  () => (uiProps.value.horizontal as boolean | undefined) ?? false,
-)
+const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
+const horizontal = computed<boolean>(() => (config.horizontal as boolean | undefined) ?? false)
 
 const remoteOptions = ref<Array<{ label: string; value: string | number }>>([])
 
+const optionsRaw = computed(() => config.options as unknown)
+
 const endpoint = computed<string | null>(() => {
-  const raw = props.context.options as unknown
+  const raw = optionsRaw.value
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
   const url = (raw as any).endpoint
   return typeof url === 'string' && url.trim() ? url.trim() : null
@@ -70,7 +69,7 @@ watch(
 
 const options = computed(() => {
   if (endpoint.value) return remoteOptions.value
-  const raw = props.context.options as unknown
+  const raw = optionsRaw.value
   if (!Array.isArray(raw)) return []
   return raw
     .map((opt) => {
@@ -87,15 +86,21 @@ const options = computed(() => {
     .filter((v): v is { label: string; value: string | number } => v !== null)
 })
 
-const value = computed(() => props.context._value as string | number | null | undefined)
+const value = computed(() => context._value as string | number | null | undefined)
 
 function handleUpdateValue(next: string | number) {
-  props.context.node.input(next)
+  context.node.input(next)
 }
 </script>
 
 <template>
-  <NRadioGroup :value="value" :disabled="disabled" :size="size" @update:value="handleUpdateValue">
+  <NRadioGroup
+    v-bind="props"
+    :value="value"
+    :disabled="disabled"
+    :size="size"
+    @update:value="handleUpdateValue"
+  >
     <div
       :class="
         horizontal ? 'flex flex-row flex-wrap gap-4 w-full py-1' : 'flex flex-col gap-2 w-full py-1'

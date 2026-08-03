@@ -4,7 +4,7 @@ import { computed } from "vue";
 import { FormKitSchema } from "@formkit/vue";
 import { NEmpty, NTabPane, NTabs } from "naive-ui";
 import { useFormBuilderI18n } from "@/i18n/context";
-import { getPreviewSchemaLibrary } from "@/containers/registry";
+import { getPreviewSchemaLibrary } from "@/elements/canvas";
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[];
@@ -68,7 +68,7 @@ const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false));
         :closable="paneClosable"
         display-directive="show:lazy"
       >
-        <!-- pane 内容由 formatTabs 包装为单个 group（内含 grid grid-cols-12），
+        <!-- pane 内容由 formatContainer（规格 dataShape:objectOfObjects）包装为单个 group（内含 grid grid-cols-12），
              直接渲染即可，不要再套一层 grid，否则 group 占不到整行、字段 colspan 失效 -->
         <div>
           <FormKitSchema

@@ -1,66 +1,37 @@
 <script setup lang="ts">
 import type { FormKitFrameworkContext } from '@formkit/core'
-import type { InputProps } from 'naive-ui'
 import { NInput } from 'naive-ui'
 import { computed } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 
-const props = defineProps<{
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
+// 配置经 context.attrs 响应式流入（属性面板修改即触发重渲染）；prefix/suffix 是插槽内容键
+const { config, props } = useSchemaAttrs(context, { omit: ['prefix', 'suffix'] })
 
-const size = computed<InputProps['size']>(
-  () => (uiProps.value.size as InputProps['size']) ?? 'medium',
-)
-const clearable = computed<boolean>(() => (uiProps.value.clearable as boolean | undefined) ?? true)
-const disabled = computed<boolean>(() =>
-  Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
-)
-const bordered = computed<boolean>(() => (uiProps.value.bordered as boolean | undefined) ?? true)
-const readonly = computed<boolean>(() => (uiProps.value.readonly as boolean | undefined) ?? false)
-const round = computed<boolean>(() => (uiProps.value.round as boolean | undefined) ?? false)
-const autofocus = computed<boolean>(() => (uiProps.value.autofocus as boolean | undefined) ?? false)
-const showCount = computed<boolean>(() => (uiProps.value.showCount as boolean | undefined) ?? false)
-const maxlength = computed<number | undefined>(() => {
-  const v = uiProps.value.maxlength as number | null | undefined
-  return v == null ? undefined : v
-})
-const minlength = computed<number | undefined>(() => {
-  const v = uiProps.value.minlength as number | null | undefined
-  return v == null ? undefined : v
-})
+const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 
-const prefix = computed(() => String((uiProps.value.prefix as string | undefined) ?? '').trim())
-const suffix = computed(() => String((uiProps.value.suffix as string | undefined) ?? '').trim())
+const prefix = computed(() => String((config.prefix as string | undefined) ?? '').trim())
+const suffix = computed(() => String((config.suffix as string | undefined) ?? '').trim())
 
 const isIcon = (value: string) => value.startsWith('i-')
 
-const value = computed(() => (props.context._value ?? '') as string)
-const placeholder = computed(() => props.context.placeholder as string | undefined)
+const value = computed(() => (context._value ?? '') as string)
 
 function handleUpdateValue(next: string) {
-  props.context.node.input(next)
+  context.node.input(next)
 }
 </script>
 
 <template>
   <NInput
+    v-bind="props"
     :value="value"
     type="textarea"
-    :size="size"
-    :clearable="clearable"
     :disabled="disabled"
-    :placeholder="placeholder"
     :input-props="{ id: context.id }"
-    :bordered="bordered"
-    :readonly="readonly"
-    :round="round"
-    :autofocus="autofocus"
-    :show-count="showCount"
-    :maxlength="maxlength"
-    :minlength="minlength"
     @update:value="handleUpdateValue"
     @blur="context.handlers.blur"
   >

@@ -1,6 +1,6 @@
 import { computed, type Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { formatContainerPreviewNode, normalizeContainerNode } from '@/containers/registry'
+import { formatContainerPreviewNode, normalizeContainerNode } from '@/elements/canvas'
 
 export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]> | undefined) {
   return computed(() => {

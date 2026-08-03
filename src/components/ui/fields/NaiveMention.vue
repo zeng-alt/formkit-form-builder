@@ -2,29 +2,26 @@
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { NMention } from 'naive-ui'
 import { computed } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 
-const props = defineProps<{
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
+const { config, props } = useSchemaAttrs(context)
 
 type MentionSize = 'small' | 'medium' | 'large'
 
 const size = computed<MentionSize>(() => {
-  const raw = uiProps.value.size as string | undefined
+  const raw = config.size as string | undefined
   if (raw === 'tiny') return 'small'
   if (raw === 'small' || raw === 'medium' || raw === 'large') return raw
   return 'medium'
 })
-const disabled = computed<boolean>(() =>
-  Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
-)
-const placeholder = computed(() => props.context.placeholder as string | undefined)
+const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 
 const options = computed(() => {
-  const raw = props.context.options as unknown
+  const raw = config.options as unknown
   if (!Array.isArray(raw)) return []
   return raw
     .map((opt) => {
@@ -44,18 +41,18 @@ const options = computed(() => {
     .filter((v): v is { label: string; value: string } => v !== null)
 })
 
-const value = computed(() => (props.context._value ?? '') as string)
+const value = computed(() => (context._value ?? '') as string)
 
 function handleUpdateValue(next: string) {
-  props.context.node.input(next)
+  context.node.input(next)
 }
 </script>
 
 <template>
   <NMention
+    v-bind="props"
     :value="value"
     :options="options"
-    :placeholder="placeholder"
     :disabled="disabled"
     :size="size"
     @update:value="handleUpdateValue"

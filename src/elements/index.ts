@@ -18,9 +18,6 @@ export {
   getElementCmpName,
   registerFormkitBinding,
   getFormkitBinding,
-  SHARED_FORMKIT_PROPS,
-  BUTTON_PROPS,
-  formkitBindings,
 } from './formkit'
 export {
   getContainerDefinition,

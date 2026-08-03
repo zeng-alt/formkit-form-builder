@@ -1,13 +1,14 @@
 // ═══ 渲染层：元素 type → FormKit input 组件绑定 ═════════════════════════════════
 // 与 DSL 注册表（dsl/registry.ts）分开：这里是唯一持有 .vue 组件引用的地方。
-// buildFormkitInputs：FormKit 配置注册（src/formkit.config.ts）
-// buildElementSchemaLibrary：FormKitSchema 的 $cmp → 薄包装组件（画布/预览渲染）
+// formkitBindings：纯数据 type → { component, libraryName }，单一来源驱动两条链路：
+//   buildFormkitInputs       → 每个元素统一注册为纯 $cmp 输入（createInput + library），
+//   buildElementSchemaLibrary → FormKitSchema 的 $cmp → <FormKit> 包装组件（画布/预览渲染）。
 // 每个绑定的 libraryName 必须与对应 DSL 模板的 target（$cmp 名）一致。
 
 import type { Component } from 'vue'
 import { defineComponent, h, markRaw } from 'vue'
 import { createInput, FormKit } from '@formkit/vue'
-import { getElementTypeDef, getElementTypeDefs } from '../dsl/registry'
+import { getElementTypeDef, getElementTypeDefs, registerLegacyCmpAliases } from '../dsl/registry'
 import { registerBuiltinElementTypes } from '../dsl/definitions'
 
 import NaiveTextInput from '@/components/ui/fields/NaiveTextInput.vue'
@@ -45,65 +46,25 @@ registerBuiltinElementTypes()
 
 export interface FormkitBinding {
   component: Component
-  /** false 表示直接 createInput(component)；默认 true（createUiInput 包装） */
-  wrap?: boolean
-  /** wrap=true 时 $cmp 名称（需与 DSL 模板 target 一致） */
+  /** $cmp 名称（与 DSL 模板 target 一致；缺省 = type） */
   libraryName?: string
-  family?: string
-  props?: string[]
 }
 
-export const SHARED_FORMKIT_PROPS = [
-  'props',
-  '__bind',
-  'placeholder',
-  'options',
-  'min',
-  'max',
-  'step',
-  'multiple',
-  'accept',
-]
-
-// 按钮类静态元素：CustomButton 直读展平后的 props（原 buttonProps 嵌套已废除）
-export const BUTTON_PROPS = [
-  'label',
-  'type',
-  '__bind',
-  'buttonText',
-  'text',
-  'block',
-  'bordered',
-  'circle',
-  'dashed',
-  'disabled',
-  'focusable',
-  'fullWidth',
-  'align',
-  'ghost',
-  'round',
-  'secondary',
-  'size',
-  'buttonType',
-]
-
 // 文本类字段共用同一底层组件，但 $cmp target 独立（NaiveEmailInput 等）保证往返可判别
-const textLike = { component: NaiveTextInput } as const
-
 export const formkitBindings: Record<string, FormkitBinding> = {
   // ─── 字段 ──────────────────────────────────────────────────────────────────────
-  text: { ...textLike, libraryName: 'NaiveTextInput' },
+  text: { component: NaiveTextInput, libraryName: 'NaiveTextInput' },
   textarea: { component: NaiveTextarea, libraryName: 'NaiveTextarea' },
-  email: { ...textLike, libraryName: 'NaiveEmailInput' },
+  email: { component: NaiveTextInput, libraryName: 'NaiveEmailInput' },
   number: { component: NaiveNumberInput, libraryName: 'NaiveNumberInput' },
-  url: { ...textLike, libraryName: 'NaiveUrlInput' },
+  url: { component: NaiveTextInput, libraryName: 'NaiveUrlInput' },
   checkbox: { component: NaiveCheckboxGroup, libraryName: 'NaiveCheckboxGroup' },
   color: { component: NaiveColorPicker, libraryName: 'NaiveColorPicker' },
   date: { component: NaiveDatePicker, libraryName: 'NaiveDatePicker' },
   time: { component: NaiveTimePicker, libraryName: 'NaiveTimePicker' },
   naiveDateTime: { component: NaiveDatePicker, libraryName: 'NaiveDateTimePicker' },
   file: { component: NaiveUpload, libraryName: 'NaiveUpload' },
-  password: { ...textLike, libraryName: 'NaivePasswordInput' },
+  password: { component: NaiveTextInput, libraryName: 'NaivePasswordInput' },
   radio: { component: NaiveRadioGroup, libraryName: 'NaiveRadioGroup' },
   range: { component: NaiveSlider, libraryName: 'NaiveSlider' },
   select: { component: NaiveSelect, libraryName: 'NaiveSelect' },
@@ -114,12 +75,12 @@ export const formkitBindings: Record<string, FormkitBinding> = {
   naiveSwitch: { component: NaiveSwitch, libraryName: 'NaiveSwitch' },
   naiveAvatar: { component: NaiveAvatar, libraryName: 'NaiveAvatar' },
   naiveImage: { component: NaiveImage, libraryName: 'NaiveImage' },
-  tel: { ...textLike, libraryName: 'NaiveTelInput' },
+  tel: { component: NaiveTextInput, libraryName: 'NaiveTelInput' },
 
   // ─── 静态展示 ──────────────────────────────────────────────────────────────────
-  submit: { component: CustomButton, wrap: false, props: BUTTON_PROPS },
-  reset: { component: CustomButton, wrap: false, props: BUTTON_PROPS },
-  naiveButton: { component: CustomButton, wrap: false, props: BUTTON_PROPS },
+  submit: { component: CustomButton, libraryName: 'CustomButton' },
+  reset: { component: CustomButton, libraryName: 'CustomButton' },
+  naiveButton: { component: CustomButton, libraryName: 'CustomButton' },
   naiveText: { component: NaiveTypographyText, libraryName: 'NaiveTypographyText' },
   naiveP: { component: NaiveTypographyP, libraryName: 'NaiveTypographyP' },
   naiveA: { component: NaiveTypographyA, libraryName: 'NaiveTypographyA' },
@@ -138,6 +99,11 @@ export const formkitBindings: Record<string, FormkitBinding> = {
   naiveBackTop: { component: NaiveBackTop, libraryName: 'NaiveBackTop' },
 }
 
+// legacy $cmp 别名单一来源：由 formkitBindings 派生注入 DSL 注册表（识别旧 Naive* 数据）
+registerLegacyCmpAliases(
+  Object.fromEntries(Object.entries(formkitBindings).map(([type, b]) => [b.libraryName ?? type, type])),
+)
+
 // ─── FormKit input 注册（画布/预览渲染）────────────────────────────────────────
 
 // 用户扩展元素（registerElement）追加的绑定；buildFormkitInputs 合并内置 + 扩展。
@@ -145,6 +111,7 @@ const extraBindings = new Map<string, FormkitBinding>()
 
 export function registerFormkitBinding(type: string, binding: FormkitBinding): void {
   extraBindings.set(type, binding)
+  registerLegacyCmpAliases({ [binding.libraryName ?? type]: type })
 }
 
 export function getFormkitBinding(type: string): FormkitBinding | undefined {
@@ -160,31 +127,18 @@ function allBindings(): Array<[string, FormkitBinding]> {
 export function buildFormkitInputs(): Record<string, ReturnType<typeof createInput>> {
   const inputs: Record<string, ReturnType<typeof createInput>> = {}
   for (const [type, f] of allBindings()) {
-    const family = f.family ?? 'naive'
-    const props = f.props ?? SHARED_FORMKIT_PROPS
-
-    if (f.wrap === false) {
-      inputs[type] = createInput(f.component, { family, props })
-      continue
-    }
-
     const libraryName = f.libraryName ?? type
+    // 统一路径：每个输入（含按钮）的渲染 schema 都是纯 $cmp。
+    // 不传 props 白名单 → 用户配置全量留在 node.props.attrs，由 bindings.observeProps 同步为
+    // context.attrs（响应式，属性面板修改时触发组件重渲染）；context 由 FormKitSchema 显式注入
+    // （FormKit 不会自动注入），组件用它做值绑定 + useSchemaAttrs 读取配置。
     inputs[type] = createInput(
       {
         $el: 'div',
         attrs: { class: 'w-full' },
-        children: [
-          {
-            $cmp: libraryName,
-            props: { context: '$node.context' },
-          },
-        ],
+        children: [{ $cmp: libraryName, props: { context: '$node.context' } }],
       },
-      {
-        family,
-        props,
-        library: { [libraryName]: f.component },
-      },
+      { family: 'naive', library: { [libraryName]: f.component } },
     )
   }
   return inputs
@@ -193,32 +147,12 @@ export function buildFormkitInputs(): Record<string, ReturnType<typeof createInp
 // ─── $cmp schema 组件库（画布 / 预览 FormKitSchema 用）──────────────────────────
 // 每个元素的 schema 以 $cmp: '<target>' 表达；这里把 target 映射到一层薄的 FormKit 包装组件，
 // 内部按 createInput 注册的 input type 渲染，从而保留 context / label / 校验 / 值绑定。
-
-// 按钮类静态元素：自定义配置（buttonText/block/size...）经 attrs 进入 FormKit 节点，
-// 但 FormKit 只在节点创建时把这些 attrs 同步进 node.props；节点创建后新增的 prop
-// （如编辑面板写入 buttonText）不会同步，画布因此不更新。这里给按钮的 FormKit 组件加
-// 内容 key —— 配置变化时 key 变化 → FormKit 节点重建 → 配置完整进入 node.props。
-const FORCE_RECREATE_TYPES = new Set(['submit', 'reset', 'naiveButton'])
-
-function stableAttrsKey(attrs: Record<string, unknown>): string {
-  try {
-    return JSON.stringify(attrs, Object.keys(attrs).sort())
-  } catch {
-    return ''
-  }
-}
-
 function createElementCmpWrapper(type: string): Component {
-  const forceRecreate = FORCE_RECREATE_TYPES.has(type)
   return markRaw(
     defineComponent({
       inheritAttrs: false,
       setup(_props, { attrs }) {
-        return () => {
-          const a = attrs as Record<string, unknown>
-          const contentKey = forceRecreate ? stableAttrsKey(a) : ''
-          return h(FormKit, { ...a, type, ...(contentKey ? { key: contentKey } : {}) } as never)
-        }
+        return () => h(FormKit, { ...(attrs as Record<string, unknown>), type } as never)
       },
     }),
   ) as unknown as Component

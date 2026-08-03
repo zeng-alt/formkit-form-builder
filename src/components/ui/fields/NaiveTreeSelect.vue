@@ -2,35 +2,29 @@
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { NTreeSelect } from 'naive-ui'
 import { computed } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 
-const props = defineProps<{
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
+const { config, props } = useSchemaAttrs(context)
 
 type TreeSelectSize = 'small' | 'medium' | 'large'
 
 const size = computed<TreeSelectSize>(() => {
-  const raw = uiProps.value.size as string | undefined
+  const raw = config.size as string | undefined
   if (raw === 'tiny') return 'small'
   if (raw === 'small' || raw === 'medium' || raw === 'large') return raw
   return 'medium'
 })
-const clearable = computed<boolean>(() => (uiProps.value.clearable as boolean | undefined) ?? true)
-const disabled = computed<boolean>(() =>
-  Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
-)
-const bordered = computed<boolean>(() => (uiProps.value.bordered as boolean | undefined) ?? true)
-const filterable = computed<boolean>(
-  () => (uiProps.value.filterable as boolean | undefined) ?? false,
-)
-const multiple = computed<boolean>(() => (uiProps.value.multiple as boolean | undefined) ?? false)
-const placeholder = computed(() => props.context.placeholder as string | undefined)
+const clearable = computed<boolean>(() => (config.clearable as boolean | undefined) ?? true)
+const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
+// multiple 供 value 计算（决定空值形状）使用；透传给 NTreeSelect 的仍是 props.multiple
+const multiple = computed<boolean>(() => (config.multiple as boolean | undefined) ?? false)
 
 const options = computed(() => {
-  const raw = props.context.options as unknown
+  const raw = config.options as unknown
   if (!Array.isArray(raw)) return []
   return raw
     .map((opt) => {
@@ -45,28 +39,25 @@ const options = computed(() => {
 })
 
 const value = computed<any>(() => {
-  const raw = props.context._value as unknown
+  const raw = context._value as unknown
   if (raw === undefined || raw === null || raw === '') return multiple.value ? [] : null
   return raw
 })
 
 function handleUpdateValue(next: unknown) {
-  props.context.node.input(next)
+  context.node.input(next)
 }
 </script>
 
 <template>
   <NTreeSelect
+    v-bind="props"
     :value="value"
     :options="options"
     :size="size"
     :clearable="clearable"
     :disabled="disabled"
-    :filterable="filterable"
-    :multiple="multiple"
-    :placeholder="placeholder"
     :input-props="{ id: context.id }"
-    :bordered="bordered"
     @update:value="handleUpdateValue"
     @blur="context.handlers.blur"
   />

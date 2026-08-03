@@ -4,7 +4,7 @@ import { computed } from "vue";
 import { FormKitSchema } from "@formkit/vue";
 import { NInputGroup, NEmpty } from "naive-ui";
 import { useFormBuilderI18n } from "@/i18n/context";
-import { getPreviewSchemaLibrary } from "@/containers/registry";
+import { getPreviewSchemaLibrary } from "@/elements/canvas";
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[];

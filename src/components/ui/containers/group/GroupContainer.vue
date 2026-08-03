@@ -8,7 +8,7 @@ import { useCanvasSchemaContext } from "@/builder/composables/canvas-schema-cont
 import ContainerChildrenGrid from "../shared/ContainerChildrenGrid.vue";
 
 // group 容器（对应 FormKit 原生 $formkit: 'group'）：嵌套 object 数据结构。
-// 画布上以虚线框承载子字段，预览时由 formatGroup 还原为原生 FormKit group。
+// 画布上以虚线框承载子字段，预览时由 formatContainer（规格 primitive:group）还原为原生 FormKit group。
 const props = defineProps<{
   groupKey?: string;
   modelValue: FormKitSchemaFormKit[];

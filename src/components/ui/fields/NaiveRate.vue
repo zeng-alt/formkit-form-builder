@@ -2,28 +2,20 @@
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { NRate } from 'naive-ui'
 import { computed } from 'vue'
-import { getSchemaProps } from './schema-props'
+import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 
-const props = defineProps<{
+const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const uiProps = computed<Record<string, unknown>>(() => getSchemaProps(props.context))
+const { config, props } = useSchemaAttrs(context)
 
-const disabled = computed<boolean>(() =>
-  Boolean((uiProps.value.disabled as boolean | undefined) ?? props.context.disabled ?? false),
-)
-const readonly = computed<boolean>(() =>
-  Boolean((uiProps.value.readonly as boolean | undefined) ?? false),
-)
+const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 const clearable = computed<boolean>(() =>
-  Boolean((uiProps.value.clearable as boolean | undefined) ?? true),
-)
-const allowHalf = computed<boolean>(() =>
-  Boolean((uiProps.value.allowHalf as boolean | undefined) ?? false),
+  Boolean((config.clearable as boolean | undefined) ?? true),
 )
 const count = computed<number>(() => {
-  const raw = uiProps.value.count as unknown
+  const raw = config.count as unknown
   if (typeof raw === 'number' && Number.isFinite(raw)) return raw
   if (typeof raw === 'string') {
     const parsed = Number(raw)
@@ -33,7 +25,7 @@ const count = computed<number>(() => {
 })
 
 const value = computed<number>(() => {
-  const raw = props.context._value as unknown
+  const raw = context._value as unknown
   if (typeof raw === 'number' && Number.isFinite(raw)) return raw
   if (typeof raw === 'string') {
     const parsed = Number(raw)
@@ -43,17 +35,16 @@ const value = computed<number>(() => {
 })
 
 function handleUpdateValue(next: number) {
-  props.context.node.input(next)
+  context.node.input(next)
 }
 </script>
 
 <template>
   <NRate
+    v-bind="props"
     :value="value"
     :count="count"
-    :allow-half="allowHalf"
     :clearable="clearable"
-    :readonly="readonly"
     :disabled="disabled"
     @update:value="handleUpdateValue"
   />

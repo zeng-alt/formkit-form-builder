@@ -8,7 +8,8 @@ import createFormattedSchema from '@/utils/format-schema'
 import { evalExpression } from '@/utils/expression-eval'
 import { collectSchemaNames, generateKey, toSafeName } from '@/utils/dnd/schema'
 import { getContainerKind } from '@/utils/schema/containers'
-import { getPreviewSchemaLibrary } from '@/containers/registry'
+import { getContainerSpec } from '@/elements/container-spec'
+import { getPreviewSchemaLibrary } from '@/elements/canvas'
 
 type ModelValue = Record<string, unknown>
 
@@ -271,21 +272,18 @@ const cloneNodeWithFreshIdentity = (node: any, existingNames: Set<string>, listS
   }
   if (kind) {
     const baseProps = typeof next.props === 'object' && next.props ? next.props : {}
-    if (kind === 'list') {
+    // 按容器规格注入各自的 keyProp（listKey/cardKey/inputGroupKey/buttonGroupKey/tabsKey），
+    // 修复旧实现把 cardKey 误写进 inputGroup/buttonGroup/tabs 的问题
+    const spec = getContainerSpec(node.$cmp ?? node.$formkit)
+    if (spec && spec.primitive === 'cmp') {
       next.props = {
         ...baseProps,
-        listKey: nextKey,
+        [spec.keyProp]: nextKey,
         modelValue: Array.isArray(next.children) ? next.children : [],
       }
-    } else if (kind === 'group') {
+    } else {
       // group 预览为原生 $formkit: 'group'，无需容器 key；只更新 children 即可
       next.props = baseProps
-    } else {
-      next.props = {
-        ...baseProps,
-        cardKey: nextKey,
-        modelValue: Array.isArray(next.children) ? next.children : [],
-      }
     }
   }
   return next
