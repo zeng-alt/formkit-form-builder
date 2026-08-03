@@ -320,6 +320,7 @@ const CONTAINER_INTERNAL_PROPS = new Set([
   'listKey',
   'cardKey',
   'inputGroupKey',
+  'buttonGroupKey',
   'tabsKey',
   'modelValue',
   'label',
@@ -346,8 +347,13 @@ export function containerNodeToSchema(
     return schema as SchemaNode
   }
 
-  if (node.type === 'list' || node.type === 'inputGroup') {
-    const keyProp = node.type === 'list' ? 'listKey' : 'inputGroupKey'
+  if (node.type === 'list' || node.type === 'inputGroup' || node.type === 'buttonGroup') {
+    const keyProp =
+      node.type === 'list'
+        ? 'listKey'
+        : node.type === 'inputGroup'
+          ? 'inputGroupKey'
+          : 'buttonGroupKey'
     const containerProps: Record<string, unknown> = {
       [keyProp]: node.key ?? node.id,
       name: node.name ?? node.id,

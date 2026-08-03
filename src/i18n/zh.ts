@@ -246,6 +246,7 @@ export default {
       list: '列表',
       card: '卡片容器',
       inputGroup: '输入组（NInputGroup）',
+      buttonGroup: '按钮组（NButtonGroup）',
       tabs: 'Tabs 容器',
       group: '嵌套对象字段组',
     },
@@ -356,6 +357,11 @@ export default {
       name: '输入组',
       label: '输入组',
       description: 'Naive UI NInputGroup 容器（仅左右拖拽）',
+    },
+    buttonGroup: {
+      name: '按钮组',
+      label: '按钮组',
+      description: 'Naive UI NButtonGroup 容器（按钮组合，可整体禁用）',
     },
     tabs: { name: 'Tabs', label: 'Tabs', description: 'Naive UI Tabs 容器' },
     group: {

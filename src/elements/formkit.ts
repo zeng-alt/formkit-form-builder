@@ -84,6 +84,7 @@ export const BUTTON_PROPS = [
   'round',
   'secondary',
   'size',
+  'buttonType',
 ]
 
 // 文本类字段共用同一底层组件，但 $cmp target 独立（NaiveEmailInput 等）保证往返可判别

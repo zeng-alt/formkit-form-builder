@@ -64,6 +64,7 @@ export default defineConfig({
     "i-lucide-rotate-ccw",
     "i-lucide-plus",
     "i-lucide-align-horizontal-justify-start",
+    "i-lucide-rectangle-horizontal",
   ],
   presets: [
     presetWind3(),

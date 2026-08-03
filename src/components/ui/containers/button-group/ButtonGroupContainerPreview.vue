@@ -2,30 +2,21 @@
 import type { FormKitSchemaFormKit } from "@formkit/core";
 import { computed } from "vue";
 import { FormKitSchema } from "@formkit/vue";
-import { NInputGroup, NEmpty } from "naive-ui";
+import { NButtonGroup, NEmpty } from "naive-ui";
 import { useFormBuilderI18n } from "@/i18n/context";
 import { getPreviewSchemaLibrary } from "@/containers/registry";
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[];
   modelValue?: FormKitSchemaFormKit[];
-  label?: string;
-  help?: string;
+  size?: "tiny" | "small" | "medium" | "large";
+  vertical?: boolean;
 }>();
 
 const { t } = useFormBuilderI18n();
 
 const schemaLibrary = getPreviewSchemaLibrary();
 
-const title = computed(() =>
-  typeof props.label === "string" && props.label.trim()
-    ? props.label.trim()
-    : ""
-);
-const helpText = computed(() =>
-  typeof props.help === "string" && props.help.trim() ? props.help.trim() : ""
-);
-const showHeader = computed(() => Boolean(title.value || helpText.value));
 const modelValue = computed(() => {
   if (Array.isArray(props.modelValue)) return props.modelValue;
   if (Array.isArray(props.children)) return props.children;
@@ -35,10 +26,7 @@ const modelValue = computed(() => {
 
 <template>
   <div class="w-full">
-    <div v-if="showHeader" class="mb-2px">
-      <div v-if="title" class="text-12px font-bold">{{ title }}</div>
-    </div>
-    <n-input-group class="w-full">
+    <n-button-group :size="props.size" :vertical="props.vertical" class="w-full">
       <FormKitSchema
         v-if="modelValue.length"
         :schema="modelValue"
@@ -48,25 +36,19 @@ const modelValue = computed(() => {
       <div v-else class="flex w-full items-center justify-center">
         <n-empty :description="t('builder.listDropHere')" />
       </div>
-    </n-input-group>
-
-    <div v-if="helpText" class="text-xs text-muted-foreground">
-      {{ helpText }}
-    </div>
+    </n-button-group>
   </div>
 </template>
 
 <style scoped>
-/* 输入组：每个元素按 layout.colspan 的 w-[xx%] 显示宽度（不拉伸、不压缩），
-   隐藏字段 label/help，保证输入框与按钮同高、上下对齐 */
-:deep(.n-input-group .formkit-outer) {
-  flex: 0 0 auto;
-  min-width: 0;
-  align-self: stretch;
+/* 按钮组：子按钮等分整行宽度（有多少个就平分多少）；隐藏 label/help */
+:deep(.n-button-group .formkit-outer),
+:deep(.n-button-group .formkit-wrapper) {
+  width: 0% !important;
+  flex: 1 1 0% !important;
 }
-:deep(.n-input-group .formkit-label),
-:deep(.n-input-group .formkit-help) {
+:deep(.n-button-group .formkit-label),
+:deep(.n-button-group .formkit-help) {
   display: none;
 }
 </style>
-

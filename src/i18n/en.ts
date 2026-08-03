@@ -288,6 +288,7 @@ export default {
       list: 'Allows user to group fields into an array',
       card: 'Card container',
       inputGroup: 'Input group (NInputGroup)',
+      buttonGroup: 'Button group (NButtonGroup)',
       tabs: 'Tabs container',
       group: 'Nested object field group',
     },
@@ -410,6 +411,11 @@ export default {
       name: 'Input Group',
       label: 'Input Group',
       description: 'Naive UI NInputGroup container (horizontal only)',
+    },
+    buttonGroup: {
+      name: 'Button Group',
+      label: 'Button Group',
+      description: 'Naive UI NButtonGroup container (can be disabled as a whole)',
     },
     tabs: { name: 'Tabs', label: 'Tabs', description: 'Naive UI Tabs container' },
     group: {

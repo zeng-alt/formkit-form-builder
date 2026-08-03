@@ -36,6 +36,24 @@ export const containerElements: ElementDefinition[] = [
     },
   },
   {
+    type: 'buttonGroup',
+    category: 'container',
+    icon: 'i-lucide-rectangle-horizontal',
+    tooltipKey: 'fieldProps.tooltip.buttonGroup',
+    editor: () => import('@/components/sidebar-right/edits/editors/ButtonGroupEditor.vue'),
+    schema: {
+      renderAs: 'cmp',
+      nameKey: 'elements.buttonGroup.name',
+      outerClass: 'col-span-12',
+      props: {
+        size: 'medium',
+        vertical: false,
+        disabled: false,
+      },
+      descriptionKey: 'elements.buttonGroup.description',
+    },
+  },
+  {
     type: 'card',
     category: 'layout',
     icon: 'i-lucide-credit-card',

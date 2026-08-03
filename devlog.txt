@@ -1,0 +1,71 @@
+
+> @zeng-alt/formkit-form-builder@0.1.4 dev D:\documents\nodes\formkit-form-builder
+> vite
+
+[auto-import] plugin installed but no imports has defined, see https://github.com/antfu/unplugin-auto-import#configurations for configurations
+[auto-import] plugin installed but no imports has defined, see https://github.com/antfu/unplugin-auto-import#configurations for configurations
+[unocss] failed to load icon "lucide-calendar"
+[unocss] failed to load icon "lucide-calendar-clock"
+[unocss] failed to load icon "lucide-circle-dot"
+[unocss] failed to load icon "lucide-clock"
+[unocss] failed to load icon "lucide-hash"
+[unocss] failed to load icon "lucide-letter-text"
+[unocss] failed to load icon "lucide-link-2"
+[unocss] failed to load icon "lucide-list"
+[unocss] failed to load icon "lucide-lock"
+[unocss] failed to load icon "lucide-mail"
+[unocss] failed to load icon "lucide-paperclip"
+[unocss] failed to load icon "lucide-phone"
+[unocss] failed to load icon "lucide-sliders-horizontal"
+[unocss] failed to load icon "lucide-triangle-alert"
+[unocss] failed to load icon "lucide-arrow-up-to-line"
+[unocss] failed to load icon "lucide-square-check"
+[unocss] failed to load icon "lucide-type"
+[unocss] failed to load icon "lucide-pipette"
+[unocss] failed to load icon "lucide-send-horizontal"
+[unocss] failed to load icon "lucide-square-mouse-pointer"
+[unocss] failed to load icon "stash:user-avatar"
+[unocss] failed to load icon "lucide-group"
+[unocss] failed to load icon "lucide-list-tree"
+[unocss] failed to load icon "lucide-heading-1"
+[unocss] failed to load icon "lucide-heading-2"
+[unocss] failed to load icon "lucide-heading-3"
+[unocss] failed to load icon "lucide-heading-4"
+[unocss] failed to load icon "lucide-heading-5"
+[unocss] failed to load icon "lucide-heading-6"
+[unocss] failed to load icon "lucide-image"
+[unocss] failed to load icon "lucide-trash-2"
+[unocss] failed to load icon "lucide-eye"
+[unocss] failed to load icon "lucide-undo-2"
+[unocss] failed to load icon "lucide-redo-2"
+[unocss] failed to load icon "lucide-monitor"
+[unocss] failed to load icon "lucide-tablet"
+[unocss] failed to load icon "lucide-smartphone"
+[unocss] failed to load icon "lucide-code-xml"
+[unocss] failed to load icon "lucide-more-vertical"
+[unocss] failed to load icon "lucide-download"
+[unocss] failed to load icon "lucide-save"
+[unocss] failed to load icon "lucide-bot-message-square"
+[unocss] failed to load icon "lucide-sun"
+[unocss] failed to load icon "lucide-moon"
+[unocss] failed to load icon "lucide-circle-help"
+[unocss] failed to load icon "lucide-move-right"
+[unocss] failed to load icon "lucide-credit-card"
+[unocss] failed to load icon "lucide-panel-top"
+[unocss] failed to load icon "lucide-upload"
+[unocss] failed to load icon "lucide-rotate-ccw"
+[unocss] failed to load icon "lucide-plus"
+[unocss] failed to load icon "lucide-align-horizontal-justify-start"
+[unocss] failed to load icon "lucide-rectangle-horizontal"
+[2m14:23:21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Re-optimizing dependencies because lockfile has changed
+Port 5173 is in use, trying another one...
+Port 5174 is in use, trying another one...
+
+  [32m[1mVITE[22m v8.0.8[39m  [2mready in [0m[1m1650[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5175[22m/[39m
+[2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+  ➜  Vue DevTools: Open http://localhost:5175/__devtools__/ as a separate window
+  ➜  Vue DevTools: Press Alt(⌥)+Shift(⇧)+D in App to toggle the Vue DevTools
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[2m14:23:22[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [optimizer] bundling dependencies...

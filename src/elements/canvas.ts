@@ -7,6 +7,7 @@ import type { Component } from "vue";
 import type { FormKitSchemaFormKit } from "@formkit/core";
 import { buildElementSchemaLibrary } from "./formkit";
 import { registerBuiltinElementTypes } from "../dsl/definitions";
+import { applyGroupDisabled, stripInputGroupOuterClass } from "@/utils/dnd/grid";
 
 import ListContainer from "@/components/ui/containers/list/ListContainer.vue";
 import ListContainerPreview from "@/components/ui/containers/list/ListContainerPreview.vue";
@@ -14,6 +15,8 @@ import CardContainer from "@/components/ui/containers/card/CardContainer.vue";
 import CardContainerPreview from "@/components/ui/containers/card/CardContainerPreview.vue";
 import InputGroupContainer from "@/components/ui/containers/input-group/InputGroupContainer.vue";
 import InputGroupContainerPreview from "@/components/ui/containers/input-group/InputGroupContainerPreview.vue";
+import ButtonGroupContainer from "@/components/ui/containers/button-group/ButtonGroupContainer.vue";
+import ButtonGroupContainerPreview from "@/components/ui/containers/button-group/ButtonGroupContainerPreview.vue";
 import TabsContainer from "@/components/ui/containers/tabs/TabsContainer.vue";
 import TabsContainerPreview from "@/components/ui/containers/tabs/TabsContainerPreview.vue";
 import GroupContainer from "@/components/ui/containers/group/GroupContainer.vue";
@@ -189,6 +192,69 @@ function decorateInputGroupChildren(children: FormKitSchemaFormKit[]): FormKitSc
   return children.map(decorateInputGroupChild);
 }
 
+// ─── button-group ──────────────────────────────────────────────────────────────
+
+function isButtonGroupContainer(node: any) {
+  if (!node || typeof node !== "object") return false;
+  return node.$cmp === "buttonGroup" || node.$formkit === "buttonGroup";
+}
+
+function normalizeButtonGroup(node: SchemaNode): SchemaNode {
+  const next: any = { ...node };
+  next.$cmp = next.$cmp || "buttonGroup";
+  next.children = Array.isArray(next.children) ? next.children : [];
+  const props = typeof next.props === "object" && next.props ? { ...next.props } : {};
+  props.buttonGroupKey =
+    typeof props.buttonGroupKey === "string" && props.buttonGroupKey
+      ? props.buttonGroupKey
+      : ((next.__key as string | undefined) ?? "");
+  props.modelValue = next.children;
+  next.props = props;
+  return next;
+}
+
+// 按钮组子项装饰：去掉按钮外框的 pt-2/宽度类；整体禁用时注入 disabled
+function decorateButtonGroupChildren(
+  children: FormKitSchemaFormKit[],
+  disabled: unknown,
+): FormKitSchemaFormKit[] {
+  return children.map((c) => {
+    const stripped = stripInputGroupOuterClass(c);
+    return disabled ? applyGroupDisabled(stripped) : stripped;
+  });
+}
+
+// 按钮组预览：纯展示容器，不包 group（按钮不产数据），直接 $cmp 承载子按钮
+function formatButtonGroup(node: SchemaNode, ctx: ContainerFormatCtx): FormKitSchemaFormKit {
+  const key = (node as any)?.__key as string | undefined;
+  const normalized = normalizeButtonGroup(node);
+  const rawChildren = Array.isArray(normalized.children)
+    ? (normalized.children as FormKitSchemaFormKit[]).map((c, i) => ctx.format(c, i))
+    : [];
+  const children = decorateButtonGroupChildren(
+    rawChildren,
+    (normalized as any).props?.disabled,
+  );
+  const schemaIf = (normalized as any).if;
+  const nextNode: any = {
+    $el: "div",
+    attrs: { class: (normalized as any).outerClass || "col-span-12" },
+    children: [
+      {
+        $cmp: "buttonGroup",
+        props: {
+          ...(normalized as any).props,
+          buttonGroupKey: ((normalized as any).props?.buttonGroupKey as string | undefined) ?? key ?? "",
+          modelValue: children,
+        },
+      },
+    ],
+  };
+  if (typeof schemaIf === "string" && schemaIf.trim()) nextNode.if = schemaIf;
+  else if (typeof schemaIf === "boolean") nextNode.if = schemaIf;
+  return nextNode as FormKitSchemaFormKit;
+}
+
 // ─── tabs ──────────────────────────────────────────────────────────────────────
 
 function isTabsContainer(node: any) {
@@ -244,6 +310,14 @@ const defs: ContainerDefinition[] = [
         "inputGroupKey",
         decorateInputGroupChildren,
       ),
+  },
+  {
+    id: "buttonGroup",
+    match: isButtonGroupContainer,
+    canvas: { libraryKey: "buttonGroup", component: ButtonGroupContainer as any },
+    preview: { libraryKey: "buttonGroup", component: ButtonGroupContainerPreview as any },
+    normalize: normalizeButtonGroup,
+    formatPreview: (node, ctx) => formatButtonGroup(node, ctx),
   },
   {
     id: "tabs",

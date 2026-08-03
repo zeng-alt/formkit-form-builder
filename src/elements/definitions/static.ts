@@ -17,7 +17,6 @@ const heading = (
   editor: () => import(/* @vite-ignore */ editor),
   schema: {
     renderAs: "cmp",
-
     outerClass: "col-span-12",
     props: { text: "text" },
     nameKey: `elements.naiveH${depth}.name`,
@@ -38,6 +37,9 @@ export const staticElements: ElementDefinition[] = [
       nameKey: "elements.submit.name",
       descriptionKey: "elements.submit.description",
       labelKey: "elements.submit.label",
+      props: {
+        buttonType: "default",
+      },
     },
   },
   {
@@ -52,6 +54,9 @@ export const staticElements: ElementDefinition[] = [
       nameKey: "elements.reset.name",
       descriptionKey: "elements.reset.description",
       labelKey: "elements.reset.label",
+      props: {
+        buttonType: "error",
+      },
     },
   },
   {
@@ -76,7 +81,7 @@ export const staticElements: ElementDefinition[] = [
         round: false,
         secondary: false,
         size: "medium",
-        type: "default",
+        buttonType: "default",
       },
       nameKey: "elements.naiveButton.name",
       descriptionKey: "elements.naiveButton.description",

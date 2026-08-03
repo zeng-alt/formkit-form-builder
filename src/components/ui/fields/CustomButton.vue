@@ -23,7 +23,6 @@ const text = computed(() => {
   // label / context.label 兜底（默认 submit/reset 无 buttonText 时显示默认文案）
   return (
     flat.value?.buttonText ??
-    flat.value?.text ??
     flat.value?.label ??
     props.context?.label ??
     ''
@@ -31,16 +30,13 @@ const text = computed(() => {
 })
 
 const type = computed(() => {
-  const configuredType = flat.value?.type
-  if (configuredType && configuredType !== 'submit' && configuredType !== 'button')
-    return configuredType
-  const formkitType = props.context.node.props.type
-  return formkitType === 'submit' ? 'primary' : 'default'
+  return props.context.node.props.buttonType || 'primary';
 })
 
 const attrType = computed(() => {
-  const formkitType = props.context.node.props.type
+  const formkitType = flat.value?.type
   if (formkitType === 'submit') return 'submit'
+  if (formkitType === 'reset') return 'reset'
   return 'button'
 })
 

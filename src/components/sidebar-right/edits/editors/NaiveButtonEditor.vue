@@ -18,7 +18,7 @@ const buttonGhost = createButtonProp<boolean>('ghost', false)
 const buttonRound = createButtonProp<boolean>('round', false)
 const buttonSecondary = createButtonProp<boolean>('secondary', false)
 const buttonSize = createButtonProp<string>('size', 'medium')
-const buttonType = createButtonProp<string>('type', 'default')
+const buttonType = createButtonProp<string>('buttonType', 'default')
 </script>
 
 <template>

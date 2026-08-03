@@ -108,9 +108,6 @@ const deleteChild = (index: number) => {
       class="flex flex-col gap-0.5 px-3 py-2 border-b border-border/50"
     >
       <div v-if="title" class="text-xs text-muted-foreground">{{ title }}</div>
-      <div v-if="helpText" class="text-[11px] text-muted-foreground">
-        {{ helpText }}
-      </div>
     </div>
 
     <div class="p-2">
@@ -135,6 +132,10 @@ const deleteChild = (index: number) => {
           ul-class="p-0"
         />
       </n-input-group>
+    </div>
+
+    <div v-if="helpText" class="text-[11px] text-muted-foreground">
+      {{ helpText }}
     </div>
   </div>
 </template>

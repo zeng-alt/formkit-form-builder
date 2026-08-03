@@ -194,15 +194,24 @@ export function useFormField() {
   const buttonText = computed<string>({
     get: () => {
       const node = selectedField.value;
-      const value =
-        node?.props?.buttonText ??
-        node?.props?.text ??
-        node?.label;
+      const value = node?.props?.buttonText ?? node?.props?.text ?? node?.label;
       return typeof value === "string" ? value : "";
     },
     set: (value: string) => {
       const next = value.trim();
       setPropsProp("buttonText", next || undefined);
+    },
+  });
+
+  const buttonType = computed<string>({
+    get: () => {
+      const node = selectedField.value;
+      const value = node?.props?.buttonType ?? "default";
+      return typeof value === "string" ? value : "";
+    },
+    set: (value: string) => {
+      const next = value.trim();
+      setPropsProp("buttonType", next || undefined);
     },
   });
 
@@ -509,37 +518,37 @@ export function useFormField() {
 
   const colSpan = computed<number>({
     get: () => {
-      const node = selectedField.value
-      return node?.layout?.colspan ?? 12
+      const node = selectedField.value;
+      return node?.layout?.colspan ?? 12;
     },
     set: (value: number) => {
-      const nextSpan = Math.max(1, Math.min(12, Math.round(value)))
+      const nextSpan = Math.max(1, Math.min(12, Math.round(value)));
       patchSelected((node) => {
-        const layout = { ...node.layout }
-        if (nextSpan < 12) layout.colspan = nextSpan
-        else delete layout.colspan
-        node.layout = Object.keys(layout).length ? layout : undefined
+        const layout = { ...node.layout };
+        if (nextSpan < 12) layout.colspan = nextSpan;
+        else delete layout.colspan;
+        node.layout = Object.keys(layout).length ? layout : undefined;
         // 同步 outerClass 里的 col-span-N：nodeOuterClass 优先用原始字符串，
         // 只改 layout 不改类名会导致画布仍按旧 col-span-N 渲染
-        let classes = typeof node.outerClass === 'string' ? node.outerClass : ''
+        let classes = typeof node.outerClass === "string" ? node.outerClass : "";
         if (nextSpan < 12) {
           if (/\bcol-span-\d+\b/.test(classes)) {
-            classes = classes.replace(/\bcol-span-\d+\b/g, `col-span-${nextSpan}`)
+            classes = classes.replace(/\bcol-span-\d+\b/g, `col-span-${nextSpan}`);
           } else {
-            classes = `${classes} col-span-${nextSpan}`.replace(/\s+/g, ' ').trim()
+            classes = `${classes} col-span-${nextSpan}`.replace(/\s+/g, " ").trim();
           }
         } else {
           classes = classes
-            .replace(/\bcol-span-\d+\b/g, '')
-            .replace(/\s+/g, ' ')
-            .trim()
+            .replace(/\bcol-span-\d+\b/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
         }
-        if (classes) node.outerClass = classes
-        else delete node.outerClass
-        return node
-      })
+        if (classes) node.outerClass = classes;
+        else delete node.outerClass;
+        return node;
+      });
     },
-  })
+  });
 
   const bindEvents = computed<Record<string, unknown>>({
     get: () => {
@@ -560,6 +569,7 @@ export function useFormField() {
     ifExpression,
     label,
     buttonText,
+    buttonType,
     placeholder,
     fieldValue,
     updateValidationString,

@@ -23,6 +23,12 @@ const props = defineProps<{
   dataAttrs?: Record<string, string | number | boolean | undefined>
   ulClass?: string
   layout?: 'grid' | 'row'
+  /** row 布局时子项按内容自适应宽度（按钮组）；同时隐藏宽度调节把手 */
+  autoWidth?: boolean
+  /** row 布局时子项等分宽度占满一行（按钮组默认） */
+  equalWidth?: boolean
+  /** row 布局时纵向排列（纵向按钮组） */
+  vertical?: boolean
   setNestedParentOnRoot?: (active: boolean) => void
   onSelect: (child: FormKitSchemaFormKit, index: number) => void
   onSelectBlank?: () => void
@@ -88,8 +94,13 @@ const dragEnabled = computed(() => props.dragEnabled !== false)
 const dragHandle = computed(() => props.dragHandle === true)
 
 const baseUlClass = computed(() => {
-  if (layout.value === 'row')
+  if (layout.value === 'row') {
+    if (props.vertical)
+      return 'w-full flex-1 flex flex-col items-start gap-0 list-none p-0 m-0'
+    if (props.autoWidth)
+      return 'w-full flex-1 flex flex-row flex-nowrap items-center gap-0 list-none p-0 m-0 overflow-x-hidden'
     return 'w-full flex-1 flex flex-row flex-nowrap items-stretch gap-0 list-none p-0 m-0 overflow-x-hidden'
+  }
   return 'w-full flex-1 grid grid-cols-12 gap-x-4 gap-y-2 list-none p-2 m-0'
 })
 
@@ -101,6 +112,9 @@ const emptyPlaceholderClass = computed(() => {
 
 const itemStyle = (child: any) => {
   if (layout.value === 'row') {
+    if (props.autoWidth) return { width: 'auto', flex: '0 0 auto' }
+    // 按钮组：子按钮等分整行宽度（有多少个就平分多少）
+    if (props.equalWidth) return { flex: '1 1 0%', width: '0%' }
     if (props.items.value.length === 1) return { width: '100%', flex: '0 0 auto' }
     // 输入组（row 布局）：按 col-span/12 显示宽度（4 → 33%、6 → 50%）。
     // 仅当历史数据总宽 > 12 时按比例缩放兜底，避免元素溢出容器、右侧按钮被裁掉
@@ -233,6 +247,7 @@ const resizeHandleClass = computed(() => {
         </div>
 
         <n-button
+          v-if="!props.autoWidth && !props.equalWidth"
           text
           size="small"
           :aria-label="props.resizeAriaLabel ?? 'Resize'"
