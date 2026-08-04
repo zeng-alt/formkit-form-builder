@@ -88,13 +88,19 @@ watch(
         item.name.trim().replace(/\s+/g, '-').toLowerCase(),
       ]"
     >
-      <div
-        v-if="collapsed"
-        class="h-10 w-10 rounded-md bg-ring/20 flex items-center justify-center"
-      >
-        <span
-          :class="`${fieldProps.find((prop) => prop.name === getTypeName(item))?.icon ?? ''} h-6 w-6`"
-        ></span>
+      <div v-if="collapsed">
+        <n-popover placement="right">
+          <template #trigger>
+            <div class="h-8 w-8 rounded-md flex items-center justify-center">
+              <span
+                :class="`${fieldProps.find((prop) => prop.name === getTypeName(item))?.icon ?? ''} h-4 w-4`"
+              />
+            </div>
+          </template>
+          <div>
+            {{ item.name.trim() }}
+          </div>
+        </n-popover>
       </div>
       <span
         v-else

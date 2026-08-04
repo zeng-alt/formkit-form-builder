@@ -42,8 +42,8 @@ const headerIcon = computed(() => {
   >
     <div class="p-3 border-b">
       <div class="flex items-center gap-3">
-        <div class="h-11 w-11 rounded-md bg-ring/20 flex items-center justify-center shrink-0">
-          <span :class="`${headerIcon} h-8 w-8 text-green-700 dark:text-white/70`"></span>
+        <div class="h-8 w-8 rounded-md flex items-center justify-center shrink-0">
+          <span :class="`${headerIcon} h-8 w-8`"></span>
         </div>
         <div class="min-w-0 flex-1">
           <div class="text-sm font-medium text-foreground truncate">

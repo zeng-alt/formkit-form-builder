@@ -62,8 +62,8 @@ const groupedElements = computed(() => {
 
 <template>
   <div class="h-full flex flex-col overflow-hidden">
-    <n-scrollbar v-if="collapsed" class="h-full sidebar-scrollbar" content-class="py-2 px-1">
-      <DraggableList :elements="filteredFormElements" />
+    <n-scrollbar :size="4" v-if="collapsed" class="h-full sidebar-scrollbar" content-class="py-2 px-1">
+      <DraggableList :elements="filteredFormElements"/>
     </n-scrollbar>
     <n-tabs
       v-else
