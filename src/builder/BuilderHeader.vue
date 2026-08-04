@@ -6,7 +6,9 @@ import BuilderPreview from './BuilderPreview.vue'
 import AiPrompt from '../components/ai-prompt/AiPrompt.vue'
 import ThemeSwitcher from '../components/ui/theme-switcher/ThemeSwitcher.vue'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
+import { useFormBuilderConfig } from '@/composables/use-config'
 
+const config = useFormBuilderConfig()
 // 所属 FormBuilder 实例状态：undo/redo / 清空提交绑定到各自实例。
 const { canRedo, canUndo, commitSchema, redo, undo } = useFormBuilderState()
 const { t } = useFormBuilderI18n()
@@ -70,7 +72,7 @@ defineSlots<{
       <div class="flex justify-center">
         <slot name="center">
           <div class="w-full max-w-[560px]">
-            <AiPrompt />
+            <AiPrompt v-if="config.apiKey"/>
           </div>
         </slot>
       </div>
