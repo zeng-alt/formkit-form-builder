@@ -3,6 +3,7 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NCascader } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
+import { useDynamicTreeOptions } from '../formkit/use-dynamic-tree-options'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
@@ -23,8 +24,13 @@ const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 // multiple 供 value 计算（决定空值形状）使用；透传给 NCascader 的仍是 props.multiple
 const multiple = computed<boolean>(() => (config.multiple as boolean | undefined) ?? false)
 
+const optionsRaw = computed(() => props.value.options as unknown)
+
+const { isDynamic, dynamicOptions } = useDynamicTreeOptions(optionsRaw)
+
 const options = computed(() => {
-  const raw = props.value.options as unknown
+  if (isDynamic.value) return dynamicOptions.value
+  const raw = optionsRaw.value
   if (!Array.isArray(raw)) return []
   return raw
     .map((opt) => {

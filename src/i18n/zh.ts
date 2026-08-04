@@ -178,6 +178,7 @@ export default {
       dictSearch: "查询",
       dictEmpty: "暂无数据",
       dictProviderMissing: "未配置字典方法，请在 BuilderProvider 的 config 中传入 fetchDictionary / fetchDictionaryPage",
+      treeDictProviderMissing: "未配置树型字典方法，请在 BuilderProvider 的 config 中传入 fetchTreeDictionary / fetchTreeDictionaryPage",
       dictCancel: "取消",
       jsonParseError: "JSON 格式错误",
       jsonArrayError: "Options 必须是数组 JSON",
@@ -185,7 +186,8 @@ export default {
         label: "label",
         pair: "成对值",
         json: "json",
-        endpoint: "endpoint",
+        dynamicDict: "动态字典",
+        dynamicTreeDict: "动态树字典",
       },
     },
     optionsLayout: {

@@ -1,5 +1,5 @@
 import { useFormBuilderConfig } from './use-config'
-import type { DictionaryOption } from '../types/env'
+import type { DictionaryOption, TreeDictionaryOption } from '../types/env'
 
 /** 动态字典来源：options 为对象 { dynamic: true, code, label? } */
 export interface DynamicSource {
@@ -23,7 +23,7 @@ export function parseDynamicSource(raw: unknown): DynamicSource | null {
 }
 
 /**
- * 读取用户通过 BuilderProvider config 传入的两个字典方法。
+ * 读取用户通过 BuilderProvider config 传入的字典方法。
  * 未配置时返回 undefined，由调用方兜底（不注入时静默降级为空）。
  */
 export function useDictionary() {
@@ -31,7 +31,9 @@ export function useDictionary() {
   return {
     fetchDictionary: config.fetchDictionary,
     fetchDictionaryPage: config.fetchDictionaryPage,
+    fetchTreeDictionary: config.fetchTreeDictionary,
+    fetchTreeDictionaryPage: config.fetchTreeDictionaryPage,
   }
 }
 
-export type { DictionaryOption }
+export type { DictionaryOption, TreeDictionaryOption }

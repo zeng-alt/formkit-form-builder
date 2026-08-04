@@ -216,6 +216,7 @@ export default {
       dictSearch: "Search",
       dictEmpty: "No data",
       dictProviderMissing: "No dictionary methods configured. Pass fetchDictionary / fetchDictionaryPage in BuilderProvider config.",
+      treeDictProviderMissing: "No tree dictionary methods configured. Pass fetchTreeDictionary / fetchTreeDictionaryPage in BuilderProvider config.",
       dictCancel: "Cancel",
       jsonParseError: "Invalid JSON",
       jsonArrayError: "Options must be a JSON array",
@@ -223,7 +224,8 @@ export default {
         label: "label",
         pair: "pair",
         json: "json",
-        endpoint: "endpoint",
+        dynamicDict: "Dynamic Dict",
+        dynamicTreeDict: "Dynamic Tree Dict",
       },
     },
     optionsLayout: {

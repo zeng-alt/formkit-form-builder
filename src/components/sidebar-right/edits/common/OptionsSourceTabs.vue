@@ -9,11 +9,17 @@ import { useFormBuilderI18n } from '../../../../i18n/context'
 import EditsLayout from './EditsLayout.vue'
 import JsonTextarea from './JsonTextarea.vue'
 import DictionaryPickerModal from './DictionaryPickerModal.vue'
+import TreeDictionaryPickerModal from './TreeDictionaryPickerModal.vue'
 import TagsInput from './TagsInput.vue'
-import type { DictionaryDefinition, DictionaryOption } from '@/types/env'
+import type { DictionaryDefinition, DictionaryOption, TreeDictionaryOption, TreeDictionaryDefinition } from '@/types/env'
 
-type SourceType = 'label' | 'pair' | 'json' | 'endpoint'
+type SourceType = 'label' | 'pair' | 'json' | 'dynamicDict' | 'dynamicTreeDict'
 type PairRow = { label: string; value: string }
+
+const props = defineProps<{
+  /** 模式：'flat' 普通下拉/单选/多选 使用 dynamicDict，'tree' 树选择/级联选择 使用 dynamicTreeDict */
+  mode?: 'flat' | 'tree'
+}>()
 
 // 所属 FormBuilder 实例状态：选中 token 绑定到各自实例。
 const { selectedIndex, selectedKey } = useFormBuilderState()
@@ -22,16 +28,29 @@ const { t } = useFormBuilderI18n()
 
 const selectionToken = computed(() => selectedKey.value ?? String(selectedIndex.value))
 
-const active = ref<SourceType>('label')
+// 根据 mode 自动推断默认标签页
+const allowedTabs = computed<SourceType[]>(() => {
+  const baseTabs: SourceType[] = ['label', 'pair', 'json']
+  if (props.mode === 'tree') {
+    return [...baseTabs, 'dynamicTreeDict']
+  }
+  return [...baseTabs, 'dynamicDict']
+})
+
+const active = ref<SourceType>('json')
 
 const labels = ref<string[]>([])
 const pairs = ref<PairRow[]>([{ label: '', value: '' }])
 const jsonDraft = ref('')
 const jsonError = ref('')
-// 动态字典：code + label（字典定义），表达式 optionsRaw = { dynamic:true, code, label? }
+// 扁平动态字典：code + label（字典定义），表达式 optionsRaw = { dynamic:true, code, label? }
 const dictCode = ref('')
 const dictLabel = ref('')
 const pickerShow = ref(false)
+// 树型动态字典：code + label（树型字典定义）
+const treeDictCode = ref('')
+const treeDictLabel = ref('')
+const treePickerShow = ref(false)
 
 const isPairArray = (arr: unknown[]): boolean => {
   if (arr.length === 0) return false
@@ -97,6 +116,12 @@ const syncDictionary = (raw: unknown) => {
   dictLabel.value = src?.label ?? ''
 }
 
+const syncTreeDictionary = (raw: unknown) => {
+  const src = parseDynamicSource(raw)
+  treeDictCode.value = src?.code ?? ''
+  treeDictLabel.value = src?.label ?? ''
+}
+
 const commitLabel = (next: string[]) => {
   labels.value = next
   optionsRaw.value = [...next]
@@ -129,7 +154,7 @@ const commitJson = (value: string) => {
   }
 }
 
-const commitEndpoint = (next: string) => {
+const commitDynamicDict = (next: string) => {
   dictCode.value = next
   const code = next.trim()
   if (!code) {
@@ -139,13 +164,29 @@ const commitEndpoint = (next: string) => {
   optionsRaw.value = { dynamic: true, code, ...(dictLabel.value ? { label: dictLabel.value } : {}) }
 }
 
+const commitDynamicTreeDict = (next: string) => {
+  treeDictCode.value = next
+  const code = next.trim()
+  if (!code) {
+    optionsRaw.value = []
+    return
+  }
+  optionsRaw.value = { dynamic: true, code, ...(treeDictLabel.value ? { label: treeDictLabel.value } : {}) }
+}
+
 const pickDictionary = (row: DictionaryDefinition) => {
   dictCode.value = row.code
   dictLabel.value = row.label ?? ''
   optionsRaw.value = { dynamic: true, code: row.code, ...(row.label ? { label: row.label } : {}) }
 }
 
-const { fetchDictionary } = useDictionary()
+const pickTreeDictionary = (row: TreeDictionaryDefinition) => {
+  treeDictCode.value = row.value
+  treeDictLabel.value = row.label ?? ''
+  optionsRaw.value = { dynamic: true, code: row.value, ...(row.label ? { label: row.label } : {}) }
+}
+
+const { fetchDictionary, fetchTreeDictionary } = useDictionary()
 
 // 拉取动态字典的选项数据；未配置或失败时返回空数组，由调用方清空兜底
 const resolveDictionary = async (src: DynamicSource): Promise<DictionaryOption[]> => {
@@ -157,8 +198,21 @@ const resolveDictionary = async (src: DynamicSource): Promise<DictionaryOption[]
   }
 }
 
+// 拉取树型字典定义列表（分页）
+const resolveTreeDictionary = async (src: DynamicSource): Promise<TreeDictionaryOption[]> => {
+  if (!fetchTreeDictionary) return []
+  try {
+    return await fetchTreeDictionary(src.code)
+  } catch {
+    return []
+  }
+}
+
 const inferSource = (raw: unknown): SourceType => {
-  if (parseDynamicSource(raw)) return 'endpoint'
+  if (parseDynamicSource(raw)) {
+    // 根据 mode 返回对应的动态字典类型
+    return props.mode === 'tree' ? 'dynamicTreeDict' : 'dynamicDict'
+  }
   if (Array.isArray(raw)) {
     if (raw.every((v) => typeof v === 'string' || typeof v === 'number')) return 'label'
     if (isPairArray(raw)) return 'pair'
@@ -172,7 +226,8 @@ watch(
   () => {
     const raw = optionsRaw.value
     const next = inferSource(raw)
-    active.value = next
+    // 如果推断出的类型不在允许的标签页中，使用第一个允许的标签页
+    active.value = allowedTabs.value.includes(next) ? next : (allowedTabs.value[0] || 'json')
     jsonError.value = ''
     if (next === 'label') {
       labels.value = Array.isArray(raw) ? raw.filter((v): v is string => typeof v === 'string') : []
@@ -180,8 +235,10 @@ watch(
       pairs.value = Array.isArray(raw) ? toPairs(raw) : [{ label: '', value: '' }]
     } else if (next === 'json') {
       jsonDraft.value = JSON.stringify(Array.isArray(raw) ? raw : [], null, 2)
-    } else if (next === 'endpoint') {
+    } else if (next === 'dynamicDict') {
       syncDictionary(raw)
+    } else if (next === 'dynamicTreeDict') {
+      syncTreeDictionary(raw)
     }
   },
   { immediate: true },
@@ -189,15 +246,20 @@ watch(
 
 const switchTab = async (name: string) => {
   const next = name as SourceType
-  active.value = next
   jsonError.value = ''
   const raw = optionsRaw.value
-  // 从 endpoint 切走：拉取字典数据拷入目标标签作为可编辑静态选项，清空动态字典，
+  // 从动态字典切走：拉取字典数据拷入目标标签作为可编辑静态选项，清空动态字典，
   // 之后即使用目标标签的值（用户可继续增删改）
-  if (next !== 'endpoint') {
+  if (next !== 'dynamicDict' && next !== 'dynamicTreeDict') {
+
     const src = parseDynamicSource(raw)
     if (src) {
-      const resolved = await resolveDictionary(src)
+      let resolved: DictionaryOption[] | TreeDictionaryOption[] = [] as any
+      if (active.value === 'dynamicDict') {
+        resolved = await resolveDictionary(src)
+      } else if (active.value === 'dynamicTreeDict') {
+        resolved = await resolveTreeDictionary(src)
+      }
       optionsRaw.value = []
       if (next === 'label') commitLabel(resolved.map((o) => String(o.label)))
       else if (next === 'pair')
@@ -206,10 +268,13 @@ const switchTab = async (name: string) => {
       return
     }
   }
+
+  active.value = next
   if (next === 'label') commitLabel(rawToLabels(raw))
   else if (next === 'pair') commitPairs(rawToPairs(raw))
   else if (next === 'json') commitJson(rawToJson(raw))
-  else if (next === 'endpoint') syncDictionary(raw)
+  else if (next === 'dynamicDict') syncDictionary(raw)
+  else if (next === 'dynamicTreeDict') syncTreeDictionary(raw)
 }
 
 const addPairRow = () => {
@@ -229,7 +294,7 @@ const removePairRow = (idx: number) => {
       {{ t('edits.optionsSource.title') }}
     </label>
     <n-tabs type="segment" size="small" :value="active" @update:value="(v) => switchTab(String(v))">
-      <n-tab-pane name="label" :tab="t('edits.optionsSource.tabs.label')">
+      <n-tab-pane v-if="allowedTabs.includes('label')" name="label" :tab="t('edits.optionsSource.tabs.label')">
         <TagsInput
           :label="t('edits.optionsSource.labelList')"
           :placeholder="t('edits.placeholder.addItems')"
@@ -237,7 +302,7 @@ const removePairRow = (idx: number) => {
           @update:value="(v) => commitLabel(v)"
         />
       </n-tab-pane>
-      <n-tab-pane name="pair" :tab="t('edits.optionsSource.tabs.pair')">
+      <n-tab-pane v-if="allowedTabs.includes('pair')" name="pair" :tab="t('edits.optionsSource.tabs.pair')">
         <div class="flex flex-col gap-2">
           <div v-for="(r, idx) in pairs" :key="idx" class="flex flex-row gap-2 items-center">
             <n-input
@@ -273,7 +338,7 @@ const removePairRow = (idx: number) => {
           </n-button>
         </div>
       </n-tab-pane>
-      <n-tab-pane name="json" :tab="t('edits.optionsSource.tabs.json')">
+      <n-tab-pane v-if="allowedTabs.includes('json')" name="json" :tab="t('edits.optionsSource.tabs.json')">
         <JsonTextarea
           label="Options (JSON)"
           placeholder='[{"label":"Option 1","value":"1"}]'
@@ -282,14 +347,14 @@ const removePairRow = (idx: number) => {
           @update:value="(v) => commitJson(v)"
         />
       </n-tab-pane>
-      <n-tab-pane name="endpoint" :tab="t('edits.optionsSource.tabs.endpoint')">
+      <n-tab-pane v-if="allowedTabs.includes('dynamicDict')" name="dynamicDict" :tab="t('edits.optionsSource.tabs.dynamicDict')">
         <div class="flex flex-col gap-2">
           <n-input-group>
             <n-input
               size="small"
               :placeholder="t('edits.optionsSource.dictInputPlaceholder')"
               :value="dictCode"
-              @update:value="(v) => commitEndpoint(String(v))"
+              @update:value="(v) => commitDynamicDict(String(v))"
             />
             <n-button size="small" type="primary" secondary @click="pickerShow = true">
               {{ t('edits.optionsSource.dictBrowse') }}
@@ -302,6 +367,29 @@ const removePairRow = (idx: number) => {
             :show="pickerShow"
             @update:show="(v) => (pickerShow = v)"
             @select="pickDictionary"
+          />
+        </div>
+      </n-tab-pane>
+      <n-tab-pane v-if="allowedTabs.includes('dynamicTreeDict')" name="dynamicTreeDict" :tab="t('edits.optionsSource.tabs.dynamicTreeDict')">
+        <div class="flex flex-col gap-2">
+          <n-input-group>
+            <n-input
+              size="small"
+              :placeholder="t('edits.optionsSource.dictInputPlaceholder')"
+              :value="treeDictCode"
+              @update:value="(v) => commitDynamicTreeDict(String(v))"
+            />
+            <n-button size="small" type="primary" secondary @click="treePickerShow = true">
+              {{ t('edits.optionsSource.dictBrowse') }}
+            </n-button>
+          </n-input-group>
+          <div v-if="treeDictLabel" class="text-[11px] text-muted-foreground">
+            {{ treeDictLabel }}
+          </div>
+          <TreeDictionaryPickerModal
+            :show="treePickerShow"
+            @update:show="(v) => (treePickerShow = v)"
+            @select="pickTreeDictionary"
           />
         </div>
       </n-tab-pane>

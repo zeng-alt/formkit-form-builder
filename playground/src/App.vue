@@ -110,6 +110,47 @@ const mockDictionaries = [
   },
 ]
 
+// 模拟树型字典数据：树型字典定义 + 树型选项（label/key/children）
+const mockTreeDictionaries = [
+  {
+    value: 'orgTree',
+    label: '组织架构树',
+    options: [
+      {
+        label: '总公司',
+        value: 'hq',
+        children: [
+          { label: '研发部', value: 'rd', children: [{ label: '前端组', value: 'fe' }, { label: '后端组', value: 'be' }] },
+          { label: '市场部', value: 'marketing' },
+        ],
+      },
+      {
+        label: '分公司',
+        value: 'branch',
+        children: [
+          { label: '华东区', value: 'east' },
+          { label: '华南区', value: 'south' },
+        ],
+      },
+    ],
+  },
+  {
+    value: 'regionTree',
+    label: '地区树',
+    options: [
+      {
+        label: '中国',
+        value: 'cn',
+        children: [
+          { label: '北京', value: 'bj' },
+          { label: '上海', value: 'sh' },
+          { label: '广东', value: 'gd', children: [{ label: '广州', value: 'gz' }, { label: '深圳', value: 'sz' }] },
+        ],
+      },
+    ],
+  },
+]
+
 const formBuilderConfig = computed<FormBuilderConfig>(() => ({
   apiKey: 'your-openai-api-key', // 可选：AI 生成 Schema 面板需要
   locale: 'zh-CN', // 默认 zh-CN；可选 'en' 'de'
@@ -171,6 +212,29 @@ const formBuilderConfig = computed<FormBuilderConfig>(() => ({
       pageSize,
       total,
       data: list.slice(start, start + pageSize).map((d) => ({ code: d.code, label: d.label })),
+    }
+  },
+
+  // ─── 树型动态字典（树选择/级联选择的 options 通过 code 动态拉取）───────────────
+  // ③ fetchTreeDictionary：按 code 取树型字典项 [{label, key, children?}]，渲染树选择/级联选择时使用
+  fetchTreeDictionary: async (value) => {
+    await new Promise((r) => setTimeout(r, 200))
+    const hit = mockTreeDictionaries.find((d) => d.value === value)
+    return hit ? hit.options : []
+  },
+  // ④ fetchTreeDictionaryPage：编辑面板弹窗分页搜索树型字典定义（行结构 { code, label }）
+  fetchTreeDictionaryPage: async ({ value, label, pageNum, pageSize }) => {
+    await new Promise((r) => setTimeout(r, 300))
+    let list = mockTreeDictionaries
+    if (value) list = list.filter((d) => d.value.toLowerCase().includes(value.toLowerCase()))
+    if (label) list = list.filter((d) => d.label.includes(label))
+    const total = list.length
+    const start = (pageNum - 1) * pageSize
+    return {
+      pageNum,
+      pageSize,
+      total,
+      data: list.slice(start, start + pageSize).map((d) => ({ value: d.value, label: d.label })),
     }
   },
 }))
