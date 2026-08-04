@@ -5,6 +5,7 @@ type AnyMessages = Record<string, any>
 
 type I18nContext = {
   locale: ComputedRef<string>
+  localeFallback: ComputedRef<string>
   t: (key: string, params?: Record<string, string | number>) => string
 }
 
@@ -59,9 +60,11 @@ function formatMessage(template: string, params?: Record<string, string | number
 
 export function provideFormBuilderI18n(options: {
   locale: ComputedRef<string | undefined>
+  localeFallback?: ComputedRef<string | undefined>
   messages?: ComputedRef<AnyMessages | undefined>
 }) {
-  const locale = computed(() => options.locale.value ?? 'zh-CN')
+  const locale = computed(() => options.locale.value ?? options.localeFallback?.value ?? 'zh-CN')
+  const localeFallback = computed(() => options.localeFallback?.value ?? 'zh-CN')
   const messages = computed(() => {
     const extra = options.messages?.value ?? {}
     return mergeMessages(defaultMessages as AnyMessages, extra)
@@ -69,13 +72,14 @@ export function provideFormBuilderI18n(options: {
 
   const t: I18nContext['t'] = (key, params) => {
     const current = getByPath(messages.value[locale.value] ?? {}, key)
-    const fallback = getByPath(messages.value.en ?? {}, key)
-    const raw = (current ?? fallback) as unknown
+    const fallbackLocale = getByPath(messages.value[localeFallback.value] ?? {}, key)
+    const fallbackEn = getByPath(messages.value.en ?? {}, key)
+    const raw = (current ?? fallbackLocale ?? fallbackEn) as unknown
     if (typeof raw === 'string') return formatMessage(raw, params)
     return key
   }
 
-  const ctx: I18nContext = { locale, t }
+  const ctx: I18nContext = { locale, localeFallback, t }
   provide(I18N_KEY, ctx)
   return ctx
 }
@@ -83,6 +87,7 @@ export function provideFormBuilderI18n(options: {
 export function useFormBuilderI18n() {
   return inject<I18nContext>(I18N_KEY, {
     locale: computed(() => 'zh-CN'),
+    localeFallback: computed(() => 'zh-CN'),
     t: (key) => key,
   })
 }

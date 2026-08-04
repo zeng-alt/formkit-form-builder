@@ -217,13 +217,13 @@ const handleDownloadJs = () => {
     preset="card"
     :title="t('importExport.title')"
     :bordered="false"
-    size="huge"
+    size="small"
     :segmented="{
       content: 'soft',
       footer: 'soft',
     }"
   >
-    <div class="py-4">
+    <div>
       <n-input
         v-model:value="jsonContent"
         type="textarea"
@@ -235,20 +235,20 @@ const handleDownloadJs = () => {
 
     <template #footer>
       <n-space justify="end">
-        <n-button @click="handleClose">{{ t('common.cancel') }}</n-button>
-        <n-button type="info" @click="handleDownloadJs">
+        <n-button size="small" @click="handleClose">{{ t('common.cancel') }}</n-button>
+        <n-button size="small" type="info" @click="handleDownloadJs">
           <template #icon>
             <span class="i-lucide-file-code-2 w-4 h-4"></span>
           </template>
           {{ t('importExport.downloadJs') }}
         </n-button>
-        <n-button type="info" @click="handleDownload">
+        <n-button size="small" type="info" @click="handleDownload">
           <template #icon>
             <span class="i-lucide-download w-4 h-4"></span>
           </template>
           {{ t('importExport.downloadJson') }}
         </n-button>
-        <n-button type="primary" @click="handleSaveAndImport">
+        <n-button size="small" type="primary" @click="handleSaveAndImport">
           <template #icon>
             <span class="i-lucide-save w-4 h-4"></span>
           </template>

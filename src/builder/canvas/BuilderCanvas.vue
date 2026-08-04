@@ -33,8 +33,9 @@ defineSlots<{
       </template>
     </CanvasBoard>
 
-    <slot name="toolbar">
+    <div class="flex flex-col gap-4">
       <CanvasActionsBar />
-    </slot>
+      <slot name="toolbar" />
+    </div>
   </div>
 </template>

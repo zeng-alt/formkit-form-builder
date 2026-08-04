@@ -138,7 +138,17 @@ export function buildFormkitInputs(): Record<string, ReturnType<typeof createInp
         attrs: { class: 'w-full' },
         children: [{ $cmp: libraryName, props: { context: '$node.context' } }],
       },
-      { family: 'naive', library: { [libraryName]: f.component } },
+      {
+        family: 'naive',
+        library: { [libraryName]: f.component },
+        // 关键：声明空 features/props，覆盖 createLibraryPlugin 深合并时从内置
+        // @formkit/inputs 继承的同名定义（radio/select/checkbox 等会继承 options/
+        // radios/selects/casts 等 features 及 props）。否则 FormKit 会对 options 做
+        // normalize（非字符串 value 会被替换成 __mask_N），并在 options 变空时于
+        // normalizeOptions 里执行 Object.keys(undefined) 抛出 watcher 异常。
+        features: [],
+        props: [],
+      },
     )
   }
   return inputs

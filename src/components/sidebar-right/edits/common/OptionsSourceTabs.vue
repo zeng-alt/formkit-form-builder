@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { NButton, NInput, NTabPane, NTabs } from 'naive-ui'
+import { NButton, NInput, NInputGroup, NTabPane, NTabs } from 'naive-ui'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormField } from '../../../../composables/form-fields'
+import { parseDynamicSource, useDictionary } from '../../../../composables/use-dictionary'
+import type { DynamicSource } from '../../../../composables/use-dictionary'
 import { useFormBuilderI18n } from '../../../../i18n/context'
 import EditsLayout from './EditsLayout.vue'
 import JsonTextarea from './JsonTextarea.vue'
+import DictionaryPickerModal from './DictionaryPickerModal.vue'
 import TagsInput from './TagsInput.vue'
+import type { DictionaryDefinition, DictionaryOption } from '@/types/env'
 
 type SourceType = 'label' | 'pair' | 'json' | 'endpoint'
 type PairRow = { label: string; value: string }
@@ -24,7 +28,10 @@ const labels = ref<string[]>([])
 const pairs = ref<PairRow[]>([{ label: '', value: '' }])
 const jsonDraft = ref('')
 const jsonError = ref('')
-const endpoint = ref('')
+// 动态字典：code + label（字典定义），表达式 optionsRaw = { dynamic:true, code, label? }
+const dictCode = ref('')
+const dictLabel = ref('')
+const pickerShow = ref(false)
 
 const isPairArray = (arr: unknown[]): boolean => {
   if (arr.length === 0) return false
@@ -52,16 +59,54 @@ const parsePrimitive = (raw: string): string | number => {
   return v
 }
 
+const rawToLabels = (raw: unknown): string[] => {
+  if (!Array.isArray(raw)) return []
+  if (raw.every((v) => typeof v === 'string' || typeof v === 'number')) return raw.map(String)
+  return raw
+    .map((v) => {
+      if (v && typeof v === 'object') return String((v as Record<string, unknown>).value ?? '')
+      return ''
+    })
+    .filter((s) => s !== '')
+}
+
+const rawToPairs = (raw: unknown): PairRow[] => {
+  if (!Array.isArray(raw)) return [{ label: '', value: '' }]
+  if (raw.length === 0) return [{ label: '', value: '' }]
+  return raw.map((v) => {
+    if (typeof v === 'string' || typeof v === 'number') return { label: String(v), value: String(v) }
+    if (v && typeof v === 'object') {
+      const obj = v as Record<string, unknown>
+      return { label: String(obj.label ?? obj.value ?? ''), value: String(obj.value ?? obj.label ?? '') }
+    }
+    return { label: '', value: '' }
+  })
+}
+
+const rawToJson = (raw: unknown): string => {
+  if (!Array.isArray(raw)) return ''
+  const list = raw.every((v) => typeof v === 'string' || typeof v === 'number')
+    ? raw.map((v) => ({ label: String(v), value: String(v) }))
+    : raw
+  return JSON.stringify(list, null, 2)
+}
+
+const syncDictionary = (raw: unknown) => {
+  const src = parseDynamicSource(raw)
+  dictCode.value = src?.code ?? ''
+  dictLabel.value = src?.label ?? ''
+}
+
 const commitLabel = (next: string[]) => {
   labels.value = next
   optionsRaw.value = [...next]
 }
 
-const commitPairs = () => {
-  const next = pairs.value
+const commitPairs = (next: PairRow[]) => {
+  pairs.value = next
+  optionsRaw.value = next
     .map((r) => ({ label: r.label.trim(), value: parsePrimitive(r.value) }))
     .filter((r) => r.label && String(r.value).trim() !== '')
-  optionsRaw.value = next
 }
 
 const commitJson = (value: string) => {
@@ -85,20 +130,35 @@ const commitJson = (value: string) => {
 }
 
 const commitEndpoint = (next: string) => {
-  endpoint.value = next
-  const url = next.trim()
-  if (!url) {
+  dictCode.value = next
+  const code = next.trim()
+  if (!code) {
     optionsRaw.value = []
     return
   }
-  optionsRaw.value = { endpoint: url }
+  optionsRaw.value = { dynamic: true, code, ...(dictLabel.value ? { label: dictLabel.value } : {}) }
+}
+
+const pickDictionary = (row: DictionaryDefinition) => {
+  dictCode.value = row.code
+  dictLabel.value = row.label ?? ''
+  optionsRaw.value = { dynamic: true, code: row.code, ...(row.label ? { label: row.label } : {}) }
+}
+
+const { fetchDictionary } = useDictionary()
+
+// 拉取动态字典的选项数据；未配置或失败时返回空数组，由调用方清空兜底
+const resolveDictionary = async (src: DynamicSource): Promise<DictionaryOption[]> => {
+  if (!fetchDictionary) return []
+  try {
+    return await fetchDictionary(src.code)
+  } catch {
+    return []
+  }
 }
 
 const inferSource = (raw: unknown): SourceType => {
-  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-    const endpoint = (raw as any).endpoint
-    if (typeof endpoint === 'string' && endpoint.trim()) return 'endpoint'
-  }
+  if (parseDynamicSource(raw)) return 'endpoint'
   if (Array.isArray(raw)) {
     if (raw.every((v) => typeof v === 'string' || typeof v === 'number')) return 'label'
     if (isPairArray(raw)) return 'pair'
@@ -121,21 +181,35 @@ watch(
     } else if (next === 'json') {
       jsonDraft.value = JSON.stringify(Array.isArray(raw) ? raw : [], null, 2)
     } else if (next === 'endpoint') {
-      endpoint.value =
-        typeof (raw as any)?.endpoint === 'string' ? String((raw as any).endpoint) : ''
+      syncDictionary(raw)
     }
   },
   { immediate: true },
 )
 
-const switchTab = (name: string) => {
+const switchTab = async (name: string) => {
   const next = name as SourceType
   active.value = next
   jsonError.value = ''
-  if (next === 'label') commitLabel(labels.value)
-  else if (next === 'pair') commitPairs()
-  else if (next === 'json') commitJson(jsonDraft.value)
-  else if (next === 'endpoint') commitEndpoint(endpoint.value)
+  const raw = optionsRaw.value
+  // 从 endpoint 切走：拉取字典数据拷入目标标签作为可编辑静态选项，清空动态字典，
+  // 之后即使用目标标签的值（用户可继续增删改）
+  if (next !== 'endpoint') {
+    const src = parseDynamicSource(raw)
+    if (src) {
+      const resolved = await resolveDictionary(src)
+      optionsRaw.value = []
+      if (next === 'label') commitLabel(resolved.map((o) => String(o.label)))
+      else if (next === 'pair')
+        commitPairs(resolved.map((o) => ({ label: String(o.label), value: String(o.value) })))
+      else commitJson(JSON.stringify(resolved, null, 2))
+      return
+    }
+  }
+  if (next === 'label') commitLabel(rawToLabels(raw))
+  else if (next === 'pair') commitPairs(rawToPairs(raw))
+  else if (next === 'json') commitJson(rawToJson(raw))
+  else if (next === 'endpoint') syncDictionary(raw)
 }
 
 const addPairRow = () => {
@@ -145,7 +219,7 @@ const addPairRow = () => {
 const removePairRow = (idx: number) => {
   const next = pairs.value.filter((_, i) => i !== idx)
   pairs.value = next.length ? next : [{ label: '', value: '' }]
-  commitPairs()
+  commitPairs(pairs.value)
 }
 </script>
 
@@ -174,7 +248,7 @@ const removePairRow = (idx: number) => {
               @update:value="
                 (v) => {
                   pairs[idx] = { ...r, label: v }
-                  commitPairs()
+                  commitPairs(pairs)
                 }
               "
             />
@@ -186,7 +260,7 @@ const removePairRow = (idx: number) => {
               @update:value="
                 (v) => {
                   pairs[idx] = { ...r, value: v }
-                  commitPairs()
+                  commitPairs(pairs)
                 }
               "
             />
@@ -209,12 +283,27 @@ const removePairRow = (idx: number) => {
         />
       </n-tab-pane>
       <n-tab-pane name="endpoint" :tab="t('edits.optionsSource.tabs.endpoint')">
-        <n-input
-          size="small"
-          :placeholder="t('edits.optionsSource.endpointPlaceholder')"
-          :value="endpoint"
-          @update:value="(v) => commitEndpoint(v)"
-        />
+        <div class="flex flex-col gap-2">
+          <n-input-group>
+            <n-input
+              size="small"
+              :placeholder="t('edits.optionsSource.dictInputPlaceholder')"
+              :value="dictCode"
+              @update:value="(v) => commitEndpoint(String(v))"
+            />
+            <n-button size="small" type="primary" secondary @click="pickerShow = true">
+              {{ t('edits.optionsSource.dictBrowse') }}
+            </n-button>
+          </n-input-group>
+          <div v-if="dictLabel" class="text-[11px] text-muted-foreground">
+            {{ dictLabel }}
+          </div>
+          <DictionaryPickerModal
+            :show="pickerShow"
+            @update:show="(v) => (pickerShow = v)"
+            @select="pickDictionary"
+          />
+        </div>
       </n-tab-pane>
     </n-tabs>
   </EditsLayout>

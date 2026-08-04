@@ -4,7 +4,7 @@ import type { ConfigProviderProps } from 'naive-ui'
 import { provideFormBuilderConfig } from '../composables/use-config'
 import type { FormBuilderConfig } from '../types/env'
 import { registerElements } from '../plugin/register-element'
-import { provideRuntimeLocale, type RuntimeLocale } from '../i18n/runtime-locale'
+import { provideRuntimeLocale } from '../i18n/runtime-locale'
 import { provideFormBuilderI18n } from '../i18n/context'
 import BuilderThemeScope from '../theme/BuilderThemeScope.vue'
 import type { BuilderTheme } from '@/types/theme'
@@ -33,11 +33,23 @@ provideFormBuilderConfig(props.config)
 
 // 为 Provider 子树提供运行时代码（对齐 FormBuilder）：子树内的 FormRenderer
 // 等消费方通过 useRuntimeLocale() 读取 config.locale，缺省 zh-CN。
-const runtimeLocale = provideRuntimeLocale(props.config.locale === 'en' ? 'en' : 'zh-CN')
+const availableLocales = props.config.availableLocales ?? ['zh-CN', 'en']
+const localeFallback = props.config.localeFallback ?? 'zh-CN'
+const initialLocale = availableLocales.includes(props.config.locale ?? '')
+  ? props.config.locale!
+  : localeFallback
+
+const runtimeLocale = provideRuntimeLocale({
+  initialLocale,
+  availableLocales,
+  localeFallback,
+})
 watch(
   () => props.config.locale,
   (next) => {
-    runtimeLocale.setLocale(next === 'en' ? ('en' as RuntimeLocale) : ('zh-CN' as RuntimeLocale))
+    if (next && availableLocales.includes(next)) {
+      runtimeLocale.setLocale(next)
+    }
   },
   { immediate: true },
 )

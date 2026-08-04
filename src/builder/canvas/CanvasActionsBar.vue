@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { NButton, NButtonGroup, NTooltip } from 'naive-ui'
+import { ref } from 'vue'
+import { NButton, NButtonGroup, NTooltip, NPopselect } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { useRuntimeLocale } from '@/i18n/runtime-locale'
 import ImportExportModal from '../ImportExportModal.vue'
 
 const { t } = useFormBuilderI18n()
-const { setLocale, locale } = useRuntimeLocale()
+const { setLocale, locale, availableLocales } = useRuntimeLocale()
 const showImportExportModal = ref(false)
-
-const isZh = computed(() => locale.value === 'zh-CN')
 </script>
 
 <template>
@@ -29,28 +27,22 @@ const isZh = computed(() => locale.value === 'zh-CN')
           </template>
           {{ t('builder.importExportSchema') }}
         </n-tooltip>
+        <n-popselect
+          :value="locale"
+          :options="availableLocales"
+          @update:value="setLocale"
+          trigger="click"
+        >
+          <n-button
+            size="small"
+            :aria-label="t('builder.switchLanguage')"
+            class="w-8 h-8"
+          >
+            <template #icon><span class="i-lucide-languages h-3.5 w-3.5"></span></template>
+          </n-button>
+        </n-popselect>
       </n-button-group>
 
-      <n-button-group vertical class="bg-card shadow-sm rounded-lg border border-border/50">
-        <n-button
-          size="small"
-          class="w-8 h-8"
-          :type="isZh ? 'primary' : 'default'"
-          aria-label="切换到中文"
-          @click="setLocale('zh-CN')"
-        >
-          中
-        </n-button>
-        <n-button
-          size="small"
-          class="w-8 h-8"
-          :type="!isZh ? 'primary' : 'default'"
-          aria-label="Switch to English"
-          @click="setLocale('en')"
-        >
-          EN
-        </n-button>
-      </n-button-group>
     </div>
 
     <ImportExportModal v-model:show="showImportExportModal" />

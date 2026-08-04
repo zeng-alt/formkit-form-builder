@@ -57,6 +57,16 @@ export interface OptionItem {
   [key: string]: unknown
 }
 
+/** 动态字典来源：options 为对象 { dynamic, code, label? }，运行时用 config.fetchDictionary 拉取 */
+export interface DynamicOptionSource {
+  /** 标记为动态字典来源（区别于静态 OptionItem[]） */
+  dynamic: true
+  /** 字典编码 */
+  code: string
+  /** 可选标签 */
+  label?: string
+}
+
 // ─── 布局信息（每个节点可选）─────────────────────────────────────────────────────
 export interface NodeLayout {
   /** 栅格占位（基于 settings.columns，默认 12） */
@@ -127,8 +137,8 @@ export interface FieldNode extends BaseNode {
   /** 初始值 */
   value?: FieldValue
   validation?: ValidationRule[]
-  /** select / radio / checkbox 等选项 */
-  options?: OptionItem[]
+  /** select / radio / checkbox 等选项（静态数组，或 { dynamic, code } 动态字典） */
+  options?: OptionItem[] | DynamicOptionSource
 }
 
 // ─── 数据结构容器（与数据模型对应）───────────────────────────────────────────────

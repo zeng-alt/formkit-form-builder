@@ -69,15 +69,52 @@ import {
   BuilderProvider,
   FormBuilder,
   FormRenderer,
+  CanvasActionsBar,
 } from '@zeng-alt/formkit-form-builder'
 import type { FormBuilderConfig, FormDefinition } from '@zeng-alt/formkit-form-builder'
 
 // ════════════════════════════════════════════════════════════════════════════
 // ② 完整 FormBuilderConfig：附带自定义元素的 i18n 文案（zh / en）
+//    以及动态字典两个方法（fetchDictionary / fetchDictionaryPage）
 // ════════════════════════════════════════════════════════════════════════════
+
+// 模拟字典数据：字典定义（code/label，用于分页搜索）+ 每本字典的选项（filtered by code，用于渲染）
+const mockDictionaries = [
+  {
+    code: 'city',
+    label: '城市',
+    options: [
+      { label: '北京', value: 'beijing' },
+      { label: '上海', value: 'shanghai' },
+      { label: '广州', value: 'guangzhou' },
+      { label: '深圳', value: 'shenzhen' },
+    ],
+  },
+  {
+    code: 'gender',
+    label: '性别',
+    options: [
+      { label: '男', value: 'male' },
+      { label: '女', value: 'female' },
+    ],
+  },
+  {
+    code: 'education',
+    label: '学历',
+    options: [
+      { label: '高中', value: 'high' },
+      { label: '本科', value: 'bachelor' },
+      { label: '硕士', value: 'master' },
+      { label: '博士', value: 'doctor' },
+    ],
+  },
+]
+
 const formBuilderConfig = computed<FormBuilderConfig>(() => ({
   apiKey: 'your-openai-api-key', // 可选：AI 生成 Schema 面板需要
-  locale: 'zh-CN', // 默认 zh-CN；可选 'en'
+  locale: 'zh-CN', // 默认 zh-CN；可选 'en' 'de'
+  localeFallback: 'zh-CN',
+  availableLocales: ['zh-CN', 'en', 'de'],
   // 多语言覆写：结构 = messages[locale] 与内置结构同形，按 key 递归深合并——
   // 只覆写传入的键，未覆写的沿用内置文案（对齐 camunda7-ui 的国际化语义）。
   messages: {
@@ -100,9 +137,42 @@ const formBuilderConfig = computed<FormBuilderConfig>(() => ({
         },
       },
     },
+    de: {
+      builder: { clearForm: 'Formular leeren' },
+      elements: {
+        phone: {
+          name: 'Telefonnummer',
+          label: 'Telefonnummer',
+          description: 'Ein benutzerdefiniertes Telefonnummer-Eingabefeld (registerElement Erweiterung)',
+        },
+      },
+    },
   },
   // 若改用 FormBuilderPlugin，把 phoneElement 放这里即可（install 会先注册再装配）
   // elements: [phoneElement],
+
+  // ─── 动态字典（单选/多选/下拉的 options 通过 code 动态拉取）───────────────
+  // ① fetchDictionary：按 code 取 [{label, value}...]，渲染动态字段时使用
+  fetchDictionary: async (code) => {
+    await new Promise((r) => setTimeout(r, 200))
+    const hit = mockDictionaries.find((d) => d.code === code)
+    return hit ? hit.options : []
+  },
+  // ② fetchDictionaryPage：编辑面板弹窗分页搜索字典定义（行结构 { code, label }）
+  fetchDictionaryPage: async ({ code, label, pageNum, pageSize }) => {
+    await new Promise((r) => setTimeout(r, 300))
+    let list = mockDictionaries
+    if (code) list = list.filter((d) => d.code.toLowerCase().includes(code.toLowerCase()))
+    if (label) list = list.filter((d) => d.label.includes(label))
+    const total = list.length
+    const start = (pageNum - 1) * pageSize
+    return {
+      pageNum,
+      pageSize,
+      total,
+      data: list.slice(start, start + pageSize).map((d) => ({ code: d.code, label: d.label })),
+    }
+  },
 }))
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -180,6 +250,16 @@ const sampleDefinition: FormDefinition = {
           { label: '男', value: 'male' },
           { label: '女', value: 'female' },
         ],
+      },
+      {
+        id: 'f-dict-city',
+        type: 'select',
+        category: 'field',
+        renderAs: 'cmp',
+        name: 'dictCity',
+        label: '城市（动态字典）',
+        layout: { colspan: 6 },
+        options: { dynamic: true, code: 'city', label: '城市' },
       },
       {
         id: 'f-onboard',
@@ -268,7 +348,6 @@ const phoneRegistered = true
          class 通过属性透传落到 provider 根节点上作为栅格容器。 -->
     <BuilderProvider
       :config="formBuilderConfig"
-      class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]"
     >
       <!-- 设计器 -->
       <div class="min-h-0 overflow-hidden">
@@ -298,11 +377,13 @@ const phoneRegistered = true
             </div>
           </template> -->
 
-          <!-- 右侧操作列（导入导出/语言）上追加按钮 + 弹窗预览。
-               注意：BuilderPreview 放在 FormBuilder 的插槽内，处于实例状态 provide 作用域，
-               才能预览到当前实例的表单（放组件外会回落到空的默认实例）。 -->
+          <!-- 右侧操作列（导入导出/语言）+ 弹窗预览。
+                CanvasActionsBar 为画布右侧默认按钮组（导入导出/切换语言），
+                这里复用它在默认按钮之外追加预览弹窗；
+                BuilderPreview 放在 FormBuilder 的插槽内，处于实例状态 provide 作用域，
+                才能预览到当前实例的表单（放组件外会回落到空的默认实例）。 -->
           <template #toolbar>
-            <!-- <NButton size="small" :bordered="false" @click="previewShow = true">预览</NButton> -->
+            <CanvasActionsBar />
             <BuilderPreview
               v-model:show="previewShow"
               :actions="true"

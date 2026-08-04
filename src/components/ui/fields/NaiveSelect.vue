@@ -2,8 +2,9 @@
 import type { FormKitFrameworkContext } from '@formkit/core'
 import type { SelectOption, SelectProps } from 'naive-ui'
 import { NSelect } from 'naive-ui'
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
+import { useDynamicOptions } from '../formkit/use-dynamic-options'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
@@ -20,54 +21,13 @@ const multiple = computed<boolean>(() => (config.multiple as boolean | undefined
 type Primitive = string | number
 type SelectValue = Primitive | Primitive[] | null
 
-const remoteOptions = ref<SelectOption[]>([])
+const optionsRaw = computed(() => props.value.options as unknown)
 
-const optionsRaw = computed(() => config.options as unknown)
-
-const endpoint = computed<string | null>(() => {
-  const raw = optionsRaw.value
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
-  const url = (raw as any).endpoint
-  return typeof url === 'string' && url.trim() ? url.trim() : null
-})
-
-watch(
-  endpoint,
-  async (url) => {
-    if (!url) {
-      remoteOptions.value = []
-      return
-    }
-    try {
-      const res = await fetch(url)
-      const json = (await res.json()) as unknown
-      if (!Array.isArray(json)) {
-        remoteOptions.value = []
-        return
-      }
-      remoteOptions.value = json.reduce<SelectOption[]>((acc, opt) => {
-        if (typeof opt === 'string' || typeof opt === 'number') {
-          acc.push({ label: String(opt), value: opt })
-          return acc
-        }
-        if (opt && typeof opt === 'object') {
-          const value = (opt as Record<string, unknown>).value
-          const label = (opt as Record<string, unknown>).label
-          if (typeof value === 'string' || typeof value === 'number') {
-            acc.push({ label: String(label ?? value), value })
-          }
-        }
-        return acc
-      }, [])
-    } catch {
-      remoteOptions.value = []
-    }
-  },
-  { immediate: true },
-)
+// 动态字典：options = { dynamic:true, code, label? } → fetchDictionary(code)
+const { isDynamic, dynamicOptions } = useDynamicOptions(optionsRaw)
 
 const options = computed<SelectOption[]>(() => {
-  if (endpoint.value) return remoteOptions.value
+  if (isDynamic.value) return dynamicOptions.value
   const raw = optionsRaw.value
   if (!Array.isArray(raw)) return []
   return raw.reduce<SelectOption[]>((acc, opt) => {

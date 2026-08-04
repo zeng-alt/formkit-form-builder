@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { NCheckbox, NCheckboxGroup } from 'naive-ui'
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
+import { useDynamicOptions } from '../formkit/use-dynamic-options'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
@@ -22,53 +23,13 @@ const size = computed<GroupSize>(() => {
 const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 const horizontal = computed<boolean>(() => (config.horizontal as boolean | undefined) ?? false)
 
-const remoteOptions = ref<Array<{ label: string; value: string | number }>>([])
+const optionsRaw = computed(() => props.value.options as unknown)
 
-const optionsRaw = computed(() => config.options as unknown)
-
-const endpoint = computed<string | null>(() => {
-  const raw = optionsRaw.value
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
-  const url = (raw as any).endpoint
-  return typeof url === 'string' && url.trim() ? url.trim() : null
-})
-
-watch(
-  endpoint,
-  async (url) => {
-    if (!url) {
-      remoteOptions.value = []
-      return
-    }
-    try {
-      const res = await fetch(url)
-      const json = (await res.json()) as unknown
-      if (!Array.isArray(json)) {
-        remoteOptions.value = []
-        return
-      }
-      remoteOptions.value = json
-        .map((opt) => {
-          if (typeof opt === 'string' || typeof opt === 'number')
-            return { label: String(opt), value: opt }
-          if (opt && typeof opt === 'object') {
-            const value = (opt as Record<string, unknown>).value
-            const label = (opt as Record<string, unknown>).label
-            if (typeof value === 'string' || typeof value === 'number')
-              return { label: String(label ?? value), value }
-          }
-          return null
-        })
-        .filter((v): v is { label: string; value: string | number } => v !== null)
-    } catch {
-      remoteOptions.value = []
-    }
-  },
-  { immediate: true },
-)
+// 动态字典：options = { dynamic:true, code, label? } → fetchDictionary(code)
+const { isDynamic, dynamicOptions } = useDynamicOptions(optionsRaw)
 
 const options = computed(() => {
-  if (endpoint.value) return remoteOptions.value
+  if (isDynamic.value) return dynamicOptions.value
   const raw = optionsRaw.value
   if (!Array.isArray(raw)) return []
   return raw

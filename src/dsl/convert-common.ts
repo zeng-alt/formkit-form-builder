@@ -204,7 +204,8 @@ export function fieldNodeToSchema(node: FieldNode, rt?: RenderTarget): SchemaNod
     }
   }
   applyByKind(base, { ...resolveValidation(node.validation) }, kind)
-  if (node.options?.length) putByKind(base, 'options', node.options, kind)
+  if (Array.isArray(node.options) ? node.options.length : node.options !== undefined)
+    putByKind(base, 'options', node.options, kind)
 
   if (node.props) {
     if (kind === 'cmp' || kind === 'el') {

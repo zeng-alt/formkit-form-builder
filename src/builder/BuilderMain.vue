@@ -12,7 +12,7 @@ import { useFormBuilderConfig, provideFormBuilderConfig } from '../composables/u
 import { registerElements } from '../plugin/register-element'
 import type { FormBuilderConfig } from '../types/env'
 import { provideFormBuilderI18n } from '../i18n/context'
-import { provideRuntimeLocale, type RuntimeLocale } from '../i18n/runtime-locale'
+import { provideRuntimeLocale } from '../i18n/runtime-locale'
 import { provideFormBuilderState } from '@/state/create-form-builder-state'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 import type { FormDefinition } from '@/types/dsl'
@@ -59,19 +59,27 @@ if (props.config) {
 }
 const cfg = (props.config ?? injectedCfg) as FormBuilderConfig
 
-const initialLocale: RuntimeLocale = cfg?.locale === 'en' ? 'en' : 'zh-CN'
-const runtimeLocale = provideRuntimeLocale(initialLocale)
+const availableLocales = cfg?.availableLocales ?? ['zh-CN', 'en']
+const localeFallback = cfg?.localeFallback ?? 'zh-CN'
+const initialLocale = availableLocales.includes(cfg?.locale ?? '') ? cfg!.locale! : localeFallback
+
+const runtimeLocale = provideRuntimeLocale({
+  initialLocale,
+  availableLocales,
+  localeFallback,
+})
 
 watch(
   () => runtimeLocale.locale.value,
   (next) => {
-    changeLocale(next === 'en' ? 'en' : 'zh')
+    changeLocale(next === 'zh-CN' ? 'zh' : next === 'en' ? 'en' : next)
   },
   { immediate: true },
 )
 
 provideFormBuilderI18n({
   locale: computed(() => runtimeLocale.locale.value),
+  localeFallback: computed(() => runtimeLocale.localeFallback.value),
   messages: computed(() => cfg?.messages as Record<string, any> | undefined),
 })
 

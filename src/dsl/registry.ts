@@ -203,6 +203,10 @@ function defaultFormNode(entry: ElementCatalogEntry): FormNode {
   if (category === "field") {
     if (schema.value !== undefined) base.value = schema.value;
     if (Array.isArray(schema.options)) base.options = schema.options;
+    else if (Array.isArray(props.options)) {
+      base.options = props.options;
+      delete props.options;
+    }
     const rules = parseValidation(schema.validation);
     if (rules?.length) base.validation = rules;
   } else {

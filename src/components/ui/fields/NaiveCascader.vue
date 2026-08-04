@@ -24,7 +24,7 @@ const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 const multiple = computed<boolean>(() => (config.multiple as boolean | undefined) ?? false)
 
 const options = computed(() => {
-  const raw = config.options as unknown
+  const raw = props.value.options as unknown
   if (!Array.isArray(raw)) return []
   return raw
     .map((opt) => {
