@@ -41,6 +41,11 @@ export function dslToSchema(form: FormDefinition): FormKitSchemaFormKit[] {
       labelWidth: settings.labelWidth ?? 80,
       columns: settings.columns ?? 12,
       layout: settings.layout,
+      submit: settings.submit,
+      // id / version 位于 DSL 顶层（非 settings），随 schema 带入表单节点 props，
+      // 供 renderer 的 submit 逻辑与字段 bind 代码经 runBindCode 读取
+      id: form.id,
+      version: form.version,
     },
     children: rootChildren,
   };
@@ -126,6 +131,8 @@ export function schemaToDsl(
 
   let children: SchemaNode[] = schema as SchemaNode[];
   let name = options?.name ?? "form";
+  let id = options?.id ?? generateKey();
+  let version = DSL_VERSION;
   const settings: FormSettings = { layout: "vertical" };
 
   // 识别 $formkit: form 包装层
@@ -133,6 +140,8 @@ export function schemaToDsl(
     const only = schema[0] as any;
     if (only?.$formkit === "form" && Array.isArray(only.children)) {
       if (typeof only.name === "string" && only.name.trim()) name = only.name;
+      if (typeof only.props?.id === "string" && only.props.id.trim()) id = only.props.id;
+      if (Number.isFinite(Number(only.props?.version))) version = Number(only.props.version);
       Object.assign(settings, parseFormSettings(only.props));
       children = only.children;
     }
@@ -153,8 +162,8 @@ export function schemaToDsl(
   };
 
   return {
-    version: DSL_VERSION,
-    id: options?.id ?? generateKey(),
+    version,
+    id,
     name,
     root: {
       id: "root",
@@ -270,6 +279,7 @@ function parseFormSettings(props: unknown): Partial<FormSettings> {
   if (Number.isFinite(Number(p.labelWidth))) settings.labelWidth = Number(p.labelWidth);
   if (Number.isFinite(Number(p.columns))) settings.columns = Number(p.columns);
   if (p.layout === "horizontal" || p.layout === "inline") settings.layout = p.layout;
+  if (typeof p.submit === "string" && p.submit) settings.submit = p.submit;
   return settings;
 }
 

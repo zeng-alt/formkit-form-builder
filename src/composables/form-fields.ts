@@ -4,13 +4,14 @@ import { findDslNodeByKey, updateDslNodeAtKey } from "@/utils/schema/dsl-tree";
 import { exprToJs, resolveValidation, parseExprString, parseValidation } from "@/dsl";
 import { isExprValue } from "@/dsl/compile";
 import { useFormBuilderState } from "@/state/create-form-builder-state";
+import { DSL_VERSION } from "@/types/dsl";
 import type { FieldNode, FormNode, OptionItem } from "@/types/dsl";
 
 export function useFormField() {
   // 所属 FormBuilder 实例状态：选中 / 真源 / 提交漏斗全部绑定到各自实例。
-  const state = useFormBuilderState()
-  const { formDefinition, selectedIndex, selectedKey, selectedTarget } = state
-  const { commitFormDefinition } = state
+  const state = useFormBuilderState();
+  const { formDefinition, selectedIndex, selectedKey, selectedTarget } = state;
+  const { commitFormDefinition } = state;
 
   // 当前选中节点：直接读 DSL 真源（formDefinition），而非 FormKit schema 投影。
   const selectedField = computed<FormNode | undefined>(() => {
@@ -450,6 +451,25 @@ export function useFormField() {
     },
   });
 
+  const formId = computed<string>({
+    get: () => formDefinition.value?.id ?? "form",
+    set: (value: string) => {
+      const next = value.trim();
+      const def = formDefinition.value;
+      commitFormDefinition({ ...def, id: next || "form" }, { reason: "form-id", merge: true });
+    },
+  });
+
+  const formVersion = computed<number>({
+    get: () => formDefinition.value?.version ?? DSL_VERSION,
+    set: (value: number) => {
+      const n = Number(value);
+      const next = Number.isFinite(n) && n > 0 ? Math.round(n) : DSL_VERSION;
+      const def = formDefinition.value;
+      commitFormDefinition({ ...def, version: next }, { reason: "form-version", merge: true });
+    },
+  });
+
   const formLabelPosition = computed<"top" | "left">({
     get: () => (formDefinition.value?.settings?.labelAlign === "left" ? "left" : "top"),
     set: (value: "top" | "left") => {
@@ -470,6 +490,17 @@ export function useFormField() {
       commitFormDefinition(
         { ...def, settings: { ...def.settings, labelWidth: next } },
         { reason: "form-label-width", merge: true },
+      );
+    },
+  });
+
+  const formSubmit = computed<string>({
+    get: () => (formDefinition.value?.settings as any)?.submit ?? "",
+    set: (value: string) => {
+      const def = formDefinition.value;
+      commitFormDefinition(
+        { ...def, settings: { ...def.settings, submit: value } },
+        { reason: "form-submit", merge: true },
       );
     },
   });
@@ -586,8 +617,11 @@ export function useFormField() {
     hasField,
     selectedIsForm,
     formName,
+    formId,
+    formVersion,
     formLabelPosition,
     formLabelWidth,
+    formSubmit,
     help,
     whichNumber,
     validationString,
@@ -603,4 +637,42 @@ export function useFormField() {
     colSpan,
     bindEvents,
   };
+}
+
+/** 仅读取表单级只读信息（version/id/name/root/settings 等），不包含字段编辑/写操作。
+ *  供 FormSchemaRenderer 等只读渲染场景使用，避免引入 patchSelected 等设计器专用逻辑。 */
+export function useFormDefinition() {
+  const state = useFormBuilderState()
+
+  const formDefinition = computed(() => state.formDefinition.value)
+  const formName = computed(() => state.formDefinition.value?.name ?? 'form')
+  const formId = computed(() => state.formDefinition.value?.id ?? 'form')
+  const formVersion = computed(() => state.formDefinition.value?.version ?? DSL_VERSION)
+  const formLabelPosition = computed<'top' | 'left'>(() =>
+    state.formDefinition.value?.settings?.labelAlign === 'left' ? 'left' : 'top',
+  )
+  const formLabelWidth = computed(() => state.formDefinition.value?.settings?.labelWidth ?? 80)
+  const formSubmit = computed(() => (state.formDefinition.value?.settings as any)?.submit ?? '')
+  const formLayout = computed(() => state.formDefinition.value?.settings?.layout ?? 'vertical')
+  const formColumns = computed(() => state.formDefinition.value?.settings?.columns ?? 12)
+  const formFullWidth = computed(() => state.formDefinition.value?.settings?.fullWidth ?? false)
+  const formRoot = computed(() => state.formDefinition.value?.root)
+  const formSettings = computed(() => state.formDefinition.value?.settings)
+  const formMeta = computed(() => state.formDefinition.value?.meta)
+
+  return {
+    formDefinition,
+    formName,
+    formId,
+    formVersion,
+    formLabelPosition,
+    formLabelWidth,
+    formSubmit,
+    formLayout,
+    formColumns,
+    formFullWidth,
+    formRoot,
+    formSettings,
+    formMeta,
+  }
 }

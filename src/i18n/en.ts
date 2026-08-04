@@ -29,7 +29,7 @@ export default {
     bindEvents: "Events",
     noEvents: "No events",
     editEvent: "Edit event",
-    bindHint: "Write JavaScript. You can use axios and the event argument.",
+    bindHint: "Write JavaScript. Available params: event (event object), form (form data), $value (current value), $node (node), $name (field name), $get(name) (get field value), $slots (slots), attrs (node config), ctx (full context), axios (HTTP).",
     addListContainer: "Add list container",
     formDataTitle: "Form Data:",
     formSubmitted: "Form submitted!",

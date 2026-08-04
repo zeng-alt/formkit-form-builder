@@ -4,6 +4,8 @@ import { createFormDefinitionState, type FormDefinitionState } from '@/state/for
 import { createSelectionState, type SelectionState } from '@/state/form-schema'
 import { createCanvasUiState, type CanvasUiState } from '@/state/canvas-ui'
 import { createSchemaHistory, type SchemaHistory } from '@/composables/schema-history'
+import { computed, ref } from 'vue'
+import type { FormDefinition } from '@/types/dsl'
 
 /** 单个 FormBuilder 实例的全部状态（表单定义 + 选中 + 画布 UI + 历史漏斗）。 */
 export interface FormBuilderState
@@ -31,6 +33,34 @@ export function createFormBuilderState(): FormBuilderState {
     ...canvas,
     ...history,
     instanceId: generateInstanceId(),
+  }
+}
+
+/** 创建最小 FormBuilder 状态（仅含 formDefinition 真源，其余字段为空实现满足类型）。
+ *  供 FormSchemaRenderer 等只读渲染场景使用，不需要 undo/redo/选中/画布交互。 */
+export function createMinimalFormBuilderState(definition: FormDefinition): FormBuilderState {
+  const def = createFormDefinitionState(definition)
+  const noop = () => {}
+  const noopWithArg = <T,>(_arg: T) => {}
+  const falseRef = computed(() => false)
+
+  return {
+    ...def,
+    selectedIndex: ref(0),
+    selectedKey: ref<string | null>(null),
+    selectedTarget: ref<'field' | 'form'>('form'),
+    canvasView: ref<'desktop' | 'tablet' | 'mobile'>('desktop'),
+    isLoading: ref(false),
+    commitFormDefinition: noopWithArg,
+    commitSchema: noopWithArg,
+    commitSchemaReconcile: noopWithArg,
+    undo: noop,
+    redo: noop,
+    resetHistory: noop,
+    setFormDefinition: noopWithArg,
+    canUndo: falseRef,
+    canRedo: falseRef,
+    instanceId: `renderer-${Date.now()}`,
   }
 }
 

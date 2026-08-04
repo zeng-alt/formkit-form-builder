@@ -82,7 +82,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'update:show', value: boolean): void
-  (e: 'submit', value: ModelValue): void
+  (e: 'submit', formData: ModelValue, id: string | undefined, version: number | undefined): void
 }>()
 
 const isOpenInternal = ref(false)
@@ -147,7 +147,7 @@ watch(
 )
 
 const handleSubmit = (formData: ModelValue) => {
-  emit('submit', formData)
+  emit('submit', formData, formDefinition.value?.id, formDefinition.value?.version)
   if (props.resetOnSubmit) data.value = {}
 }
 

@@ -16,7 +16,19 @@ const events: EventDef[] = [
   {
     key: 'onClick',
     title: 'Click',
-    placeholder: `console.log('clicked', ctx.event)\nconsole.log('form data', $)\nawait axios.get('/api/ping')`,
+    placeholder: `// 可用参数：event · form 表单数据 · id 表单ID · version 版本 · $value 当前值 · $node 节点 · $name 字段名 · $get(name) 取字段值 · $slots 插槽 · attrs 节点配置 · ctx 全量合并 · axios
+console.log('event', event)
+console.log('form', form)
+console.log('id', id)
+console.log('version', version)
+console.log('$value', $value)
+console.log('$node', $node)
+console.log('$name', $name)
+console.log('$get', $get)
+console.log('$slots', $slots)
+console.log('attrs', attrs)
+console.log('ctx', ctx)
+await axios.get('/api/ping')`,
   },
   {
     key: 'onChange',

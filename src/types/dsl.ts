@@ -178,6 +178,7 @@ export interface FormSettings {
   /** 根栅格列数（默认 12） */
   columns?: number
   fullWidth?: boolean
+  submit?: string
 }
 
 export interface FormDefinition {

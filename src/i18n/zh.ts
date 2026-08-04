@@ -28,7 +28,7 @@ export default {
     bindEvents: "事件",
     noEvents: "暂无事件",
     editEvent: "编辑事件",
-    bindHint: "编写 JavaScript，可使用 axios 和 event 参数。",
+    bindHint: "编写 JavaScript。可用参数：event（事件对象）、form（表单数据）、$value（当前值）、$node（节点）、$name（字段名）、$get(name)（取字段值）、$slots（插槽）、attrs（节点配置）、ctx（全量）、axios（HTTP 请求）。",
     addListContainer: "添加列表容器",
     formDataTitle: "表单数据：",
     formSubmitted: "表单已提交！",
@@ -53,10 +53,14 @@ export default {
   formSettings: {
     title: "表单设置",
     name: "表单名称",
+    id: "表单 ID",
+    version: "版本",
     labelPosition: "Label 方向",
     labelWidth: "Label 宽度",
     positionTop: "上方",
     positionLeft: "左侧",
+    submit: "提交逻辑",
+    editSubmit: "编辑提交逻辑",
   },
   expression: {
     useExpressionValue: "使用表达式值",

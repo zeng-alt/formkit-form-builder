@@ -17,6 +17,8 @@ import type { BuilderTheme } from '@/types/theme'
 import { useRuntimeLocale } from '@/i18n/runtime-locale'
 import { useFormBuilderI18n } from '@/i18n/context'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
+import { provideFormBuilderState, createMinimalFormBuilderState, type FormBuilderState } from '@/state/create-form-builder-state'
+import { runBindCode } from '@/utils/bind-runtime'
 
 type ModelValue = Record<string, unknown>
 
@@ -68,6 +70,29 @@ const props = withDefaults(
   },
 )
 
+const builderState = computed<FormBuilderState>(() => {
+  if (props.definition) {
+    return createMinimalFormBuilderState(props.definition)
+  }
+  // 兜底：创建一个默认定义
+  return createMinimalFormBuilderState({
+    version: 2,
+    id: 'default-form',
+    name: 'form',
+    root: {
+      id: 'root',
+      category: 'container',
+      type: 'group',
+      renderAs: 'formkit',
+      dataType: 'object',
+      children: [],
+    },
+    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+  })
+})
+
+provideFormBuilderState(builderState.value)
+
 defineSlots<{
   /** 自定义操作区（覆盖默认提交/重置两按钮）。作用域提供 submit / reset / loading */
   actions?: (props: FormActionsScope) => unknown
@@ -75,7 +100,7 @@ defineSlots<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: ModelValue): void
-  (e: 'submit', value: ModelValue): void
+  (e: 'submit', formData: ModelValue, id: string | undefined, version: number | undefined): void
 }>()
 
 // ── locale：读取所在 Builder 实例/Provider 注入的运行时代码，缺省 zh-CN ──
@@ -503,10 +528,6 @@ watchEffect(() => {
   if (nextData) data.value = nextData
 })
 
-const handleSubmit = (formData: Record<string, unknown>) => {
-  emit('submit', formData)
-}
-
 // ── 操作区：submit / reset 经 FormKit 组件实例（expose 了 node）触发 ──
 const formKitRef = ref<InstanceType<typeof FormKit> | null>(null)
 
@@ -521,6 +542,18 @@ const submit = () => formNode.value?.submit?.()
 const reset = () => formNode.value?.reset?.()
 
 const loading = ref(false)
+
+// ── 提交：优先执行 settings.submit 自定义逻辑（经 dslToSchema 写入表单节点 props），
+//    再对外触发 submit 事件；异步逻辑期间 loading 置位，驱动操作区按钮 loading 态 ──
+const handleSubmit = async (formData: Record<string, unknown>) => {
+  delete formData.slots
+  const submitCode = props.definition?.settings?.submit
+  if (typeof submitCode === 'string' && submitCode.trim()) {
+    await runBindCode(submitCode, undefined, {form: formData}, props.definition?.id, props.definition?.version)
+    return
+  }
+  emit('submit', formData, props.definition?.id, props.definition?.version)
+}
 
 defineExpose({ submit, reset, loading })
 

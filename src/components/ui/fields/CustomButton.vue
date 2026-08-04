@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { NButton, type ButtonProps } from 'naive-ui'
-import { createSchemaRuntimeContext, runBindCode } from '@/utils/bind-runtime'
+import { runBindCode } from '@/utils/bind-runtime'
+import type { FormKitFrameworkContext } from "@formkit/core";
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import InlineEditableText from '../formkit/InlineEditableText.vue'
+import { useFormDefinition } from '@/composables/form-fields'
 
 const { context } = defineProps<{
-  context: any
+  context: FormKitFrameworkContext
 }>()
+
+const { formId, formVersion } = useFormDefinition()
 
 // buttonType/buttonText/text/fullWidth/align 不是 NButton 属性（需单独映射或走插槽/外层 div），
 // 其余配置（block/bordered/circle/dashed/focusable/ghost/round/secondary/size）与 NButton 原生
@@ -53,13 +57,7 @@ async function handleClick(e: MouseEvent) {
   }
   const onClick = bind.value.onClick
   if (typeof onClick === 'string' && onClick.trim()) {
-    const $ = createSchemaRuntimeContext(context, e)
-    await runBindCode(onClick, {
-      event: e,
-      data: context?.node?.root?.value,
-      attrs: context?.attrs,
-      $,
-    })
+    await runBindCode(onClick, e, context, formId.value, formVersion.value)
   }
   context?.handlers?.click?.(e)
 }

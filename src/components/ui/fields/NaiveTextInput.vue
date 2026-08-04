@@ -3,7 +3,8 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NInput } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
-import { createSchemaRuntimeContext, runBindCode } from '@/utils/bind-runtime'
+import { runBindCode } from '@/utils/bind-runtime'
+import { useFormDefinition } from '@/composables/form-fields'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
@@ -11,6 +12,7 @@ const { context } = defineProps<{
 
 // 配置经 context.attrs 响应式流入（属性面板修改即触发重渲染）；prefix/suffix 是插槽内容键
 const { config, props, bind } = useSchemaAttrs(context, { omit: ['prefix', 'suffix'] })
+const { formId, formVersion } = useFormDefinition()
 
 const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 
@@ -42,22 +44,16 @@ const value = computed(() => {
   }
   return ['', ''] as [string, string]
 })
-const runEvent = async (key: string, event: unknown, extra?: Record<string, unknown>) => {
+const runEvent = async (key: string, event: any) => {
   const code = bind.value[key]
   if (typeof code !== 'string' || !code.trim()) return
-  const $ = createSchemaRuntimeContext(context, event, extra)
-  await runBindCode(code, {
-    event,
-    data: context?.node?.root?.value,
-    attrs: context?.attrs,
-    $,
-  })
+  await runBindCode(code, event, context, formId.value, formVersion.value)
 }
 
 async function handleUpdateValue(next: string | [string, string]) {
   context.node.input(next)
-  await runEvent('onInput', next, { $value: next })
-  await runEvent('onChange', next, { $value: next })
+  await runEvent('onInput', next)
+  await runEvent('onChange', next)
 }
 
 const handleFocus = async (e: FocusEvent) => {

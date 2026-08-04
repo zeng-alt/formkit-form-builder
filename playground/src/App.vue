@@ -309,8 +309,9 @@ function clearStorage() {
   localStorage.removeItem(STORAGE_KEY)
   definition.value = sampleDefinition
 }
-function onFormSubmit(value: Record<string, unknown>) {
-  console.log('[FormRenderer submit]', value)
+function onFormSubmit(value: Record<string, unknown>, id: string | undefined, version: number | undefined) {
+  console.log(id);
+  console.log(version);
   alert('提交数据：' + JSON.stringify(value))
 }
 // function onSave() {
@@ -390,7 +391,6 @@ const phoneRegistered = true
               :show-data-panel="true"
               @submit="onFormSubmit"
             >
-
             </BuilderPreview>
           </template>
         </FormBuilder>

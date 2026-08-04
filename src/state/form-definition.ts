@@ -50,10 +50,10 @@ export interface FormDefinitionState {
 }
 
 // 按实例创建表单定义状态（DSL 真源 + 只读 schema 投影）。
-export function createFormDefinitionState(): FormDefinitionState {
+export function createFormDefinitionState(initialDefinition?: FormDefinition): FormDefinitionState {
   // 规范表单定义：唯一真源。画布 / DnD 的 schema（formSchema）是其只读投影。
   const formDefinition = ref<FormDefinition>(
-    schemaToDsl(buildWrappedSchema(DEFAULT_CHILDREN, { name: DEFAULT_FORM_NAME, settings: DEFAULT_SETTINGS })),
+    initialDefinition ?? schemaToDsl(buildWrappedSchema(DEFAULT_CHILDREN, { name: DEFAULT_FORM_NAME, settings: DEFAULT_SETTINGS })),
   );
 
   // schema 投影（只读）：渲染 / DnD / 画布使用，由 DSL 派生
