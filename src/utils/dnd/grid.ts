@@ -29,7 +29,7 @@ export function stripInputGroupOuterClass(child: any): any {
   if (!child || typeof child !== 'object') return child
   const clean = (oc?: string) =>
     (typeof oc === 'string' ? oc : '')
-      .replace(/\bw-\[[^\]]+\]/g, '')
+      .replace(/\b!?w-\[[^\]]+\]/g, '')
       .replace(/\bpt-2\b/g, '')
       .replace(/\s+/g, ' ')
       .trim()

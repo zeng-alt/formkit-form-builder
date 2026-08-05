@@ -37,10 +37,10 @@ defineSlots<{
             <template #trigger>
               <n-tooltip>
                 <template #trigger>
-                  <n-button secondary circle size="small" class="h-5 w-5 !p-2">
-                    <template #icon
-                      ><span class="i-lucide-trash-2 h-4 w-4 dark:text-green-200"></span
-                    ></template>
+                  <n-button text type="error" circle size="small" class="h-7 w-7 !p-2">
+                    <template #icon>
+                      <span class="i-lucide-trash-2 h-5 w-5"></span>
+                    </template>
                   </n-button>
                 </template>
                 {{ t('builder.clearForm') }}
@@ -52,14 +52,15 @@ defineSlots<{
           <n-tooltip>
             <template #trigger>
               <n-button
-                secondary
+                type="primary"
+                text
                 circle
                 size="small"
                 @click="showPreview = true"
-                class="h-5 w-5 !p-2"
+                class="h-7 w-7 !p-2"
               >
                 <template #icon
-                  ><span class="i-lucide-eye h-4 w-4 dark:text-green-200"></span
+                  ><span class="i-lucide-eye h-5 w-5"></span
                 ></template>
               </n-button>
             </template>
@@ -83,15 +84,14 @@ defineSlots<{
           <n-tooltip placement="bottom">
             <template #trigger>
               <n-button
-                secondary
-                circle
+                text
                 size="small"
-                class="h-5 w-5 !p-2"
+                class="h-7 w-7 !p-2"
                 :disabled="!canUndo"
                 @click="undo"
               >
                 <template #icon
-                  ><span class="i-lucide-undo-2 h-4 w-4 dark:text-green-200"></span
+                  ><span class="i-lucide-undo-2 h-5 w-5 dark:text-green-200"></span
                 ></template>
               </n-button>
             </template>
@@ -100,15 +100,14 @@ defineSlots<{
           <n-tooltip placement="bottom">
             <template #trigger>
               <n-button
-                secondary
-                circle
+                text
                 size="small"
-                class="h-5 w-5 !p-2"
+                class="h-7 w-7 !p-2"
                 :disabled="!canRedo"
                 @click="redo"
               >
                 <template #icon
-                  ><span class="i-lucide-redo-2 h-4 w-4 dark:text-green-200"></span
+                  ><span class="i-lucide-redo-2 h-5 w-5 dark:text-green-200"></span
                 ></template>
               </n-button>
             </template>

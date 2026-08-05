@@ -3,11 +3,18 @@
     v-model:show="isOpen"
     preset="card"
     :class="[
-      'max-h-[90vh] overflow-y-auto border-none transition-all duration-300',
+      'max-h-[90vh] flex flex-col overflow-hidden',
       resolvedView === 'desktop' ? 'sm:max-w-[800px]' : '',
       resolvedView === 'tablet' ? 'sm:max-w-[768px]' : '',
       resolvedView === 'mobile' ? 'sm:max-w-[375px]' : '',
     ]"
+    :content-style="{
+      display: 'flex',
+      flexDirection: 'column',
+      flex: 1,
+      minHeight: 0,
+      overflow: 'hidden',
+    }"
     :title="resolvedTitle"
     size="small"
   >
@@ -16,32 +23,36 @@
         {{ resolvedDescription }}
       </div>
     </template>
-    <div class="py-4 px-3">
-      <FormSchemaRenderer
-        :schema="schemaSnapshot"
-        v-model="data"
-        :actions="props.actions"
-        :form-class="props.formClass"
-        :form-name="formName"
-        :label-position="formLabelPosition"
-        :label-width="formLabelWidth"
-        :interactive-containers="props.interactiveContainers"
-        @submit="handleSubmit"
-      />
-      <div v-if="props.showDataPanel" class="mt-4 p-3 bg-muted/30 rounded border border-border/50">
-        <h3 class="text-[11px] font-medium mb-2 text-foreground/80">
-          {{ t('builder.formDataTitle') }}
-        </h3>
+    <n-scrollbar
+      style="max-height: 600px"
+    >
+      <div class="py-4 px-3">
+        <FormSchemaRenderer
+          :schema="schemaSnapshot"
+          v-model="data"
+          :actions="props.actions"
+          :form-class="props.formClass"
+          :form-name="formName"
+          :label-position="formLabelPosition"
+          :label-width="formLabelWidth"
+          :interactive-containers="props.interactiveContainers"
+          @submit="handleSubmit"
+        />
+        <div v-if="props.showDataPanel" class="mt-4 p-3 bg-muted/30 rounded border border-border/50">
+          <h3 class="text-[11px] font-medium mb-2 text-foreground/80">
+            {{ t('builder.formDataTitle') }}
+          </h3>
 
-        <pre class="text-[11px] text-muted-foreground">{{ prettyData }}</pre>
+          <pre class="text-[11px] text-muted-foreground">{{ prettyData }}</pre>
+        </div>
       </div>
-    </div>
+    </n-scrollbar>
   </n-modal>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { NModal } from 'naive-ui'
+import { NModal, NScrollbar } from 'naive-ui'
 import { dslToSchema } from '@/dsl'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useFormBuilderI18n } from '@/i18n/context'

@@ -599,6 +599,18 @@ const resolvedResetLabel = computed(
     :inline-theme-disabled="inlineThemeDisabled"
     :preflight-style-disabled="preflightStyleDisabled"
   >
+    <div
+      v-if="props.schema?.[0]?.name"
+      class="flex flex-row items-center justify-center gap-1 px-1 pb-3"
+    >
+      <div class="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <span class="i-lucide-file-text h-4 w-4 shrink-0 text-muted-foreground"></span>
+        <span class="truncate">{{ props.schema?.[0]?.name }}</span>
+      </div>
+      <span v-if="props.schema?.[0]?.props?.version" class="text-[11px] text-muted-foreground ml-2 mt-1">
+        v{{ props.schema?.[0]?.props?.version }}
+      </span>
+    </div>
     <FormKitTyped
       ref="formKitRef"
       type="form"

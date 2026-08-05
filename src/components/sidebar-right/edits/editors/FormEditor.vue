@@ -81,12 +81,12 @@ function save() {
     </div>
     <n-button
       size="small"
-      quaternary
+      type="primary"
       @click="openEditor"
       class="w-full justify-start border border-dashed rounded-xl"
     >
       <template #icon>
-        <span class="i-lucide-code-2 h-4 w-4"></span>
+        <span class="i-lucide-code-2 h-5 w-5"></span>
       </template>
       {{ formSubmit ? t('formSettings.editSubmit') + ' (✓)' : t('formSettings.editSubmit') }}
     </n-button>

@@ -29,7 +29,8 @@ export default {
     bindEvents: "Events",
     noEvents: "No events",
     editEvent: "Edit event",
-    bindHint: "Write JavaScript. Available params: event (event object), form (form data), $value (current value), $node (node), $name (field name), $get(name) (get field value), $slots (slots), attrs (node config), ctx (full context), axios (HTTP).",
+    bindHint:
+      "Write JavaScript. Available params: event (event object), form (form data), $value (current value), $node (node), $name (field name), $get(name) (get field value), $slots (slots), attrs (node config), ctx (full context), axios (HTTP).",
     addListContainer: "Add list container",
     formDataTitle: "Form Data:",
     formSubmitted: "Form submitted!",
@@ -58,6 +59,8 @@ export default {
     labelWidth: "Label width",
     positionTop: "Top",
     positionLeft: "Left",
+    submit: "Submit logic",
+    editSubmit: "Edit submit logic",
   },
   expression: {
     useExpressionValue: "Use expression value",
@@ -215,8 +218,10 @@ export default {
       dictLabelPlaceholder: "Filter by label",
       dictSearch: "Search",
       dictEmpty: "No data",
-      dictProviderMissing: "No dictionary methods configured. Pass fetchDictionary / fetchDictionaryPage in BuilderProvider config.",
-      treeDictProviderMissing: "No tree dictionary methods configured. Pass fetchTreeDictionary / fetchTreeDictionaryPage in BuilderProvider config.",
+      dictProviderMissing:
+        "No dictionary methods configured. Pass fetchDictionary / fetchDictionaryPage in BuilderProvider config.",
+      treeDictProviderMissing:
+        "No tree dictionary methods configured. Pass fetchTreeDictionary / fetchTreeDictionaryPage in BuilderProvider config.",
       dictCancel: "Cancel",
       jsonParseError: "Invalid JSON",
       jsonArrayError: "Options must be a JSON array",

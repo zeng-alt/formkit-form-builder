@@ -93,7 +93,7 @@ watch(
           <template #trigger>
             <div class="h-8 w-8 rounded-md flex items-center justify-center">
               <span
-                :class="`${fieldProps.find((prop) => prop.name === getTypeName(item))?.icon ?? ''} h-4 w-4`"
+                :class="`${fieldProps.find((prop) => prop.name === getTypeName(item))?.icon ?? ''} h-5 w-5`"
               />
             </div>
           </template>
@@ -104,7 +104,7 @@ watch(
       </div>
       <span
         v-else
-        :class="`${fieldProps.find((prop) => prop.name === getTypeName(item))?.icon ?? ''} h-4 w-4 shrink-0`"
+        :class="`${fieldProps.find((prop) => prop.name === getTypeName(item))?.icon ?? ''} h-5 w-5 shrink-0`"
       ></span>
       <div v-if="!collapsed" class="ml-3 flex flex-col justify-center overflow-hidden">
         <span class="text-[11px] text-secondary-foreground/80 font-medium">{{ item.name }}</span>

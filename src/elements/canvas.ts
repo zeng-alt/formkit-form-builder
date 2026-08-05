@@ -86,26 +86,28 @@ export function normalizeContainer(node: SchemaNode, type: string, spec: Contain
 
 // ─── inputGroup 预览子节点宽度装饰 ─────────────────────────────────────────────
 // children 的宽度按 layout.colspan 展示（4 → 33%、6 → 50%）。
-// 逐个 child 读 col-span，改写成对应的 w-[xx%] 外框类，并去掉网格类/按钮 pt-2。
-// 这些 w-[xx%] 类已出现在 ContainerChildrenGrid 的 safelist 里，Tailwind 会生成。
+// 逐个 child 读 col-span，改写成对应的 !w-[xx%] 外框类，并去掉网格类/按钮 pt-2。
+// 用 !important（!w-）盖过主题 rootClasses 给 formkit-outer 的 w-full，
+// 否则与应用/主题 CSS 的级联顺序无关（w-full 100% 会赢过 w-[50%]，元素全宽）。
+// 这些 !w-[xx%] 类已加入 uno.config.ts 的 safelist，构建时必定生成。
 const INPUT_GROUP_WIDTH_CLASS: Record<number, string> = {
-  1: 'w-[8.33%]',
-  2: 'w-[16.67%]',
-  3: 'w-[25%]',
-  4: 'w-[33.33%]',
-  5: 'w-[41.67%]',
-  6: 'w-[50%]',
-  7: 'w-[58.33%]',
-  8: 'w-[66.67%]',
-  9: 'w-[75%]',
-  10: 'w-[83.33%]',
-  11: 'w-[91.67%]',
-  12: 'w-[100%]',
+  1: '!w-[8.33%]',
+  2: '!w-[16.67%]',
+  3: '!w-[25%]',
+  4: '!w-[33.33%]',
+  5: '!w-[41.67%]',
+  6: '!w-[50%]',
+  7: '!w-[58.33%]',
+  8: '!w-[66.67%]',
+  9: '!w-[75%]',
+  10: '!w-[83.33%]',
+  11: '!w-[91.67%]',
+  12: '!w-[100%]',
 }
 const stripGridWidthClasses = (outerClass: unknown) =>
   (typeof outerClass === 'string' ? outerClass : '')
     .replace(/\bcol-span-\d+\b/g, '')
-    .replace(/\bw-\[[^\]]+\]/g, '')
+    .replace(/\b!?w-\[[^\]]+\]/g, '')
     .replace(/\bpt-2\b/g, '')
     .replace(/\s+/g, ' ')
     .trim()
