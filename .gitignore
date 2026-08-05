@@ -53,5 +53,8 @@ AGENTS.md
 # Test files
 test*.ts
 
+# pnpm store
+.pnpm-store/
+
 # Vite
 *.timestamp-*-*.mjs
