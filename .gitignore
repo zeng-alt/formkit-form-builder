@@ -45,5 +45,13 @@ __screenshots__/
 # Debug/test scripts
 scripts/
 
+# Specific files
+CLAUDE.md
+CODE_WIKI.md
+AGENTS.md
+
+# Test files
+test*.ts
+
 # Vite
 *.timestamp-*-*.mjs
