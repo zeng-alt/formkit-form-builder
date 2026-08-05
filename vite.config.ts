@@ -74,7 +74,8 @@ export default defineConfig(({ command }): UserConfig => {
               },
               // 库内大量 `editor: () => import(...)` 懒加载，默认会按组件切成几十个 chunk。
               // 这里强制全部内联进单文件，产物只剩 builder.es.js / builder.umd.js。
-              inlineDynamicImports: true,
+              // （rolldown 已弃用 inlineDynamicImports，等价选项为 codeSplitting: false）
+              codeSplitting: false,
             },
           },
         }

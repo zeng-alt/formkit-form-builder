@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
+import type { Component, DefineComponent } from 'vue'
 import { computed, provide, ref, watch, watchEffect } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { getNode } from '@formkit/core'
-import { FormKit, FormKitSchema, changeLocale } from '@formkit/vue'
+import { FormKit, changeLocale } from '@formkit/vue'
+import FormKitSchemaWrapper from './FormKitSchemaWrapper.vue'
 import { NButton, type ConfigProviderProps } from 'naive-ui'
 import createFormattedSchema from '@/utils/format-schema'
 import { evalExpression } from '@/utils/expression-eval'
@@ -21,6 +22,19 @@ import { provideFormBuilderState, createMinimalFormBuilderState, type FormBuilde
 import { runBindCode } from '@/utils/bind-runtime'
 
 type ModelValue = Record<string, unknown>
+
+// FormKit 是泛型组件（props 为所有输入类型的大联合），dts 打包时无法命名其推断类型
+// （TS2883/TS7056）。这里显式收敛为本组件实际用到的 props 类型，与 FormKitSchemaWrapper 同套路。
+type FormKitTypedProps = {
+  type?: string
+  name?: string
+  actions?: boolean
+  formClass?: string
+  modelValue?: ModelValue
+  'onUpdate:modelValue'?: (value: ModelValue) => void
+  onSubmit?: (formData: ModelValue) => void
+}
+const FormKitTyped = FormKit as DefineComponent<FormKitTypedProps>
 
 /** #actions 槽作用域：可由外部自定义操作区按钮，复用表单提交/重置 */
 export type FormActionsScope = {
@@ -529,7 +543,14 @@ watchEffect(() => {
 })
 
 // ── 操作区：submit / reset 经 FormKit 组件实例（expose 了 node）触发 ──
-const formKitRef = ref<InstanceType<typeof FormKit> | null>(null)
+type FormKitInstance = {
+  node?: {
+    submit?: () => void
+    reset?: () => void
+  }
+}
+
+const formKitRef = ref<FormKitInstance | null>(null)
 
 const formNode = computed(() => {
   const inst = formKitRef.value as { node?: { submit?: () => void; reset?: () => void } } | null
@@ -578,7 +599,7 @@ const resolvedResetLabel = computed(
     :inline-theme-disabled="inlineThemeDisabled"
     :preflight-style-disabled="preflightStyleDisabled"
   >
-    <FormKit
+    <FormKitTyped
       ref="formKitRef"
       type="form"
       :name="resolvedFormName"
@@ -588,7 +609,11 @@ const resolvedResetLabel = computed(
       :form-class="resolvedFormClass"
       :style="{ '--fk-label-width': `${resolvedLabelWidth}px` }"
     >
-      <FormKitSchema :schema="formattedSchema" :data="data" :library="schemaLibrary" />
+      <FormKitSchemaWrapper
+        :schema="formattedSchema"
+        :data="data"
+        :library="schemaLibrary"
+      />
       <template v-if="$slots.actions">
         <slot name="actions" :submit="submit" :reset="reset" :loading="loading" />
       </template>
@@ -613,6 +638,6 @@ const resolvedResetLabel = computed(
           <NButton v-bind="resetAttrs ?? {}" @click="reset">{{ resolvedResetLabel }}</NButton>
         </div>
       </template>
-    </FormKit>
+    </FormKitTyped>
   </BuilderThemeScope>
 </template>
