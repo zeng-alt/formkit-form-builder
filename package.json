@@ -3,7 +3,7 @@
   "version": "0.1.4",
   "description": "A visual FormKit schema builder for Vue 3",
   "type": "module",
-  "license": "MIT",
+  "license": "LGPL",
   "repository": {
     "type": "git",
     "url": "https://github.com/zeng-alt/formkit-form-builder.git"

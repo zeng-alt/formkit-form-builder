@@ -1,34 +1,36 @@
 # formkit-form-builder
 
-基于 Vue 3 + FormKit 的可视化表单 Schema 设计器（左侧物料库 / 中间画布 / 右侧属性面板），支持拖拽搭建、校验配置、预览，以及可选的 AI 生成 Schema。
+[中文文档](./README-zh.md) | **English**
 
-核心概念：设计器产出的是**版本化 DSL（`FormDefinition`）**而非裸 schema，通过 `FormRenderer`（内部 `dslToSchema` 转换）渲染成 FormKit 表单。DSL 是 JSON-safe 的结构，后端（如 Java）可直接反序列化。
+A visual FormKit Schema designer based on Vue 3 + FormKit (left sidebar / center canvas / right property panel), supporting drag-and-drop building, validation configuration, preview, and optional AI-powered Schema generation.
 
-## 安装
+Core concept: The designer outputs a **versioned DSL (`FormDefinition`)** rather than raw schema. The `FormRenderer` (internally using `dslToSchema` conversion) renders it into a FormKit form. The DSL is a JSON-safe structure that can be directly deserialized by backends (e.g., Java).
+
+## Installation
 
 ```bash
 pnpm i @zeng-alt/formkit-form-builder
 ```
 
-本库依赖以下 peer 依赖（需要你在项目里自行安装）：
+This library depends on the following peer dependencies (you need to install them in your project):
 
 ```bash
 pnpm i vue naive-ui @vueuse/core
 ```
 
-## 样式引入
+## Style Import
 
-ESM 入口会自动加载样式，无需手动引入。仅在使用 UMD / script-tag 时需手动引入：
+The ESM entry automatically loads styles — no manual import needed. Only required when using UMD / script-tag:
 
 ```ts
 import "@zeng-alt/formkit-form-builder/builder.css";
 ```
 
-## 快速开始
+## Quick Start
 
-### 1) 安装并注册 FormKit
+### 1) Install and Register FormKit
 
-使用库内置的 `formkitConfig()` 工厂（会自动注册全部内置元素），完成 FormKit 装配：
+Use the built-in `formkitConfig()` factory (auto-registers all built-in elements) to set up FormKit:
 
 ```ts
 // main.ts
@@ -40,9 +42,9 @@ import App from "./App.vue";
 createApp(App).use(formkitPlugin, formkitConfig()).mount("#app");
 ```
 
-> 也可以直接用一键插件 `FormBuilderPlugin`（自动装配 FormKit + 全局配置 + 元素注册），见下文。
+> Alternatively, use the one-step plugin `FormBuilderPlugin` (auto-configures FormKit + global config + element registration), see below.
 
-### 2) 使用 FormBuilder
+### 2) Use FormBuilder
 
 ```vue
 <script setup lang="ts">
@@ -52,7 +54,7 @@ import type { FormDefinition } from "@zeng-alt/formkit-form-builder";
 
 const definition = ref<FormDefinition>();
 const config = {
-  apiKey: "", // 可选：AI 面板使用 OpenAI 时需要
+  apiKey: "", // Optional: required for AI panel with OpenAI
 };
 </script>
 
@@ -63,11 +65,11 @@ const config = {
 </template>
 ```
 
-`FormBuilder` 通过 `v-model` 双向绑定 `FormDefinition`：预载已有表单并实时吐出编辑结果，可直接保存到后端。
+`FormBuilder` binds `FormDefinition` via `v-model` bidirectionally: preload existing forms and emit edits in real time, ready to save to backend.
 
-### 3) 渲染表单
+### 3) Render Forms
 
-`FormRenderer`（`FormSchemaRenderer` 的现名）渲染 `FormDefinition` 为可填写、可提交的 FormKit 表单：
+`FormRenderer` (renamed from `FormSchemaRenderer`) renders `FormDefinition` into a fillable, submittable FormKit form:
 
 ```vue
 <script setup lang="ts">
@@ -89,13 +91,13 @@ const data = ref({});
 </template>
 ```
 
-- `definition`：主输入（版本化 DSL）；也可用 `schema` 直接传裸 FormKit schema（二选一，同传时优先 `definition`）。
-- `dataStructure`：`'flat'`（默认，扁平输出）| `'nested'`（容器转 group 嵌套）。
-- 其余可选 props：`formName`、`labelPosition`（`'top' | 'left'`）、`labelWidth`、`formClass`、`interactiveContainers` 等。
-- **主题**：主题的唯一来源是 `BuilderProvider`（渲染一个 `n-config-provider`），支持 `theme` prop（`BuilderTheme`：`'light' | 'dark'`，缺省自动跟随系统）+ 其余 `ConfigProviderProps`（`themeOverrides` / `breakpoints` 等）透传。`FormBuilder` / `FormRenderer` 作为子树继承 Provider 的主题，保证两者一致；二者各自也保留独立的 `theme` / `ConfigProviderProps` prop（仅当未被 `BuilderProvider` 包裹、独立使用时生效）。内置 `ThemeSwitcher`（深色 / 浅色 / 跟随系统）与 `theme` prop 共用同一个 `useColorMode` 数据源，naive-ui 主题与 UnoCSS 的 `dark:` 样式始终一致。
-- **locale**：读取所在 `BuilderProvider` / `FormBuilder` 提供的运行时代码（缺省 `zh-CN`），同步 FormKit 提交按钮与校验文案；也可用 `:locale` / `:date-locale` 直接传 naive 语言包覆盖。
+- `definition`: Primary input (versioned DSL); alternatively pass raw FormKit schema via `schema` (choose one; `definition` takes priority if both provided).
+- `dataStructure`: `'flat'` (default, flat output) | `'nested'` (containers converted to group nesting).
+- Other optional props: `formName`, `labelPosition` (`'top' | 'left'`), `labelWidth`, `formClass`, `interactiveContainers`, etc.
+- **Theming**: The single source of truth is `BuilderProvider` (renders an `n-config-provider`). Supports `theme` prop (`BuilderTheme`: `'light' | 'dark'`, defaults to system preference) + remaining `ConfigProviderProps` (`themeOverrides` / `breakpoints`, etc.) passed through. `FormBuilder` / `FormRenderer` as children inherit the Provider's theme, ensuring consistency; both also retain independent `theme` / `ConfigProviderProps` props (only effective when not wrapped by `BuilderProvider`, used standalone). Built-in `ThemeSwitcher` (dark / light / system) shares the same `useColorMode` data source as the `theme` prop, keeping naive-ui theme and UnoCSS `dark:` styles in sync.
+- **i18n**: Reads runtime locale from the containing `BuilderProvider` / `FormBuilder` (default `zh-CN`), syncing FormKit submit button and validation messages; can also override via `:locale` / `:date-locale` with naive language packs.
 
-`FormRenderer` 可与 `FormBuilder` 一起放在 `BuilderProvider` 内配合使用（共享 `config.locale` / 元素注册 / 主题），主题只需在 Provider 上配一次，两者保持一致：
+`FormRenderer` can be used alongside `FormBuilder` inside `BuilderProvider` (sharing `config.locale` / element registration / theme). Configure theme once on Provider, both stay consistent:
 
 ```vue
 <BuilderProvider :config="config" :theme="isDark ? 'dark' : 'light'">
@@ -106,9 +108,9 @@ const data = ref({});
 </BuilderProvider>
 ```
 
-## 一键接入插件
+## One-Step Plugin
 
-不想手动 `app.use(plugin, formkitConfig())` + 套 `BuilderProvider` 时，可用 `FormBuilderPlugin` 一步完成：
+Don't want to manually `app.use(plugin, formkitConfig())` + wrap `BuilderProvider`? Use `FormBuilderPlugin` to do it all in one step:
 
 ```ts
 // main.ts
@@ -123,7 +125,7 @@ createApp(App).use(FormBuilderPlugin, {
 
 ```vue
 <template>
-  <!-- 无需 BuilderProvider，直接用 -->
+  <!-- No BuilderProvider needed, use directly -->
   <FormBuilder v-model="definition" />
   <FormRenderer :definition="definition" />
 </template>
@@ -131,60 +133,140 @@ createApp(App).use(FormBuilderPlugin, {
 
 ## API
 
-### 导出清单
+### Exports
 
 ```ts
 import {
-  FormBuilder, // 设计器主组件
-  FormBuilderProvider, // BuilderProvider 别名
-  BuilderProvider, // 全局配置提供者
-  BuilderPreview, // 可复用弹窗预览组件
-  FormRenderer, // 表单渲染组件（FormSchemaRenderer 的现名）
-  FormSchemaRenderer, // @deprecated 用 FormRenderer
-  FormBuilderPlugin, // 一键接入插件
-  formkitConfig, // FormKit 装配工厂（可传扩展元素）
-  registerElement, // 配置式扩展元素
+  FormBuilder, // Main designer component
+  FormBuilderProvider, // BuilderProvider alias
+  BuilderProvider, // Global config provider
+  BuilderPreview, // Reusable preview modal component
+  FormRenderer, // Form rendering component (renamed from FormSchemaRenderer)
+  FormSchemaRenderer, // @deprecated use FormRenderer
+  FormBuilderPlugin, // One-step plugin
+  formkitConfig, // FormKit config factory (accepts custom elements)
+  registerElement, // Config-based element extension
   registerElements,
-  setGlobalFormBuilderConfig, // 全局配置（插件/无 Provider 场景）
+  setGlobalFormBuilderConfig, // Global config (plugin / no Provider scenarios)
   useFormBuilderConfig,
   provideFormBuilderConfig,
-  createFormBuilderState, // 多设计器实例状态
+  createFormBuilderState, // Multi-designer instance state
   useFormBuilderState,
   provideFormBuilderState,
   dslToSchema, // DSL → FormKit schema
-  dslToOutputSchema, // DSL → 嵌套 group 输出 schema
-  schemaToDsl, // 裸 schema → DSL
+  dslToOutputSchema, // DSL → nested group output schema
+  schemaToDsl, // Raw schema → DSL
   buildFormkitInputs,
 } from "@zeng-alt/formkit-form-builder";
 ```
+
+---
+
+### FormBuilder API
+
+#### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `modelValue` | `FormDefinition` | - | Form definition: v-model bidirectional binding; preload existing form and emit edits in real time |
+| `config` | `FormBuilderConfig` | - | Instance config; if provided, self-contained (registerElements + provide); otherwise falls back to injected `BuilderProvider` |
+| `theme` | `BuilderTheme` (`'light' \| 'dark'`) | Auto (system) | Custom theme: maps to naive-ui's `darkTheme` / `lightTheme` |
+| `...ConfigProviderProps` | `Partial<ConfigProviderProps>` | - | Pass-through for remaining naive-ui ConfigProvider props (`themeOverrides`, `breakpoints`, etc.) |
+
+#### Events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `update:modelValue` | `value: FormDefinition` | Emitted when form definition changes (v-model bidirectional binding) |
+
+#### Slots
+
+| Slot | Scope | Description |
+|------|-------|-------------|
+| `header` | - | Entire header bar (including default content) |
+| `header-left` | - | Header left area (clear / preview); uses default if not provided |
+| `header-center` | - | Header center area (AI prompt); uses default if not provided |
+| `header-right` | - | Header right area (undo/redo / theme); uses default if not provided |
+| `empty` | - | Canvas empty state; uses default NEmpty if not provided |
+| `toolbar` | - | Right sidebar actions (import/export / language switch); uses default if not provided |
+
+---
+
+### FormRenderer API (formerly FormSchemaRenderer)
+
+#### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `definition` | `FormDefinition` | - | **Primary input**: Versioned DSL form definition; internally converted via `dslToSchema` |
+| `schema` | `FormKitSchemaFormKit[]` | - | **Alternative input**: Raw FormKit schema array; if both `definition` and `schema` provided, `definition` takes priority |
+| `dataStructure` | `'flat' \| 'nested'` | `'flat'` | Output structure when `definition` provided: `flat` (flat) \| `nested` (containers as group nesting) |
+| `modelValue` | `Record<string, unknown>` | `{}` | Form data v-model bidirectional binding |
+| `actions` | `boolean` | `false` | Render default action bar (submit/reset buttons); `false` hides it, use `#actions` slot for custom |
+| `submitLabel` | `string` | i18n: Submit | Default submit button label |
+| `resetLabel` | `string` | i18n: Reset | Default reset button label |
+| `submitAttrs` | `Record<string, unknown>` | - | Default submit button pass-through attrs (naive NButton props) |
+| `resetAttrs` | `Record<string, unknown>` | - | Default reset button pass-through attrs (naive NButton props) |
+| `actionsJustify` | `'start' \| 'center' \| 'end' \| 'space-between'` | `'start'` | Default action bar button alignment |
+| `formClass` | `string` | `'w-full !grid !grid-cols-12 gap-x-4 gap-y-2'` | Form root element class |
+| `formName` | `string` | - | Form name (priority: schema form.name > this prop) |
+| `labelPosition` | `'top' \| 'left'` | `'top'` | Label position (priority: schema form.props.labelPosition > this prop) |
+| `labelWidth` | `number` | `80` | Label width (priority: schema form.props.labelWidth > this prop) |
+| `schemaLibrary` | `Record<string, Component>` | Built-in preview lib | Custom schema component library (overrides built-in preview components) |
+| `interactiveContainers` | `boolean` | `true` | Enable interactions (add/remove rows) for list/card/input-group/button-group/tabs containers |
+| `theme` | `BuilderTheme` (`'light' \| 'dark'`) | Auto (system) | Custom theme: maps to naive-ui's `darkTheme` / `lightTheme` |
+| `...ConfigProviderProps` | `Partial<ConfigProviderProps>` | - | Pass-through for remaining naive-ui ConfigProvider props |
+
+#### Events
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `update:modelValue` | `value: Record<string, unknown>` | Emitted when form data changes (v-model bidirectional binding) |
+| `submit` | `formData, id?, version?` | Emitted on form submit (not triggered if required validation fails) |
+
+#### Slots
+
+| Slot | Scope | Description |
+|------|-------|-------------|
+| `actions` | `{ submit: () => void, reset: () => void, loading: boolean }` | Custom action bar (overrides default submit/reset buttons) |
+
+#### Methods (via `defineExpose`)
+
+| Method | Type | Description |
+|--------|------|-------------|
+| `submit` | `() => void` | Submit form (does not trigger submit event if required validation fails) |
+| `reset` | `() => void` | Reset form to initial values |
+| `loading` | `Ref<boolean>` | Submit loading state |
+
+---
 
 ### FormBuilderConfig
 
 ```ts
 export interface FormBuilderConfig {
-  apiKey?: string; // AI 面板使用 OpenAI 时需要
-  locale?: string; // 默认 zh-CN
-  messages?: Record<string, any>; // 多语言覆写（结构与默认 messages 一致）
-  elements?: RegisterElementInput[]; // 扩展元素（配置式注册）
+  apiKey?: string; // Required for AI panel with OpenAI
+  locale?: string; // Default: zh-CN
+  messages?: Record<string, any>; // i18n overrides (same structure as default messages)
+  elements?: RegisterElementInput[]; // Extended elements (config-based registration)
 }
 ```
 
-### DSL 与转换
+### DSL & Conversion
 
-DSL 节点类型：`FormDefinition` / `FormNode`（`FieldNode` / `ContainerNode` / `StaticNode` / `LayoutNode`）、`NodeCategory`（`field | container | layout | static`）、`RenderKind`（`formkit | cmp | el`）。DSL 是 JSON-safe 结构，可直接序列化给后端。
+DSL node types: `FormDefinition` / `FormNode` (`FieldNode` / `ContainerNode` / `StaticNode` / `LayoutNode`), `NodeCategory` (`field | container | layout | static`), `RenderKind` (`formkit | cmp | el`). DSL is JSON-safe, serializable directly to backend.
 
 ```ts
 import { dslToSchema, schemaToDsl, dslToOutputSchema } from "@zeng-alt/formkit-form-builder";
 import type { FormDefinition } from "@zeng-alt/formkit-form-builder";
 
-const schema = dslToSchema(definition); // 渲染用
-const outputSchema = dslToOutputSchema(definition); // 容器转 group 嵌套（后端模型友好）
+const schema = dslToSchema(definition); // For rendering
+const outputSchema = dslToOutputSchema(definition); // Containers as group nesting (backend-model friendly)
 const backToDsl = schemaToDsl(schema);
 ```
 
-### 扩展元素
+### Extending Elements
 
-通过 `config.elements` 或 `registerElement(s)` 注册自定义元素（DSL 注册中心 + FormKit input + 画布/预览一次打通）：
+Register custom elements via `config.elements` or `registerElement(s)` (DSL registry + FormKit input + canvas/preview all at once):
 
 ```ts
 import { registerElement, formkitConfig } from "@zeng-alt/formkit-form-builder";
@@ -193,18 +275,16 @@ import type { RegisterElementInput } from "@zeng-alt/formkit-form-builder";
 registerElement({
   type: "myField",
   category: "field",
-  label: "自定义字段",
-  // ... 见 RegisterElementInput 类型
+  label: "Custom Field",
+  // ... see RegisterElementInput type
 });
 
 createApp(App).use(plugin, formkitConfig());
 ```
 
-## i18n 覆写
+## i18n Overrides
 
-`messages[locale]` 与内置文案结构同形，按 key **递归深合并**：传入的键覆写内置文案，
-未覆写的键沿用原值（对齐 camunda7-ui 语义，数组整体替换）。也可注入全新 locale，
-缺失的键在查找时回退到 `en`。
+`messages[locale]` merges **recursively** with built-in copy (same structure). Provided keys override built-in; missing keys fall back to defaults (aligned with camunda7-ui semantics; arrays replaced wholesale). New locales can be injected; missing keys fall back to `en` during lookup.
 
 ```ts
 const config = {
@@ -212,49 +292,48 @@ const config = {
   messages: {
     "zh-CN": {
       builder: {
-        clearForm: "清空当前表单", // 仅覆写这一个键，其他 builder.* 保留
+        clearForm: "Clear current form", // Only overrides this key; other builder.* preserved
       },
     },
   },
 };
 ```
 
-## 示例
+## Examples
 
 ![light](./img/light.png)
 ![dark](./img/dark.png)
 ![preview](./img/preview.png)
 
-## 发布到 npm（公共仓库）
+## Publish to npm (Public Registry)
 
-1. 确认 `package.json`：
+1. Verify `package.json`:
+   - `name` is an available package name
+   - `version` updated (semver)
+   - `publishConfig.access = "public"`
+   - `private` removed
 
-- `name` 是未被占用的包名
-- `version` 已更新（遵循 semver）
-- `publishConfig.access = "public"`
-- `private` 已移除
-
-2. 安装依赖并生成构建产物：
+2. Install deps and build:
 
 ```bash
 pnpm install --no-frozen-lockfile
 pnpm build
 ```
 
-3. 登录并发布：
+3. Login and publish:
 
 ```bash
 npm login
 npm publish --access public
 ```
 
-如果你用 pnpm：
+Or with pnpm:
 
 ```bash
 pnpm publish --access public
 ```
 
-## 开发（本仓库）
+## Development (This Repo)
 
 ```bash
 pnpm install
