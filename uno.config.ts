@@ -1,6 +1,7 @@
 import { defineConfig, presetWind3 } from "unocss";
 import presetIcons from "unocss/preset-icons";
 import { presetTwAnimate } from "unocss-tw-animate-css";
+import presetRemToPx from "@unocss/preset-rem-to-px";
 import { getIconData, iconToHTML, iconToSVG, replaceIDs, type IconifyJSON } from "@iconify/utils";
 import lucide from "@iconify-json/lucide/icons.json";
 import stash from "@iconify-json/stash/icons.json";
@@ -82,6 +83,7 @@ export default defineConfig({
     "i-lucide-rectangle-horizontal",
   ],
   presets: [
+    presetRemToPx({ baseFontSize: 16 }),
     presetWind3(),
     presetIcons({
       collections: {

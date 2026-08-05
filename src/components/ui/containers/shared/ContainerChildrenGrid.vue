@@ -163,7 +163,9 @@ const resizeHandleClass = computed(() => {
     >
       <li v-if="props.items.value.length === 0" :class="emptyPlaceholderClass">
         <slot name="empty">
-          <n-empty :description="props.emptyText" />
+          <div class="w-full h-full flex items-center justify-center">
+            <n-empty :description="props.emptyText" />
+          </div>
         </slot>
       </li>
       <li

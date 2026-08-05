@@ -1,6 +1,6 @@
 {
   "name": "@zeng-alt/formkit-form-builder",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A visual FormKit schema builder for Vue 3",
   "type": "module",
   "license": "LGPL",
@@ -64,6 +64,7 @@
     "@formkit/i18n": "^2.0.0",
     "@formkit/vue": "^2.0.0",
     "@internationalized/date": "^3.12.0",
+    "@unocss/preset-rem-to-px": "^66.7.5",
     "axios": "^1.12.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

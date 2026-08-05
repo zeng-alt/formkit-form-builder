@@ -11,7 +11,7 @@ const showImportExportModal = ref(false)
 </script>
 
 <template>
-  <div class="w-16 shrink-0 hidden md:flex flex-col items-center">
+  <div class="w-16 shrink-0 flex flex-col items-center">
     <div class="sticky top-20 flex flex-col gap-2">
       <n-button-group vertical class="bg-card shadow-sm rounded-lg border border-border/50">
         <n-tooltip placement="left">

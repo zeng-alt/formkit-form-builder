@@ -158,7 +158,7 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
   >
     <n-layout has-sider class="h-screen w-full">
       <SidebarLeft />
-      <n-layout has-sider sider-placement="right" class="flex-1">
+      <n-layout has-sider sider-placement="right" class="flex-1 mb-4">
         <n-layout
           class="relative h-full"
           :native-scrollbar="false"

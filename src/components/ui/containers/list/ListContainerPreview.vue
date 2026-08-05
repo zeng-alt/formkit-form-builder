@@ -60,12 +60,9 @@ const removeItem = (node: unknown, value: unknown, index: number) => {
 </script>
 
 <template>
-  <div class="w-full rounded-xl border border-border/50 bg-card/50">
-    <div
-      v-if="title"
-      class="flex items-center justify-between px-3 py-2 border-b border-border/50"
-    >
-      <div class="text-xs text-muted-foreground">{{ title }}</div>
+  <div class="w-full rounded-xl border border-border/50">
+    <div v-if="title" class="mb-2px">
+      <div v-if="title" class="text-12px font-bold">{{ title }}</div>
     </div>
 
     <div class="p-2">
@@ -95,7 +92,7 @@ const removeItem = (node: unknown, value: unknown, index: number) => {
           <div
             v-for="(item, index) in items"
             :key="index"
-            class="relative mb-2 rounded-lg border border-border/40 bg-card/40 p-2"
+            class="relative mb-2 rounded-lg border border-border/40 p-2"
           >
             <FormKit :type="'group'" :index="index as number">
               <div class="grid grid-cols-12 gap-x-4 gap-y-2">

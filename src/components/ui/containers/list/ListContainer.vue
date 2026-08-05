@@ -62,12 +62,12 @@ const deleteChild = (index: number) => {
 </script>
 
 <template>
-  <div class="w-full rounded-xl border border-border/50 bg-card/50">
+  <div class="w-full rounded-xl border border-border/50">
     <div
       v-if="showHeader"
       class="flex items-center justify-between px-3 py-2 border-b border-border/50"
     >
-      <div v-if="title" class="text-xs text-muted-foreground">{{ title }}</div>
+      <div v-if="title" class="text-12px font-bold">{{ title }}</div>
       <n-button-group v-if="showActions">
         <n-tooltip placement="top">
           <template #trigger>
