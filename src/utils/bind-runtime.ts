@@ -21,59 +21,6 @@ export function normalizeBind(bind: unknown): Record<string, string> | undefined
   return Object.keys(out).length ? out : undefined;
 }
 
-// export type BindRuntimeCtx = {
-//   event?: unknown;
-//   form?: unknown;
-//   /** 表单定义 id（settings.submit 提交逻辑可引用） */
-//   id?: unknown;
-//   /** 表单定义 version（settings.submit 提交逻辑可引用） */
-//   version?: unknown;
-//   attrs?: unknown;
-//   $value?: unknown;
-//   $node?: unknown;
-//   $name?: unknown;
-//   $get?: unknown;
-//   $slots?: unknown;
-//   [key: string]: unknown;
-// };
-
-/**
- * 构造运行时注入值，随 runBindCode 摊开注入，供用户代码直接引用：
- *   $value — 当前节点的值（NaiveTextInput 经 extra 覆盖为最新输入值）
- *   $node  — 当前节点的 FormKit 节点实例
- *   $name  — 当前节点的字段名（即 $node.name）
- *   $get(name) — 按字段名取任意字段的当前值（等价 form[name]）
- *   $slots — 节点插槽
- *   ...extra — 调用方追加的额外键（可覆盖内置键）
- */
-// export function createSchemaRuntimeContext(
-//   ctx: FormKitFrameworkContext,
-//   extra?: Record<string, unknown>,
-// ) {
-//   const node: any = (ctx as any)?.node;
-//   const form = (node?.root?.value ?? {}) as any;
-//   const value = (ctx as any)?._value ?? node?.value;
-//   const slots = (ctx as any)?.slots ?? node?.context?.slots;
-//   const $get = (name: string) => {
-//     const at = node?.root?.at;
-//     if (typeof at === "function") return at.call(node.root, name)?.value;
-//     const byName = getNode(name);
-//     if (byName) return (byName as any).value;
-//     return form?.[name];
-//   };
-
-//   const runtime: Record<string, unknown> = {
-//     $value: value,
-//     $node: node,
-//     $name: node?.name,
-//     $get,
-//     $slots: slots,
-//     ...extra,
-//   };
-
-//   return runtime;
-// }
-
 /**
  * 执行事件绑定代码（onClick / onChange / onInput / onFocus / onBlur）。
  *

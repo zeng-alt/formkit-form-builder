@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { EditorState, StateEffect } from '@codemirror/state'
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter } from '@codemirror/view'
+import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, hoverTooltip } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { javascript } from '@codemirror/lang-javascript'
+import { javascript, javascriptLanguage } from '@codemirror/lang-javascript'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { autocompletion } from '@codemirror/autocomplete'
+import { linter } from '@codemirror/lint'
 import { useColorMode, usePreferredDark } from '@vueuse/core'
+import { bindRuntimeCompletionsSource, bindRuntimeHoverTooltipSource, setFormFieldNames } from '@/utils/bind-runtime-completions'
+import { jsLintSource } from '@/utils/bind-runtime-lint'
 
 const props = defineProps<{
   modelValue: string
   height?: number
+  /** 表单字段名列表，用于 form.xxx 智能补全 */
+  fieldNames?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -33,6 +39,10 @@ const extensions = computed(() => [
   history(),
   keymap.of([...defaultKeymap, ...historyKeymap]),
   javascript({ typescript: false, jsx: false }),
+  autocompletion(),
+  javascriptLanguage.data.of({ autocomplete: bindRuntimeCompletionsSource }),
+  hoverTooltip(bindRuntimeHoverTooltipSource),
+  linter(jsLintSource),
   // 深色模式用 oneDark；浅色模式用 CodeMirror 默认浅色语法高亮
   ...(isDark.value ? [oneDark] : []),
   EditorView.updateListener.of((u) => {
@@ -77,6 +87,13 @@ onMounted(() => {
   const h = Math.max(160, Math.min(720, Math.round(props.height ?? 280)))
   view.dom.style.height = `${h}px`
 })
+
+// 同步表单字段名到补全引擎
+watch(
+  () => props.fieldNames,
+  (names) => setFormFieldNames(names ?? []),
+  { immediate: true },
+)
 
 // 主题切换时重配扩展（oneDark 是否启用 / 边框背景随 CSS 变量自动适配）
 watch(isDark, () => {

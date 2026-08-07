@@ -52,7 +52,7 @@ await axios.get('/api/ping')`,
   },
 ]
 
-const { hasField, bindEvents: bindRef } = useFormField()
+const { hasField, bindEvents: bindRef, availableFieldNames } = useFormField()
 const { t } = useFormBuilderI18n()
 
 const isOpen = ref(false)
@@ -174,7 +174,7 @@ function save() {
         <div class="text-[11px] text-muted-foreground">
           {{ t('builder.bindHint') }}
         </div>
-        <JsCodeEditor v-model:modelValue="draft" :height="360" />
+        <JsCodeEditor v-model:modelValue="draft" :height="360" :field-names="availableFieldNames" />
         <div class="flex justify-end gap-2">
           <n-button size="small" @click="isOpen = false">{{ t('common.cancel') }}</n-button>
           <n-button size="small" type="primary" @click="save">{{ t('common.save') }}</n-button>
