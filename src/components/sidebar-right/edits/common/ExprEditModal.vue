@@ -233,6 +233,13 @@ function syncToEditor(text: string) {
   queueMicrotask(() => { suppress = false })
 }
 
+function destroyEditor() {
+  if (!editorView) return
+  editorView.dom.removeEventListener('keydown', handleKeydownOnCompletions, true)
+  editorView.destroy()
+  editorView = null
+}
+
 watch(
   () => props.show,
   async (val) => {
@@ -252,6 +259,10 @@ watch(
       }
       syncToEditor(props.modelValue)
       editorView.focus()
+    } else {
+      // 外部 show=false（如父组件确认保存）不会触发 n-modal 的 update:show，
+      // 这里必须销毁编辑器，否则重新打开时 editorView 仍指向已卸载的 DOM
+      destroyEditor()
     }
   },
 )
@@ -267,15 +278,11 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  editorView?.dom.removeEventListener('keydown', handleKeydownOnCompletions, true)
-  editorView?.destroy()
-  editorView = null
+  destroyEditor()
 })
 
 function handleClose() {
-  editorView?.dom.removeEventListener('keydown', handleKeydownOnCompletions, true)
-  editorView?.destroy()
-  editorView = null
+  destroyEditor()
   emit('update:show', false)
 }
 
