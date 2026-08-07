@@ -141,6 +141,7 @@ import {
   FormBuilderProvider, // BuilderProvider 别名
   BuilderProvider, // 全局配置提供者
   BuilderPreview, // 可复用弹窗预览组件
+  FormDefinitionPreview, // 独立分栏预览组件：左侧渲染表单、右侧实时展示数据
   FormRenderer, // 表单渲染组件（FormSchemaRenderer 的现名）
   FormSchemaRenderer, // @deprecated 用 FormRenderer
   FormBuilderPlugin, // 一键接入插件

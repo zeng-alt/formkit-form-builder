@@ -141,6 +141,7 @@ import {
   FormBuilderProvider, // BuilderProvider alias
   BuilderProvider, // Global config provider
   BuilderPreview, // Reusable preview modal component
+  FormDefinitionPreview, // Standalone split preview: form left, live data right
   FormRenderer, // Form rendering component (renamed from FormSchemaRenderer)
   FormSchemaRenderer, // @deprecated use FormRenderer
   FormBuilderPlugin, // One-step plugin

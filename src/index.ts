@@ -2,6 +2,7 @@ import 'uno.css'
 import './style.css'
 import FormBuilder from './builder/BuilderMain.vue'
 import BuilderPreview from './builder/BuilderPreview.vue'
+import FormDefinitionPreview from './builder/FormDefinitionPreview.vue'
 import BuilderProvider from './builder/BuilderProvider.vue'
 import FormSchemaRenderer from './renderer/FormSchemaRenderer.vue'
 import CanvasActionsBar from './builder/canvas/CanvasActionsBar.vue'
@@ -46,6 +47,8 @@ export { buildFormkitInputs, buildElementSchemaLibrary, getElementCmpName } from
 
 export { FormBuilder, BuilderProvider }
 export { BuilderPreview }
+// 独立预览组件：传入 formDefinition，左侧渲染表单、右侧实时展示表单数据
+export { FormDefinitionPreview }
 // 画布右侧操作列默认内容（导入导出 / 切换语言），可在 #toolbar 插槽中复用以在默认按钮之外追加
 export { CanvasActionsBar }
 // 表单操作器：FormRenderer 为主名，FormSchemaRenderer 保留为废弃别名。
