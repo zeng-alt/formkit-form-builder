@@ -39,10 +39,17 @@ function migrateExpressionKeys(schema: FormKitSchemaFormKit[]) {
       ) {
         node.__raw__valueExpression = node.valueExpression
       }
+      if (
+        typeof node.expr === 'string' &&
+        typeof node.__raw__expr !== 'string'
+      ) {
+        node.__raw__expr = node.expr
+      }
       if (typeof node.if === 'string' && typeof node.__raw__ifExpression !== 'string') {
         node.__raw__ifExpression = node.if
       }
       if ('valueExpression' in node) delete node.valueExpression
+      if ('expr' in node) delete node.expr
       const bind = (node as any).bind
       if (bind && typeof bind !== 'string') {
         if (

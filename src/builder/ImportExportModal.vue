@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { NModal, NInput, NButton, NSpace } from 'naive-ui'
+import { computed, ref, watch } from 'vue'
+import { NModal, NInput, NButton, NSpace, NTabs, NTabPane } from 'naive-ui'
 import { dslToSchema } from '@/dsl'
 import { generateKey } from '@/utils/dnd/schema'
 import type { FormKitSchemaFormKit } from '@formkit/core'
@@ -19,10 +19,14 @@ const emit = defineEmits<{
 
 const { t } = useFormBuilderI18n()
 
-// 所属 FormBuilder 实例状态：导入/导出绑定到各自实例的 DSL 与提交漏斗。
 const { formDefinition, commitFormDefinition, commitSchema } = useFormBuilderState()
 
+const tab = ref<'dsl' | 'formkit'>('dsl')
 const jsonContent = ref('')
+
+const formkitSchemaContent = computed(() => {
+  return JSON.stringify(dslToSchema(formDefinition.value), null, 2)
+})
 
 const exportSchema = (): FormKitSchemaFormKit[] => {
   return dslToSchema(formDefinition.value) as FormKitSchemaFormKit[]
@@ -45,6 +49,7 @@ watch(
   () => props.show,
   (newVal) => {
     if (newVal) {
+      tab.value = 'dsl'
       jsonContent.value = JSON.stringify(formDefinition.value, null, 2)
     }
   },
@@ -97,12 +102,16 @@ const handleSaveAndImport = () => {
   }
 }
 
+const currentTabContent = computed(() => {
+  return tab.value === 'formkit' ? formkitSchemaContent.value : jsonContent.value
+})
+
 const handleDownload = () => {
   try {
-    // Validate JSON before downloading
-    JSON.parse(jsonContent.value)
+    const content = currentTabContent.value
+    JSON.parse(content)
 
-    const blob = new Blob([jsonContent.value], { type: 'application/json' })
+    const blob = new Blob([content], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -223,15 +232,27 @@ const handleDownloadJs = () => {
       footer: 'soft',
     }"
   >
-    <div>
-      <n-input
-        v-model:value="jsonContent"
-        type="textarea"
-        :autosize="{ minRows: 15, maxRows: 25 }"
-        :placeholder="t('importExport.placeholder')"
-        class="font-mono text-sm"
-      />
-    </div>
+    <n-tabs v-model:value="tab" type="segment" size="small">
+      <n-tab-pane name="dsl" :tab="t('importExport.tabDsl')">
+        <n-input
+          v-model:value="jsonContent"
+          type="textarea"
+          :autosize="{ minRows: 15, maxRows: 25 }"
+          :placeholder="t('importExport.placeholder')"
+          class="font-mono text-sm"
+        />
+      </n-tab-pane>
+      <n-tab-pane name="formkit" :tab="t('importExport.tabFormkit')">
+        <n-input
+          :value="formkitSchemaContent"
+          type="textarea"
+          readonly
+          :autosize="{ minRows: 15, maxRows: 25 }"
+          :placeholder="t('importExport.placeholder')"
+          class="font-mono text-sm"
+        />
+      </n-tab-pane>
+    </n-tabs>
 
     <template #footer>
       <n-space justify="end">
@@ -248,7 +269,7 @@ const handleDownloadJs = () => {
           </template>
           {{ t('importExport.downloadJson') }}
         </n-button>
-        <n-button size="small" type="primary" @click="handleSaveAndImport">
+        <n-button v-if="tab === 'dsl'" size="small" type="primary" @click="handleSaveAndImport">
           <template #icon>
             <span class="i-lucide-save w-4 h-4"></span>
           </template>

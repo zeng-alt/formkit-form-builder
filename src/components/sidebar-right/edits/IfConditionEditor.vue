@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { NAlert, NInput, NSwitch } from 'naive-ui'
+import { NButton, NInput, NSwitch } from 'naive-ui'
 import { useFormBuilderI18n } from '../../../i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
-import { evalExpression } from '../../../utils/expression-eval'
 import { useFormField } from '../../../composables/form-fields'
+import ExprEditModal from './common/ExprEditModal.vue'
 
-// 所属 FormBuilder 实例状态：选中 token 绑定到各自实例。
 const { selectedIndex, selectedKey } = useFormBuilderState()
-const { availableFieldNames, ifExpression } = useFormField()
+const { availableFields, ifExpression } = useFormField()
 const { t } = useFormBuilderI18n()
 
 const enabled = ref(false)
 const draft = ref('')
+const modalOpen = ref(false)
 
 const selectionToken = computed(() => selectedKey.value ?? String(selectedIndex.value))
 
@@ -32,32 +32,21 @@ watch(ifExpression, (v) => {
 
 const handleSwitchChange = (val: boolean) => {
   enabled.value = val
-  if (val) {
-    if (!ifExpression.value) ifExpression.value = '$'
-    draft.value = ifExpression.value
-  } else {
+  if (!val) {
     ifExpression.value = ''
     draft.value = ''
   }
 }
 
-const variableRegex = /\$([a-zA-Z0-9_]+)/g
+function openModal() {
+  modalOpen.value = true
+}
 
-const missingVariables = computed(() => {
-  if (!enabled.value || !draft.value) return []
-  const matches = [...draft.value.matchAll(variableRegex)]
-  const variables = matches.map((m) => m[1]).filter(Boolean) as string[]
-  return variables.filter((v) => !availableFieldNames.value.includes(v))
-})
-
-const expressionError = computed(() => {
-  if (!enabled.value) return ''
-  const expr = draft.value
-  if (!expr.trim()) return ''
-  const res = evalExpression(expr, {})
-  if (res.ok) return ''
-  return res.error
-})
+function handleSave(value: string) {
+  draft.value = value
+  ifExpression.value = value
+  modalOpen.value = false
+}
 </script>
 
 <template>
@@ -67,30 +56,26 @@ const expressionError = computed(() => {
       <n-switch size="small" :value="enabled" @update:value="handleSwitchChange" />
     </div>
 
-    <div v-if="enabled" class="space-y-2">
+    <div v-if="enabled" class="flex items-center gap-2">
       <n-input
         :value="draft"
-        @update:value="
-          (v) => {
-            draft = v
-            ifExpression = v
-          }
-        "
-        type="textarea"
+        readonly
+        size="small"
+        class="flex-1"
         :placeholder="t('condition.placeholder')"
-        :autosize="{ minRows: 2, maxRows: 5 }"
       />
-      <n-alert v-if="expressionError" type="error" :show-icon="true" class="mt-2 text-xs">
-        {{ expressionError }}
-      </n-alert>
-      <n-alert
-        v-if="missingVariables.length > 0"
-        type="warning"
-        :show-icon="true"
-        class="mt-2 text-xs"
-      >
-        {{ t('expression.variablesNotFound', { vars: missingVariables.join(', ') }) }}
-      </n-alert>
+      <n-button size="tiny" @click="openModal">
+        <span class="i-lucide-pencil h-3.5 w-3.5" />
+      </n-button>
     </div>
+
+    <ExprEditModal
+      :show="modalOpen"
+      :model-value="draft"
+      :field-names="availableFields"
+      :title="t('condition.useIf')"
+      @update:show="(v) => modalOpen = v"
+      @save="handleSave"
+    />
   </div>
 </template>

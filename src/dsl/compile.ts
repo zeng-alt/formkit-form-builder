@@ -1,13 +1,9 @@
 // ═══ DSL → FormKit 表达式字符串编译 ════════════════════════════════════════════
 
-import type { Expr, FieldValue, EventBinding, ValidationRule } from '../types/dsl'
+import type { Expr, EventBinding, ValidationRule } from '../types/dsl'
 import { getBuiltin } from './expr-builtins'
 
 export type FieldRefMode = 'formData' | 'var'
-
-export function isExprValue(v: FieldValue): v is { $expr: Expr } {
-  return typeof v === 'object' && v !== null && '$expr' in v
-}
 
 /**
  * 编译表达式 AST 为 JS 表达式字符串。

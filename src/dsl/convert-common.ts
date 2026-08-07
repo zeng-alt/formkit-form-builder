@@ -151,8 +151,7 @@ const FIELD_KNOWN_KEYS = new Set([
   'if',
   '__raw__ifExpression',
   'value',
-  'useExpressionValue',
-  '__raw__valueExpression',
+  'expr',
   'validation',
   'validation-messages',
   'validationMessages',
@@ -184,49 +183,36 @@ const FIELD_TOP_PROPS = new Set([
   'buttonText',
 ])
 
-function isExprLike(v: unknown): v is { $expr: Expr } {
-  return typeof v === 'object' && v !== null && '$expr' in v
-}
-
-export function fieldNodeToSchema(node: FieldNode, rt?: RenderTarget): SchemaNode {
-  const kind = rt?.renderAs ?? 'formkit'
-  const base: any = buildNodeHead(node, kind, rt?.target)
+export function fieldNodeToSchema(node: FieldNode, _rt?: RenderTarget): SchemaNode {
+  const kind = 'formkit'
+  const base: any = buildNodeHead(node, kind, node.type)
 
   if (node.name) putByKind(base, 'name', node.name, kind)
   else if (node.id) putByKind(base, 'name', node.id, kind)
 
   if (node.value !== undefined) {
-    if (isExprLike(node.value)) {
-      putByKind(base, 'useExpressionValue', true, kind)
-      putByKind(base, '__raw__valueExpression', exprToJs(node.value.$expr, 'var'), kind)
-    } else {
-      putByKind(base, 'value', node.value, kind)
-    }
+    putByKind(base, 'value', node.value, kind)
+  }
+  if (typeof node.expr === 'string' && node.expr.trim()) {
+    putByKind(base, 'expr', node.expr, kind)
+    // 带 expr 的字段不设初始 value，由运行时求值填充
+    delete base.value
   }
   applyByKind(base, { ...resolveValidation(node.validation) }, kind)
   if (Array.isArray(node.options) ? node.options.length : node.options !== undefined)
     putByKind(base, 'options', node.options, kind)
 
   if (node.props) {
-    if (kind === 'cmp' || kind === 'el') {
-      applyByKind(base, node.props, kind)
-    } else {
-      const nested: Record<string, unknown> = {}
-      for (const [key, value] of Object.entries(node.props)) {
-        if (FIELD_TOP_PROPS.has(key)) base[key] = value
-        else nested[key] = value
-      }
-      if (Object.keys(nested).length) base.props = nested
+    const nested: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(node.props)) {
+      if (FIELD_TOP_PROPS.has(key)) base[key] = value
+      else nested[key] = value
     }
+    if (Object.keys(nested).length) base.props = nested
   }
 
   const outerClass = nodeOuterClass(node)
   base.outerClass = outerClass
-  if (kind === 'cmp') {
-    // 画布读取顶层 name（key 兜底 / 唯一命名）；组件经 props.name 接收
-    if (typeof base.props?.name === 'string') base.name = base.props.name
-    if (outerClass) base.props.outerClass = outerClass
-  }
   return base as SchemaNode
 }
 
@@ -269,10 +255,20 @@ export function fieldNodeFromSchema(s: SchemaNode, fallbackType = 'text'): Field
   if (typeof P.name === 'string' && P.name && P.name !== node.id) node.name = P.name
   if (typeof P.label === 'string' && P.label) node.label = P.label
 
-  if (P.useExpressionValue === true && typeof P.__raw__valueExpression === 'string') {
-    node.value = { $expr: parseExprString(P.__raw__valueExpression) }
-  } else if (P.value !== undefined) {
+  if (typeof anyS.expr === 'string' && anyS.expr) {
+    node.expr = anyS.expr
+  } else if (typeof P.expr === 'string' && P.expr) {
+    node.expr = P.expr
+  }
+
+  if (P.value !== undefined) {
     node.value = P.value
+  } else if (anyS.value !== undefined) {
+    node.value = anyS.value
+  } else if (typeof anyS.expr === 'string' && anyS.expr) {
+    // 纯表达式字段：value 由运行时设置，DSL 层不存
+  } else if (typeof P.expr === 'string' && P.expr) {
+    // 同上
   }
 
   const validation = parseValidation(P.validation, P['validation-messages'] ?? P.validationMessages)
@@ -1014,6 +1010,22 @@ export function parseExprString(input: string): Expr {
   const literal = (value: unknown): Expr => ({ type: 'literal', value })
   const call = (fn: string, args: Expr[]): Expr => ({ type: 'call', fn, args })
 
+  const parseConditional = (): Expr => {
+    const test = parseOr()
+    skip()
+    if (peek() === '?') {
+      pos++
+      skip()
+      const consequent = parseOr()
+      skip()
+      if (!consume(':')) throw new Error('parse error')
+      skip()
+      const alternate = parseOr()
+      return call('if', [test, consequent, alternate])
+    }
+    return test
+  }
+
   const parseOr = (): Expr => {
     let left = parseAnd()
     for (;;) {
@@ -1192,6 +1204,16 @@ export function parseExprString(input: string): Expr {
       const start = pos
       while (!eof() && /[a-zA-Z0-9_]/.test(peek()!)) pos++
       let field = src.slice(start, pos)
+      // $xxx() / $xxx($1) — 空参或模板占位符，将 () 吃掉，让 $get()
+      // 变成普通字段引用而非 __raw__('$get()')，避免 FormKit 报
+      // "must use the id of an input to access" 警告
+      const rest = src.slice(pos)
+      const emptyParens = /^\(\)/.exec(rest)
+      const templateParens = /^\(\$1\)/.exec(rest)
+      if (emptyParens || templateParens) {
+        pos += emptyParens ? 2 : 4
+        return { type: 'field', name: field }
+      }
       // 去掉上下文前缀：$formData.userType / $var.userType → field 'userType'
       if (peek() === '.') {
         pos++
@@ -1232,7 +1254,7 @@ export function parseExprString(input: string): Expr {
 
   try {
     skip()
-    const result = parseOr()
+    const result = parseConditional()
     skip()
     if (!eof()) return raw(input)
     return result

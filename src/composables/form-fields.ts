@@ -2,7 +2,6 @@ import type { WritableComputedRef } from "vue";
 import { computed } from "vue";
 import { findDslNodeByKey, updateDslNodeAtKey } from "@/utils/schema/dsl-tree";
 import { exprToJs, resolveValidation, parseExprString, parseValidation } from "@/dsl";
-import { isExprValue } from "@/dsl/compile";
 import { useFormBuilderState } from "@/state/create-form-builder-state";
 import { DSL_VERSION } from "@/types/dsl";
 import type { FieldNode, FormNode, OptionItem } from "@/types/dsl";
@@ -224,8 +223,8 @@ export function useFormField() {
     get: () => {
       const node: any = selectedField.value;
       if (!node) return "";
+      if (typeof node.expr === 'string' && node.expr) return "";
       const value = node.value;
-      if (isExprValue(value)) return "";
       if (value !== undefined && value !== null) return String(value);
       const propValue = node.props?.value ?? node.props?.text;
       if (propValue !== undefined && propValue !== null) return String(propValue);
@@ -248,41 +247,39 @@ export function useFormField() {
   });
 
   const useExpressionValue = computed({
-    get: () => isExprValue((selectedField.value as FieldNode | undefined)?.value),
+    get: () => typeof (selectedField.value as FieldNode | undefined)?.expr === 'string',
     set: (value: boolean) => {
       patchSelected((node) => {
-        if (node.category !== "field") return node;
-        const field = node as FieldNode;
+        if (node.category !== 'field') return node
+        const field = node as FieldNode
         if (value) {
-          if (!isExprValue(field.value)) {
-            const current = field.value;
-            const raw = current !== undefined && current !== null ? String(current) : "";
-            field.value = { $expr: parseExprString(raw || "$") };
+          if (typeof field.expr !== 'string' || !field.expr) {
+            const current = field.value
+            const raw = current !== undefined && current !== null ? String(current) : ''
+            field.expr = raw || '$'
           }
-        } else if (isExprValue(field.value)) {
-          field.value = undefined;
+        } else {
+          field.expr = undefined
         }
-        return node;
-      });
+        return node
+      })
     },
-  });
+  })
 
-  const valueExpression = computed<string>({
-    get: () => {
-      const value = (selectedField.value as FieldNode | undefined)?.value;
-      if (!isExprValue(value)) return "";
-      return exprToJs(value.$expr, "var");
-    },
+  const exprExpression = computed<string>({
+    get: () => (selectedField.value as FieldNode | undefined)?.expr ?? '',
     set: (value: string) => {
       patchSelected((node) => {
-        if (node.category !== "field") return node;
-        const field = node as FieldNode;
-        if (value.trim()) field.value = { $expr: parseExprString(value) };
-        else field.value = undefined;
-        return node;
-      });
+        if (node.category !== 'field') return node
+        const field = node as FieldNode
+        if (value.trim()) field.expr = value
+        else field.expr = undefined
+        return node
+      })
     },
-  });
+  })
+
+  const valueExpression = exprExpression
 
   const ifExpression = computed<string>({
     get: () => {
@@ -518,6 +515,21 @@ export function useFormField() {
     return Array.from(names);
   });
 
+  const availableFields = computed(() => {
+    const fields = new Map<string, string>();
+    const walk = (nodes: FormNode[]) => {
+      for (const node of nodes) {
+        if (node.name && typeof node.name === "string") {
+          fields.set(node.name, node.label ?? "");
+        }
+        const children = (node as { children?: FormNode[] }).children;
+        if (Array.isArray(children)) walk(children);
+      }
+    };
+    walk(formDefinition.value?.root?.children ?? []);
+    return Array.from(fields, ([name, label]) => ({ name, label }));
+  });
+
   const rowSpan = computed<number>({
     get: () => {
       const node = selectedField.value;
@@ -614,6 +626,7 @@ export function useFormField() {
     validationStringLength,
     currentFieldType,
     availableFieldNames,
+    availableFields,
     hasField,
     selectedIsForm,
     formName,

@@ -1,22 +1,21 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { NSwitch, NInput, NAlert } from 'naive-ui'
+import { NSwitch, NButton, NInput } from 'naive-ui'
 import { useFormField } from '../../../composables/form-fields'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
-import { evalExpression } from '../../../utils/expression-eval'
 import { useFormBuilderI18n } from '../../../i18n/context'
+import ExprEditModal from './common/ExprEditModal.vue'
 
-// 所属 FormBuilder 实例状态：选中 token 绑定到各自实例。
 const { selectedIndex, selectedKey } = useFormBuilderState()
-const { availableFieldNames, useExpressionValue, valueExpression, fieldValue } = useFormField()
+const { availableFields, useExpressionValue, valueExpression, fieldValue } = useFormField()
 const { t } = useFormBuilderI18n()
 
 const isExpression = ref(false)
 const expressionDraft = ref('')
+const modalOpen = ref(false)
 
 const selectionToken = computed(() => selectedKey.value ?? String(selectedIndex.value))
 
-// Reset switch state when selecting a different field
 watch(
   selectionToken,
   () => {
@@ -51,27 +50,15 @@ const handleSwitchChange = (val: boolean) => {
   }
 }
 
-// Regex to extract variables
-const variableRegex = /\$([a-zA-Z0-9_]+)/g
+function openModal() {
+  modalOpen.value = true
+}
 
-const missingVariables = computed(() => {
-  if (!isExpression.value || !expressionDraft.value) return []
-
-  const matches = [...expressionDraft.value.matchAll(variableRegex)]
-  const variables = matches.map((match) => match[1]).filter(Boolean) as string[]
-
-  const missing = variables.filter((v) => !availableFieldNames.value.includes(v))
-  return missing
-})
-
-const expressionError = computed(() => {
-  if (!isExpression.value) return ''
-  const expr = expressionDraft.value
-  if (!expr.trim()) return ''
-  const res = evalExpression(expr, {})
-  if (res.ok) return ''
-  return res.error
-})
+function handleSave(value: string) {
+  expressionDraft.value = value
+  valueExpression.value = value
+  modalOpen.value = false
+}
 </script>
 
 <template>
@@ -83,30 +70,26 @@ const expressionError = computed(() => {
       <n-switch size="small" :value="isExpression" @update:value="handleSwitchChange" />
     </div>
 
-    <div v-if="isExpression" class="space-y-2">
+    <div v-if="isExpression" class="flex items-center gap-2">
       <n-input
         :value="expressionDraft"
-        @update:value="
-          (v) => {
-            expressionDraft = v
-            valueExpression = v
-          }
-        "
-        type="textarea"
+        readonly
+        size="small"
+        class="flex-1"
         :placeholder="t('expression.placeholder')"
-        :autosize="{ minRows: 2, maxRows: 5 }"
       />
-      <n-alert v-if="expressionError" type="error" :show-icon="true" class="mt-2 text-xs">
-        {{ expressionError }}
-      </n-alert>
-      <n-alert
-        v-if="missingVariables.length > 0"
-        type="warning"
-        :show-icon="true"
-        class="mt-2 text-xs"
-      >
-        {{ t('expression.variablesNotFound', { vars: missingVariables.join(', ') }) }}
-      </n-alert>
+      <n-button size="tiny" @click="openModal">
+        <span class="i-lucide-pencil h-3.5 w-3.5" />
+      </n-button>
     </div>
+
+    <ExprEditModal
+      :show="modalOpen"
+      :model-value="expressionDraft"
+      :field-names="availableFields"
+      :title="t('expression.useExpressionValue')"
+      @update:show="(v) => modalOpen = v"
+      @save="handleSave"
+    />
   </div>
 </template>

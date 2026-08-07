@@ -39,6 +39,8 @@ export default {
   },
   importExport: {
     title: "导入 / 导出 Schema",
+    tabDsl: "DSL",
+    tabFormkit: "FormKit Schema",
     placeholder: "在这里粘贴表单 schema 的 JSON...",
     downloadJson: "下载 JSON",
     downloadJs: "下载 JS",

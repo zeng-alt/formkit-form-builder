@@ -80,6 +80,7 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
         help,
         placeholder,
         value,
+        expr,
         options,
         number,
         outerClass,
@@ -124,6 +125,7 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
         step,
         multiple,
         accept,
+        expr,
       }
       if (typeof bind === 'string' && bind.trim()) cleanField.bind = bind
       if (typeof schemaIf === 'string' && schemaIf.trim()) cleanField.if = schemaIf

@@ -34,8 +34,8 @@ export interface ExprCall {
 
 export type Expr = ExprLiteral | ExprField | ExprCall
 
-/** 字段值：静态值 或 表达式（{ $expr: AST }） */
-export type FieldValue = StaticValue | { $expr: Expr }
+/** 字段值：静态值 */
+export type FieldValue = StaticValue
 
 // ─── 校验规则（结构化，JSON-safe）───────────────────────────────────────────────
 export interface ValidationRule {
@@ -136,6 +136,8 @@ export interface FieldNode extends BaseNode {
   category: 'field'
   /** 初始值 */
   value?: FieldValue
+  /** 表达式字符串（如 "$price * $count"），由运行时 watch 求值并写入 FormKit node */
+  expr?: string
   validation?: ValidationRule[]
   /** select / radio / checkbox 等选项（静态数组，或 { dynamic, code } 动态字典） */
   options?: OptionItem[] | DynamicOptionSource

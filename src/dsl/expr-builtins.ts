@@ -1,7 +1,7 @@
 // ═══ 表达式内置函数注册表 ══════════════════════════════════════════════════════
 // 前后端共用的函数名清单：Java 侧实现同名函数即可对齐。
 // 每个函数同时提供：
-//   - toJs: 编译参数 JS 字符串 → 最终 JS 表达式（用于 FormKit schema 的 if / valueExpression）
+//   - toJs: 编译参数 JS 字符串 → 最终 JS 表达式（用于 FormKit schema 的 if）
 //   - eval: 对已求值的参数做运行时求值（无 new Function，安全）
 
 export interface BuiltinFn {
@@ -229,8 +229,47 @@ export const builtins: Record<string, BuiltinFn> = {
     name: '__raw__',
     arity: [1, 1],
     returns: 'any',
-    toJs: ([a]) => a ?? '',
+    toJs: ([a]) => {
+      const str = String(a ?? '')
+      return str.replace(/\$get\(\$(\w+)\)/g, "$get('$1')")
+    },
     eval: ([a]) => a,
+  },
+  // 三元条件：if(test, consequent, alternate)
+  if: {
+    name: 'if',
+    arity: [3, 3],
+    returns: 'any',
+    toJs: ([a, b, c]) => `(${a} ? ${b} : ${c})`,
+    eval: ([a, b, c]) => (truthy(a) ? b : c),
+  },
+  // 求和：可变参数
+  sum: {
+    name: 'sum',
+    arity: [1, Infinity],
+    returns: 'number',
+    toJs: (args) => `(${args.join(' + ')})`,
+    eval: (args) => args.reduce<number>((acc, v) => acc + toNum(v), 0),
+  },
+  // today() → ISO 日期字符串（yyyy-MM-dd）
+  today: {
+    name: 'today',
+    arity: [0, 0],
+    returns: 'string',
+    toJs: () => `new Date().toISOString().slice(0, 10)`,
+    eval: () => new Date().toISOString().slice(0, 10),
+  },
+  // uuid() → 伪 UUID v4
+  uuid: {
+    name: 'uuid',
+    arity: [0, 0],
+    returns: 'string',
+    toJs: () => `'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16) })`,
+    eval: () =>
+      'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0
+        return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+      }),
   },
 }
 

@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import type { Component, DefineComponent } from 'vue'
-import { computed, provide, ref, watch, watchEffect } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { getNode } from '@formkit/core'
 import { FormKit, changeLocale } from '@formkit/vue'
 import FormKitSchemaWrapper from './FormKitSchemaWrapper.vue'
 import { NButton, type ConfigProviderProps } from 'naive-ui'
 import createFormattedSchema from '@/utils/format-schema'
-import { evalExpression } from '@/utils/expression-eval'
 import { collectSchemaNames, generateKey, toSafeName } from '@/utils/dnd/schema'
 import { getContainerKind } from '@/utils/schema/containers'
 import { getContainerSpec } from '@/elements/container-spec'
@@ -20,6 +18,7 @@ import { useFormBuilderI18n } from '@/i18n/context'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 import { provideFormBuilderState, createMinimalFormBuilderState, type FormBuilderState } from '@/state/create-form-builder-state'
 import { runBindCode } from '@/utils/bind-runtime'
+import { useExprRun } from '@/expression/runtime'
 
 type ModelValue = Record<string, unknown>
 
@@ -256,6 +255,7 @@ const resolvedFormClass = computed(() => {
 })
 
 const formattedSchema = createFormattedSchema(schemaBody)
+const resolvedSchema = formattedSchema
 
 type Found = { node: FormKitSchemaFormKit; path: number[] } | null
 
@@ -505,43 +505,6 @@ provide('previewListRestore', (key: string) => {
   internalSchema.value = updateAtPath(internalSchema.value as any[], found.path, nextNode) as any
 })
 
-watchEffect(() => {
-  const currentData = data.value as Record<string, unknown>
-  let nextData: Record<string, unknown> | null = null
-  eachField(internalSchema.value as FormKitSchemaFormKit[], (field) => {
-    if (!field || typeof field !== 'object') return
-    const props = field.props && typeof field.props === 'object' ? field.props : {}
-    if (!(props.useExpressionValue ?? field.useExpressionValue)) return
-    if (typeof field.name !== 'string' || !field.name) return
-    const expr =
-      props.__raw__valueExpression ??
-      field.__raw__valueExpression ??
-      props.valueExpression ??
-      field.valueExpression
-    if (typeof expr !== 'string' || !expr.trim()) return
-
-    const evalResult = evalExpression(expr, currentData)
-    if (!evalResult.ok) return
-    const result =
-      evalResult.value === null || evalResult.value === undefined ? '' : String(evalResult.value)
-
-    // 优先直接写 FormKit 节点（输入钩子只同步当前字段，避免 v-model 双向同步把计算值
-    // 覆盖回旧值导致表达式值不刷新）；节点地址含表单名前缀（testForm.computed），
-    // 未注册（初始挂载竞态）时回落到 data 兜底，让 FormKit 挂载后从 modelValue 初始化。
-    // 只在当前值 != 计算结果时才写，收敛后不再触发；async=true 延迟提交避免递归告警。
-    const addr = resolvedFormName.value ? `${resolvedFormName.value}.${field.name}` : field.name
-    const node = getNode(addr) ?? getNode(field.name)
-    if (node) {
-      if (String(node.value ?? '') !== result) node.input(result, true)
-    } else if (String(currentData[field.name] ?? '') !== result) {
-      if (!nextData) nextData = { ...currentData }
-      nextData[field.name] = result
-    }
-  })
-
-  if (nextData) data.value = nextData
-})
-
 // ── 操作区：submit / reset 经 FormKit 组件实例（expose 了 node）触发 ──
 type FormKitInstance = {
   node?: {
@@ -552,10 +515,40 @@ type FormKitInstance = {
 
 const formKitRef = ref<FormKitInstance | null>(null)
 
+// 订阅 FormKit form node 的 input 事件获取实时字段值，含表达式字段
+watch(
+  () => (formKitRef.value as any)?.node,
+  (node, _prev, onCleanup) => {
+    if (!node) return
+    const sync = () => {
+      const raw = node.value as Record<string, unknown> | undefined
+      if (!raw || typeof raw !== 'object') return
+      const next: Record<string, unknown> = {}
+      let changed = false
+      for (const key of Object.keys(raw)) {
+        if (key === 'slots') continue
+        const val = raw[key]
+        next[key] = val
+        if (data.value[key] !== val) changed = true
+      }
+      for (const key of Object.keys(data.value)) {
+        if (!(key in next) && key !== 'slots') { changed = true; break }
+      }
+      if (changed) data.value = next
+    }
+    node.on('input', sync)
+    onCleanup(() => node.off('input', sync))
+  },
+  { immediate: true },
+)
+
 const formNode = computed(() => {
   const inst = formKitRef.value as { node?: { submit?: () => void; reset?: () => void } } | null
   return inst?.node ?? null
 })
+
+// 表达式运行时：扫描 schema 中带 expr 的字段，依赖变化时求值并写入 FormKit node
+useExprRun(data, resolvedSchema, () => formNode.value as any)
 
 /** 提交表单（未填必填校验时不触发 submit 事件） */
 const submit = () => formNode.value?.submit?.()
@@ -622,7 +615,7 @@ const resolvedResetLabel = computed(
       :style="{ '--fk-label-width': `${resolvedLabelWidth}px` }"
     >
       <FormKitSchemaWrapper
-        :schema="formattedSchema"
+        :schema="resolvedSchema"
         :data="data"
         :library="schemaLibrary"
       />

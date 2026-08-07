@@ -41,6 +41,8 @@ export default {
   },
   importExport: {
     title: "Import / Export Schema",
+    tabDsl: "DSL",
+    tabFormkit: "FormKit Schema",
     placeholder: "Paste your form schema JSON here...",
     downloadJson: "Download JSON",
     downloadJs: "Download JS",
