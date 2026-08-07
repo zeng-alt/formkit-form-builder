@@ -443,20 +443,20 @@ export function useFormField() {
   });
 
   const formName = computed<string>({
-    get: () => formDefinition.value?.name ?? "form",
+    get: () => formDefinition.value?.name ?? "",
     set: (value: string) => {
       const next = value.trim();
       const def = formDefinition.value;
-      commitFormDefinition({ ...def, name: next || "form" }, { reason: "form-name", merge: true });
+      commitFormDefinition({ ...def, name: next || "" }, { reason: "form-name", merge: true });
     },
   });
 
   const formId = computed<string>({
-    get: () => formDefinition.value?.id ?? "form",
+    get: () => formDefinition.value?.id ?? "",
     set: (value: string) => {
       const next = value.trim();
       const def = formDefinition.value;
-      commitFormDefinition({ ...def, id: next || "form" }, { reason: "form-id", merge: true });
+      commitFormDefinition({ ...def, id: next || "" }, { reason: "form-id", merge: true });
     },
   });
 
@@ -645,8 +645,8 @@ export function useFormDefinition() {
   const state = useFormBuilderState()
 
   const formDefinition = computed(() => state.formDefinition.value)
-  const formName = computed(() => state.formDefinition.value?.name ?? 'form')
-  const formId = computed(() => state.formDefinition.value?.id ?? 'form')
+  const formName = computed(() => state.formDefinition.value?.name ?? '')
+  const formId = computed(() => state.formDefinition.value?.id ?? '')
   const formVersion = computed(() => state.formDefinition.value?.version ?? DSL_VERSION)
   const formLabelPosition = computed<'top' | 'left'>(() =>
     state.formDefinition.value?.settings?.labelAlign === 'left' ? 'left' : 'top',
