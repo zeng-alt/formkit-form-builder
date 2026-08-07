@@ -1,12 +1,5 @@
 import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
-import {
-  dateEnUS,
-  dateZhCN,
-  enUS,
-  zhCN,
-  type NDateLocale,
-  type NLocale,
-} from 'naive-ui'
+import { dateEnUS, dateZhCN, enUS, zhCN, type NDateLocale, type NLocale } from 'naive-ui'
 
 export type RuntimeLocale = string
 
@@ -53,7 +46,7 @@ export function provideRuntimeLocale(options: {
     availableLocales.map((code) => ({
       label: code === 'zh-CN' ? '中文' : code === 'en' ? 'English' : code,
       value: code,
-    }))
+    })),
   )
 
   const naiveLocale = computed(() => getNaiveLocale(locale.value))

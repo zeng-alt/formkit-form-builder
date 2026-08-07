@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { provide, ref } from 'vue'
-import { NLayoutSider, NInput } from 'naive-ui'
-import { useFormBuilderI18n } from '../../i18n/context'
+import { NLayoutSider } from 'naive-ui'
 import NavMain from './NavMain.vue'
 
 const searchInput = ref('')
 provide('searchInput', searchInput)
 const collapsed = ref(false)
 provide('sidebarCollapsed', collapsed)
-const { t } = useFormBuilderI18n()
 </script>
 
 <template>
@@ -23,9 +21,6 @@ const { t } = useFormBuilderI18n()
     content-style="display: flex; flex-direction: column; height: 100%;"
     class="sidebar-sider"
   >
-    <div v-if="!collapsed" class="p-4 shrink-0">
-      <n-input :placeholder="t('sidebar.search')" v-model:value="searchInput" />
-    </div>
     <div class="flex-1 overflow-hidden">
       <NavMain />
     </div>

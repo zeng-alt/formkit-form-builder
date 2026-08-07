@@ -67,7 +67,11 @@ function isContainerOf(node: unknown, type: string): boolean {
 // 注入 DnD 身份键（props[keyProp]）+ modelValue=children；group 还原为 $cmp:group；
 // list（arrayOfObjects）默认 showActions=false。全部由规格驱动。
 
-export function normalizeContainer(node: SchemaNode, type: string, spec: ContainerSpec): SchemaNode {
+export function normalizeContainer(
+  node: SchemaNode,
+  type: string,
+  spec: ContainerSpec,
+): SchemaNode {
   const next: any = { ...node }
   next.$cmp = type
   if (spec.primitive === 'group') delete next.$formkit
@@ -78,8 +82,10 @@ export function normalizeContainer(node: SchemaNode, type: string, spec: Contain
       ? props[spec.keyProp]
       : ((next.__key as string | undefined) ?? '')
   props.modelValue = next.children
-  if (spec.primitive === 'group' && typeof next.name === 'string' && next.name) props.name = next.name
-  if (spec.dataShape === 'arrayOfObjects' && props.showActions === undefined) props.showActions = false
+  if (spec.primitive === 'group' && typeof next.name === 'string' && next.name)
+    props.name = next.name
+  if (spec.dataShape === 'arrayOfObjects' && props.showActions === undefined)
+    props.showActions = false
   next.props = props
   return next
 }
@@ -287,13 +293,16 @@ export function formatContainer(
   const rawChildren = Array.isArray(normalized.children)
     ? (normalized.children as FormKitSchemaFormKit[]).map((c, i) => ctx.format(c, i))
     : []
-  const children = opts?.transformChildren ? opts.transformChildren(rawChildren, normalized) : rawChildren
+  const children = opts?.transformChildren
+    ? opts.transformChildren(rawChildren, normalized)
+    : rawChildren
   const schemaIf = (normalized as any).if
   const containerName =
     ((normalized as any).props?.name as string | undefined) ??
     ((normalized as any).name as string | undefined)
 
-  const keyPropValue = ((normalized as any).props?.[spec.keyProp] as string | undefined) ?? key ?? ''
+  const keyPropValue =
+    ((normalized as any).props?.[spec.keyProp] as string | undefined) ?? key ?? ''
 
   // none（buttonGroup）：纯展示容器，不包 group（按钮不产数据），直接 $cmp 承载子按钮
   if (spec.dataShape === 'none') {
@@ -303,7 +312,11 @@ export function formatContainer(
       children: [
         {
           $cmp: type,
-          props: { ...(normalized as any).props, [spec.keyProp]: keyPropValue, modelValue: children },
+          props: {
+            ...(normalized as any).props,
+            [spec.keyProp]: keyPropValue,
+            modelValue: children,
+          },
         },
       ],
     }

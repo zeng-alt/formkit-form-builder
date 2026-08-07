@@ -25,9 +25,9 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
         const { bind, if: schemaIf, ...rest } = anyField
         const nextChildren = hasChildren
           ? anyField.children.map((c: any, i: number) => formatOne(c, i))
-          : (Array.isArray(anyField.props?.modelValue)
-              ? anyField.props.modelValue.map((c: any, i: number) => formatOne(c, i))
-              : undefined)
+          : Array.isArray(anyField.props?.modelValue)
+            ? anyField.props.modelValue.map((c: any, i: number) => formatOne(c, i))
+            : undefined
         const cleanCmp: any = {
           ...rest,
           name: field.name || (key ? `field_${key}` : `field_${index}`),
@@ -58,7 +58,7 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
       }
 
       // $formkit: 'group' 或 $formkit: 'list' 等结构容器：递归格式化 children
-      if ((typeof anyField.$formkit === 'string') && hasChildren) {
+      if (typeof anyField.$formkit === 'string' && hasChildren) {
         const { bind, if: schemaIf, ...rest } = anyField
         const cleanNode: any = {
           ...rest,

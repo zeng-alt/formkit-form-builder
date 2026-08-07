@@ -42,7 +42,10 @@ export function inferRenderTarget(s: SchemaNode): RenderTarget {
   const anyS: any = s
   if (typeof anyS.$cmp === 'string') return { renderAs: 'cmp', target: anyS.$cmp }
   if (typeof anyS.$el === 'string') return { renderAs: 'el', target: anyS.$el }
-  return { renderAs: 'formkit', target: typeof anyS.$formkit === 'string' ? anyS.$formkit : undefined }
+  return {
+    renderAs: 'formkit',
+    target: typeof anyS.$formkit === 'string' ? anyS.$formkit : undefined,
+  }
 }
 
 /** schema 是否匹配某渲染原语（注册表 match 用） */
@@ -706,7 +709,11 @@ export function staticNodeToSchema(node: StaticNode, rt?: RenderTarget): SchemaN
   const base: any = {}
   // $cmp 化：有 cmp 时输出 $cmp: '<组件名>'（渲染时经 schema library → FormKit input），否则回退 $formkit
   const keyOf = (fallback: string) =>
-    kind === 'cmp' ? { $cmp: rt?.target ?? fallback } : kind === 'el' ? { $el: rt?.target ?? fallback } : { $formkit: fallback }
+    kind === 'cmp'
+      ? { $cmp: rt?.target ?? fallback }
+      : kind === 'el'
+        ? { $el: rt?.target ?? fallback }
+        : { $formkit: fallback }
 
   switch (node.type) {
     case 'submit':
@@ -719,7 +726,8 @@ export function staticNodeToSchema(node: StaticNode, rt?: RenderTarget): SchemaN
       set('type', native)
       applyByKind(base, anyProps, kind)
       const outer = nodeOuterClass(node)
-      base.outerClass = outer === 'col-span-12' && !node.outerClass && !node.layout ? 'col-span-12 pt-2' : outer
+      base.outerClass =
+        outer === 'col-span-12' && !node.outerClass && !node.layout ? 'col-span-12 pt-2' : outer
       break
     }
     case 'button': {
@@ -761,7 +769,8 @@ export function staticNodeToSchema(node: StaticNode, rt?: RenderTarget): SchemaN
   if (events && Object.keys(events).length) applyByKind(base, events, kind)
   if (kind === 'cmp') {
     if (Object.keys(base.props ?? {}).length === 0) delete base.props
-    if (typeof base.outerClass === 'string' && base.outerClass) base.props = { ...base.props, outerClass: base.outerClass }
+    if (typeof base.outerClass === 'string' && base.outerClass)
+      base.props = { ...base.props, outerClass: base.outerClass }
     // 画布读取顶层 name（key 兜底 / 唯一命名）；组件经 props.name 接收
     if (typeof base.props?.name === 'string') base.name = base.props.name
   }

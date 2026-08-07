@@ -88,7 +88,7 @@ function handleSave(value: string) {
       :model-value="expressionDraft"
       :field-names="availableFields"
       :title="t('expression.useExpressionValue')"
-      @update:show="(v) => modalOpen = v"
+      @update:show="(v) => (modalOpen = v)"
       @save="handleSave"
     />
   </div>

@@ -11,7 +11,12 @@ import JsonTextarea from './JsonTextarea.vue'
 import DictionaryPickerModal from './DictionaryPickerModal.vue'
 import TreeDictionaryPickerModal from './TreeDictionaryPickerModal.vue'
 import TagsInput from './TagsInput.vue'
-import type { DictionaryDefinition, DictionaryOption, TreeDictionaryOption, TreeDictionaryDefinition } from '@/types/env'
+import type {
+  DictionaryDefinition,
+  DictionaryOption,
+  TreeDictionaryOption,
+  TreeDictionaryDefinition,
+} from '@/types/env'
 
 type SourceType = 'label' | 'pair' | 'json' | 'dynamicDict' | 'dynamicTreeDict'
 type PairRow = { label: string; value: string }
@@ -93,10 +98,14 @@ const rawToPairs = (raw: unknown): PairRow[] => {
   if (!Array.isArray(raw)) return [{ label: '', value: '' }]
   if (raw.length === 0) return [{ label: '', value: '' }]
   return raw.map((v) => {
-    if (typeof v === 'string' || typeof v === 'number') return { label: String(v), value: String(v) }
+    if (typeof v === 'string' || typeof v === 'number')
+      return { label: String(v), value: String(v) }
     if (v && typeof v === 'object') {
       const obj = v as Record<string, unknown>
-      return { label: String(obj.label ?? obj.value ?? ''), value: String(obj.value ?? obj.label ?? '') }
+      return {
+        label: String(obj.label ?? obj.value ?? ''),
+        value: String(obj.value ?? obj.label ?? ''),
+      }
     }
     return { label: '', value: '' }
   })
@@ -171,7 +180,11 @@ const commitDynamicTreeDict = (next: string) => {
     optionsRaw.value = []
     return
   }
-  optionsRaw.value = { dynamic: true, code, ...(treeDictLabel.value ? { label: treeDictLabel.value } : {}) }
+  optionsRaw.value = {
+    dynamic: true,
+    code,
+    ...(treeDictLabel.value ? { label: treeDictLabel.value } : {}),
+  }
 }
 
 const pickDictionary = (row: DictionaryDefinition) => {
@@ -227,7 +240,7 @@ watch(
     const raw = optionsRaw.value
     const next = inferSource(raw)
     // 如果推断出的类型不在允许的标签页中，使用第一个允许的标签页
-    active.value = allowedTabs.value.includes(next) ? next : (allowedTabs.value[0] || 'json')
+    active.value = allowedTabs.value.includes(next) ? next : allowedTabs.value[0] || 'json'
     jsonError.value = ''
     if (next === 'label') {
       labels.value = Array.isArray(raw) ? raw.filter((v): v is string => typeof v === 'string') : []
@@ -251,7 +264,6 @@ const switchTab = async (name: string) => {
   // 从动态字典切走：拉取字典数据拷入目标标签作为可编辑静态选项，清空动态字典，
   // 之后即使用目标标签的值（用户可继续增删改）
   if (next !== 'dynamicDict' && next !== 'dynamicTreeDict') {
-
     const src = parseDynamicSource(raw)
     if (src) {
       let resolved: DictionaryOption[] | TreeDictionaryOption[] = [] as any
@@ -294,7 +306,11 @@ const removePairRow = (idx: number) => {
       {{ t('edits.optionsSource.title') }}
     </label>
     <n-tabs type="segment" size="small" :value="active" @update:value="(v) => switchTab(String(v))">
-      <n-tab-pane v-if="allowedTabs.includes('label')" name="label" :tab="t('edits.optionsSource.tabs.label')">
+      <n-tab-pane
+        v-if="allowedTabs.includes('label')"
+        name="label"
+        :tab="t('edits.optionsSource.tabs.label')"
+      >
         <TagsInput
           :label="t('edits.optionsSource.labelList')"
           :placeholder="t('edits.placeholder.addItems')"
@@ -302,7 +318,11 @@ const removePairRow = (idx: number) => {
           @update:value="(v) => commitLabel(v)"
         />
       </n-tab-pane>
-      <n-tab-pane v-if="allowedTabs.includes('pair')" name="pair" :tab="t('edits.optionsSource.tabs.pair')">
+      <n-tab-pane
+        v-if="allowedTabs.includes('pair')"
+        name="pair"
+        :tab="t('edits.optionsSource.tabs.pair')"
+      >
         <div class="flex flex-col gap-2">
           <div v-for="(r, idx) in pairs" :key="idx" class="flex flex-row gap-2 items-center">
             <n-input
@@ -338,7 +358,11 @@ const removePairRow = (idx: number) => {
           </n-button>
         </div>
       </n-tab-pane>
-      <n-tab-pane v-if="allowedTabs.includes('json')" name="json" :tab="t('edits.optionsSource.tabs.json')">
+      <n-tab-pane
+        v-if="allowedTabs.includes('json')"
+        name="json"
+        :tab="t('edits.optionsSource.tabs.json')"
+      >
         <JsonTextarea
           label="Options (JSON)"
           placeholder='[{"label":"Option 1","value":"1"}]'
@@ -347,7 +371,11 @@ const removePairRow = (idx: number) => {
           @update:value="(v) => commitJson(v)"
         />
       </n-tab-pane>
-      <n-tab-pane v-if="allowedTabs.includes('dynamicDict')" name="dynamicDict" :tab="t('edits.optionsSource.tabs.dynamicDict')">
+      <n-tab-pane
+        v-if="allowedTabs.includes('dynamicDict')"
+        name="dynamicDict"
+        :tab="t('edits.optionsSource.tabs.dynamicDict')"
+      >
         <div class="flex flex-col gap-2">
           <n-input-group>
             <n-input
@@ -370,7 +398,11 @@ const removePairRow = (idx: number) => {
           />
         </div>
       </n-tab-pane>
-      <n-tab-pane v-if="allowedTabs.includes('dynamicTreeDict')" name="dynamicTreeDict" :tab="t('edits.optionsSource.tabs.dynamicTreeDict')">
+      <n-tab-pane
+        v-if="allowedTabs.includes('dynamicTreeDict')"
+        name="dynamicTreeDict"
+        :tab="t('edits.optionsSource.tabs.dynamicTreeDict')"
+      >
         <div class="flex flex-col gap-2">
           <n-input-group>
             <n-input

@@ -1,24 +1,24 @@
-import axios from "axios";
+import axios from 'axios'
 
-type BindJs = { __js: string };
-const allowedEventKeys = new Set(["onClick", "onChange", "onInput", "onFocus", "onBlur"]);
+type BindJs = { __js: string }
+const allowedEventKeys = new Set(['onClick', 'onChange', 'onInput', 'onFocus', 'onBlur'])
 
 function extractCode(v: unknown): string | undefined {
-  if (typeof v === "string") return v;
-  if (v && typeof v === "object" && typeof (v as any).__js === "string") return (v as BindJs).__js;
-  return undefined;
+  if (typeof v === 'string') return v
+  if (v && typeof v === 'object' && typeof (v as any).__js === 'string') return (v as BindJs).__js
+  return undefined
 }
 
 export function normalizeBind(bind: unknown): Record<string, string> | undefined {
-  if (!bind || typeof bind !== "object") return undefined;
-  const obj = bind as Record<string, unknown>;
-  const out: Record<string, string> = {};
+  if (!bind || typeof bind !== 'object') return undefined
+  const obj = bind as Record<string, unknown>
+  const out: Record<string, string> = {}
   for (const key of Object.keys(obj)) {
-    if (!allowedEventKeys.has(key)) continue;
-    const code = extractCode(obj[key]);
-    if (typeof code === "string" && code.trim()) out[key] = code;
+    if (!allowedEventKeys.has(key)) continue
+    const code = extractCode(obj[key])
+    if (typeof code === 'string' && code.trim()) out[key] = code
   }
-  return Object.keys(out).length ? out : undefined;
+  return Object.keys(out).length ? out : undefined
 }
 
 /**
@@ -46,27 +46,27 @@ export async function runBindCode(
   formVersion?: number | undefined,
   extra?: Record<string, unknown>,
 ) {
-  const { form, attrs, $value, $node, $name, $get, $slots } = ctx;
+  const { form, attrs, $value, $node, $name, $get, $slots } = ctx
   // 显式注入命名参数，用户代码直接引用；async IIFE 支持顶层 return 提前退出
   const runner = new Function(
-    "event",
-    "form",
-    "id",
-    "version",
-    "$value",
-    "$node",
-    "$name",
-    "$get",
-    "$slots",
-    "attrs",
-    "ctx",
-    "extra",
-    "axios",
+    'event',
+    'form',
+    'id',
+    'version',
+    '$value',
+    '$node',
+    '$name',
+    '$get',
+    '$slots',
+    'attrs',
+    'ctx',
+    'extra',
+    'axios',
     `"use strict";
 return (async () => {
 ${code}
 })()`,
-  );
+  )
   return await (runner as any)(
     event,
     form,
@@ -81,5 +81,5 @@ ${code}
     ctx,
     extra,
     axios,
-  );
+  )
 }

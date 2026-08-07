@@ -39,10 +39,7 @@ function migrateExpressionKeys(schema: FormKitSchemaFormKit[]) {
       ) {
         node.__raw__valueExpression = node.valueExpression
       }
-      if (
-        typeof node.expr === 'string' &&
-        typeof node.__raw__expr !== 'string'
-      ) {
+      if (typeof node.expr === 'string' && typeof node.__raw__expr !== 'string') {
         node.__raw__expr = node.expr
       }
       if (typeof node.if === 'string' && typeof node.__raw__ifExpression !== 'string') {
@@ -86,7 +83,10 @@ export interface SchemaHistoryState {
 export interface SchemaHistory {
   canUndo: ComputedRef<boolean>
   canRedo: ComputedRef<boolean>
-  commitFormDefinition: (nextDef: DefSnapshot, options?: { reason?: string; merge?: boolean }) => void
+  commitFormDefinition: (
+    nextDef: DefSnapshot,
+    options?: { reason?: string; merge?: boolean },
+  ) => void
   commitSchema: (
     nextSchema: FormKitSchemaFormKit[],
     options?: {
@@ -221,11 +221,7 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
         return formSchema.value
       }
     })()
-    const nextChildren = reconcileDslTree(
-      dslRoot(def),
-      currentProjection,
-      working,
-    )
+    const nextChildren = reconcileDslTree(dslRoot(def), currentProjection, working)
     commitFormDefinition({ ...def, root: { ...def.root, children: nextChildren } }, options)
   }
 
@@ -287,7 +283,7 @@ export const defaultSchemaHistory = createSchemaHistory({
   selectedIndex: defaultSelectionState.selectedIndex,
   selectedKey: defaultSelectionState.selectedKey,
   commitSchemaChildren: defaultFormDefinitionState.commitSchemaChildren,
-});
+})
 export const {
   canUndo,
   canRedo,
@@ -298,4 +294,4 @@ export const {
   redo,
   resetHistory,
   setFormDefinition,
-} = defaultSchemaHistory;
+} = defaultSchemaHistory

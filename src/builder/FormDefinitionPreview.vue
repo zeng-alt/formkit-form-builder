@@ -33,7 +33,9 @@
           <h3 class="text-[11px] font-medium mb-2 text-foreground/80">
             {{ t('builder.formDataTitle') }}
           </h3>
-          <pre class="text-[11px] whitespace-pre-wrap break-all text-muted-foreground">{{ prettyData }}</pre>
+          <pre class="text-[11px] whitespace-pre-wrap break-all text-muted-foreground">{{
+            prettyData
+          }}</pre>
         </div>
       </div>
     </n-scrollbar>

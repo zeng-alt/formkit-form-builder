@@ -18,9 +18,5 @@ defineProps<{
 </script>
 
 <template>
-  <FormKitSchemaTyped
-    :schema="schema"
-    :data="data"
-    :library="library"
-  />
+  <FormKitSchemaTyped :schema="schema" :data="data" :library="library" />
 </template>

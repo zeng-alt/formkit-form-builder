@@ -74,7 +74,7 @@ function handleSave(value: string) {
       :model-value="draft"
       :field-names="availableFields"
       :title="t('condition.useIf')"
-      @update:show="(v) => modalOpen = v"
+      @update:show="(v) => (modalOpen = v)"
       @save="handleSave"
     />
   </div>

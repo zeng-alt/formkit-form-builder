@@ -33,16 +33,11 @@ const showImportExportModal = ref(false)
           @update:value="setLocale"
           trigger="click"
         >
-          <n-button
-            size="small"
-            :aria-label="t('builder.switchLanguage')"
-            class="w-8 h-8"
-          >
+          <n-button size="small" :aria-label="t('builder.switchLanguage')" class="w-8 h-8">
             <template #icon><span class="i-lucide-languages h-3.5 w-3.5"></span></template>
           </n-button>
         </n-popselect>
       </n-button-group>
-
     </div>
 
     <ImportExportModal v-model:show="showImportExportModal" />

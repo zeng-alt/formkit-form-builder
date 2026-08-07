@@ -8,7 +8,15 @@ import SelectInput from '../common/SelectInput.vue'
 import JsCodeEditor from '../common/JsCodeEditor.vue'
 
 const { t } = useFormBuilderI18n()
-const { formName, formId, formVersion, formLabelPosition, formLabelWidth, formSubmit, availableFieldNames } = useFormField()
+const {
+  formName,
+  formId,
+  formVersion,
+  formLabelPosition,
+  formLabelWidth,
+  formSubmit,
+  availableFieldNames,
+} = useFormField()
 
 const labelWidth = computed({
   get: () => String(formLabelWidth.value),

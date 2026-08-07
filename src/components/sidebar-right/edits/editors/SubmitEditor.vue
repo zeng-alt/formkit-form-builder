@@ -22,7 +22,12 @@ const buttonType = createButtonProp<string>('buttonType', 'default')
 </script>
 
 <template>
-  <TextInput label="text" placeholder="Button text" :value="buttonText" @update:value="(v) => (buttonText = v)" />
+  <TextInput
+    label="text"
+    placeholder="Button text"
+    :value="buttonText"
+    @update:value="(v) => (buttonText = v)"
+  />
   <SelectInput
     label="align"
     :value="buttonAlign"

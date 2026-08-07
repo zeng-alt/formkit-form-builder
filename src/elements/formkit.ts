@@ -84,7 +84,10 @@ export const formkitBindings: Record<string, FormkitBinding> = {
   naiveText: { component: NaiveTypographyText, libraryName: 'NaiveTypographyText' },
   naiveP: { component: NaiveTypographyP, libraryName: 'NaiveTypographyP' },
   naiveA: { component: NaiveTypographyA, libraryName: 'NaiveTypographyA' },
-  naiveBlockquote: { component: NaiveTypographyBlockquote, libraryName: 'NaiveTypographyBlockquote' },
+  naiveBlockquote: {
+    component: NaiveTypographyBlockquote,
+    libraryName: 'NaiveTypographyBlockquote',
+  },
   naiveH1: { component: NaiveTypographyHeader, libraryName: 'NaiveTypographyHeader' },
   naiveH2: { component: NaiveTypographyHeader, libraryName: 'NaiveTypographyHeader' },
   naiveH3: { component: NaiveTypographyHeader, libraryName: 'NaiveTypographyHeader' },
@@ -101,7 +104,9 @@ export const formkitBindings: Record<string, FormkitBinding> = {
 
 // legacy $cmp 别名单一来源：由 formkitBindings 派生注入 DSL 注册表（识别旧 Naive* 数据）
 registerLegacyCmpAliases(
-  Object.fromEntries(Object.entries(formkitBindings).map(([type, b]) => [b.libraryName ?? type, type])),
+  Object.fromEntries(
+    Object.entries(formkitBindings).map(([type, b]) => [b.libraryName ?? type, type]),
+  ),
 )
 
 // ─── FormKit input 注册（画布/预览渲染）────────────────────────────────────────

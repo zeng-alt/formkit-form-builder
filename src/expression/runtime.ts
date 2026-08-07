@@ -76,7 +76,11 @@ export function useExprRun(
   nextTick(setup)
 
   // 当 schema 或表单节点可用时重建
-  watch(() => schema.value, () => nextTick(setup), { deep: true })
+  watch(
+    () => schema.value,
+    () => nextTick(setup),
+    { deep: true },
+  )
   watch(getFormNode, () => nextTick(setup))
 
   onScopeDispose(() => {
@@ -86,10 +90,7 @@ export function useExprRun(
 }
 
 /** 递归扫描 schema 树，提取所有带 expr 的字段节点，编译表达式 */
-function collectExprBindings(
-  nodes: unknown[],
-  bindings: ExprBinding[] = [],
-): ExprBinding[] {
+function collectExprBindings(nodes: unknown[], bindings: ExprBinding[] = []): ExprBinding[] {
   for (const node of nodes) {
     if (!node || typeof node !== 'object') continue
     const n = node as WritableNode

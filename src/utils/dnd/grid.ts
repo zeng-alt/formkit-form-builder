@@ -44,16 +44,22 @@ export function stripInputGroupOuterClass(child: any): any {
 // 容器整体禁用时，给子节点注入 disabled（按钮组等）：$cmp 收进 props、$el 收进 attrs、其余置顶层。
 // 只做浅克隆，不改原节点，避免污染 DSL 真源。
 export function applyGroupDisabled(child: any): any {
-  if (!child || typeof child !== "object") return child;
-  const base: any = { ...child };
-  if (typeof base.$cmp === "string") {
-    base.props = { ...(base.props && typeof base.props === "object" ? base.props : {}), disabled: true };
-  } else if (typeof base.$el === "string") {
-    base.attrs = { ...(base.attrs && typeof base.attrs === "object" ? base.attrs : {}), disabled: true };
+  if (!child || typeof child !== 'object') return child
+  const base: any = { ...child }
+  if (typeof base.$cmp === 'string') {
+    base.props = {
+      ...(base.props && typeof base.props === 'object' ? base.props : {}),
+      disabled: true,
+    }
+  } else if (typeof base.$el === 'string') {
+    base.attrs = {
+      ...(base.attrs && typeof base.attrs === 'object' ? base.attrs : {}),
+      disabled: true,
+    }
   } else {
-    base.disabled = true;
+    base.disabled = true
   }
-  return base;
+  return base
 }
 
 // 从 outerClass 中解析 row-span，默认 1

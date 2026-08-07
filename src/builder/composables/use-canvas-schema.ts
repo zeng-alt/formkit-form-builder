@@ -70,8 +70,7 @@ export function useCanvasSchema() {
         return node
       }
       const nextKey = generateKey()
-      const nextName =
-        node.$formkit === 'submit' ? node.name : generateNextFieldName(existingNames)
+      const nextName = node.$formkit === 'submit' ? node.name : generateNextFieldName(existingNames)
       const next: any =
         node.$formkit === 'submit'
           ? { ...node, __key: nextKey, outerClass: node.outerClass || 'col-span-12 pt-2' }

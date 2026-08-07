@@ -59,9 +59,7 @@ defineSlots<{
                 @click="showPreview = true"
                 class="h-7 w-7 !p-2"
               >
-                <template #icon
-                  ><span class="i-lucide-eye h-5 w-5"></span
-                ></template>
+                <template #icon><span class="i-lucide-eye h-5 w-5"></span></template>
               </n-button>
             </template>
             {{ t('builder.previewForm') }}
@@ -73,48 +71,36 @@ defineSlots<{
       <div class="flex justify-center">
         <slot name="center">
           <div class="w-full max-w-[560px]">
-            <AiPrompt v-if="config.apiKey"/>
+            <AiPrompt v-if="config.apiKey" />
           </div>
         </slot>
       </div>
 
       <div class="flex items-center gap-2 justify-end">
         <slot name="right">
-        <n-button-group class="bg-card shadow-sm rounded-lg border border-border/50">
-          <n-tooltip placement="bottom">
-            <template #trigger>
-              <n-button
-                text
-                size="small"
-                class="h-7 w-7 !p-2"
-                :disabled="!canUndo"
-                @click="undo"
-              >
-                <template #icon
-                  ><span class="i-lucide-undo-2 h-5 w-5 dark:text-green-200"></span
-                ></template>
-              </n-button>
-            </template>
-            {{ t('builder.undo') }}
-          </n-tooltip>
-          <n-tooltip placement="bottom">
-            <template #trigger>
-              <n-button
-                text
-                size="small"
-                class="h-7 w-7 !p-2"
-                :disabled="!canRedo"
-                @click="redo"
-              >
-                <template #icon
-                  ><span class="i-lucide-redo-2 h-5 w-5 dark:text-green-200"></span
-                ></template>
-              </n-button>
-            </template>
-            {{ t('builder.redo') }}
-          </n-tooltip>
-        </n-button-group>
-        <ThemeSwitcher />
+          <n-button-group class="bg-card shadow-sm rounded-lg border border-border/50">
+            <n-tooltip placement="bottom">
+              <template #trigger>
+                <n-button text size="small" class="h-7 w-7 !p-2" :disabled="!canUndo" @click="undo">
+                  <template #icon
+                    ><span class="i-lucide-undo-2 h-5 w-5 dark:text-green-200"></span
+                  ></template>
+                </n-button>
+              </template>
+              {{ t('builder.undo') }}
+            </n-tooltip>
+            <n-tooltip placement="bottom">
+              <template #trigger>
+                <n-button text size="small" class="h-7 w-7 !p-2" :disabled="!canRedo" @click="redo">
+                  <template #icon
+                    ><span class="i-lucide-redo-2 h-5 w-5 dark:text-green-200"></span
+                  ></template>
+                </n-button>
+              </template>
+              {{ t('builder.redo') }}
+            </n-tooltip>
+          </n-button-group>
+          <ThemeSwitcher />
         </slot>
       </div>
     </div>

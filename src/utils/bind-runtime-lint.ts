@@ -4,22 +4,62 @@ import { syntaxTree } from '@codemirror/language'
 import type { SyntaxNode, TreeCursor } from '@lezer/common'
 
 const BIND_GLOBALS = new Set([
-  'event', 'form', 'id', 'version',
-  '$value', '$node', '$name', '$get', '$slots',
-  'attrs', 'ctx', 'extra', 'axios',
+  'event',
+  'form',
+  'id',
+  'version',
+  '$value',
+  '$node',
+  '$name',
+  '$get',
+  '$slots',
+  'attrs',
+  'ctx',
+  'extra',
+  'axios',
 ])
 
 const JS_BUILTINS = new Set([
-  'console', 'window', 'document',
-  'Array', 'Object', 'String', 'Number', 'Boolean',
-  'Date', 'Math', 'JSON', 'Promise', 'RegExp', 'Error',
-  'Map', 'Set', 'WeakMap', 'WeakSet',
-  'parseInt', 'parseFloat', 'isNaN', 'isFinite',
-  'undefined', 'NaN', 'Infinity',
-  'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval',
-  'fetch', 'alert', 'confirm', 'prompt',
-  'Intl', 'BigInt', 'Symbol', 'Proxy', 'Reflect',
-  'arguments', 'eval',
+  'console',
+  'window',
+  'document',
+  'Array',
+  'Object',
+  'String',
+  'Number',
+  'Boolean',
+  'Date',
+  'Math',
+  'JSON',
+  'Promise',
+  'RegExp',
+  'Error',
+  'Map',
+  'Set',
+  'WeakMap',
+  'WeakSet',
+  'parseInt',
+  'parseFloat',
+  'isNaN',
+  'isFinite',
+  'undefined',
+  'NaN',
+  'Infinity',
+  'setTimeout',
+  'setInterval',
+  'clearTimeout',
+  'clearInterval',
+  'fetch',
+  'alert',
+  'confirm',
+  'prompt',
+  'Intl',
+  'BigInt',
+  'Symbol',
+  'Proxy',
+  'Reflect',
+  'arguments',
+  'eval',
 ])
 
 export function jsLintSource(view: EditorView): Diagnostic[] {
@@ -37,11 +77,7 @@ export function jsLintSource(view: EditorView): Diagnostic[] {
   return diagnostics
 }
 
-function collectDeclarations(
-  cursor: TreeCursor,
-  doc: string,
-  declared: Set<string>,
-): void {
+function collectDeclarations(cursor: TreeCursor, doc: string, declared: Set<string>): void {
   // 先读取当前节点
   do {
     const node = cursor.node
@@ -54,7 +90,11 @@ function collectDeclarations(
         // 对象属性名不纳入变量检查（属性访问由点号触发的补全处理）
         break
     }
-    if (node.name === 'FunctionDeclaration' || node.name === 'ArrowFunction' || node.name === 'FunctionExpression') {
+    if (
+      node.name === 'FunctionDeclaration' ||
+      node.name === 'ArrowFunction' ||
+      node.name === 'FunctionExpression'
+    ) {
       // 函数参数：第一个子节点的子节点
       const child = node.firstChild
       if (child) {

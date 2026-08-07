@@ -9,10 +9,7 @@ import type { FormDefinition } from '@/types/dsl'
 
 /** 单个 FormBuilder 实例的全部状态（表单定义 + 选中 + 画布 UI + 历史漏斗）。 */
 export interface FormBuilderState
-  extends FormDefinitionState,
-    SelectionState,
-    CanvasUiState,
-    SchemaHistory {
+  extends FormDefinitionState, SelectionState, CanvasUiState, SchemaHistory {
   /** 实例标识：用于 DnD 根 drop-area 选择器作用域（多设计器并存）。 */
   instanceId: string
 }
@@ -41,7 +38,7 @@ export function createFormBuilderState(): FormBuilderState {
 export function createMinimalFormBuilderState(definition: FormDefinition): FormBuilderState {
   const def = createFormDefinitionState(definition)
   const noop = () => {}
-  const noopWithArg = <T,>(_arg: T) => {}
+  const noopWithArg = <T>(_arg: T) => {}
   const falseRef = computed(() => false)
 
   return {

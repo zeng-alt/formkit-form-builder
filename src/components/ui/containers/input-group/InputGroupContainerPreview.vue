@@ -1,36 +1,34 @@
 <script setup lang="ts">
-import type { FormKitSchemaFormKit } from "@formkit/core";
-import { computed } from "vue";
-import { FormKitSchema } from "@formkit/vue";
-import { NInputGroup, NEmpty } from "naive-ui";
-import { useFormBuilderI18n } from "@/i18n/context";
-import { getPreviewSchemaLibrary } from "@/elements/canvas";
+import type { FormKitSchemaFormKit } from '@formkit/core'
+import { computed } from 'vue'
+import { FormKitSchema } from '@formkit/vue'
+import { NInputGroup, NEmpty } from 'naive-ui'
+import { useFormBuilderI18n } from '@/i18n/context'
+import { getPreviewSchemaLibrary } from '@/elements/canvas'
 
 const props = defineProps<{
-  children?: FormKitSchemaFormKit[];
-  modelValue?: FormKitSchemaFormKit[];
-  label?: string;
-  help?: string;
-}>();
+  children?: FormKitSchemaFormKit[]
+  modelValue?: FormKitSchemaFormKit[]
+  label?: string
+  help?: string
+}>()
 
-const { t } = useFormBuilderI18n();
+const { t } = useFormBuilderI18n()
 
-const schemaLibrary = getPreviewSchemaLibrary();
+const schemaLibrary = getPreviewSchemaLibrary()
 
 const title = computed(() =>
-  typeof props.label === "string" && props.label.trim()
-    ? props.label.trim()
-    : ""
-);
+  typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
+)
 const helpText = computed(() =>
-  typeof props.help === "string" && props.help.trim() ? props.help.trim() : ""
-);
-const showHeader = computed(() => Boolean(title.value || helpText.value));
+  typeof props.help === 'string' && props.help.trim() ? props.help.trim() : '',
+)
+const showHeader = computed(() => Boolean(title.value || helpText.value))
 const modelValue = computed(() => {
-  if (Array.isArray(props.modelValue)) return props.modelValue;
-  if (Array.isArray(props.children)) return props.children;
-  return [];
-});
+  if (Array.isArray(props.modelValue)) return props.modelValue
+  if (Array.isArray(props.children)) return props.children
+  return []
+})
 </script>
 
 <template>
@@ -39,11 +37,7 @@ const modelValue = computed(() => {
       <div v-if="title" class="text-12px font-bold">{{ title }}</div>
     </div>
     <n-input-group class="w-full">
-      <FormKitSchema
-        v-if="modelValue.length"
-        :schema="modelValue"
-        :library="schemaLibrary"
-      />
+      <FormKitSchema v-if="modelValue.length" :schema="modelValue" :library="schemaLibrary" />
 
       <div v-else class="flex w-full items-center justify-center">
         <n-empty :description="t('builder.listDropHere')" />
@@ -69,4 +63,3 @@ const modelValue = computed(() => {
   display: none;
 }
 </style>
-

@@ -57,7 +57,9 @@ export function useSchemaAttrs(context: FormKitFrameworkContext, opts: { omit?: 
 
   // bind：绑定代码（onClick/onInput/onChange...），原 node.props.__bind 现位于 config.__bind
   const bind = computed<Record<string, unknown>>(() =>
-    typeof config.__bind === 'object' && config.__bind ? (config.__bind as Record<string, unknown>) : {},
+    typeof config.__bind === 'object' && config.__bind
+      ? (config.__bind as Record<string, unknown>)
+      : {},
   )
 
   return { config, props, bind }

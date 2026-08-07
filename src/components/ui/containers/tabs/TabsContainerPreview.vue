@@ -1,42 +1,42 @@
 <script setup lang="ts">
-import type { FormKitSchemaFormKit } from "@formkit/core";
-import { computed } from "vue";
-import { FormKitSchema } from "@formkit/vue";
-import { NEmpty, NTabPane, NTabs } from "naive-ui";
-import { useFormBuilderI18n } from "@/i18n/context";
-import { getPreviewSchemaLibrary } from "@/elements/canvas";
+import type { FormKitSchemaFormKit } from '@formkit/core'
+import { computed } from 'vue'
+import { FormKitSchema } from '@formkit/vue'
+import { NEmpty, NTabPane, NTabs } from 'naive-ui'
+import { useFormBuilderI18n } from '@/i18n/context'
+import { getPreviewSchemaLibrary } from '@/elements/canvas'
 
 const props = defineProps<{
-  children?: FormKitSchemaFormKit[];
-  modelValue?: FormKitSchemaFormKit[];
-  label?: string;
-  help?: string;
-  type?: string;
-  placement?: string;
-  size?: string;
-  animated?: boolean;
-  closable?: boolean;
-}>();
+  children?: FormKitSchemaFormKit[]
+  modelValue?: FormKitSchemaFormKit[]
+  label?: string
+  help?: string
+  type?: string
+  placement?: string
+  size?: string
+  animated?: boolean
+  closable?: boolean
+}>()
 
-const { t } = useFormBuilderI18n();
+const { t } = useFormBuilderI18n()
 
-const schemaLibrary = getPreviewSchemaLibrary();
+const schemaLibrary = getPreviewSchemaLibrary()
 
 const modelValue = computed(() => {
-  if (Array.isArray(props.modelValue)) return props.modelValue;
-  if (Array.isArray(props.children)) return props.children;
-  return [];
-});
+  if (Array.isArray(props.modelValue)) return props.modelValue
+  if (Array.isArray(props.children)) return props.children
+  return []
+})
 
 const tabLabel = (child: any, idx: number) => {
-  const label = child?.label ?? child?.props?.label;
-  if (typeof label === "string" && label.trim()) return label.trim();
-  const name = child?.name;
-  if (typeof name === "string" && name.trim()) return name.trim();
-  return `Tab ${idx + 1}`;
-};
+  const label = child?.label ?? child?.props?.label
+  if (typeof label === 'string' && label.trim()) return label.trim()
+  const name = child?.name
+  if (typeof name === 'string' && name.trim()) return name.trim()
+  return `Tab ${idx + 1}`
+}
 
-const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false));
+const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false))
 </script>
 
 <template>
@@ -49,10 +49,7 @@ const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false));
         {{ props.help }}
       </div>
     </div>
-    <n-empty
-      v-if="modelValue.length === 0"
-      :description="t('builder.listDropHere')"
-    />
+    <n-empty v-if="modelValue.length === 0" :description="t('builder.listDropHere')" />
     <n-tabs
       v-else
       :type="(props.type as any) || 'line'"

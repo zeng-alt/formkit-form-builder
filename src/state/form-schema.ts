@@ -23,5 +23,5 @@ export function createSelectionState(): SelectionState {
 }
 
 // 模块级默认实例（向后兼容）。
-export const defaultSelectionState = createSelectionState();
-export const { selectedIndex, selectedKey, selectedTarget } = defaultSelectionState;
+export const defaultSelectionState = createSelectionState()
+export const { selectedIndex, selectedKey, selectedTarget } = defaultSelectionState

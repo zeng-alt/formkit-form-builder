@@ -16,7 +16,11 @@ import type { BuilderTheme } from '@/types/theme'
 import { useRuntimeLocale } from '@/i18n/runtime-locale'
 import { useFormBuilderI18n } from '@/i18n/context'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
-import { provideFormBuilderState, createMinimalFormBuilderState, type FormBuilderState } from '@/state/create-form-builder-state'
+import {
+  provideFormBuilderState,
+  createMinimalFormBuilderState,
+  type FormBuilderState,
+} from '@/state/create-form-builder-state'
 import { runBindCode } from '@/utils/bind-runtime'
 import { useExprRun } from '@/expression/runtime'
 
@@ -532,7 +536,10 @@ watch(
         if (data.value[key] !== val) changed = true
       }
       for (const key of Object.keys(data.value)) {
-        if (!(key in next) && key !== 'slots') { changed = true; break }
+        if (!(key in next) && key !== 'slots') {
+          changed = true
+          break
+        }
       }
       if (changed) data.value = next
     }
@@ -563,7 +570,13 @@ const handleSubmit = async (formData: Record<string, unknown>) => {
   delete formData.slots
   const submitCode = props.definition?.settings?.submit
   if (typeof submitCode === 'string' && submitCode.trim()) {
-    await runBindCode(submitCode, undefined, {form: formData}, props.definition?.id, props.definition?.version)
+    await runBindCode(
+      submitCode,
+      undefined,
+      { form: formData },
+      props.definition?.id,
+      props.definition?.version,
+    )
     return
   }
   emit('submit', formData, props.definition?.id, props.definition?.version)
@@ -573,12 +586,8 @@ defineExpose({ submit, reset, loading })
 
 const { t } = useFormBuilderI18n()
 
-const resolvedSubmitLabel = computed(
-  () => props.submitLabel ?? t('elements.submit.label'),
-)
-const resolvedResetLabel = computed(
-  () => props.resetLabel ?? t('elements.reset.label'),
-)
+const resolvedSubmitLabel = computed(() => props.submitLabel ?? t('elements.submit.label'))
+const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.label'))
 </script>
 
 <template>
@@ -600,7 +609,10 @@ const resolvedResetLabel = computed(
         <span class="i-lucide-file-text h-5 w-5 shrink-0 text-muted-foreground"></span>
         <span class="truncate text-[14px]">{{ props.schema?.[0]?.name }}</span>
       </div>
-      <span v-if="props.schema?.[0]?.props?.version" class="text-[11px] text-muted-foreground ml-2 mt-1">
+      <span
+        v-if="props.schema?.[0]?.props?.version"
+        class="text-[11px] text-muted-foreground ml-2 mt-1"
+      >
         v{{ props.schema?.[0]?.props?.version }}
       </span>
     </div>
@@ -614,11 +626,7 @@ const resolvedResetLabel = computed(
       :form-class="resolvedFormClass"
       :style="{ '--fk-label-width': `${resolvedLabelWidth}px` }"
     >
-      <FormKitSchemaWrapper
-        :schema="resolvedSchema"
-        :data="data"
-        :library="schemaLibrary"
-      />
+      <FormKitSchemaWrapper :schema="resolvedSchema" :data="data" :library="schemaLibrary" />
       <template v-if="$slots.actions">
         <slot name="actions" :submit="submit" :reset="reset" :loading="loading" />
       </template>

@@ -23,14 +23,6 @@ const groupDisabled = createPropsProp<boolean>('disabled', false)
     ]"
     @update:value="(v) => (groupSize = v)"
   />
-  <SwitchInput
-    label="vertical"
-    :value="groupVertical"
-    @update:value="(v) => (groupVertical = v)"
-  />
-  <SwitchInput
-    label="disabled"
-    :value="groupDisabled"
-    @update:value="(v) => (groupDisabled = v)"
-  />
+  <SwitchInput label="vertical" :value="groupVertical" @update:value="(v) => (groupVertical = v)" />
+  <SwitchInput label="disabled" :value="groupDisabled" @update:value="(v) => (groupDisabled = v)" />
 </template>

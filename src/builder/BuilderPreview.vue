@@ -23,9 +23,7 @@
         {{ resolvedDescription }}
       </div>
     </template>
-    <n-scrollbar
-      style="max-height: 600px"
-    >
+    <n-scrollbar style="max-height: 600px">
       <div class="py-4 px-3">
         <FormSchemaRenderer
           :schema="schemaSnapshot"
@@ -38,7 +36,10 @@
           :interactive-containers="props.interactiveContainers"
           @submit="handleSubmit"
         />
-        <div v-if="props.showDataPanel" class="mt-4 p-3 bg-muted/30 rounded border border-border/50">
+        <div
+          v-if="props.showDataPanel"
+          class="mt-4 p-3 bg-muted/30 rounded border border-border/50"
+        >
           <h3 class="text-[11px] font-medium mb-2 text-foreground/80">
             {{ t('builder.formDataTitle') }}
           </h3>

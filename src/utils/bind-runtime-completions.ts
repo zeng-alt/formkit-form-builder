@@ -26,7 +26,12 @@ const bindRuntimeVariables: Record<string, VarInfo> = {
     description: '触发事件的原始事件对象（click / input / focus / blur 等）',
     members: [
       { name: 'target', detail: 'EventTarget', type: 'property', info: '触发事件的元素' },
-      { name: 'currentTarget', detail: 'EventTarget', type: 'property', info: '绑定事件处理器的元素' },
+      {
+        name: 'currentTarget',
+        detail: 'EventTarget',
+        type: 'property',
+        info: '绑定事件处理器的元素',
+      },
       { name: 'type', detail: 'string', type: 'property', info: '事件类型名称' },
       { name: 'clientX', detail: 'number', type: 'property', info: '鼠标相对视口 X 坐标' },
       { name: 'clientY', detail: 'number', type: 'property', info: '鼠标相对视口 Y 坐标' },
@@ -95,9 +100,19 @@ const bindRuntimeVariables: Record<string, VarInfo> = {
       { name: 'form', detail: 'Record<string, unknown>', type: 'property', info: '当前表单数据' },
       { name: 'attrs', detail: 'Record<string, unknown>', type: 'property', info: '当前节点配置' },
       { name: '$value', detail: 'unknown', type: 'property', info: '当前节点的值' },
-      { name: '$node', detail: 'FormKitNode', type: 'property', info: '当前节点的 FormKit 节点实例' },
+      {
+        name: '$node',
+        detail: 'FormKitNode',
+        type: 'property',
+        info: '当前节点的 FormKit 节点实例',
+      },
       { name: '$name', detail: 'string', type: 'property', info: '当前节点的字段名' },
-      { name: '$get', detail: '(name: string) => unknown', type: 'method', info: '按字段名取任意字段的当前值' },
+      {
+        name: '$get',
+        detail: '(name: string) => unknown',
+        type: 'method',
+        info: '按字段名取任意字段的当前值',
+      },
       { name: '$slots', detail: 'Record<string, Slot>', type: 'property', info: '节点插槽' },
     ],
   },
@@ -113,13 +128,33 @@ const bindRuntimeVariables: Record<string, VarInfo> = {
       { name: 'get', detail: '(url, config?) => Promise', type: 'method', info: 'GET 请求' },
       { name: 'delete', detail: '(url, config?) => Promise', type: 'method', info: 'DELETE 请求' },
       { name: 'head', detail: '(url, config?) => Promise', type: 'method', info: 'HEAD 请求' },
-      { name: 'options', detail: '(url, config?) => Promise', type: 'method', info: 'OPTIONS 请求' },
-      { name: 'post', detail: '(url, data?, config?) => Promise', type: 'method', info: 'POST 请求' },
+      {
+        name: 'options',
+        detail: '(url, config?) => Promise',
+        type: 'method',
+        info: 'OPTIONS 请求',
+      },
+      {
+        name: 'post',
+        detail: '(url, data?, config?) => Promise',
+        type: 'method',
+        info: 'POST 请求',
+      },
       { name: 'put', detail: '(url, data?, config?) => Promise', type: 'method', info: 'PUT 请求' },
-      { name: 'patch', detail: '(url, data?, config?) => Promise', type: 'method', info: 'PATCH 请求' },
+      {
+        name: 'patch',
+        detail: '(url, data?, config?) => Promise',
+        type: 'method',
+        info: 'PATCH 请求',
+      },
       { name: 'getUri', detail: '(config?) => string', type: 'method', info: '获取完整 URL' },
       { name: 'defaults', detail: 'AxiosDefaults', type: 'property', info: '全局默认配置' },
-      { name: 'interceptors', detail: 'InterceptorManager', type: 'property', info: '拦截器管理器' },
+      {
+        name: 'interceptors',
+        detail: 'InterceptorManager',
+        type: 'property',
+        info: '拦截器管理器',
+      },
     ],
   },
 }
@@ -142,7 +177,10 @@ function methodSnippet(name: string, detail: string): string | undefined {
   if (!match) return undefined
   const paramsStr = match[1]!.trim()
   if (!paramsStr) return `${name}()`
-  const params = paramsStr.split(',').map((p) => p.trim()).filter(Boolean)
+  const params = paramsStr
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)
   const placeholders = params.map((p, i) => {
     const paramName = p.replace(/[:?].*$/, '').trim()
     return `\${${i + 1}:${paramName}}`
@@ -243,13 +281,22 @@ function renderInfoPanel(name: string, info: VarInfo): HTMLElement {
       const row = document.createElement('div')
       row.setAttribute('style', 'display:flex;align-items:baseline;gap:4px;padding:1px 0;')
       const icon = document.createElement('span')
-      icon.setAttribute('style', `width:14px;font-size:10px;text-align:center;color:${m.type === 'method' ? '#dcdcaa' : '#9cdcfe'};flex-shrink:0;`)
+      icon.setAttribute(
+        'style',
+        `width:14px;font-size:10px;text-align:center;color:${m.type === 'method' ? '#dcdcaa' : '#9cdcfe'};flex-shrink:0;`,
+      )
       icon.textContent = m.type === 'method' ? 'fn' : 'P'
       const memberName = document.createElement('code')
-      memberName.setAttribute('style', 'font-weight:600;font-size:12px;color:var(--cm-completionInfoMember,#e06c75);')
+      memberName.setAttribute(
+        'style',
+        'font-weight:600;font-size:12px;color:var(--cm-completionInfoMember,#e06c75);',
+      )
       memberName.textContent = m.name
       const memberDetail = document.createElement('span')
-      memberDetail.setAttribute('style', 'font-size:11px;opacity:0.55;color:var(--cm-completionInfoMemberDetail,#999);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;')
+      memberDetail.setAttribute(
+        'style',
+        'font-size:11px;opacity:0.55;color:var(--cm-completionInfoMemberDetail,#999);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;',
+      )
       memberDetail.textContent = m.detail
       row.append(icon, memberName, memberDetail)
       list.append(row)
@@ -271,13 +318,19 @@ function buildInfoDom(info: VarInfo): HTMLElement {
   root.append(typeRow)
 
   const desc = document.createElement('div')
-  desc.setAttribute('style', 'font-size:11px;opacity:0.75;margin-bottom:6px;color:var(--cm-completionInfoDesc,#aaa);')
+  desc.setAttribute(
+    'style',
+    'font-size:11px;opacity:0.75;margin-bottom:6px;color:var(--cm-completionInfoDesc,#aaa);',
+  )
   desc.textContent = info.description
   root.append(desc)
 
   if (info.members?.length) {
     const list = document.createElement('div')
-    list.setAttribute('style', 'padding-top:4px;border-top:1px solid var(--cm-completionInfoBorder,#444);')
+    list.setAttribute(
+      'style',
+      'padding-top:4px;border-top:1px solid var(--cm-completionInfoBorder,#444);',
+    )
     for (const m of info.members) {
       const row = document.createElement('div')
       row.setAttribute('style', 'display:flex;align-items:baseline;gap:4px;padding:1px 0;')
@@ -285,7 +338,10 @@ function buildInfoDom(info: VarInfo): HTMLElement {
       memberName.setAttribute('style', 'font-weight:600;font-size:11px;color:#e06c75;')
       memberName.textContent = m.name
       const memberDetail = document.createElement('span')
-      memberDetail.setAttribute('style', 'font-size:10px;opacity:0.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;')
+      memberDetail.setAttribute(
+        'style',
+        'font-size:10px;opacity:0.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;',
+      )
       memberDetail.textContent = m.detail
       row.append(memberName, memberDetail)
       list.append(row)
@@ -321,7 +377,10 @@ export const bindRuntimeCompletionsSource: CompletionSource = (context) => {
             const div = document.createElement('div')
             div.setAttribute('style', `${TOOLTIP_STYLE}min-width:200px;`)
             const sig = document.createElement('div')
-            sig.setAttribute('style', 'display:flex;align-items:baseline;gap:2px;margin-bottom:6px;')
+            sig.setAttribute(
+              'style',
+              'display:flex;align-items:baseline;gap:2px;margin-bottom:6px;',
+            )
             const obj = document.createElement('span')
             obj.setAttribute('style', 'font-weight:400;font-size:13px;color:#9cdcfe;')
             obj.textContent = 'form.'
@@ -388,7 +447,7 @@ export const bindRuntimeCompletionsSource: CompletionSource = (context) => {
       type: 'function',
       detail: '(name: string) => unknown',
       info: '按字段名取任意字段的当前值',
-      apply: '$get(\'$1\')',
+      apply: "$get('$1')",
     })
   }
 
@@ -401,7 +460,12 @@ export const bindRuntimeCompletionsSource: CompletionSource = (context) => {
 export function bindRuntimeHoverTooltipSource(
   view: EditorView,
   pos: number,
-): { pos: number; end: number; above?: boolean; create(view: EditorView): { dom: HTMLElement } } | null {
+): {
+  pos: number
+  end: number
+  above?: boolean
+  create(view: EditorView): { dom: HTMLElement }
+} | null {
   const tree = syntaxTree(view.state)
   const node = tree.resolveInner(pos, -1)
   if (!node) return null
@@ -409,10 +473,7 @@ export function bindRuntimeHoverTooltipSource(
 
   // 属性访问：obj.prop
   const parent = node.parent
-  if (
-    parent?.name === 'MemberExpression' &&
-    node.name === 'PropertyName'
-  ) {
+  if (parent?.name === 'MemberExpression' && node.name === 'PropertyName') {
     const obj = parent.firstChild
     const objName = obj && doc.slice(obj.from, obj.to)
     const propName = doc.slice(node.from, node.to)
@@ -429,7 +490,10 @@ export function bindRuntimeHoverTooltipSource(
             const div = document.createElement('div')
             div.setAttribute('style', `${TOOLTIP_STYLE}min-width:200px;`)
             const sig = document.createElement('div')
-            sig.setAttribute('style', 'display:flex;align-items:baseline;gap:2px;margin-bottom:6px;')
+            sig.setAttribute(
+              'style',
+              'display:flex;align-items:baseline;gap:2px;margin-bottom:6px;',
+            )
             const o = document.createElement('span')
             o.setAttribute('style', 'font-weight:400;font-size:13px;color:#9cdcfe;')
             o.textContent = 'form.'

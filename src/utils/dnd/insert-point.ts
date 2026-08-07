@@ -113,8 +113,7 @@ export function positionInsertPoint<T>(
         const valuesForPlacement = Array.isArray(latestValues)
           ? latestValues.map((v: any) => {
               const k = v?.__key
-              if (typeof k === 'string' && k)
-                return findSchemaByKey(liveSchema, k) ?? v
+              if (typeof k === 'string' && k) return findSchemaByKey(liveSchema, k) ?? v
               return v
             })
           : []

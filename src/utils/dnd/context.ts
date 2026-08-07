@@ -17,9 +17,7 @@ export interface DndContext {
 }
 
 /** 从任意元素向上找到所属画布根 drop-area（testid 以 drop-area 开头）。 */
-export function findRootDropAreaEl(
-  el: HTMLElement | null | undefined,
-): HTMLElement | null {
+export function findRootDropAreaEl(el: HTMLElement | null | undefined): HTMLElement | null {
   let cur: HTMLElement | null = el ?? null
   while (cur && cur !== document.body) {
     const testid = cur.getAttribute('data-testid')

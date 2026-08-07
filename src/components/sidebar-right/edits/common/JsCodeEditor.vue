@@ -1,14 +1,24 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { EditorState, StateEffect } from '@codemirror/state'
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, hoverTooltip } from '@codemirror/view'
+import {
+  EditorView,
+  keymap,
+  lineNumbers,
+  highlightActiveLineGutter,
+  hoverTooltip,
+} from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { javascript, javascriptLanguage } from '@codemirror/lang-javascript'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { autocompletion } from '@codemirror/autocomplete'
 import { linter } from '@codemirror/lint'
 import { useColorMode, usePreferredDark } from '@vueuse/core'
-import { bindRuntimeCompletionsSource, bindRuntimeHoverTooltipSource, setFormFieldNames } from '@/utils/bind-runtime-completions'
+import {
+  bindRuntimeCompletionsSource,
+  bindRuntimeHoverTooltipSource,
+  setFormFieldNames,
+} from '@/utils/bind-runtime-completions'
 import { jsLintSource } from '@/utils/bind-runtime-lint'
 
 const props = defineProps<{

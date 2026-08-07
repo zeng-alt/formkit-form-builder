@@ -46,9 +46,7 @@ export function useContainerDragAndDrop<T>(params: {
         draggedNodes?: Array<{ data?: { value?: T } }>
       }
       const value =
-        s.activeState?.node?.data?.value ??
-        s.currentTargetValue ??
-        s.draggedNodes?.[0]?.data?.value
+        s.activeState?.node?.data?.value ?? s.currentTargetValue ?? s.draggedNodes?.[0]?.data?.value
       return params.accepts(value as T)
     },
     sortable: enabled.value,

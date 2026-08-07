@@ -1,175 +1,168 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import type { FormKitSchemaFormKit } from "@formkit/core";
-import { useFormBuilderI18n } from "@/i18n/context";
-import { useFormBuilderState } from "@/state/create-form-builder-state";
-import { useContainerDragAndDrop } from "@/builder/composables/use-container-drag-and-drop";
-import { useCanvasSchemaContext } from "@/builder/composables/canvas-schema-context";
-import ContainerChildrenGrid from "../shared/ContainerChildrenGrid.vue";
-import { generateKey } from "@/utils/dnd/schema";
+import { computed, ref, watch } from 'vue'
+import type { FormKitSchemaFormKit } from '@formkit/core'
+import { useFormBuilderI18n } from '@/i18n/context'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
+import { useContainerDragAndDrop } from '@/builder/composables/use-container-drag-and-drop'
+import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
+import ContainerChildrenGrid from '../shared/ContainerChildrenGrid.vue'
+import { generateKey } from '@/utils/dnd/schema'
 
 // 所属 FormBuilder 实例状态：选中高亮绑定到各自画布实例。
-const { selectedKey } = useFormBuilderState();
+const { selectedKey } = useFormBuilderState()
 
 type TabsPane = {
-  __key: string;
-  label?: string;
-  children?: FormKitSchemaFormKit[];
-  outerClass?: string;
-};
+  __key: string
+  label?: string
+  children?: FormKitSchemaFormKit[]
+  outerClass?: string
+}
 
 const props = defineProps<{
-  tabsKey?: string;
-  modelValue: TabsPane[];
-  label?: string;
-  help?: string;
-  disabled?: boolean;
-}>();
+  tabsKey?: string
+  modelValue: TabsPane[]
+  label?: string
+  help?: string
+  disabled?: boolean
+}>()
 
 const emit = defineEmits<{
-  (e: "update:modelValue", value: TabsPane[]): void;
-}>();
+  (e: 'update:modelValue', value: TabsPane[]): void
+}>()
 
-const { t } = useFormBuilderI18n();
-const canvasCtx = useCanvasSchemaContext();
+const { t } = useFormBuilderI18n()
+const canvasCtx = useCanvasSchemaContext()
 
-const panes = computed<TabsPane[]>(() =>
-  Array.isArray(props.modelValue) ? props.modelValue : []
-);
+const panes = computed<TabsPane[]>(() => (Array.isArray(props.modelValue) ? props.modelValue : []))
 
-const activeKey = ref<string | null>(null);
-const activeIndex = ref(0);
+const activeKey = ref<string | null>(null)
+const activeIndex = ref(0)
 watch(
   () => panes.value.length,
   (len) => {
-    if (len <= 0) activeIndex.value = 0;
-    else if (activeIndex.value > len - 1) activeIndex.value = len - 1;
+    if (len <= 0) activeIndex.value = 0
+    else if (activeIndex.value > len - 1) activeIndex.value = len - 1
   },
-  { immediate: true }
-);
+  { immediate: true },
+)
 
 watch(
-  () => panes.value.map((p) => p.__key).join("|"),
+  () => panes.value.map((p) => p.__key).join('|'),
   (next) => {
-    const keys = next ? next.split("|").filter(Boolean) : [];
+    const keys = next ? next.split('|').filter(Boolean) : []
     if (keys.length === 0) {
-      activeIndex.value = 0;
-      activeKey.value = null;
-      return;
+      activeIndex.value = 0
+      activeKey.value = null
+      return
     }
     if (!activeKey.value) {
-      activeKey.value = keys[0] ?? null;
-      activeIndex.value = 0;
-      return;
+      activeKey.value = keys[0] ?? null
+      activeIndex.value = 0
+      return
     }
-    const idx = keys.indexOf(activeKey.value);
-    if (idx >= 0) activeIndex.value = idx;
+    const idx = keys.indexOf(activeKey.value)
+    if (idx >= 0) activeIndex.value = idx
     else {
-      activeKey.value = keys[0] ?? null;
-      activeIndex.value = 0;
+      activeKey.value = keys[0] ?? null
+      activeIndex.value = 0
     }
   },
-  { immediate: true }
-);
+  { immediate: true },
+)
 
 const updatePanes = (next: TabsPane[]) => {
-  const k = props.tabsKey;
-  if (k && canvasCtx?.updateContainerChildren)
-    canvasCtx.updateContainerChildren(k, next as any);
-  else emit("update:modelValue", next);
-};
+  const k = props.tabsKey
+  if (k && canvasCtx?.updateContainerChildren) canvasCtx.updateContainerChildren(k, next as any)
+  else emit('update:modelValue', next)
+}
 
 const createPane = (label: string): TabsPane => {
-  const key = generateKey();
-  return { __key: key, label, outerClass: "col-span-12", children: [] };
-};
+  const key = generateKey()
+  return { __key: key, label, outerClass: 'col-span-12', children: [] }
+}
 
-const bootstrapped = ref(false);
+const bootstrapped = ref(false)
 watch(
   () => panes.value.length,
   (len) => {
-    if (bootstrapped.value) return;
-    if (!props.tabsKey) return;
-    if (!canvasCtx?.updateContainerChildren) return;
+    if (bootstrapped.value) return
+    if (!props.tabsKey) return
+    if (!canvasCtx?.updateContainerChildren) return
     if (len > 0) {
-      bootstrapped.value = true;
-      return;
+      bootstrapped.value = true
+      return
     }
-    bootstrapped.value = true;
-    updatePanes([createPane("Tab 1")]);
+    bootstrapped.value = true
+    updatePanes([createPane('Tab 1')])
   },
-  { immediate: true }
-);
+  { immediate: true },
+)
 
-const activePane = computed(() => panes.value[activeIndex.value]);
-const activePaneKey = computed(() => activePane.value?.__key);
+const activePane = computed(() => panes.value[activeIndex.value])
+const activePaneKey = computed(() => activePane.value?.__key)
 const activeChildren = computed(() => {
-  const c = activePane.value?.children;
-  return Array.isArray(c) ? c : [];
-});
+  const c = activePane.value?.children
+  return Array.isArray(c) ? c : []
+})
 
 const paneDnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
   modelValue: activeChildren,
   onUpdateModelValue: (value) => {
-    const k = activePaneKey.value;
-    if (!k) return;
-    if (canvasCtx?.updateContainerChildren)
-      canvasCtx.updateContainerChildren(k, value);
+    const k = activePaneKey.value
+    if (!k) return
+    if (canvasCtx?.updateContainerChildren) canvasCtx.updateContainerChildren(k, value)
   },
-});
+})
 
 const tabLabel = (pane: TabsPane | undefined, idx: number) => {
-  const label = pane?.label;
-  if (typeof label === "string" && label.trim()) return label.trim();
-  return `Tab ${idx + 1}`;
-};
+  const label = pane?.label
+  if (typeof label === 'string' && label.trim()) return label.trim()
+  return `Tab ${idx + 1}`
+}
 
 const selectTab = (idx: number) => {
-  activeIndex.value = idx;
-  const key = panes.value[idx]?.__key ?? null;
-  activeKey.value = key;
+  activeIndex.value = idx
+  const key = panes.value[idx]?.__key ?? null
+  activeKey.value = key
   // 选中 tab 时同步选中对应 pane，右侧属性面板显示其 name（= tab 标题）编辑器
-  if (key && canvasCtx?.selectByKey) canvasCtx.selectByKey(key);
-};
+  if (key && canvasCtx?.selectByKey) canvasCtx.selectByKey(key)
+}
 
 const addTab = () => {
-  const next = [...panes.value, createPane(`Tab ${panes.value.length + 1}`)];
-  updatePanes(next);
-  activeIndex.value = next.length - 1;
-  activeKey.value = next[next.length - 1]?.__key ?? null;
-};
+  const next = [...panes.value, createPane(`Tab ${panes.value.length + 1}`)]
+  updatePanes(next)
+  activeIndex.value = next.length - 1
+  activeKey.value = next[next.length - 1]?.__key ?? null
+}
 
-const editingIndex = ref<number | null>(null);
-const editingValue = ref("");
+const editingIndex = ref<number | null>(null)
+const editingValue = ref('')
 
 const startEdit = (idx: number) => {
-  editingIndex.value = idx;
-  editingValue.value = tabLabel(panes.value[idx], idx);
-};
+  editingIndex.value = idx
+  editingValue.value = tabLabel(panes.value[idx], idx)
+}
 
 const commitEdit = () => {
-  const idx = editingIndex.value;
-  if (idx === null) return;
-  const nextLabel =
-    editingValue.value.trim() || tabLabel(panes.value[idx], idx);
-  const next = panes.value.map((p, i) =>
-    i === idx ? { ...p, label: nextLabel } : p
-  );
-  updatePanes(next);
-  editingIndex.value = null;
-};
+  const idx = editingIndex.value
+  if (idx === null) return
+  const nextLabel = editingValue.value.trim() || tabLabel(panes.value[idx], idx)
+  const next = panes.value.map((p, i) => (i === idx ? { ...p, label: nextLabel } : p))
+  updatePanes(next)
+  editingIndex.value = null
+}
 
 const onSelectChild = (child: any) => {
-  const key = child?.__key as string | undefined;
-  if (!key) return;
-  if (canvasCtx?.selectByKey) canvasCtx.selectByKey(key);
-};
+  const key = child?.__key as string | undefined
+  if (!key) return
+  if (canvasCtx?.selectByKey) canvasCtx.selectByKey(key)
+}
 
 const deleteChild = (index: number) => {
-  const next = paneDnd.items.value.filter((_, i) => i !== index);
-  paneDnd.items.value = next;
-  paneDnd.emitUpdate();
-};
+  const next = paneDnd.items.value.filter((_, i) => i !== index)
+  paneDnd.items.value = next
+  paneDnd.emitUpdate()
+}
 </script>
 
 <template>
@@ -212,9 +205,7 @@ const deleteChild = (index: number) => {
           />
           <span v-else class="select-none">{{ tabLabel(pane, idx) }}</span>
         </div>
-        <n-button quaternary size="small" class="!h-7 !px-2" @click="addTab">
-          +
-        </n-button>
+        <n-button quaternary size="small" class="!h-7 !px-2" @click="addTab"> + </n-button>
       </div>
     </div>
 

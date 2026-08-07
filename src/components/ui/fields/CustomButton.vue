@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { NButton, type ButtonProps } from 'naive-ui'
 import { runBindCode } from '@/utils/bind-runtime'
-import type { FormKitFrameworkContext } from "@formkit/core";
+import type { FormKitFrameworkContext } from '@formkit/core'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import InlineEditableText from '../formkit/InlineEditableText.vue'
 import { useFormDefinition } from '@/composables/form-fields'

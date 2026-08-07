@@ -18,5 +18,5 @@ export function createCanvasUiState(): CanvasUiState {
 }
 
 // 模块级默认实例（向后兼容）。
-export const defaultCanvasUiState = createCanvasUiState();
-export const { canvasView, isLoading } = defaultCanvasUiState;
+export const defaultCanvasUiState = createCanvasUiState()
+export const { canvasView, isLoading } = defaultCanvasUiState

@@ -29,5 +29,11 @@ function handleUpdateValue(next: boolean) {
 </script>
 
 <template>
-  <NSwitch v-bind="props" :value="value" :size="size" :disabled="disabled" @update:value="handleUpdateValue" />
+  <NSwitch
+    v-bind="props"
+    :value="value"
+    :size="size"
+    :disabled="disabled"
+    @update:value="handleUpdateValue"
+  />
 </template>

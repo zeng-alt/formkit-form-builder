@@ -81,6 +81,7 @@ function commit() {
     class="cursor-text rounded-sm outline-none ring-0 hover:ring-1 hover:ring-[#a277ff]/40 focus:ring-[#a277ff]"
     :title="t('edits.inlineEditHint')"
     @dblclick="startEdit"
-  >{{ value }}</span>
+    >{{ value }}</span
+  >
   <template v-else>{{ value }}</template>
 </template>

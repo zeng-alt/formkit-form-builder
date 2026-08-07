@@ -18,7 +18,13 @@ import { commitSchemaReconcile } from '@/composables/schema-history'
 import { formSchema } from '@/state/form-schema'
 import { insertState } from './insert-state'
 import { findRootDropAreaEl, type DndContext } from './context'
-import { getVisualRows, setColSpan, adjustColSpansForInsertAtRow, rebalanceRowSpans, stripInputGroupOuterClass } from './grid'
+import {
+  getVisualRows,
+  setColSpan,
+  adjustColSpansForInsertAtRow,
+  rebalanceRowSpans,
+  stripInputGroupOuterClass,
+} from './grid'
 import { collectSchemaNames, generateKey, generateNextFieldName } from './schema'
 import { getContainerSpec } from '@/elements/container-spec'
 import { eq } from '@/utils/utils'
@@ -66,8 +72,7 @@ function normalizeInsertValues(
         delete val.children
       }
       const nextKey = typeof val.__key === 'string' && val.__key ? val.__key : generateKey()
-      const nextName =
-        val.$formkit === 'submit' ? val.name : generateNextFieldName(existingNames)
+      const nextName = val.$formkit === 'submit' ? val.name : generateNextFieldName(existingNames)
       if (val.$formkit === 'submit')
         return { ...valObj, __key: nextKey, outerClass: 'col-span-12 pt-2' }
       // $cmp 节点的语义 name 在 props.name（DSL 回读取 props），顶层 name 仅画布展示，需同步

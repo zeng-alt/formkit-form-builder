@@ -60,7 +60,10 @@ function buildBuiltinTooltip(title: string, detail: string, desc: string): HTMLE
 
   if (desc) {
     const d = document.createElement('div')
-    d.setAttribute('style', 'font-size:11px;opacity:0.75;padding-top:4px;border-top:1px solid var(--cm-completionInfoBorder,#444);')
+    d.setAttribute(
+      'style',
+      'font-size:11px;opacity:0.75;padding-top:4px;border-top:1px solid var(--cm-completionInfoBorder,#444);',
+    )
     d.textContent = desc
     root.append(d)
   }
@@ -127,7 +130,10 @@ function buildGetMethodInfo(name: string, detail: string, desc: string): HTMLEle
 
   if (desc) {
     const d = document.createElement('div')
-    d.setAttribute('style', 'font-size:11px;opacity:0.75;padding-top:4px;border-top:1px solid var(--cm-completionInfoBorder,#444);')
+    d.setAttribute(
+      'style',
+      'font-size:11px;opacity:0.75;padding-top:4px;border-top:1px solid var(--cm-completionInfoBorder,#444);',
+    )
     d.textContent = desc
     root.append(d)
   }
@@ -219,7 +225,12 @@ const BUILTIN_HOVER_DOC = new Map(Object.entries(BUILTINS).map(([k, v]) => [k, v
 export function exprHoverTooltipSource(
   view: EditorView,
   pos: number,
-): { pos: number; end: number; above?: boolean; create(view: EditorView): { dom: HTMLElement } } | null {
+): {
+  pos: number
+  end: number
+  above?: boolean
+  create(view: EditorView): { dom: HTMLElement }
+} | null {
   const doc = view.state.doc
   const line = doc.lineAt(pos)
   const lineText = line.text

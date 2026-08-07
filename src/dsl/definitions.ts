@@ -12,55 +12,55 @@ import {
   staticType,
   tabsPaneType,
   elementTypeFromSchema,
-} from "./registry";
-import { fieldElements } from "../elements/definitions/fields";
-import { staticElements } from "../elements/definitions/static";
-import { containerElements } from "../elements/definitions/containers";
+} from './registry'
+import { fieldElements } from '../elements/definitions/fields'
+import { staticElements } from '../elements/definitions/static'
+import { containerElements } from '../elements/definitions/containers'
 
-let builtinRegistered = false;
+let builtinRegistered = false
 
 export function registerBuiltinElementTypes(): void {
-  if (builtinRegistered) return;
-  builtinRegistered = true;
+  if (builtinRegistered) return
+  builtinRegistered = true
 
   // ─── 元素目录（纯数据 → DSL 注册表）──────────────────────────────────────────
   for (const def of [...fieldElements, ...staticElements, ...containerElements]) {
-    registerElementType(elementTypeFromSchema(def));
+    registerElementType(elementTypeFromSchema(def))
   }
 
   // ─── 容器（数据结构）：object 组 ─────────────────────────────────────────────
   // group 与 FormKit 原生 $formkit: 'group' 等价：拖入后产出嵌套 object 数据。
   // 画布/预览渲染绑定（GroupContainer.vue）见 src/elements/canvas.ts。
   registerElementType(
-    containerType("group", {
-      dataType: "object",
-      icon: "i-lucide-group",
-      tooltipKey: "fieldProps.tooltip.group",
-      editor: () => import("@/components/sidebar-right/edits/editors/GroupEditor.vue"),
+    containerType('group', {
+      dataType: 'object',
+      icon: 'i-lucide-group',
+      tooltipKey: 'fieldProps.tooltip.group',
+      editor: () => import('@/components/sidebar-right/edits/editors/GroupEditor.vue'),
       template: {
-        renderAs: "cmp",
-        nameKey: "elements.group.name",
-        outerClass: "col-span-12",
+        renderAs: 'cmp',
+        nameKey: 'elements.group.name',
+        outerClass: 'col-span-12',
         props: {},
-        descriptionKey: "elements.group.description",
+        descriptionKey: 'elements.group.description',
       },
     }),
-  );
+  )
 
   // ─── 布局 ────────────────────────────────────────────────────────────────────
   // grid/row/column 输出 $el: div（target 覆盖，type 为 DSL 逻辑名）
-  registerElementType(layoutType("grid", { target: "div" }));
-  registerElementType(layoutType("row", { target: "div" }));
-  registerElementType(layoutType("column", { target: "div" }));
-  registerElementType(tabsPaneType());
+  registerElementType(layoutType('grid', { target: 'div' }))
+  registerElementType(layoutType('row', { target: 'div' }))
+  registerElementType(layoutType('column', { target: 'div' }))
+  registerElementType(tabsPaneType())
 
   // ─── 静态展示：原生 $el 元素（无目录，画布直接输出 HTML 标签）─────────────────
-  registerElementType(staticType("button", { match: (s) => (s as any).$el === "button" }));
-  registerElementType(staticType("paragraph", { match: (s) => (s as any).$el === "p" }));
+  registerElementType(staticType('button', { match: (s) => (s as any).$el === 'button' }))
+  registerElementType(staticType('paragraph', { match: (s) => (s as any).$el === 'p' }))
   registerElementType(
-    staticType("heading", { match: (s) => /^h[1-6]$/.test(String((s as any).$el)) }),
-  );
-  registerElementType(staticType("divider", { match: (s) => (s as any).$el === "hr" }));
+    staticType('heading', { match: (s) => /^h[1-6]$/.test(String((s as any).$el)) }),
+  )
+  registerElementType(staticType('divider', { match: (s) => (s as any).$el === 'hr' }))
 }
 
-export { fieldType, containerType, layoutType, staticType, tabsPaneType };
+export { fieldType, containerType, layoutType, staticType, tabsPaneType }

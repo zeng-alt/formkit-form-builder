@@ -2,13 +2,23 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { NModal, NButton, NSpace, NPopover } from 'naive-ui'
 import { EditorState } from '@codemirror/state'
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, hoverTooltip } from '@codemirror/view'
+import {
+  EditorView,
+  keymap,
+  lineNumbers,
+  highlightActiveLineGutter,
+  hoverTooltip,
+} from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
 import { javascript } from '@codemirror/lang-javascript'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { linter } from '@codemirror/lint'
 import { useColorMode, usePreferredDark } from '@vueuse/core'
-import { exprHoverTooltipSource, setExprFieldNames, type ExprFieldInfo } from '@/utils/expr-completions'
+import {
+  exprHoverTooltipSource,
+  setExprFieldNames,
+  type ExprFieldInfo,
+} from '@/utils/expr-completions'
 import { exprLintSource, setExprLintFieldNames } from '@/utils/expr-lint'
 import { useFormBuilderI18n } from '@/i18n/context'
 
@@ -64,7 +74,10 @@ const completionSelected = ref(0)
 const completionType = ref<'dot' | 'var'>('var')
 let completionFrom = 0
 
-function findDollarContext(doc: { sliceString: (from: number, to: number) => string }, cursor: number): number {
+function findDollarContext(
+  doc: { sliceString: (from: number, to: number) => string },
+  cursor: number,
+): number {
   for (let i = cursor - 1; i >= 0; i--) {
     const c = doc.sliceString(i, i + 1)
     if (c === '$') return i
@@ -159,7 +172,9 @@ function selectCompletion(index: number) {
       editorView.dispatch({ selection: { anchor: completionFrom + quoteIdx + 2 } })
     }
   }
-  queueMicrotask(() => { suppress = false })
+  queueMicrotask(() => {
+    suppress = false
+  })
   completionOpen.value = false
 }
 
@@ -168,7 +183,10 @@ function handleKeydownOnCompletions(e: KeyboardEvent) {
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     e.stopPropagation()
-    completionSelected.value = Math.min(completionSelected.value + 1, completionOptions.value.length - 1)
+    completionSelected.value = Math.min(
+      completionSelected.value + 1,
+      completionOptions.value.length - 1,
+    )
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     e.stopPropagation()
@@ -230,7 +248,9 @@ function syncToEditor(text: string) {
   editorView.dispatch({
     changes: { from: 0, to: current.length, insert: text ?? '' },
   })
-  queueMicrotask(() => { suppress = false })
+  queueMicrotask(() => {
+    suppress = false
+  })
 }
 
 function destroyEditor() {
@@ -296,9 +316,16 @@ function handleSave() {
   <n-modal
     :show="show"
     :mask-closable="false"
-    @update:show="(v: boolean) => { if (!v) handleClose() }"
+    @update:show="
+      (v: boolean) => {
+        if (!v) handleClose()
+      }
+    "
   >
-    <div class="bg-card rounded-xl shadow-xl p-5 border border-border/60" style="width: 560px; margin: auto;">
+    <div
+      class="bg-card rounded-xl shadow-xl p-5 border border-border/60"
+      style="width: 560px; margin: auto"
+    >
       <div class="text-sm font-medium text-foreground mb-4">
         {{ title || t('expression.useExpressionValue') }}
       </div>
@@ -314,23 +341,33 @@ function handleSave() {
         :to="false"
         raw
       >
-        <div class="max-h-48 overflow-y-auto py-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/50">
+        <div
+          class="max-h-48 overflow-y-auto py-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/50"
+        >
           <div
             v-for="(opt, i) in completionOptions"
             :key="i"
             class="flex items-center gap-2 px-3 py-1.5 cursor-pointer text-[12px] leading-tight"
-            :class="i === completionSelected ? 'bg-blue-500/20 text-blue-400' : 'text-foreground/80 hover:bg-muted/60'"
+            :class="
+              i === completionSelected
+                ? 'bg-blue-500/20 text-blue-400'
+                : 'text-foreground/80 hover:bg-muted/60'
+            "
             @mousedown.prevent="selectCompletion(i)"
           >
             <span class="text-[11px] opacity-50 w-12 shrink-0 text-right">{{ opt.type }}</span>
             <span class="font-mono font-medium">{{ opt.label }}</span>
-            <span v-if="opt.detail" class="ml-auto truncate text-[11px] opacity-50">{{ opt.detail }}</span>
+            <span v-if="opt.detail" class="ml-auto truncate text-[11px] opacity-50">{{
+              opt.detail
+            }}</span>
           </div>
         </div>
       </n-popover>
       <n-space justify="end">
         <n-button size="small" @click="handleClose">{{ t('common.cancel') }}</n-button>
-        <n-button size="small" type="primary" @click="handleSave">{{ t('common.confirm') }}</n-button>
+        <n-button size="small" type="primary" @click="handleSave">{{
+          t('common.confirm')
+        }}</n-button>
       </n-space>
     </div>
   </n-modal>

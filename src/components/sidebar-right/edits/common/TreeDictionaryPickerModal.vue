@@ -119,15 +119,15 @@ watch(
         </NButton>
       </div>
 
-      <NDataTable
-        size="small"
-        :loading="loading"
-        :columns="columns"
-        :data="rows"
-        :max-height="320"
-      >
+      <NDataTable size="small" :loading="loading" :columns="columns" :data="rows" :max-height="320">
         <template #empty>
-          <NEmpty :description="hasProvider ? t('edits.optionsSource.dictEmpty') : t('edits.optionsSource.dictProviderMissing')" />
+          <NEmpty
+            :description="
+              hasProvider
+                ? t('edits.optionsSource.dictEmpty')
+                : t('edits.optionsSource.dictProviderMissing')
+            "
+          />
         </template>
       </NDataTable>
 

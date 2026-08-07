@@ -9,7 +9,11 @@ import type { Component } from 'vue'
 import type { ElementCatalogEntry, ElementTemplate } from '../dsl/registry'
 import { registerElementType, elementTypeFromSchema, getElementTypeDef } from '../dsl/registry'
 import type { ContainerDefinition } from '../elements/canvas'
-import { registerContainerDefinition, normalizeContainer, formatContainer } from '../elements/canvas'
+import {
+  registerContainerDefinition,
+  normalizeContainer,
+  formatContainer,
+} from '../elements/canvas'
 import type { ContainerSpec } from '../elements/container-spec'
 import { registerFormkitBinding } from '../elements/formkit'
 

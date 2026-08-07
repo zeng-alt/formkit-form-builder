@@ -47,12 +47,7 @@ function handleUpdateValue(next: string | number) {
 </script>
 
 <template>
-  <NRadioGroup
-    v-bind="props"
-    :value="value"
-    :disabled="disabled"
-    @update:value="handleUpdateValue"
-  >
+  <NRadioGroup v-bind="props" :value="value" :disabled="disabled" @update:value="handleUpdateValue">
     <div
       :class="
         horizontal ? 'flex flex-row flex-wrap gap-4 w-full py-1' : 'flex flex-col gap-2 w-full py-1'

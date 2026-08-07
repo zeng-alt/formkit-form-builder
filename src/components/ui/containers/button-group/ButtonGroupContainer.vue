@@ -1,92 +1,89 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import type { FormKitSchemaFormKit } from "@formkit/core";
-import { NButtonGroup } from "naive-ui";
-import { useFormBuilderI18n } from "@/i18n/context";
-import { useFormBuilderState } from "@/state/create-form-builder-state";
-import { useContainerDragAndDrop } from "@/builder/composables/use-container-drag-and-drop";
-import { useCanvasSchemaContext } from "@/builder/composables/canvas-schema-context";
-import ContainerChildrenGrid from "@/components/ui/containers/shared/ContainerChildrenGrid.vue";
-import { applyGroupDisabled, stripInputGroupOuterClass } from "@/utils/dnd/grid";
+import { computed } from 'vue'
+import type { FormKitSchemaFormKit } from '@formkit/core'
+import { NButtonGroup } from 'naive-ui'
+import { useFormBuilderI18n } from '@/i18n/context'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
+import { useContainerDragAndDrop } from '@/builder/composables/use-container-drag-and-drop'
+import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
+import ContainerChildrenGrid from '@/components/ui/containers/shared/ContainerChildrenGrid.vue'
+import { applyGroupDisabled, stripInputGroupOuterClass } from '@/utils/dnd/grid'
 
 // 所属 FormBuilder 实例状态：选中高亮绑定到各自画布实例。
-const { selectedKey } = useFormBuilderState();
+const { selectedKey } = useFormBuilderState()
 
 // 按钮组容器（NButtonGroup）：纯展示容器，无 label/help。
 // 子项为按钮类静态元素，宽度自适应内容，整体 disabled 时注入到各子按钮。
 const props = defineProps<{
-  buttonGroupKey?: string;
-  modelValue: FormKitSchemaFormKit[];
-  size?: "tiny" | "small" | "medium" | "large";
-  vertical?: boolean;
-  disabled?: boolean;
-}>();
+  buttonGroupKey?: string
+  modelValue: FormKitSchemaFormKit[]
+  size?: 'tiny' | 'small' | 'medium' | 'large'
+  vertical?: boolean
+  disabled?: boolean
+}>()
 
 const emit = defineEmits<{
-  (e: "update:modelValue", value: FormKitSchemaFormKit[]): void;
-  (e: "select", key: string): void;
-}>();
+  (e: 'update:modelValue', value: FormKitSchemaFormKit[]): void
+  (e: 'select', key: string): void
+}>()
 
-const { t } = useFormBuilderI18n();
+const { t } = useFormBuilderI18n()
 
-const initial = computed(() =>
-  Array.isArray(props.modelValue) ? props.modelValue : []
-);
+const initial = computed(() => (Array.isArray(props.modelValue) ? props.modelValue : []))
 
-const canvasCtx = useCanvasSchemaContext();
+const canvasCtx = useCanvasSchemaContext()
 
 // 按钮组只接收按钮类静态元素（submit/reset/naiveButton），其余元素拖入被拒
-const BUTTON_TYPES = new Set(["submit", "reset", "naiveButton"]);
+const BUTTON_TYPES = new Set(['submit', 'reset', 'naiveButton'])
 const isButtonNode = (value: unknown): boolean => {
-  if (!value || typeof value !== "object") return false;
-  const n = value as { $cmp?: unknown; $formkit?: unknown };
-  const type = n.$cmp ?? n.$formkit;
-  return typeof type === "string" && BUTTON_TYPES.has(type);
-};
+  if (!value || typeof value !== 'object') return false
+  const n = value as { $cmp?: unknown; $formkit?: unknown }
+  const type = n.$cmp ?? n.$formkit
+  return typeof type === 'string' && BUTTON_TYPES.has(type)
+}
 
 const normalizeChildren = (values: FormKitSchemaFormKit[]) => {
-  const list = Array.isArray(values) ? values : [];
-  return list.map((f: any) => stripInputGroupOuterClass(f));
-};
+  const list = Array.isArray(values) ? values : []
+  return list.map((f: any) => stripInputGroupOuterClass(f))
+}
 
 const dnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
   modelValue: initial,
   accepts: isButtonNode,
   onUpdateModelValue: (value) => {
-    const next = normalizeChildren(value);
-    const k = props.buttonGroupKey;
-    if (k && canvasCtx?.updateContainerChildren)
-      canvasCtx.updateContainerChildren(k, next);
-    else emit("update:modelValue", next);
+    const next = normalizeChildren(value)
+    const k = props.buttonGroupKey
+    if (k && canvasCtx?.updateContainerChildren) canvasCtx.updateContainerChildren(k, next)
+    else emit('update:modelValue', next)
   },
-});
+})
 
 const emitUpdateNormalized = () => {
-  const next = normalizeChildren(dnd.items.value);
-  dnd.items.value = next;
-  dnd.emitUpdate();
-};
+  const next = normalizeChildren(dnd.items.value)
+  dnd.items.value = next
+  dnd.emitUpdate()
+}
 
 // 渲染用：整体禁用时给子按钮注入 disabled（浅克隆，不污染真源）。
 // 用对象包一层，避免模板顶层 ref 自动解包把 Ref 变成数组传给 ContainerChildrenGrid。
 const gridItems = computed<FormKitSchemaFormKit[]>(() => {
-  const items = Array.isArray(dnd.items.value) ? dnd.items.value : [];
-  return props.disabled ? items.map((c) => applyGroupDisabled(c)) : items;
-});
-const grid = { items: gridItems };
+  const items = Array.isArray(dnd.items.value) ? dnd.items.value : []
+  return props.disabled ? items.map((c) => applyGroupDisabled(c)) : items
+})
+const grid = { items: gridItems }
 
 const onSelect = (child: any, _index: number) => {
-  const key = child?.__key as string | undefined;
-  if (!key) return;
-  if (canvasCtx?.selectByKey) canvasCtx.selectByKey(key);
-  else emit("select", key);
-};
+  const key = child?.__key as string | undefined
+  if (!key) return
+  if (canvasCtx?.selectByKey) canvasCtx.selectByKey(key)
+  else emit('select', key)
+}
 
 const deleteChild = (index: number) => {
-  const next = dnd.items.value.filter((_, i) => i !== index);
-  dnd.items.value = next;
-  emitUpdateNormalized();
-};
+  const next = dnd.items.value.filter((_, i) => i !== index)
+  dnd.items.value = next
+  emitUpdateNormalized()
+}
 </script>
 
 <template>

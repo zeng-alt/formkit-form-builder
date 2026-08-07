@@ -43,17 +43,29 @@ function checkExprSyntax(expr: string): { ok: boolean; error: string } {
   for (let i = 0; i < n; i++) {
     const ch = expr[i]!
     if (inSingle) {
-      if (ch === '\\') { i++; continue }
+      if (ch === '\\') {
+        i++
+        continue
+      }
       if (ch === "'") inSingle = false
       continue
     }
     if (inDouble) {
-      if (ch === '\\') { i++; continue }
+      if (ch === '\\') {
+        i++
+        continue
+      }
       if (ch === '"') inDouble = false
       continue
     }
-    if (ch === "'") { inSingle = true; continue }
-    if (ch === '"') { inDouble = true; continue }
+    if (ch === "'") {
+      inSingle = true
+      continue
+    }
+    if (ch === '"') {
+      inDouble = true
+      continue
+    }
     if (ch === '(') depth++
     if (ch === ')') {
       depth--
