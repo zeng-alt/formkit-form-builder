@@ -1,4 +1,7 @@
 // 数据表格（n-data-table）画布 / 预览共用的列与数据归一化工具。
+import { compileExpr } from '@/expression/evaluator'
+import { evalExpr } from '@/dsl'
+import type { FieldNode } from '@/types/dsl'
 import type { DataTableColumn, DataTableConfig } from './types'
 
 /** 画布缺失时兜底样本列 + 数据，保证拖入即有可看效果 */
@@ -37,6 +40,34 @@ export function toColspan(col: Pick<DataTableColumn, 'colspan'> | undefined): nu
   const n = Number(col?.colspan)
   if (!Number.isFinite(n) || n <= 0) return 12
   return Math.max(1, Math.min(12, Math.round(n)))
+}
+
+/** 表达式驱动的列值：列元素带 expr 时按当前行数据求值，值不可手输（只读派生）。
+ *  依赖字段经 evalExpr 读取行数据，在 computed 中调用时由 Vue 响应式跟踪。
+ *  求值失败（表达式非法）时回落为原始值，仍按派生处理避免手输被覆盖。 */
+export function evaluateColumnExpr(
+  element: FieldNode | undefined,
+  row: Record<string, unknown>,
+  fallback: unknown,
+): { value: unknown; derived: boolean } {
+  if (element && typeof element.expr === 'string' && element.expr.trim()) {
+    try {
+      return { value: compileExpr(element.expr).evaluate(row), derived: true }
+    } catch {
+      return { value: fallback, derived: true }
+    }
+  }
+  return { value: fallback, derived: false }
+}
+
+/** 条件渲染：列元素带 visibleIf 时按当前行数据求值，为假则隐藏该列输入；无条件恒显示 */
+export function isColumnVisible(
+  element: FieldNode | undefined,
+  row: Record<string, unknown>,
+): boolean {
+  if (!element?.visibleIf) return true
+  const result = evalExpr(element.visibleIf, row)
+  return result.ok ? Boolean(result.value) : true
 }
 
 /** 列渲染形态：按 render 类型归类，供画布 / 预览只读渲染与占位数据生成使用 */

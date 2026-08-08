@@ -6,6 +6,7 @@ import type { FormBuilderConfig } from '../types/env'
 import { registerElements } from '../plugin/register-element'
 import { provideRuntimeLocale } from '../i18n/runtime-locale'
 import { provideFormBuilderI18n } from '../i18n/context'
+import { provideBinderHttp } from '../composables/use-bind-http'
 import BuilderThemeScope from '../theme/BuilderThemeScope.vue'
 import type { BuilderTheme } from '@/types/theme'
 
@@ -30,6 +31,9 @@ const props = defineProps<{
 registerElements(props.config.elements)
 
 provideFormBuilderConfig(props.config)
+
+// 子树内所有 JS 绑定（字段事件 / 数据表格远程）使用 config.http，缺省内置 axios
+provideBinderHttp(computed(() => props.config.http))
 
 // 为 Provider 子树提供运行时代码（对齐 FormBuilder）：子树内的 FormRenderer
 // 等消费方通过 useRuntimeLocale() 读取 config.locale，缺省 zh-CN。

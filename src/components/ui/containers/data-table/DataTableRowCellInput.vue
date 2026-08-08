@@ -9,9 +9,11 @@ import type { DataTableColumn } from './types'
 // 预览「新增数据行」弹窗：按列来源元素（DSL FieldNode）渲染原字段控件。
 // 用 FormKit :type 直接复用元素注册的输入组件（options / valueFormat 等配置随 props 透传），
 // :ignore 隔离在预览主表单上下文之外，值经 update:modelValue 回写 draftRow。
+// disabled：表达式驱动（expr）的列值由行数据派生，禁止手输。
 const props = defineProps<{
   column: DataTableColumn
   value: unknown
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -51,6 +53,7 @@ const onUpdate = (v: unknown) => emit('update:value', v)
     :type="element.type"
     :ignore="true"
     :model-value="value"
+    :disabled="props.disabled === true"
     v-bind="formkitAttrs"
     @update:model-value="onUpdate"
   />
@@ -58,6 +61,7 @@ const onUpdate = (v: unknown) => emit('update:value', v)
     v-else
     size="small"
     :value="(value as string) ?? ''"
+    :disabled="props.disabled === true"
     class="!w-full"
     @update:value="onUpdate"
   />

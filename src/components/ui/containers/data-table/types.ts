@@ -47,4 +47,16 @@ export interface DataTableConfig {
   remote?: boolean
   /** 远程获取数据的 JS 代码（runBindCode 执行，参数：page · pageSize · form · axios） */
   getData?: string
+  /** 远程新增数据的 JS 代码（runBindCode 执行，参数：row 新增行 · form · axios） */
+  createData?: string
+  /** 远程编辑数据的 JS 代码（runBindCode 执行，参数：row 编辑行 · form · axios） */
+  updateData?: string
+  /** 远程删除数据的 JS 代码（runBindCode 执行，参数：row 待删行 · form · axios） */
+  deleteData?: string
+  /** 固定数据模式：是否允许新增（直接操作 data，无需远程代码） */
+  allowAdd?: boolean
+  /** 固定数据模式：是否允许编辑（直接操作 data，无需远程代码） */
+  allowEdit?: boolean
+  /** 固定数据模式：是否允许删除（直接操作 data，无需远程代码） */
+  allowDelete?: boolean
 }

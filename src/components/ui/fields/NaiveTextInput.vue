@@ -3,7 +3,7 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NInput } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
-import { runBindCode } from '@/utils/bind-runtime'
+import { runBindCode, useBindAxios } from '@/utils/bind-runtime'
 import { useFormDefinition } from '@/composables/form-fields'
 
 const { context } = defineProps<{
@@ -13,6 +13,7 @@ const { context } = defineProps<{
 // 配置经 context.attrs 响应式流入（属性面板修改即触发重渲染）；prefix/suffix 是插槽内容键
 const { config, props, bind } = useSchemaAttrs(context, { omit: ['prefix', 'suffix'] })
 const { formId, formVersion } = useFormDefinition()
+const bindAxios = useBindAxios()
 
 const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 
@@ -47,7 +48,7 @@ const value = computed(() => {
 const runEvent = async (key: string, event: any) => {
   const code = bind.value[key]
   if (typeof code !== 'string' || !code.trim()) return
-  await runBindCode(code, event, context, formId.value, formVersion.value)
+  await runBindCode(code, event, context, formId.value, formVersion.value, undefined, bindAxios)
 }
 
 async function handleUpdateValue(next: string | [string, string]) {

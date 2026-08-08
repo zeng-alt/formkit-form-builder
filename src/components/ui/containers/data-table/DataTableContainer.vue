@@ -14,8 +14,16 @@ import {
 } from '@/elements'
 import { getElementTypeDef } from '@/dsl'
 import type { FieldNode } from '@/types/dsl'
-import { canvasData, columnKind, toRowKey, toPageSize } from './utils'
+import {
+  columnKind,
+  evaluateColumnExpr,
+  isColumnVisible,
+  toColspan,
+  toRowKey,
+  toPageSize,
+} from './utils'
 import DataTableCellRenderer from './DataTableCellRenderer.vue'
+import DataTableRowCellInput from './DataTableRowCellInput.vue'
 import type { DataTableColumn } from './types'
 
 // 画布组件：数据表格容器。分区契约（见 types.ts）：
@@ -208,25 +216,81 @@ const resolvedPageSize = computed(() =>
   toPageSize({ data: props.data, pageSize: props.pageSize }, 10),
 )
 
-const sampleRows = computed<Record<string, unknown>[]>(() => {
-  const data = canvasData({ data: props.data })
-  // 无数据时按列 key 生成占位行，画布更直观；按列形态生成对应的示意值
-  if (data.length === 0 && childColumns.value.length > 0) {
-    return [1, 2, 3].map((i) => {
-      const row: Record<string, unknown> = { [resolvedRowKey.value]: i }
-      for (const c of childColumns.value) {
-        if (!c.key) continue
-        const kind = columnKind(c.render)
-        if (kind === 'switch') row[c.key] = i % 2 === 1
-        else if (kind === 'rate') row[c.key] = i
-        else if (kind === 'color') row[c.key] = i === 1 ? '#a277ff' : '#7c9ef8'
-        else row[c.key] = `${c.title} ${i}`
-      }
-      return row
-    })
+// ─── 固定数据行增删改（画布直接操作节点 props.data）──────────────────────────────
+const dataRows = computed(() => (Array.isArray(props.data) ? props.data : []))
+// 固定数据且有真实数据时才显示行操作；空数据时表格区显示 NEmpty
+const hasRealData = computed(() => !props.remote && dataRows.value.length > 0)
+
+function patchData(next: Record<string, unknown>[]) {
+  const k = props.dataTableKey
+  if (!k || !canvasCtx?.updateNodePropsByKey) return
+  canvasCtx.updateNodePropsByKey(k, { data: next.length ? next : undefined })
+}
+
+const dataModalOpen = ref(false)
+const dataEditIndex = ref<number | null>(null)
+const dataDraft = ref<Record<string, unknown>>({})
+let dataSeq = 0
+
+function initDataDraft() {
+  const init: Record<string, unknown> = {}
+  for (const c of childColumns.value) {
+    if (!c.key) continue
+    const kind = columnKind(c.render)
+    if (kind === 'switch') init[c.key] = false
+    else if (kind === 'rate') init[c.key] = 0
+    else init[c.key] = ''
   }
-  return data
+  return init
+}
+
+function openAddData() {
+  dataEditIndex.value = null
+  dataDraft.value = initDataDraft()
+  dataModalOpen.value = true
+}
+
+function openEditData(row: Record<string, unknown>, idx: number) {
+  dataEditIndex.value = idx
+  dataDraft.value = { ...row }
+  dataModalOpen.value = true
+}
+
+// 弹窗单元格：表达式值（expr）派生 + 条件渲染（visibleIf）隐藏
+const dataDraftCells = computed(() => {
+  const row = dataDraft.value
+  const out: Record<string, { visible: boolean; value: unknown; derived: boolean }> = {}
+  for (const c of childColumns.value) {
+    if (!c.key) continue
+    out[c.key] = {
+      visible: isColumnVisible(c.element, row),
+      ...evaluateColumnExpr(c.element, row, row[c.key]),
+    }
+  }
+  return out
 })
+
+function saveData() {
+  const row: Record<string, unknown> = { ...dataDraft.value }
+  for (const c of childColumns.value) {
+    const cell = c.key ? dataDraftCells.value[c.key] : undefined
+    if (cell?.derived) row[c.key] = cell.value
+  }
+  const next = [...dataRows.value]
+  if (dataEditIndex.value !== null) {
+    next[dataEditIndex.value] = row
+  } else {
+    const rk = resolvedRowKey.value
+    if (rk && !row[rk]) row[rk] = `local_${Date.now()}_${dataSeq++}`
+    next.push(row)
+  }
+  patchData(next)
+  dataModalOpen.value = false
+}
+
+function deleteData(idx: number) {
+  patchData(dataRows.value.filter((_, i) => i !== idx))
+}
 
 const title = computed(() =>
   typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
@@ -256,6 +320,12 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
         <span v-if="props.pagination === true" class="text-[11px] text-muted-foreground">
           {{ t('builder.dataTablePaged') }} · {{ resolvedPageSize }}/页
         </span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <n-button v-if="!props.remote" text size="tiny" @click="openAddData">
+          <template #icon><span class="i-lucide-plus h-3 w-3"></span></template>
+          {{ t('builder.dataTableAdd') }}
+        </n-button>
       </div>
     </div>
 
@@ -360,11 +430,14 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
           {{ t('builder.dataTableColumns') }}
         </span>
         <n-button text size="tiny" @click="modalOpen = true">
-          <template #icon><span class="i-lucide-plus h-3 w-3"></span></template>
+          <template #icon><span class="i-lucide-columns-3 h-3 w-3"></span></template>
           {{ t('builder.dataTableAddColumn') }}
         </n-button>
       </div>
-      <div v-if="childColumns.length" class="overflow-x-auto rounded-lg border border-border/50">
+      <div
+        v-if="childColumns.length"
+        class="overflow-x-auto rounded-lg border border-border/50 thin-scrollbar"
+      >
         <table class="w-full border-collapse text-left">
           <thead class="bg-muted/40">
             <tr :ref="dndColumns.containerRef">
@@ -378,7 +451,7 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
                     ? 'border-solid border-b-2 border-b-[#a277ff] bg-[#a277ff]/[0.08] text-[#a277ff]'
                     : 'hover:bg-[#f0f4ff] dark:hover:bg-[rgba(100,130,255,0.07)]'
                 "
-                :style="{ width: col.width ?? undefined }"
+                :style="{ width: col.width ? `${col.width}px` : '140px' }"
                 @pointerdown.stop="selectColumn(idx)"
               >
                 <span class="flex items-center gap-1.5 pr-3">
@@ -403,10 +476,20 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
                   </n-button>
                 </span>
               </th>
+              <th
+                v-if="hasRealData"
+                class="px-3 py-2 text-xs font-medium text-foreground whitespace-nowrap border-l border-border/60"
+              >
+                {{ t('builder.dataTableActions') }}
+              </th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="(row, r) in sampleRows" :key="r" class="border-t border-border/40">
+          <tbody v-if="dataRows.length">
+            <tr
+              v-for="(row, r) in dataRows"
+              :key="r"
+              class="border-t border-border/40"
+            >
               <td
                 v-for="col in childColumns"
                 :key="col.key"
@@ -414,9 +497,40 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
               >
                 <DataTableCellRenderer :column="col" :value="row[col.key]" />
               </td>
+              <td
+                v-if="hasRealData"
+                class="px-3 py-2 text-xs whitespace-nowrap"
+              >
+                <div class="flex items-center gap-2.5">
+                  <n-button
+                    text
+                    size="tiny"
+                    type="primary"
+                    :aria-label="t('builder.dataTableEditRowTitle')"
+                    @click="openEditData(row, r)"
+                  >
+                    <template #icon><span class="i-lucide-pencil h-3.5 w-3.5"></span></template>
+                  </n-button>
+                  <n-button
+                    text
+                    size="tiny"
+                    type="error"
+                    :aria-label="t('builder.dataTableDeleteRowTitle')"
+                    @click="deleteData(r)"
+                  >
+                    <template #icon><span class="i-lucide-trash-2 h-3.5 w-3.5"></span></template>
+                  </n-button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
+        <div
+          v-if="!dataRows.length"
+          class="min-h-[120px] flex items-center justify-center border-t border-border/40"
+        >
+          <n-empty :description="t('builder.dataTableEmptyData')" />
+        </div>
       </div>
 
       <div v-else class="min-h-[140px] flex items-center justify-center">
@@ -475,6 +589,45 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
           </n-button>
         </div>
       </template>
+    </n-modal>
+
+    <!-- 新增 / 编辑数据行：按列来源元素渲染控件，保存写回节点 props.data -->
+    <n-modal v-model:show="dataModalOpen" preset="card" class="max-w-[520px]">
+      <template #header>
+        <span class="text-sm font-medium">
+          {{
+            dataEditIndex !== null
+              ? t('builder.dataTableEditRowTitle')
+              : t('builder.dataTableAddRowTitle')
+          }}
+        </span>
+      </template>
+      <div class="grid grid-cols-12 gap-x-3 gap-y-3">
+        <template v-for="col in childColumns" :key="col.key">
+          <div
+            v-if="col.key && dataDraftCells[col.key]?.visible"
+            :class="`col-span-${toColspan(col)}`"
+          >
+            <div class="mb-1 text-xs text-muted-foreground">{{ col.title }}</div>
+            <div class="min-w-0">
+              <DataTableRowCellInput
+                :column="col"
+                :value="dataDraftCells[col.key]?.value"
+                :disabled="Boolean(dataDraftCells[col.key]?.derived)"
+                @update:value="(v) => (dataDraft[col.key] = v)"
+              />
+            </div>
+          </div>
+        </template>
+      </div>
+      <div class="mt-4 flex justify-end gap-2">
+        <n-button size="small" @click="dataModalOpen = false">
+          {{ t('common.cancel') }}
+        </n-button>
+        <n-button size="small" type="primary" @click="saveData">
+          {{ t('common.save') }}
+        </n-button>
+      </div>
     </n-modal>
   </div>
 </template>

@@ -75,7 +75,9 @@ watch(
     ref="parentRef"
     data-is-source="true"
     :class="
-      collapsed ? 'grid grid-cols-1 justify-items-center gap-2 pt-2 px-2 pb-2 pl-0 min-h-[50px] w-full' : 'flex flex-col gap-1 p-2 min-h-[50px] w-full'
+      collapsed
+        ? 'grid grid-cols-1 justify-items-center gap-2 pt-2 px-2 pb-2 pl-0 min-h-[50px] w-full'
+        : 'flex flex-col gap-1 p-2 min-h-[50px] w-full'
     "
   >
     <div

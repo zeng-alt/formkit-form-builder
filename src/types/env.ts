@@ -1,3 +1,4 @@
+import type { AxiosInstance } from 'axios'
 import type { RegisterElementInput } from '../plugin/register-element'
 
 /** 字典项（单选/多选/下拉等渲染选项用） */
@@ -60,6 +61,9 @@ export interface TreeDictionaryPageResult {
 
 export interface FormBuilderConfig {
   apiKey?: string
+  /** 自定义 HTTP 请求库实例：供 JS 绑定代码里的 axios 变量使用（画布预览 + 渲染器）；
+   *  缺省使用内置 axios。FormRenderer 的 http prop 优先级更高。 */
+  http?: AxiosInstance
   locale?: string
   localeFallback?: string
   messages?: Record<string, any>

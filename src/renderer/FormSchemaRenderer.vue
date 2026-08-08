@@ -22,6 +22,9 @@ import {
   type FormBuilderState,
 } from '@/state/create-form-builder-state'
 import { runBindCode } from '@/utils/bind-runtime'
+import { provideBinderHttp } from '@/composables/use-bind-http'
+import axios from 'axios'
+import type { AxiosInstance } from 'axios'
 import { useExprRun } from '@/expression/runtime'
 
 type ModelValue = Record<string, unknown>
@@ -76,6 +79,8 @@ const props = withDefaults(
       interactiveContainers?: boolean
       /** 自定义主题：内部映射到 naive-ui 的 darkTheme / lightTheme；缺省自动跟随系统 */
       theme?: BuilderTheme
+      /** 自定义 HTTP 请求库实例：供 JS 绑定代码里的 axios 变量使用；缺省使用内置 axios */
+      http?: AxiosInstance
     } & Omit<Partial<ConfigProviderProps>, 'theme'>
   >(),
   {
@@ -429,6 +434,9 @@ const collectSchemaNamesSafe = (schema: FormKitSchemaFormKit[], names: Set<strin
 // 注入当前表单数据（dataTable 远程数据 JS 代码通过 form 读取当前值）
 provide('previewFormData', data)
 
+// 注入 JS 绑定代码用的 HTTP 实例：优先用户传入的 http prop，缺省回退内置 axios
+provideBinderHttp(computed(() => props.http))
+
 provide('previewListInteractive', props.interactiveContainers)
 
 provide('previewListDuplicate', (key: string) => {
@@ -579,6 +587,8 @@ const handleSubmit = async (formData: Record<string, unknown>) => {
       { form: formData },
       props.definition?.id,
       props.definition?.version,
+      undefined,
+      props.http ?? axios,
     )
     return
   }

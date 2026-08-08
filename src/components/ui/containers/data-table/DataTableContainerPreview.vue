@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, h, inject, ref, watch, type Ref } from 'vue'
-import { NButton, NDataTable, NInput, NModal } from 'naive-ui'
-import { runBindCode } from '@/utils/bind-runtime'
+import { NButton, NCard, NDataTable, NInput, NModal } from 'naive-ui'
+import { runBindCode, useBindAxios } from '@/utils/bind-runtime'
 import { useFormDefinition } from '@/composables/form-fields'
 import { useFormBuilderI18n } from '@/i18n/context'
 import {
   columnsFromChildren,
   columnKind,
+  evaluateColumnExpr,
+  isColumnVisible,
   normalizeRemoteResult,
   toColspan,
   toData,
@@ -43,6 +45,10 @@ const props = withDefaults(
     searchExpandable?: boolean
     // 远程获取数据的 JS 代码（设计侧编辑器编写，runBindCode 执行）
     getData?: string
+    /** 固定数据模式：是否允许新增 / 编辑 / 删除（直接操作 data） */
+    allowAdd?: boolean
+    allowEdit?: boolean
+    allowDelete?: boolean
   }>(),
   {
     modelValue: () => [],
@@ -55,6 +61,7 @@ const { t } = useFormBuilderI18n()
 const { formId, formVersion } = useFormDefinition()
 // 当前表单数据（FormSchemaRenderer 注入的响应式对象；未注入则用空对象）
 const injectedFormData = inject<Ref<Record<string, unknown>> | null>('previewFormData', null)
+const bindAxios = useBindAxios()
 
 const getDataCode = computed(() => {
   const code = props.getData
@@ -71,8 +78,8 @@ const columns = computed<DataTableColumn[]>(() =>
 // n-data-table 的列 render 必须是函数；我们的 render 是字段类型字符串（设计态配置），
 // 直接透传会让 naive-ui 调用字符串报错（Cell.mjs: render(row, index)）。
 // 这里剥离 render/renderProps/element，换用函数 render 按列来源元素类型只读渲染单元格。
-const tableColumns = computed(() =>
-  columns.value.map((col) => {
+const tableColumns = computed(() => {
+  const cols: any[] = columns.value.map((col) => {
     const naiveCol: any = { ...col }
     delete naiveCol.render
     delete naiveCol.renderProps
@@ -80,8 +87,39 @@ const tableColumns = computed(() =>
     naiveCol.render = (row: Record<string, unknown>) =>
       h(DataTableCellRenderer, { column: col, value: row[col.key] })
     return naiveCol
-  }),
-)
+  })
+  // 固定数据模式：按开关追加「操作」列（编辑/删除直接改 data）
+  if (!useRemote.value && (props.allowEdit === true || props.allowDelete === true)) {
+    cols.push({
+      key: '__actions',
+      title: t('builder.dataTableActions'),
+      width: 96,
+      render: (row: Record<string, unknown>) =>
+        h('div', { class: 'flex items-center gap-1' }, [
+          props.allowEdit === true
+            ? h(
+                NButton,
+                { size: 'tiny', text: true, type: 'primary', onClick: () => openEdit(row) },
+                { icon: () => h('span', { class: 'i-lucide-pencil h-3.5 w-3.5' }) },
+              )
+            : null,
+          props.allowDelete === true
+            ? h(
+                NButton,
+                {
+                  size: 'tiny',
+                  text: true,
+                  type: 'error',
+                  onClick: () => deleteRow(row),
+                },
+                { icon: () => h('span', { class: 'i-lucide-trash-2 h-3.5 w-3.5' }) },
+              )
+            : null,
+        ]),
+    })
+  }
+  return cols
+})
 const title = computed(() =>
   typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
 )
@@ -115,9 +153,16 @@ const matchesSearch = (row: Record<string, unknown>) => {
   )
 }
 
-// ─── 固定数据：n-data-table 本地分页 ────────────────────────────────────────────
-const localRows = ref<Record<string, unknown>[]>([])
-const fixedBase = computed(() => [...toData({ data: props.data }), ...localRows.value])
+// ─── 固定数据：工作副本 + n-data-table 本地分页 ──────────────────────────────────
+// 新增/编辑/删除直接操作 dataRows（props.data 的可变副本）；props.data 外部变化时重新同步
+const dataRows = ref<Record<string, unknown>[]>([])
+watch(
+  () => props.data,
+  (next) => {
+    dataRows.value = toData({ data: next }).map((r) => ({ ...r }))
+  },
+  { immediate: true, deep: true },
+)
 const localPagination = computed(() =>
   props.pagination === true ? { pageSize: pageSizeDefault.value } : false,
 )
@@ -139,7 +184,7 @@ const remotePagination = computed(() =>
 )
 
 const displayRows = computed(() => {
-  const base = useRemote.value ? remoteRows.value : fixedBase.value
+  const base = useRemote.value ? remoteRows.value : dataRows.value
   return base.filter(matchesSearch)
 })
 
@@ -155,6 +200,7 @@ async function fetchRemote() {
       formId.value,
       formVersion.value,
       { page: pageRef.value, pageSize: pageSizeDefault.value, search: { ...searchValues.value } },
+      bindAxios,
     )
     const { rows, total } = normalizeRemoteResult(res)
     remoteTotal.value = total
@@ -200,16 +246,24 @@ function refreshData() {
     pageRef.value = 1
     fetchRemote()
   } else {
-    localRows.value = []
+    dataRows.value = toData({ data: props.data }).map((r) => ({ ...r }))
   }
 }
 
-// ─── 新增数据行（弹窗按列录入，控件按列来源元素类型渲染）────────────────────────
+// ─── 新增 / 编辑数据行（弹窗按列录入，控件按列来源元素类型渲染）──────────────────
+// 固定数据模式：新增/编辑直接写 dataRows；远程模式暂沿用本地新增（远程 CRUD 后续接入）
 const addOpen = ref(false)
+const editIndex = ref<number | null>(null)
 const draftRow = ref<Record<string, unknown>>({})
 let localSeq = 0
 
-function openAdd() {
+const rowModalTitle = computed(() =>
+  editIndex.value !== null
+    ? t('builder.dataTableEditRowTitle')
+    : t('builder.dataTableAddRowTitle'),
+)
+
+function initDraft() {
   const init: Record<string, unknown> = {}
   for (const c of columns.value) {
     if (!c.key) continue
@@ -224,25 +278,87 @@ function openAdd() {
     else if (kind === 'rate') init[c.key] = 0
     else init[c.key] = ''
   }
-  draftRow.value = init
+  return init
+}
+
+function openAdd() {
+  editIndex.value = null
+  draftRow.value = initDraft()
   addOpen.value = true
 }
 
+function openEdit(row: Record<string, unknown>) {
+  const idx = dataRows.value.indexOf(row)
+  if (idx < 0) return
+  editIndex.value = idx
+  draftRow.value = { ...row }
+  addOpen.value = true
+}
+
+// 新增弹窗单元格：表达式值（expr）派生 + 条件渲染（visibleIf）隐藏，随 draftRow 响应式更新
+const draftCells = computed(() => {
+  const row = draftRow.value
+  const out: Record<string, { visible: boolean; value: unknown; derived: boolean }> = {}
+  for (const c of columns.value) {
+    if (!c.key) continue
+    out[c.key] = {
+      visible: isColumnVisible(c.element, row),
+      ...evaluateColumnExpr(c.element, row, row[c.key]),
+    }
+  }
+  return out
+})
+
 function saveAdd() {
   const row: Record<string, unknown> = { ...draftRow.value }
-  const rk = rowKey.value
-  if (rk && !row[rk]) row[rk] = `local_${Date.now()}_${localSeq++}`
-  localRows.value = [...localRows.value, row]
+  // 表达式驱动列：落库取派生计算值（与表单运行时 expr 语义一致）
+  for (const c of columns.value) {
+    const cell = c.key ? draftCells.value[c.key] : undefined
+    if (cell?.derived) row[c.key] = cell.value
+  }
+  if (editIndex.value !== null) {
+    const idx = editIndex.value
+    dataRows.value = dataRows.value.map((r, i) => (i === idx ? row : r))
+  } else {
+    const rk = rowKey.value
+    if (rk && !row[rk]) row[rk] = `local_${Date.now()}_${localSeq++}`
+    dataRows.value = [...dataRows.value, row]
+  }
+  editIndex.value = null
   addOpen.value = false
+}
+
+function deleteRow(row: Record<string, unknown>) {
+  dataRows.value = dataRows.value.filter((r) => r !== row)
 }
 </script>
 
 <template>
-  <div class="w-full rounded-xl border border-border/50 pt-2">
-    <div v-if="title" class="px-3 pt-2 pb-1 text-12px font-bold">{{ title }}</div>
+  <n-card
+    size="small"
+    class="rounded-xl border border-border/50"
+    :title="title || undefined"
+  >
+    <template #header-extra>
+      <div class="flex items-center gap-1">
+        <n-button
+          v-if="props.allowAdd === true"
+          text
+          size="small"
+          @click="openAdd"
+        >
+          <template #icon><span class="i-lucide-plus h-3.5 w-3.5"></span></template>
+          {{ t('builder.dataTableAdd') }}
+        </n-button>
+        <n-button text size="small" :loading="loading" @click="refreshData">
+          <template #icon><span class="i-lucide-refresh-cw h-3.5 w-3.5"></span></template>
+          {{ t('builder.dataTableRefresh') }}
+        </n-button>
+      </div>
+    </template>
 
     <!-- 搜索区：有搜索字段才显示 -->
-    <div v-if="searchFields.length" class="border-b border-border/50 px-3 py-2">
+    <div v-if="searchFields.length" class="mb-3">
       <div class="flex items-center gap-2">
         <div
           :class="[
@@ -292,55 +408,42 @@ function saveAdd() {
       </div>
     </div>
 
-    <!-- 内容区工具栏 -->
-    <div class="flex items-center px-3 py-2 border-b border-border/50">
-      <div class="ml-auto flex items-center gap-1">
-        <n-button text size="small" @click="openAdd">
-          <template #icon><span class="i-lucide-plus h-3.5 w-3.5"></span></template>
-          {{ t('builder.dataTableAdd') }}
-        </n-button>
-        <n-button text size="small" :loading="loading" @click="refreshData">
-          <template #icon><span class="i-lucide-refresh-cw h-3.5 w-3.5"></span></template>
-          {{ t('builder.dataTableRefresh') }}
-        </n-button>
-      </div>
-    </div>
-
-    <div class="p-2">
-      <n-data-table
-        :columns="tableColumns as any"
-        :data="displayRows as any"
-        :row-key="(row: any) => row[rowKey]"
-        :bordered="props.bordered !== false"
-        :size="(props.size ?? 'medium') as any"
-        :scroll-x="props.scrollX"
-        :loading="loading"
-        :pagination="useRemote ? remotePagination : localPagination"
-        :remote="useRemote"
-        @update:page="onPageChange"
-      />
-    </div>
+    <n-data-table
+      :columns="tableColumns as any"
+      :data="displayRows as any"
+      :row-key="(row: any) => row[rowKey]"
+      :bordered="props.bordered !== false"
+      :size="(props.size ?? 'medium') as any"
+      :scroll-x="props.scrollX"
+      :loading="loading"
+      :pagination="useRemote ? remotePagination : localPagination"
+      :remote="useRemote"
+      @update:page="onPageChange"
+    />
 
     <n-modal v-model:show="addOpen" preset="card" class="max-w-[520px]">
       <template #header>
-        <span class="text-sm font-medium">{{ t('builder.dataTableAddRowTitle') }}</span>
+        <span class="text-sm font-medium">{{ rowModalTitle }}</span>
       </template>
       <div class="grid grid-cols-12 gap-x-3 gap-y-3">
-        <div v-for="col in columns" :key="col.key" :class="`col-span-${toColspan(col)}`">
-          <div class="mb-1 text-xs text-muted-foreground">{{ col.title }}</div>
-          <div class="min-w-0">
-            <DataTableRowCellInput
-              :column="col"
-              :value="draftRow[col.key]"
-              @update:value="(v) => (draftRow[col.key] = v)"
-            />
+        <template v-for="col in columns" :key="col.key">
+          <div v-if="col.key && draftCells[col.key]?.visible" :class="`col-span-${toColspan(col)}`">
+            <div class="mb-1 text-xs text-muted-foreground">{{ col.title }}</div>
+            <div class="min-w-0">
+              <DataTableRowCellInput
+                :column="col"
+                :value="draftCells[col.key]?.value"
+                :disabled="Boolean(draftCells[col.key]?.derived)"
+                @update:value="(v) => (draftRow[col.key] = v)"
+              />
+            </div>
           </div>
-        </div>
+        </template>
       </div>
       <div class="mt-4 flex justify-end gap-2">
         <n-button size="small" @click="addOpen = false">{{ t('common.cancel') }}</n-button>
         <n-button size="small" type="primary" @click="saveAdd">{{ t('common.save') }}</n-button>
       </div>
     </n-modal>
-  </div>
+  </n-card>
 </template>

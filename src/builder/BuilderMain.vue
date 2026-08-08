@@ -14,6 +14,7 @@ import type { FormBuilderConfig } from '../types/env'
 import { provideFormBuilderI18n } from '../i18n/context'
 import { provideRuntimeLocale } from '../i18n/runtime-locale'
 import { provideFormBuilderState } from '@/state/create-form-builder-state'
+import { provideBinderHttp } from '@/composables/use-bind-http'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 import type { FormDefinition } from '@/types/dsl'
 
@@ -58,6 +59,9 @@ if (props.config) {
   provideFormBuilderConfig(props.config)
 }
 const cfg = (props.config ?? injectedCfg) as FormBuilderConfig
+
+// 画布预览（字段 JS 绑定 / 数据表格远程）使用用户传入的 http（config.http），缺省内置 axios
+provideBinderHttp(computed(() => cfg.http))
 
 const availableLocales = cfg?.availableLocales ?? ['zh-CN', 'en']
 const localeFallback = cfg?.localeFallback ?? 'zh-CN'

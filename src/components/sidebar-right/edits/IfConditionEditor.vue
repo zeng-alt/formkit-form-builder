@@ -6,7 +6,7 @@ import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormField } from '../../../composables/form-fields'
 import ExprEditModal from './common/ExprEditModal.vue'
 
-const { selectedIndex, selectedKey } = useFormBuilderState()
+const { selectedIndex, selectedKey, elementEditTarget } = useFormBuilderState()
 const { availableFields, ifExpression } = useFormField()
 const { t } = useFormBuilderI18n()
 
@@ -14,7 +14,10 @@ const enabled = ref(false)
 const draft = ref('')
 const modalOpen = ref(false)
 
-const selectionToken = computed(() => selectedKey.value ?? String(selectedIndex.value))
+// 选中 token：数据表格列元素等非树节点编辑时随 elementEditTarget 变化（切换列需重新同步）
+const selectionToken = computed(
+  () => elementEditTarget.value ?? selectedKey.value ?? String(selectedIndex.value),
+)
 
 watch(
   selectionToken,

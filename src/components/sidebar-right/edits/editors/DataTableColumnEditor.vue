@@ -12,6 +12,8 @@ import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 import JsonTextarea from '../common/JsonTextarea.vue'
 import NameInput from '../common/NameInput.vue'
+import ExpressionEditor from '../ExpressionEditor.vue'
+import IfConditionEditor from '../IfConditionEditor.vue'
 
 // 数据表格列编辑器：编辑选中列（props.columns 中的一项）。
 // 列非树节点，经 useFormField 的 selectedColumn / setColumnProp 读写所属表格节点；
@@ -42,6 +44,19 @@ const alignOptions = computed(() => [
   { label: 'right', value: 'right' },
 ])
 
+// colspan：空 = 整行，其余 1-12；下拉框以字符串承载，空串映射为 null
+const colspanOptions = computed(() => [
+  { label: t('edits.dataTable.columnColspanFull'), value: '' },
+  ...Array.from({ length: 12 }, (_, i) => ({ label: String(i + 1), value: String(i + 1) })),
+])
+
+const colColspanSelect = computed<string>({
+  get: () => (colColspan.value == null ? '' : String(colColspan.value)),
+  set: (v: string) => {
+    colColspan.value = v ? Number(v) : null
+  },
+})
+
 // ─── 来源元素：新增列时保存的字段元素 DSL 节点，编辑面板展示其信息（同新增列弹窗）───
 const columnElement = computed(() => selectedColumn.value?.column?.element)
 const elementType = computed(() => {
@@ -62,6 +77,11 @@ const editMode = ref<'column' | 'element'>('column')
 // 元素属性编辑器：复用该字段类型自身的编辑器组件
 const elementEditorComponent = computed(() =>
   editMode.value === 'element' ? getFieldEditorComponent(elementType.value) : null,
+)
+
+// 列元素必为字段类（新增列时仅字段可渲染单元格），表达式值面板与普通字段编辑一致
+const isElementField = computed(
+  () => elementDef.value?.category === 'field' && !!columnElement.value,
 )
 
 // 进入元素模式：列元素就是 DSL 节点，直接作为编辑目标，改动经 commit 落回 columns[i].element
@@ -124,9 +144,17 @@ const colRenderPropsJSON = computed<string>({
 
 <template>
   <!-- 列 / 元素 属性模式切换 -->
-  <n-radio-group v-model:value="editMode" size="small">
-    <n-radio-button value="column">{{ t('edits.dataTable.columnTab') }}</n-radio-button>
-    <n-radio-button value="element">{{ t('edits.dataTable.elementTab') }}</n-radio-button>
+  <n-radio-group v-model:value="editMode" size="small" class="w-full">
+    <n-radio-button value="column" class="w-1/2">
+      <span class="w-full text-center">
+        {{ t('edits.dataTable.columnTab') }}
+      </span>
+    </n-radio-button>
+    <n-radio-button value="element" class="w-1/2">
+      <span class="w-full text-center">
+        {{ t('edits.dataTable.elementTab') }}
+      </span>
+    </n-radio-button>
   </n-radio-group>
 
   <!-- 来源元素信息（新增列时保存的字段元素） -->
@@ -150,6 +178,8 @@ const colRenderPropsJSON = computed<string>({
     <template v-else>
       <NameInput />
       <component :is="elementEditorComponent" v-if="elementEditorComponent" />
+      <ExpressionEditor v-if="isElementField" />
+      <IfConditionEditor />
     </template>
   </template>
 
@@ -176,11 +206,11 @@ const colRenderPropsJSON = computed<string>({
       @update:value="(v) => (colWidth = v)"
     />
 
-    <NumberInput
+    <SelectInput
       :label="t('edits.dataTable.columnColspan')"
-      :placeholder="t('edits.dataTable.columnColspanPlaceholder')"
-      :value="colColspan"
-      @update:value="(v: number | null) => (colColspan = v)"
+      :value="colColspanSelect"
+      :options="colspanOptions"
+      @update:value="(v) => (colColspanSelect = v)"
     />
 
     <SelectInput
