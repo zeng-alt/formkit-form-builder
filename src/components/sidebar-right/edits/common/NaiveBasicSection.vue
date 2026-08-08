@@ -4,7 +4,7 @@ import NumberInput from './NumberInput.vue'
 import SelectInput from './SelectInput.vue'
 import SwitchInput from './SwitchInput.vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   size?: boolean
   disabled?: boolean
   clearable?: boolean
@@ -16,7 +16,15 @@ const props = defineProps<{
   showPasswordOn?: boolean
   maxlength?: boolean
   minlength?: boolean
-}>()
+  sizeOptions?: Array<{ label: string, value: string }>
+}>(), {
+  sizeOptions: () => [
+    { label: 'tiny', value: 'tiny' },
+    { label: 'small', value: 'small' },
+    { label: 'medium', value: 'medium' },
+    { label: 'large', value: 'large' },
+  ]
+})
 
 const { createPropsProp } = useFormField()
 
@@ -38,12 +46,7 @@ const naiveMinlength = createPropsProp<number | null>('minlength', null)
     v-if="props.size"
     label="size"
     :value="naiveSize"
-    :options="[
-      { label: 'tiny', value: 'tiny' },
-      { label: 'small', value: 'small' },
-      { label: 'medium', value: 'medium' },
-      { label: 'large', value: 'large' },
-    ]"
+    :options="props.sizeOptions"
     @update:value="(v) => (naiveSize = v)"
   />
   <SwitchInput

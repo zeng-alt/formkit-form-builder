@@ -5,5 +5,5 @@ import NaiveBasicSection from '../common/NaiveBasicSection.vue'
 
 <template>
   <LabelHelpSection />
-  <NaiveBasicSection :size="true" :disabled="true" :clearable="true" />
+  <NaiveBasicSection :size="false" :disabled="true" :clearable="true" />
 </template>
