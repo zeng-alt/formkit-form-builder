@@ -13,8 +13,11 @@ import { getPreviewSchemaLibrary } from '@/elements/canvas'
 import { dslToOutputSchema, dslToSchema } from '@/dsl'
 import type { FormDefinition } from '@/types/dsl'
 import type { BuilderTheme } from '@/types/theme'
-import { useRuntimeLocale } from '@/i18n/runtime-locale'
-import { useFormBuilderI18n } from '@/i18n/context'
+import type { FormBuilderConfig } from '@/types/env'
+import { useRuntimeLocale, provideRuntimeLocale } from '@/i18n/runtime-locale'
+import { useFormBuilderI18n, provideFormBuilderI18n } from '@/i18n/context'
+import { useFormBuilderConfig, provideFormBuilderConfig } from '@/composables/use-config'
+import { registerElements } from '@/plugin/register-element'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 import {
   provideFormBuilderState,
@@ -28,6 +31,13 @@ import type { AxiosInstance } from 'axios'
 import { useExprRun } from '@/expression/runtime'
 
 type ModelValue = Record<string, unknown>
+
+// 对齐 BuilderMain：按配置的语言/兜底解析初始 locale
+const resolveInitialLocale = (cfg: FormBuilderConfig | undefined): string => {
+  const available = cfg?.availableLocales ?? ['zh-CN', 'en']
+  const fallback = cfg?.localeFallback ?? 'zh-CN'
+  return available.includes(cfg?.locale ?? '') ? cfg!.locale! : fallback
+}
 
 // FormKit 是泛型组件（props 为所有输入类型的大联合），dts 打包时无法命名其推断类型
 // （TS2883/TS7056）。这里显式收敛为本组件实际用到的 props 类型，与 FormKitSchemaWrapper 同套路。
@@ -77,6 +87,8 @@ const props = withDefaults(
       labelWidth?: number
       schemaLibrary?: Record<string, Component>
       interactiveContainers?: boolean
+      /** 本实例配置；传了则自给（registerElements + provide + locale/i18n），不传回落外层 Builder/BuilderProvider 注入 */
+      config?: FormBuilderConfig
       /** 自定义主题：内部映射到 naive-ui 的 darkTheme / lightTheme；缺省自动跟随系统 */
       theme?: BuilderTheme
       /** 自定义 HTTP 请求库实例：供 JS 绑定代码里的 axios 变量使用；缺省使用内置 axios */
@@ -125,8 +137,23 @@ const emit = defineEmits<{
   (e: 'submit', formData: ModelValue, id: string | undefined, version: number | undefined): void
 }>()
 
-// ── locale：读取所在 Builder 实例/Provider 注入的运行时代码，缺省 zh-CN ──
-const runtimeLocale = useRuntimeLocale()
+// ── 配置：prop 优先，否则回落注入（BuilderProvider / 外层 Builder 提供）──
+const injectedCfg = useFormBuilderConfig()
+if (props.config) {
+  registerElements(props.config.elements)
+  provideFormBuilderConfig(props.config)
+}
+const config = (props.config ?? injectedCfg) as FormBuilderConfig
+const hasOwnConfig = Boolean(props.config)
+
+// ── locale：自带 config（自包含渲染）时自建运行时代码；否则继承所在实例注入，缺省 zh-CN ──
+const runtimeLocale = hasOwnConfig
+  ? provideRuntimeLocale({
+      initialLocale: resolveInitialLocale(config),
+      availableLocales: config?.availableLocales ?? ['zh-CN', 'en'],
+      localeFallback: config?.localeFallback ?? 'zh-CN',
+    })
+  : useRuntimeLocale()
 const resolvedNaiveLocale = computed(() => props.locale ?? runtimeLocale.naiveLocale.value)
 const resolvedNaiveDateLocale = computed(
   () => props.dateLocale ?? runtimeLocale.naiveDateLocale.value,
@@ -140,6 +167,17 @@ watch(
   },
   { immediate: true },
 )
+
+// 自带 config 时自包含 i18n（对齐 BuilderMain）；否则沿用外层注入
+if (hasOwnConfig) {
+  provideFormBuilderI18n({
+    locale: computed(() => runtimeLocale.locale.value),
+    localeFallback: computed(() => runtimeLocale.localeFallback.value),
+    messages: computed(() => config?.messages as Record<string, any> | undefined),
+  })
+}
+
+const { t } = useFormBuilderI18n()
 
 const safeClone = <T>(value: T): T => {
   try {
@@ -434,8 +472,8 @@ const collectSchemaNamesSafe = (schema: FormKitSchemaFormKit[], names: Set<strin
 // 注入当前表单数据（dataTable 远程数据 JS 代码通过 form 读取当前值）
 provide('previewFormData', data)
 
-// 注入 JS 绑定代码用的 HTTP 实例：优先用户传入的 http prop，缺省回退内置 axios
-provideBinderHttp(computed(() => props.http))
+// 注入 JS 绑定代码用的 HTTP 实例：用户 http prop > config.http > 外层注入 > 内置 axios
+provideBinderHttp(computed(() => props.http ?? config?.http))
 
 provide('previewListInteractive', props.interactiveContainers)
 
@@ -588,7 +626,7 @@ const handleSubmit = async (formData: Record<string, unknown>) => {
       props.definition?.id,
       props.definition?.version,
       undefined,
-      props.http ?? axios,
+      props.http ?? config?.http ?? axios,
     )
     return
   }
@@ -596,8 +634,6 @@ const handleSubmit = async (formData: Record<string, unknown>) => {
 }
 
 defineExpose({ submit, reset, loading })
-
-const { t } = useFormBuilderI18n()
 
 const resolvedSubmitLabel = computed(() => props.submitLabel ?? t('elements.submit.label'))
 const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.label'))
