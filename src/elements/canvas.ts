@@ -23,6 +23,8 @@ import ButtonGroupContainerPreview from '@/components/ui/containers/button-group
 import TabsContainer from '@/components/ui/containers/tabs/TabsContainer.vue'
 import TabsContainerPreview from '@/components/ui/containers/tabs/TabsContainerPreview.vue'
 import GroupContainer from '@/components/ui/containers/group/GroupContainer.vue'
+import DataTableContainer from '@/components/ui/containers/data-table/DataTableContainer.vue'
+import DataTableContainerPreview from '@/components/ui/containers/data-table/DataTableContainerPreview.vue'
 
 registerBuiltinElementTypes()
 
@@ -226,6 +228,14 @@ const defs: ContainerDefinition[] = [
     canvas: { libraryKey: 'group', component: GroupContainer as any },
     normalize: (n) => normalizeContainer(n, 'group', specOf('group')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'group', specOf('group')),
+  },
+  {
+    id: 'dataTable',
+    match: (n) => isContainerOf(n, 'dataTable'),
+    canvas: { libraryKey: 'dataTable', component: DataTableContainer as any },
+    preview: { libraryKey: 'dataTable', component: DataTableContainerPreview as any },
+    normalize: (n) => normalizeContainer(n, 'dataTable', specOf('dataTable')),
+    formatPreview: (n, ctx) => formatContainer(n, ctx, 'dataTable', specOf('dataTable')),
   },
 ]
 

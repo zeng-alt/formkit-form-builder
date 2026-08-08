@@ -1,24 +1,23 @@
-import { defineConfig, presetWind3 } from "unocss";
-import presetIcons from "unocss/preset-icons";
+import { defineConfig, presetAttributify, presetWind3, presetIcons } from "unocss";
 import { presetTwAnimate } from "unocss-tw-animate-css";
 import presetRemToPx from "@unocss/preset-rem-to-px";
-import { getIconData, iconToHTML, iconToSVG, replaceIDs, type IconifyJSON } from "@iconify/utils";
-import lucide from "@iconify-json/lucide/icons.json";
-import stash from "@iconify-json/stash/icons.json";
+// import { getIconData, iconToHTML, iconToSVG, replaceIDs, type IconifyJSON } from "@iconify/utils";
+// import lucide from "@iconify-json/lucide/icons.json";
+// import stash from "@iconify-json/stash/icons.json";
 
 // 直接以 icons.json 作为 presetIcons 的 custom collection 时，@iconify/utils 的
 // getCustomIcon 只认「扁平 iconName → svg 字符串」的映射；而默认的 node loader 在
 // VS Code 终端（VSCODE_CWD 被设置）下会被 @unocss/preset-icons 跳过，导致全部图标加载失败。
 // 因此这里把每个图标集转成一个惰性 loader 函数，返回可直接使用的 SVG 字符串，
 // 在任何环境（含 VS Code 终端）都能稳定加载。
-function createIconLoader(iconSet: IconifyJSON) {
-  return (icon: string): string | undefined => {
-    const data = getIconData(iconSet, icon);
-    if (!data) return undefined;
-    const { body, attributes } = iconToSVG(data, {});
-    return iconToHTML(replaceIDs(body), attributes);
-  };
-}
+// function createIconLoader(iconSet: IconifyJSON) {
+//   return (icon: string): string | undefined => {
+//     const data = getIconData(iconSet, icon);
+//     if (!data) return undefined;
+//     const { body, attributes } = iconToSVG(data, {});
+//     return iconToHTML(replaceIDs(body), attributes);
+//   };
+// }
 
 export default defineConfig({
   safelist: [
@@ -76,6 +75,11 @@ export default defineConfig({
     "i-lucide-move-right",
     "i-lucide-credit-card",
     "i-lucide-panel-top",
+    "i-lucide-table",
+    "i-lucide-table-2",
+    "i-lucide-x",
+    "i-lucide-search",
+    "i-lucide-refresh-cw",
     "i-lucide-upload",
     "i-lucide-rotate-ccw",
     "i-lucide-plus",
@@ -93,14 +97,28 @@ export default defineConfig({
     "!w-[83.33%]",
     "!w-[91.67%]",
     "!w-[100%]",
+    "col-span-1",
+    "col-span-2",
+    "col-span-3",
+    "col-span-4",
+    "col-span-5",
+    "col-span-6",
+    "col-span-7",
+    "col-span-8",
+    "col-span-9",
+    "col-span-10",
+    "col-span-11",
+    "col-span-12",
   ],
   presets: [
-    presetRemToPx({ baseFontSize: 16 }),
+    presetAttributify(),
     presetWind3(),
     presetIcons({
       collections: {
-        lucide: createIconLoader(lucide),
-        stash: createIconLoader(stash),
+        // lucide: createIconLoader(lucide),
+        // stash: createIconLoader(stash),
+        lucide: () => import("@iconify-json/lucide/icons.json").then((m) => m.default),
+        stash: () => import("@iconify-json/stash/icons.json").then((m) => m.default),
       },
       scale: 1.2,
       warn: true,
@@ -112,6 +130,7 @@ export default defineConfig({
       },
     }),
     presetTwAnimate(),
+    presetRemToPx({ baseFontSize: 16 }),
   ],
   content: {
     pipeline: {

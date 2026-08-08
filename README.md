@@ -241,6 +241,52 @@ import {
 
 ---
 
+### Preview Components
+
+Two ready-made preview components reuse `FormRenderer` internally to fill and test a form in a modal dialog (naive-ui `n-modal` + `n-scrollbar`). Both render the produced FormKit schema into a truly interactive, submittable form.
+
+| Component | Internal renderer | Layout |
+|-----------|-------------------|--------|
+| `BuilderPreview` | `FormSchemaRenderer` | Single form; optional data panel below |
+| `FormDefinitionPreview` | `FormSchemaRenderer` | Split view: form on the left, live form data on the right |
+
+Both expose `open` / `close` methods via `defineExpose`, and emit `update:show` + `submit` (`formData, id?, version?`).
+
+#### BuilderPreview Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `show` | `boolean` | - | Modal visibility; a `v-model:show` two-way binding |
+| `schema` | `FormKitSchemaFormKit[]` | - | Raw schema to preview; if omitted, built from the current `FormDefinition` via `dslToSchema` |
+| `title` | `string` | i18n: 表单预览 | Modal title |
+| `description` | `string` | i18n: 预览表单并测试其功能 | Header subtitle |
+| `showDataPanel` | `boolean` | `true` | Show the live form-data panel below the form |
+| `initialData` | `Record<string, unknown>` | `{}` | Initial form data |
+| `view` | `CanvasView` | Canvas state | Desktop / tablet / mobile preview container width |
+| `actions` | `boolean` | `false` | Render default action bar (submit/reset) |
+| `formClass` | `string` | `'w-full !grid !grid-cols-12 gap-x-4 gap-y-2'` | Form root element class |
+| `interactiveContainers` | `boolean` | `true` | Enable list/card/group/tabs interactive add/remove rows |
+| `resetOnSubmit` | `boolean` | `true` | Reset form data after submit |
+
+#### FormDefinitionPreview Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `show` | `boolean` | - | Modal visibility; a `v-model` two-way binding |
+| `formDefinition` | `FormDefinition` | required | Versioned DSL form definition (result of the designer export), converted via `dslToSchema` internally |
+| `title` | `string` | `''` | Modal title |
+| `initialData` | `Record<string, unknown>` | `{}` | Initial form data |
+| `actions` | `boolean` | `false` | Render the default action bar (submit/reset) |
+| `formClass` | `string` | `'w-full !grid !grid-cols-12 gap-x-4 gap-y-2'` | Form root element class |
+| `interactiveContainers` | `boolean` | `true` | Enable interactive containers |
+| `showDataPanel` | `boolean` | `true` | Show the right-side live data panel |
+| `dataPanelWidth` | `string` | `'320px'` | Right data panel width |
+| `resetOnSubmit` | `boolean` | `true` | Reset form data after submit |
+
+`FormDefinitionPreview` additionally exposes a `reset` method. Both read the running locale / theme from the enclosing `BuilderProvider` / `FormBuilder`.
+
+---
+
 ### FormBuilderConfig
 
 ```ts

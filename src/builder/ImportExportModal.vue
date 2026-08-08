@@ -259,19 +259,19 @@ const handleDownloadJs = () => {
         <n-button size="small" @click="handleClose">{{ t('common.cancel') }}</n-button>
         <n-button size="small" type="info" @click="handleDownloadJs">
           <template #icon>
-            <span class="i-lucide-file-code-2 w-4 h-4"></span>
+            <span class="i-lucide-file-code-2 w-16px h-16px"></span>
           </template>
           {{ t('importExport.downloadJs') }}
         </n-button>
         <n-button size="small" type="info" @click="handleDownload">
           <template #icon>
-            <span class="i-lucide-download w-4 h-4"></span>
+            <span class="i-lucide-download w-16px h-16px"></span>
           </template>
           {{ t('importExport.downloadJson') }}
         </n-button>
         <n-button v-if="tab === 'dsl'" size="small" type="primary" @click="handleSaveAndImport">
           <template #icon>
-            <span class="i-lucide-save w-4 h-4"></span>
+            <span class="i-lucide-save w-16px h-16px"></span>
           </template>
           {{ t('importExport.saveAndImport') }}
         </n-button>

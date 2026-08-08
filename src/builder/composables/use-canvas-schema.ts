@@ -153,6 +153,8 @@ export function useCanvasSchema() {
     selectedTarget.value = 'field'
     selectedIndex.value = found.rootIndex
     selectedKey.value = key
+    // 选中普通节点即退出列编辑态
+    state.selectedColumnIndex.value = null
   }
 
   // ── 画布内联编辑写回（静态元素 text 内容等）─────────────────────────────────
@@ -219,6 +221,7 @@ export function useCanvasSchema() {
   const onSelectRoot = (child: FormKitSchemaFormKit, index: number) => {
     const key = (child as any)?.__key as string | undefined
     selectedTarget.value = 'field'
+    state.selectedColumnIndex.value = null
     if (key) selectByKey(key)
     else selectedIndex.value = index
   }
@@ -226,6 +229,7 @@ export function useCanvasSchema() {
   const onSelectBlank = () => {
     selectedTarget.value = 'form'
     selectedKey.value = null
+    state.selectedColumnIndex.value = null
   }
 
   const onResizeEnd = () => {

@@ -426,6 +426,9 @@ const collectSchemaNamesSafe = (schema: FormKitSchemaFormKit[], names: Set<strin
   })
 }
 
+// 注入当前表单数据（dataTable 远程数据 JS 代码通过 form 读取当前值）
+provide('previewFormData', data)
+
 provide('previewListInteractive', props.interactiveContainers)
 
 provide('previewListDuplicate', (key: string) => {

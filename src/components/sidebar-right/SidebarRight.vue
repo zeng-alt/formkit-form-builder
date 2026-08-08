@@ -6,24 +6,32 @@ import { createFieldProps } from '@/elements'
 import { useFormField } from '../../composables/form-fields'
 import { useFormBuilderI18n } from '../../i18n/context'
 
-const { currentFieldType, selectedIsForm, formName } = useFormField()
+const { currentFieldType, selectedIsForm, formName, selectedColumn } = useFormField()
 const { t } = useFormBuilderI18n()
 const fieldProps = computed(() => createFieldProps(t))
 const currentProp = computed(() =>
   fieldProps.value.find((prop) => prop.name === currentFieldType.value),
 )
 
+const columnTitle = computed(() => {
+  const col = selectedColumn.value?.column
+  return col?.title?.trim() || col?.key || ''
+})
+
 const headerTitle = computed(() => {
+  if (selectedColumn.value) return t('edits.dataTable.column')
   if (selectedIsForm.value) return t('formSettings.title')
   return currentProp.value?.tooltip ?? ''
 })
 
 const headerSubtitle = computed(() => {
+  if (selectedColumn.value) return columnTitle.value
   if (selectedIsForm.value) return formName.value
   return currentFieldType.value ?? ''
 })
 
 const headerIcon = computed(() => {
+  if (selectedColumn.value) return 'i-lucide-columns-3'
   if (selectedIsForm.value) return 'i-lucide-panel-top'
   return currentProp.value?.icon ?? ''
 })

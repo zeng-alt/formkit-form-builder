@@ -9,8 +9,9 @@ import IfConditionEditor from './edits/IfConditionEditor.vue'
 import BindEditor from './edits/BindEditor.vue'
 import { getElementTypeDef } from '@/dsl'
 import FormEditor from './edits/editors/FormEditor.vue'
+import DataTableColumnEditor from './edits/editors/DataTableColumnEditor.vue'
 
-const { hasField, currentFieldType, selectedIsForm } = useFormField()
+const { hasField, currentFieldType, selectedIsForm, selectedColumn } = useFormField()
 
 const isFieldsCategory = computed(() => {
   if (selectedIsForm.value) return false
@@ -23,7 +24,8 @@ const isFieldsCategory = computed(() => {
 <template>
   <div class="p-2">
     <div class="space-y-2 md:space-y-3">
-      <FormEditor v-if="!hasField || selectedIsForm" />
+      <DataTableColumnEditor v-if="selectedColumn" />
+      <FormEditor v-else-if="!hasField || selectedIsForm" />
       <template v-else>
         <ExpressionEditor v-if="isFieldsCategory" />
         <IfConditionEditor />

@@ -15,7 +15,7 @@ defineSlots<{
 </script>
 
 <template>
-  <div class="flex flex-1 h-full min-h-0 flex-row justify-start pb-15 pt-10">
+  <div class="flex flex-1 h-full min-h-0 flex-row justify-start pb-60px pt-40px">
     <CanvasViewportControls />
 
     <CanvasBoard
@@ -33,7 +33,7 @@ defineSlots<{
       </template>
     </CanvasBoard>
 
-    <div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-16px">
       <CanvasActionsBar />
       <slot name="toolbar" />
     </div>

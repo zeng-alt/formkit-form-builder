@@ -142,6 +142,7 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
 
   state.selectedTarget.value = 'form'
   state.selectedKey.value = null
+  state.selectedColumnIndex.value = null
 }
 </script>
 
@@ -164,7 +165,7 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
           :native-scrollbar="false"
           @pointerdown.capture="onBuilderBlankPointerDown"
         >
-          <div class="p-4 flex flex-1 min-h-0 flex-col">
+          <div class="p-16px flex flex-1 min-h-0 flex-col">
             <slot name="header">
               <BuilderHeader>
                 <template v-if="$slots['header-left']" #left>

@@ -239,6 +239,52 @@ import {
 
 ---
 
+### 预览组件
+
+两个开箱即用的预览组件，内部复用 `FormRenderer`，在弹窗（naive-ui `n-modal` + `n-scrollbar`）中填充并测试表单。二者都把生成的 FormKit schema 渲染成可交互、可提交的真实表单。
+
+| 组件 | 内部渲染器 | 布局 |
+|------|-----------|------|
+| `BuilderPreview` | `FormSchemaRenderer` | 单个表单；可选数据面板在下方 |
+| `FormDefinitionPreview` | `FormSchemaRenderer` | 分栏：左侧表单，右侧实时表单数据 |
+
+两者都通过 `defineExpose` 暴露 `open` / `close` 方法，并触发 `update:show` 与 `submit`（`formData, id?, version?`）事件。
+
+#### BuilderPreview Props
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `show` | `boolean` | - | 弹窗显隐；可 `v-model:show` 双向绑定 |
+| `schema` | `FormKitSchemaFormKit[]` | - | 要预览的裸 schema；不传则用当前 `FormDefinition` 通过 `dslToSchema` 生成 |
+| `title` | `string` | i18n: 表单预览 | 弹窗标题 |
+| `description` | `string` | i18n: 预览表单并测试其功能 | 头部副标题 |
+| `showDataPanel` | `boolean` | `true` | 是否在表单下方显示实时数据面板 |
+| `initialData` | `Record<string, unknown>` | `{}` | 初始表单数据 |
+| `view` | `CanvasView` | 画布状态 | 桌面 / 平板 / 手机 预览容器宽度 |
+| `actions` | `boolean` | `false` | 渲染默认操作区（提交/重置两按钮） |
+| `formClass` | `string` | `'w-full !grid !grid-cols-12 gap-x-4 gap-y-2'` | 表单根元素 class |
+| `interactiveContainers` | `boolean` | `true` | 启用列表/卡片/分组/标签页等容器交互（增删行） |
+| `resetOnSubmit` | `boolean` | `true` | 提交后重置表单数据 |
+
+#### FormDefinitionPreview Props
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `show` | `boolean` | - | 弹窗显隐，可 `v-model` 双向绑定 |
+| `formDefinition` | `FormDefinition` | 必填 | 版本化 DSL 表单定义（设计器导出的结果），内部 `dslToSchema` 转换 |
+| `title` | `string` | `''` | 弹窗标题 |
+| `initialData` | `Record<string, unknown>` | `{}` | 初始表单数据 |
+| `actions` | `boolean` | `false` | 渲染默认操作区（提交/重置两按钮） |
+| `formClass` | `string` | `'w-full !grid !grid-cols-12 gap-x-4 gap-y-2'` | 表单根元素 class |
+| `interactiveContainers` | `boolean` | `true` | 启用可交互容器 |
+| `showDataPanel` | `boolean` | `true` | 是否显示右侧实时数据面板 |
+| `dataPanelWidth` | `string` | `'320px'` | 右侧数据面板宽度 |
+| `resetOnSubmit` | `boolean` | `true` | 提交后重置表单数据 |
+
+`FormDefinitionPreview` 额外暴露 `reset` 方法。两者都会从所在的 `BuilderProvider` / `FormBuilder` 读取运行期 locale / 主题。
+
+---
+
 ### FormBuilderConfig
 
 ```ts

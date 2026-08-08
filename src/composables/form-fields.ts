@@ -5,21 +5,59 @@ import { exprToJs, resolveValidation, parseExprString, parseValidation } from '@
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { DSL_VERSION } from '@/types/dsl'
 import type { FieldNode, FormNode, OptionItem } from '@/types/dsl'
+import type { DataTableColumn } from '@/components/ui/containers/data-table/types'
 
 export function useFormField() {
   // 所属 FormBuilder 实例状态：选中 / 真源 / 提交漏斗全部绑定到各自实例。
   const state = useFormBuilderState()
-  const { formDefinition, selectedIndex, selectedKey, selectedTarget } = state
+  const {
+    formDefinition,
+    selectedIndex,
+    selectedKey,
+    selectedTarget,
+    elementEditTarget,
+    elementEditCommit,
+  } = state
   const { commitFormDefinition } = state
 
   // 当前选中节点：直接读 DSL 真源（formDefinition），而非 FormKit schema 投影。
+  // 元素属性编辑期间（数据表格列元素），工作节点覆盖到 elementEditTarget。
   const selectedField = computed<FormNode | undefined>(() => {
+    if (elementEditTarget.value) return elementEditTarget.value
     const root = formDefinition.value?.root?.children
     if (!Array.isArray(root)) return undefined
     const key = selectedKey.value
     if (key) return findDslNodeByKey(root, key)?.node
     return root[selectedIndex.value]
   })
+
+  // 树内选中的节点（不受元素编辑覆盖影响）：列操作始终定位所属数据表格节点。
+  const selectedTableField = computed<FormNode | undefined>(() => {
+    const root = formDefinition.value?.root?.children
+    if (!Array.isArray(root)) return undefined
+    const key = selectedKey.value
+    if (key) return findDslNodeByKey(root, key)?.node
+    return root[selectedIndex.value]
+  })
+
+  // 数据表格选中列：列非树节点，从所属表格节点的 props.columns 按下标取（配合 selectedKey 定位）。
+  const selectedColumnIndex = state.selectedColumnIndex
+  const selectedColumn = computed<{ index: number; column: DataTableColumn } | undefined>(() => {
+    const idx = selectedColumnIndex.value
+    if (idx === null || idx === undefined || idx < 0) return undefined
+    const cols = selectedTableField.value?.props?.columns
+    if (!Array.isArray(cols)) return undefined
+    const column = cols[idx]
+    if (!column || typeof column !== 'object') return undefined
+    return { index: idx, column: column as DataTableColumn }
+  })
+  const selectedIsColumn = computed(() => selectedColumnIndex.value !== null)
+
+  // 设置/清除元素属性编辑目标：非树节点（列元素）编辑时挂到此处复用标准字段编辑器
+  const setElementEditTarget = (node: FormNode | null, commit?: (node: FormNode) => void) => {
+    elementEditTarget.value = node
+    elementEditCommit.value = commit ?? null
+  }
 
   const normalizeName = (value: string) => {
     let name = value
@@ -32,8 +70,9 @@ export function useFormField() {
     return name
   }
 
-  // DSL 写路径：克隆选中节点 → 应用变更 → 按 key 打补丁提交（不原地改真源，保证 undo 快照正确）
-  const patchSelected = (mutate: (node: FormNode) => FormNode) => {
+  // DSL 写路径：克隆选中节点 → 应用变更 → 按 key 打补丁提交（不原地改真源，保证 undo 快照正确）。
+  // patchTreeTarget 始终写树内节点（列操作 / 元素提交落点）；patchSelected 优先写元素编辑覆盖。
+  const patchTreeTarget = (mutate: (node: FormNode) => FormNode) => {
     const def = formDefinition.value
     const root = Array.isArray(def?.root?.children) ? def.root.children : []
     if (!root.length) return
@@ -50,6 +89,18 @@ export function useFormField() {
       { ...def, root: { ...def.root, children: nextChildren } },
       { reason: 'field-edit', merge: true },
     )
+  }
+
+  const patchSelected = (mutate: (node: FormNode) => FormNode) => {
+    if (elementEditTarget.value) {
+      const current = elementEditTarget.value
+      const nextNode = mutate({ ...current } as FormNode) as FormNode
+      nextNode.id = current.id
+      elementEditTarget.value = nextNode
+      elementEditCommit.value?.(nextNode)
+      return
+    }
+    patchTreeTarget(mutate)
   }
 
   const setFieldProp = (key: keyof FormNode, value: unknown) => {
@@ -78,6 +129,41 @@ export function useFormField() {
         return (value ?? defaultValue) as T
       },
       set: (value: T) => setPropsProp(key, value),
+    })
+  }
+
+  // ─── 数据表格列编辑写路径：改所属表格节点的 props.columns[idx] ────────────────
+  const setColumnProp = (key: string, value: unknown) => {
+    patchTreeTarget((node) => {
+      const props = { ...node.props }
+      const cols = Array.isArray(props.columns) ? [...(props.columns as DataTableColumn[])] : []
+      const idx = selectedColumnIndex.value
+      if (idx === null || idx === undefined || idx < 0 || idx >= cols.length) return node
+      const col = { ...cols[idx] } as Record<string, unknown>
+      if (value === undefined || value === null || value === '') delete col[key]
+      else col[key] = value
+      // 列 key/title 变更时同步来源元素 name/label（element.name=key、element.label=title）
+      const element = col.element
+      if (key === 'key' && element && typeof element === 'object' && value) {
+        col.element = { ...(element as Record<string, unknown>), name: value }
+      } else if (key === 'title' && element && typeof element === 'object' && value) {
+        col.element = { ...(element as Record<string, unknown>), label: value }
+      }
+      cols[idx] = col as unknown as DataTableColumn
+      props.columns = cols.length ? cols : undefined
+      node.props = Object.keys(props).length ? props : undefined
+      return node
+    })
+  }
+
+  const createColumnProp = <T>(key: string, defaultValue: T): WritableComputedRef<T, T> => {
+    return computed({
+      get: () => {
+        const col = selectedColumn.value?.column as unknown as Record<string, unknown> | undefined
+        const value = col?.[key]
+        return (value ?? defaultValue) as T
+      },
+      set: (value: T) => setColumnProp(key, value),
     })
   }
 
@@ -610,6 +696,13 @@ export function useFormField() {
 
   return {
     selectedField,
+    selectedTableField,
+    selectedColumn,
+    selectedColumnIndex,
+    selectedIsColumn,
+    setElementEditTarget,
+    createColumnProp,
+    setColumnProp,
     fieldName,
     useExpressionValue,
     valueExpression,

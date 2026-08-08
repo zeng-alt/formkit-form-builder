@@ -22,7 +22,7 @@ const showImportExportModal = ref(false)
               :aria-label="t('builder.importExportSchema')"
               class="w-8 h-8"
             >
-              <template #icon><span class="i-lucide-code-xml h-3.5 w-3.5"></span></template>
+              <template #icon><span class="i-lucide-code-xml h-16px w-16px"></span></template>
             </n-button>
           </template>
           {{ t('builder.importExportSchema') }}
@@ -34,7 +34,7 @@ const showImportExportModal = ref(false)
           trigger="click"
         >
           <n-button size="small" :aria-label="t('builder.switchLanguage')" class="w-8 h-8">
-            <template #icon><span class="i-lucide-languages h-3.5 w-3.5"></span></template>
+            <template #icon><span class="i-lucide-languages h-16px w-16px"></span></template>
           </n-button>
         </n-popselect>
       </n-button-group>

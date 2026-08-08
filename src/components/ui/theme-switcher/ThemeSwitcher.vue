@@ -22,14 +22,14 @@ const handleSelect = (key: string) => {
 
 <template>
   <n-dropdown trigger="click" :options="options" @select="handleSelect">
-    <n-button secondary circle size="small" class="h-7 w-7 !p-2">
+    <n-button secondary circle size="small" class="h-16px w-16px !p-2">
       <template #icon>
         <div class="relative flex items-center justify-center">
           <span
-            class="i-lucide-sun absolute h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+            class="i-lucide-sun absolute h-16px text-[#eb2f96] w-16px rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
           ></span>
           <span
-            class="i-lucide-moon absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+            class="i-lucide-moon absolute h-16px w-16px text-[#b37feb] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
           ></span>
         </div>
       </template>

@@ -96,4 +96,27 @@ export const containerElements: ElementDefinition[] = [
       descriptionKey: 'elements.tabs.description',
     },
   },
+  {
+    type: 'dataTable',
+    category: 'container',
+    icon: 'i-lucide-table-2',
+    tooltipKey: 'fieldProps.tooltip.dataTable',
+    editor: () => import('@/components/sidebar-right/edits/editors/DataTableEditor.vue'),
+    container: getContainerSpec('dataTable') ?? undefined,
+    schema: {
+      renderAs: 'cmp',
+      nameKey: 'elements.dataTable.name',
+      labelKey: 'elements.dataTable.label',
+      outerClass: 'col-span-12',
+      props: {
+        rowKey: 'id',
+        bordered: true,
+        size: 'medium',
+        pagination: false,
+        remote: false,
+        pageSize: 10,
+      },
+      descriptionKey: 'elements.dataTable.description',
+    },
+  },
 ]

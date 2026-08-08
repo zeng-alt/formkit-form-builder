@@ -75,7 +75,7 @@ watch(
     ref="parentRef"
     data-is-source="true"
     :class="
-      collapsed ? 'grid grid-cols-1 gap-2 p-2 min-h-[50px]' : 'flex flex-col gap-1 p-2 min-h-[50px]'
+      collapsed ? 'grid grid-cols-1 justify-items-center gap-2 pt-2 px-2 pb-2 pl-0 min-h-[50px] w-full' : 'flex flex-col gap-1 p-2 min-h-[50px] w-full'
     "
   >
     <div
@@ -83,17 +83,17 @@ watch(
       :key="item.name"
       :class="[
         collapsed
-          ? 'h-12 w-12 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-grab flex items-center justify-center border border-transparent hover:border-gray-200 dark:hover:border-gray-700'
-          : 'p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-grab flex items-center border border-transparent hover:border-gray-200 dark:hover:border-gray-700',
+          ? 'h-48px w-48px rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-grab flex items-center justify-center border border-transparent hover:border-gray-200 dark:hover:border-gray-700'
+          : 'p-8px rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-grab flex items-center border border-transparent hover:border-gray-200 dark:hover:border-gray-700',
         item.name.trim().replace(/\s+/g, '-').toLowerCase(),
       ]"
     >
       <div v-if="collapsed">
         <n-popover placement="right">
           <template #trigger>
-            <div class="h-8 w-8 rounded-md flex items-center justify-center">
+            <div class="h-32px w-32px rounded-md flex items-center justify-center">
               <span
-                :class="`${fieldProps.find((prop) => prop.name === getTypeName(item))?.icon ?? ''} h-5 w-5`"
+                :class="`${fieldProps.find((prop) => prop.name === getTypeName(item))?.icon ?? ''} h-16px w-16px`"
               />
             </div>
           </template>
