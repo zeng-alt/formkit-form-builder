@@ -13,7 +13,10 @@ export const BIND_AXIOS_KEY = 'previewAxios'
  */
 export function provideBinderHttp(source: ComputedRef<AxiosInstance | undefined>) {
   const parent = inject<ComputedRef<AxiosInstance> | null>(BIND_AXIOS_KEY, null)
-  provide(BIND_AXIOS_KEY, computed(() => source.value ?? parent?.value ?? axios))
+  provide(
+    BIND_AXIOS_KEY,
+    computed(() => source.value ?? parent?.value ?? axios),
+  )
 }
 
 /**

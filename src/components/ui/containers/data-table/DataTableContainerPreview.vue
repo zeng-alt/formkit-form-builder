@@ -258,9 +258,7 @@ const draftRow = ref<Record<string, unknown>>({})
 let localSeq = 0
 
 const rowModalTitle = computed(() =>
-  editIndex.value !== null
-    ? t('builder.dataTableEditRowTitle')
-    : t('builder.dataTableAddRowTitle'),
+  editIndex.value !== null ? t('builder.dataTableEditRowTitle') : t('builder.dataTableAddRowTitle'),
 )
 
 function initDraft() {
@@ -334,19 +332,10 @@ function deleteRow(row: Record<string, unknown>) {
 </script>
 
 <template>
-  <n-card
-    size="small"
-    class="rounded-xl border border-border/50"
-    :title="title || undefined"
-  >
+  <n-card size="small" class="rounded-xl border border-border/50" :title="title || undefined">
     <template #header-extra>
       <div class="flex items-center gap-1">
-        <n-button
-          v-if="props.allowAdd === true"
-          text
-          size="small"
-          @click="openAdd"
-        >
+        <n-button v-if="props.allowAdd === true" text size="small" @click="openAdd">
           <template #icon><span class="i-lucide-plus h-3.5 w-3.5"></span></template>
           {{ t('builder.dataTableAdd') }}
         </n-button>

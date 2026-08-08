@@ -101,7 +101,7 @@ const groupedElements = computed(() => {
             :name="category.id"
             :tab="category.label"
           >
-            <n-scrollbar class="h-full sidebar-scrollbar" content-class="pb-4 pr-4 pl-2">
+            <n-scrollbar class="h-full sidebar-scrollbar" content-class="pb-4 pr-4 pl-2 mb-2">
               <DraggableList :elements="groupedElements[category.id]" />
             </n-scrollbar>
           </n-tab-pane>
@@ -109,7 +109,7 @@ const groupedElements = computed(() => {
       </n-tab-pane>
       <n-tab-pane :key="'structure'" name="structure" :tab="t('sidebar.structure')">
         <div v-if="(formDefinition.root.children ?? []).length" class="h-full">
-          <n-scrollbar class="h-full sidebar-scrollbar" content-class="p-2 pr-4 pl-2">
+          <n-scrollbar class="h-full sidebar-scrollbar" content-class="p-2 pr-4 pl-2 mb-2">
             <StructureTree :nodes="formDefinition.root.children ?? []" />
           </n-scrollbar>
         </div>

@@ -485,11 +485,7 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
             </tr>
           </thead>
           <tbody v-if="dataRows.length">
-            <tr
-              v-for="(row, r) in dataRows"
-              :key="r"
-              class="border-t border-border/40"
-            >
+            <tr v-for="(row, r) in dataRows" :key="r" class="border-t border-border/40">
               <td
                 v-for="col in childColumns"
                 :key="col.key"
@@ -497,10 +493,7 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
               >
                 <DataTableCellRenderer :column="col" :value="row[col.key]" />
               </td>
-              <td
-                v-if="hasRealData"
-                class="px-3 py-2 text-xs whitespace-nowrap"
-              >
+              <td v-if="hasRealData" class="px-3 py-2 text-xs whitespace-nowrap">
                 <div class="flex items-center gap-2.5">
                   <n-button
                     text
