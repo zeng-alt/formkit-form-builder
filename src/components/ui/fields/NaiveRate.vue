@@ -10,10 +10,6 @@ const { context } = defineProps<{
 
 const { config, props } = useSchemaAttrs(context)
 
-const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
-const clearable = computed<boolean>(() =>
-  Boolean((config.clearable as boolean | undefined) ?? true),
-)
 const count = computed<number>(() => {
   const raw = config.count as unknown
   if (typeof raw === 'number' && Number.isFinite(raw)) return raw
@@ -40,12 +36,5 @@ function handleUpdateValue(next: number) {
 </script>
 
 <template>
-  <NRate
-    v-bind="props"
-    :value="value"
-    :count="count"
-    :clearable="clearable"
-    :disabled="disabled"
-    @update:value="handleUpdateValue"
-  />
+  <NRate v-bind="props" :value="value" :count="count" @update:value="handleUpdateValue" />
 </template>

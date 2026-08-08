@@ -11,14 +11,6 @@ const { context } = defineProps<{
 
 const { config, props } = useSchemaAttrs(context)
 
-const size = computed<DatePickerProps['size']>(() => {
-  const raw = config.size as string | undefined
-  if (raw === 'tiny') return 'small'
-  return (raw as DatePickerProps['size']) ?? 'medium'
-})
-const clearable = computed<boolean>(() => (config.clearable as boolean | undefined) ?? true)
-const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
-
 // type 是 FormKit input 类型（runtimeProp，不进 attrs），据此派生 naive picker 类型
 const pickerType = computed<DatePickerProps['type']>(() => {
   const configured = config.type
@@ -50,9 +42,6 @@ const formattedValue = computed<FormattedValue>({
     v-bind="props"
     v-model:formatted-value="formattedValue"
     :type="pickerType"
-    :size="size"
-    :clearable="clearable"
-    :disabled="disabled"
     :input-props="{ id: context.id }"
     @blur="context.handlers.blur"
   />

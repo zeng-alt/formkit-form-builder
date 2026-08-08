@@ -17,7 +17,6 @@ const INTERNAL_KEYS = new Set([
   'name',
   'label',
   'help',
-  'disabled',
   'type',
   'validation',
   'validation-messages',
@@ -37,7 +36,11 @@ export function useSchemaAttrs(context: FormKitFrameworkContext, opts: { omit?: 
   // config：context.attrs 的响应式镜像（含 __bind 等内部键），整体镜像到稳定 reactive 对象
   const config = reactive<Record<string, unknown>>({})
   watchEffect(() => {
-    const bag = (context as any)?.attrs
+    const { props = {}, ...rest } = (context as any)?.attrs || {}
+    const bag = {
+      ...props,
+      ...rest,
+    }
     const next: Record<string, unknown> = bag && typeof bag === 'object' ? bag : {}
     for (const key of Object.keys(config)) {
       if (!(key in next)) delete config[key]

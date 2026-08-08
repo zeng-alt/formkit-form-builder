@@ -15,8 +15,6 @@ const { config, props, bind } = useSchemaAttrs(context, { omit: ['prefix', 'suff
 const { formId, formVersion } = useFormDefinition()
 const bindAxios = useBindAxios()
 
-const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
-
 const inputType = computed(() => {
   const type = context.type
   if (type === 'password') return 'password'
@@ -72,7 +70,6 @@ const handleBlur = async (e: FocusEvent) => {
     v-bind="props"
     :value="value"
     :type="inputType"
-    :disabled="disabled"
     :input-props="{ id: context.id }"
     :pair="pair"
     :separator="separator"

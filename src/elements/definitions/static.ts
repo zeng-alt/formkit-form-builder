@@ -2,7 +2,7 @@ import type { Component } from 'vue'
 import type { ElementDefinition } from '../types'
 
 // 纯数据目录：不 import 任何 .vue。FormKit 组件绑定在 elements/formkit.ts（按 type 索引）。
-// 按钮类按钮配置已展平进 props（原 buttonProps 嵌套废除）。
+// 按钮类配置已展平进 props。
 
 // 标题类静态元素（naiveH1 ~ naiveH6 共用 NaiveTypographyHeader 组件绑定）
 // editor 用静态 import() 便于库构建时内联进单一产物

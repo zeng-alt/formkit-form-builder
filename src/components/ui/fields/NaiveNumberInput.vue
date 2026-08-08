@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { FormKitFrameworkContext } from '@formkit/core'
-import type { InputNumberProps } from 'naive-ui'
 import { NInputNumber } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
@@ -10,14 +9,6 @@ const { context } = defineProps<{
 }>()
 
 const { config, props } = useSchemaAttrs(context)
-
-const size = computed<InputNumberProps['size']>(() => {
-  const raw = config.size as string | undefined
-  if (raw === 'tiny') return 'small'
-  return (raw as InputNumberProps['size']) ?? 'medium'
-})
-const clearable = computed<boolean>(() => (config.clearable as boolean | undefined) ?? true)
-const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 
 const step = computed(() => {
   const raw = config.step as string | number | undefined
@@ -43,9 +34,6 @@ function handleUpdateValue(next: number | null) {
   <NInputNumber
     v-bind="props"
     :value="value"
-    :size="size"
-    :clearable="clearable"
-    :disabled="disabled"
     :step="step"
     :input-props="{ id: context.id }"
     @update:value="handleUpdateValue"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { FormKitFrameworkContext } from '@formkit/core'
-import type { SelectOption, SelectProps } from 'naive-ui'
+import type { SelectOption } from 'naive-ui'
 import { NSelect } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
@@ -12,10 +12,6 @@ const { context } = defineProps<{
 
 const { config, props } = useSchemaAttrs(context)
 
-const size = computed<SelectProps['size']>(() => (config.size as SelectProps['size']) ?? 'medium')
-const clearable = computed<boolean>(() => (config.clearable as boolean | undefined) ?? true)
-const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
-// multiple 供 value 计算（决定单值/数组）使用；透传给 NSelect 的仍是 props.multiple
 const multiple = computed<boolean>(() => (config.multiple as boolean | undefined) ?? false)
 
 type Primitive = string | number
@@ -71,9 +67,6 @@ function handleUpdateValue(next: SelectValue) {
   <NSelect
     v-bind="props"
     :value="value"
-    :size="size"
-    :clearable="clearable"
-    :disabled="disabled"
     :options="options"
     :input-props="{ id: context.id }"
     @update:value="handleUpdateValue"

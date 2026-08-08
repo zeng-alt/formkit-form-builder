@@ -19,8 +19,7 @@ const size = computed<CascaderSize>(() => {
   if (raw === 'small' || raw === 'medium' || raw === 'large') return raw
   return 'medium'
 })
-const clearable = computed<boolean>(() => (config.clearable as boolean | undefined) ?? true)
-const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
+
 // multiple 供 value 计算（决定空值形状）使用；透传给 NCascader 的仍是 props.multiple
 const multiple = computed<boolean>(() => (config.multiple as boolean | undefined) ?? false)
 
@@ -60,8 +59,6 @@ function handleUpdateValue(next: unknown) {
     :value="value"
     :options="options"
     :size="size"
-    :clearable="clearable"
-    :disabled="disabled"
     :input-props="{ id: context.id }"
     @update:value="handleUpdateValue"
     @blur="context.handlers.blur"

@@ -12,7 +12,6 @@ const { context } = defineProps<{
 // horizontal 是布局键（wrapper class），不是 NRadioGroup 属性
 const { config, props } = useSchemaAttrs(context, { omit: ['horizontal'] })
 
-const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 const horizontal = computed<boolean>(() => (config.horizontal as boolean | undefined) ?? false)
 
 const optionsRaw = computed(() => props.value.options as unknown)
@@ -47,7 +46,7 @@ function handleUpdateValue(next: string | number) {
 </script>
 
 <template>
-  <NRadioGroup v-bind="props" :value="value" :disabled="disabled" @update:value="handleUpdateValue">
+  <NRadioGroup v-bind="props" :value="value" @update:value="handleUpdateValue">
     <div
       :class="
         horizontal ? 'flex flex-row flex-wrap gap-4 w-full py-1' : 'flex flex-col gap-2 w-full py-1'

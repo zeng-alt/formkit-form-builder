@@ -11,8 +11,6 @@ const { context } = defineProps<{
 // 配置经 context.attrs 响应式流入（属性面板修改即触发重渲染）；prefix/suffix 是插槽内容键
 const { config, props } = useSchemaAttrs(context, { omit: ['prefix', 'suffix'] })
 
-const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
-
 const prefix = computed(() => String((config.prefix as string | undefined) ?? '').trim())
 const suffix = computed(() => String((config.suffix as string | undefined) ?? '').trim())
 
@@ -30,7 +28,6 @@ function handleUpdateValue(next: string) {
     v-bind="props"
     :value="value"
     type="textarea"
-    :disabled="disabled"
     :input-props="{ id: context.id }"
     @update:value="handleUpdateValue"
     @blur="context.handlers.blur"

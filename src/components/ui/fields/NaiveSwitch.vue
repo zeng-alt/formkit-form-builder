@@ -8,18 +8,7 @@ const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { config, props } = useSchemaAttrs(context)
-
-type SwitchSize = 'small' | 'medium' | 'large'
-
-const size = computed<SwitchSize>(() => {
-  const raw = config.size as string | undefined
-  if (raw === 'tiny') return 'small'
-  if (raw === 'small' || raw === 'medium' || raw === 'large') return raw
-  return 'medium'
-})
-
-const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
+const { props } = useSchemaAttrs(context)
 
 const value = computed<boolean>(() => Boolean(context._value ?? false))
 
@@ -29,11 +18,5 @@ function handleUpdateValue(next: boolean) {
 </script>
 
 <template>
-  <NSwitch
-    v-bind="props"
-    :value="value"
-    :size="size"
-    :disabled="disabled"
-    @update:value="handleUpdateValue"
-  />
+  <NSwitch v-bind="props" :value="value" @update:value="handleUpdateValue" />
 </template>

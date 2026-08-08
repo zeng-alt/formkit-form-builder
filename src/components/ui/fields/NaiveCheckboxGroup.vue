@@ -20,7 +20,6 @@ const size = computed<GroupSize>(() => {
   if (raw === 'small' || raw === 'medium' || raw === 'large') return raw
   return 'medium'
 })
-const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
 const horizontal = computed<boolean>(() => (config.horizontal as boolean | undefined) ?? false)
 
 const optionsRaw = computed(() => props.value.options as unknown)
@@ -60,13 +59,7 @@ function handleUpdateValue(next: Array<string | number>) {
 </script>
 
 <template>
-  <NCheckboxGroup
-    v-bind="props"
-    :value="value"
-    :disabled="disabled"
-    :size="size"
-    @update:value="handleUpdateValue"
-  >
+  <NCheckboxGroup v-bind="props" :value="value" :size="size" @update:value="handleUpdateValue">
     <div
       :class="
         horizontal ? 'flex flex-row flex-wrap gap-4 w-full py-1' : 'flex flex-col gap-2 w-full py-1'

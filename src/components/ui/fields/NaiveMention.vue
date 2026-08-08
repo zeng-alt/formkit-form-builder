@@ -10,16 +10,6 @@ const { context } = defineProps<{
 
 const { config, props } = useSchemaAttrs(context)
 
-type MentionSize = 'small' | 'medium' | 'large'
-
-const size = computed<MentionSize>(() => {
-  const raw = config.size as string | undefined
-  if (raw === 'tiny') return 'small'
-  if (raw === 'small' || raw === 'medium' || raw === 'large') return raw
-  return 'medium'
-})
-const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
-
 const options = computed(() => {
   const raw = (config.options ?? context.options) as unknown
   if (!Array.isArray(raw)) return []
@@ -53,8 +43,6 @@ function handleUpdateValue(next: string) {
     v-bind="props"
     :value="value"
     :options="options"
-    :disabled="disabled"
-    :size="size"
     @update:value="handleUpdateValue"
     @blur="context.handlers.blur"
   />

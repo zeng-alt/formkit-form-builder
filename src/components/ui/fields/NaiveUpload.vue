@@ -12,8 +12,6 @@ const { context } = defineProps<{
 // size 只用于拖拽区字号 class，不作为 NUpload 属性传入
 const { config, props } = useSchemaAttrs(context, { omit: ['size'] })
 
-const disabled = computed<boolean>(() => Boolean(context.disabled ?? false))
-
 const size = computed(() => (config.size as string | undefined) ?? 'medium')
 const multiple = computed(() => {
   const raw = config.multiple as unknown
@@ -76,8 +74,6 @@ function customRequest(options: UploadCustomRequestOptions) {
   <NUpload
     v-bind="props"
     v-model:file-list="fileList"
-    :disabled="disabled"
-    :multiple="multiple"
     :custom-request="customRequest"
     :show-download-button="false"
     :show-preview-button="false"
@@ -86,7 +82,7 @@ function customRequest(options: UploadCustomRequestOptions) {
   >
     <n-upload-dragger>
       <div class="flex justify-center mb-3">
-        <span class="i-lucide-upload text-[48px] text-muted-foreground"></span>
+        <span class="i-lucide-upload text-muted-foreground"></span>
       </div>
       <n-text style="font-size: 16px"> 点击或者拖动文件到该区域来上传 </n-text>
       <n-p depth="3" style="margin: 8px 0 0 0">
