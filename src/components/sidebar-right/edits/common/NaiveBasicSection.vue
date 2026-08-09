@@ -4,27 +4,30 @@ import NumberInput from './NumberInput.vue'
 import SelectInput from './SelectInput.vue'
 import SwitchInput from './SwitchInput.vue'
 
-const props = withDefaults(defineProps<{
-  size?: boolean
-  disabled?: boolean
-  clearable?: boolean
-  bordered?: boolean
-  readonly?: boolean
-  round?: boolean
-  autofocus?: boolean
-  showCount?: boolean
-  showPasswordOn?: boolean
-  maxlength?: boolean
-  minlength?: boolean
-  sizeOptions?: Array<{ label: string, value: string }>
-}>(), {
-  sizeOptions: () => [
-    { label: 'tiny', value: 'tiny' },
-    { label: 'small', value: 'small' },
-    { label: 'medium', value: 'medium' },
-    { label: 'large', value: 'large' },
-  ]
-})
+const props = withDefaults(
+  defineProps<{
+    size?: boolean
+    disabled?: boolean
+    clearable?: boolean
+    bordered?: boolean
+    readonly?: boolean
+    round?: boolean
+    autofocus?: boolean
+    showCount?: boolean
+    showPasswordOn?: boolean
+    maxlength?: boolean
+    minlength?: boolean
+    sizeOptions?: Array<{ label: string; value: string }>
+  }>(),
+  {
+    sizeOptions: () => [
+      { label: 'tiny', value: 'tiny' },
+      { label: 'small', value: 'small' },
+      { label: 'medium', value: 'medium' },
+      { label: 'large', value: 'large' },
+    ],
+  },
+)
 
 const { createPropsProp } = useFormField()
 
