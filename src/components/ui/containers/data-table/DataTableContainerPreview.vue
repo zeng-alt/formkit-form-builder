@@ -364,13 +364,12 @@ function deleteRow(row: Record<string, unknown>) {
           :x-scrollable="!searchExpanded"
           class="flex-1 min-w-0"
           :content-class="
-            searchExpanded
-              ? 'flex flex-wrap items-center gap-2'
-              : 'flex items-center gap-2 pb-2.5'
+            searchExpanded ? 'flex flex-wrap items-center gap-2' : 'flex items-center gap-2 pb-2.5'
           "
         >
           <div v-for="sf in searchFields" :key="sf.key" class="flex items-center gap-1.5 shrink-0">
-            <span class="whitespace-nowrap text-xs text-neutral-700 dark:text-zinc-300">{{ sf.title
+            <span class="whitespace-nowrap text-xs text-neutral-700 dark:text-zinc-300">{{
+              sf.title
             }}</span>
             <DataTableSearchField
               :column="sf"

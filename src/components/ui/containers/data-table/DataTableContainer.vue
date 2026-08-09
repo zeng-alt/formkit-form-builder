@@ -371,7 +371,9 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
           :ref="dndSearch.containerRef"
           :class="[
             'flex-1 min-w-0 items-center gap-1.5',
-            searchExpanded ? 'flex flex-wrap' : 'flex flex-nowrap overflow-x-auto thin-scrollbar pb-1',
+            searchExpanded
+              ? 'flex flex-wrap'
+              : 'flex flex-nowrap overflow-x-auto thin-scrollbar pb-1',
           ]"
         >
           <div
