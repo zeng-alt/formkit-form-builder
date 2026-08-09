@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import NaiveBasicSection from '../common/NaiveBasicSection.vue'
@@ -9,6 +10,7 @@ import TextInput from '../common/TextInput.vue'
 import { INPUT_BASIC_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const naiveRateAllowHalf = createPropsProp<boolean>('allowHalf', false)
 const naiveRateCountRaw = createPropsProp<unknown>('count', 5)
@@ -30,13 +32,13 @@ const naiveRateCount = computed({
   <BindEditor :events="INPUT_BASIC_EVENTS" />
   <LabelHelpSection />
   <TextInput
-    label="count"
+    :label="t('edits.props.count')"
     placeholder="5"
     :value="naiveRateCount"
     @update:value="(v) => (naiveRateCount = v)"
   />
   <SwitchInput
-    label="allow-half"
+    :label="t('edits.props.allowHalf')"
     :value="naiveRateAllowHalf"
     @update:value="(v) => (naiveRateAllowHalf = v)"
   />

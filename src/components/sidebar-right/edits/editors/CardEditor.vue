@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import SelectInput from '../common/SelectInput.vue'
@@ -7,6 +8,7 @@ import SwitchInput from '../common/SwitchInput.vue'
 import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const cardSize = createPropsProp<string>('size', 'medium')
 const cardBordered = createPropsProp<boolean>('bordered', true)
@@ -18,7 +20,7 @@ const cardHoverable = createPropsProp<boolean>('hoverable', false)
   <BindEditor :events="NO_EVENTS" />
   <LabelHelpSection />
   <SelectInput
-    label="size"
+    :label="t('edits.props.size')"
     :value="cardSize"
     :options="[
       { label: 'small', value: 'small' },
@@ -28,10 +30,18 @@ const cardHoverable = createPropsProp<boolean>('hoverable', false)
     ]"
     @update:value="(v) => (cardSize = v)"
   />
-  <SwitchInput label="bordered" :value="cardBordered" @update:value="(v) => (cardBordered = v)" />
-  <SwitchInput label="embedded" :value="cardEmbedded" @update:value="(v) => (cardEmbedded = v)" />
   <SwitchInput
-    label="hoverable"
+    :label="t('edits.props.bordered')"
+    :value="cardBordered"
+    @update:value="(v) => (cardBordered = v)"
+  />
+  <SwitchInput
+    :label="t('edits.props.embedded')"
+    :value="cardEmbedded"
+    @update:value="(v) => (cardEmbedded = v)"
+  />
+  <SwitchInput
+    :label="t('edits.props.hoverable')"
     :value="cardHoverable"
     @update:value="(v) => (cardHoverable = v)"
   />

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import BindEditor from '../BindEditor.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
@@ -7,6 +8,7 @@ import TextInput from '../common/TextInput.vue'
 import { BUTTON_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createButtonProp, buttonText } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const buttonBlock = createButtonProp<boolean>('block', false)
 const buttonBordered = createButtonProp<boolean>('bordered', true)
@@ -26,13 +28,13 @@ const buttonType = createButtonProp<string>('buttonType', 'default')
 <template>
   <BindEditor :events="BUTTON_EVENTS" />
   <TextInput
-    label="text"
-    placeholder="Button text"
+    :label="t('edits.props.text')"
+    :placeholder="t('edits.button.textPlaceholder')"
     :value="buttonText"
     @update:value="(v) => (buttonText = v)"
   />
   <SelectInput
-    label="align"
+    :label="t('edits.props.align')"
     :value="buttonAlign"
     :options="[
       { label: 'left', value: 'left' },
@@ -42,7 +44,7 @@ const buttonType = createButtonProp<string>('buttonType', 'default')
     @update:value="(v) => (buttonAlign = v)"
   />
   <SelectInput
-    label="size"
+    :label="t('edits.props.size')"
     :value="buttonSize"
     :options="[
       { label: 'tiny', value: 'tiny' },
@@ -53,7 +55,7 @@ const buttonType = createButtonProp<string>('buttonType', 'default')
     @update:value="(v) => (buttonSize = v)"
   />
   <SelectInput
-    label="type"
+    :label="t('edits.props.type')"
     :value="buttonType"
     :options="[
       { label: 'default', value: 'default' },
@@ -66,33 +68,53 @@ const buttonType = createButtonProp<string>('buttonType', 'default')
     ]"
     @update:value="(v) => (buttonType = v)"
   />
-  <SwitchInput label="block" :value="buttonBlock" @update:value="(v) => (buttonBlock = v)" />
   <SwitchInput
-    label="bordered"
+    :label="t('edits.props.block')"
+    :value="buttonBlock"
+    @update:value="(v) => (buttonBlock = v)"
+  />
+  <SwitchInput
+    :label="t('edits.props.bordered')"
     :value="buttonBordered"
     @update:value="(v) => (buttonBordered = v)"
   />
-  <SwitchInput label="circle" :value="buttonCircle" @update:value="(v) => (buttonCircle = v)" />
-  <SwitchInput label="dashed" :value="buttonDashed" @update:value="(v) => (buttonDashed = v)" />
   <SwitchInput
-    label="disabled"
+    :label="t('edits.props.circle')"
+    :value="buttonCircle"
+    @update:value="(v) => (buttonCircle = v)"
+  />
+  <SwitchInput
+    :label="t('edits.props.dashed')"
+    :value="buttonDashed"
+    @update:value="(v) => (buttonDashed = v)"
+  />
+  <SwitchInput
+    :label="t('edits.props.disabled')"
     :value="buttonDisabled"
     @update:value="(v) => (buttonDisabled = v)"
   />
   <SwitchInput
-    label="focusable"
+    :label="t('edits.props.focusable')"
     :value="buttonFocusable"
     @update:value="(v) => (buttonFocusable = v)"
   />
   <SwitchInput
-    label="full width"
+    :label="t('edits.props.fullWidth')"
     :value="buttonFullWidth"
     @update:value="(v) => (buttonFullWidth = v)"
   />
-  <SwitchInput label="ghost" :value="buttonGhost" @update:value="(v) => (buttonGhost = v)" />
-  <SwitchInput label="round" :value="buttonRound" @update:value="(v) => (buttonRound = v)" />
   <SwitchInput
-    label="secondary"
+    :label="t('edits.props.ghost')"
+    :value="buttonGhost"
+    @update:value="(v) => (buttonGhost = v)"
+  />
+  <SwitchInput
+    :label="t('edits.props.round')"
+    :value="buttonRound"
+    @update:value="(v) => (buttonRound = v)"
+  />
+  <SwitchInput
+    :label="t('edits.props.secondary')"
     :value="buttonSecondary"
     @update:value="(v) => (buttonSecondary = v)"
   />

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import NumberInput from './NumberInput.vue'
 import SelectInput from './SelectInput.vue'
 import SwitchInput from './SwitchInput.vue'
@@ -30,6 +31,7 @@ const props = withDefaults(
 )
 
 const { createPropsProp } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const naiveSize = createPropsProp<string>('size', 'medium')
 const naiveDisabled = createPropsProp<boolean>('disabled', false)
@@ -47,56 +49,56 @@ const naiveMinlength = createPropsProp<number | null>('minlength', null)
 <template>
   <SelectInput
     v-if="props.size"
-    label="size"
+    :label="t('edits.props.size')"
     :value="naiveSize"
     :options="props.sizeOptions"
     @update:value="(v) => (naiveSize = v)"
   />
   <SwitchInput
     v-if="props.disabled"
-    label="disabled"
+    :label="t('edits.props.disabled')"
     :value="naiveDisabled"
     @update:value="(v) => (naiveDisabled = v)"
   />
   <SwitchInput
     v-if="props.clearable"
-    label="clearable"
+    :label="t('edits.props.clearable')"
     :value="naiveClearable"
     @update:value="(v) => (naiveClearable = v)"
   />
   <SwitchInput
     v-if="props.bordered"
-    label="bordered"
+    :label="t('edits.props.bordered')"
     :value="naiveBordered"
     @update:value="(v) => (naiveBordered = v)"
   />
   <SwitchInput
     v-if="props.readonly"
-    label="readonly"
+    :label="t('edits.props.readonly')"
     :value="naiveReadonly"
     @update:value="(v) => (naiveReadonly = v)"
   />
   <SwitchInput
     v-if="props.round"
-    label="round"
+    :label="t('edits.props.round')"
     :value="naiveRound"
     @update:value="(v) => (naiveRound = v)"
   />
   <SwitchInput
     v-if="props.autofocus"
-    label="autofocus"
+    :label="t('edits.props.autofocus')"
     :value="naiveAutofocus"
     @update:value="(v) => (naiveAutofocus = v)"
   />
   <SwitchInput
     v-if="props.showCount"
-    label="showCount"
+    :label="t('edits.props.showCount')"
     :value="naiveShowCount"
     @update:value="(v) => (naiveShowCount = v)"
   />
   <SelectInput
     v-if="props.showPasswordOn"
-    label="show-password-on"
+    :label="t('edits.props.showPasswordOn')"
     :value="naiveShowPasswordOn"
     :options="[
       { label: 'click', value: 'click' },
@@ -106,14 +108,14 @@ const naiveMinlength = createPropsProp<number | null>('minlength', null)
   />
   <NumberInput
     v-if="props.maxlength"
-    label="maxlength"
+    :label="t('edits.props.maxlength')"
     placeholder="null"
     :value="naiveMaxlength"
     @update:value="(v) => (naiveMaxlength = v)"
   />
   <NumberInput
     v-if="props.minlength"
-    label="minlength"
+    :label="t('edits.props.minlength')"
     placeholder="null"
     :value="naiveMinlength"
     @update:value="(v) => (naiveMinlength = v)"

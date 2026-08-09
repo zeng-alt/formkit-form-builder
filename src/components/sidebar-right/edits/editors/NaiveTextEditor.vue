@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import { computed } from 'vue'
 import BindEditor from '../BindEditor.vue'
 import SelectInput from '../common/SelectInput.vue'
@@ -7,6 +8,7 @@ import SwitchInput from '../common/SwitchInput.vue'
 import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const typoTheme = createPropsProp<string>('theme', 'default')
 const typoDepthRaw = createPropsProp<unknown>('depth', 1)
@@ -32,7 +34,7 @@ const typoCode = createPropsProp<boolean>('code', false)
 <template>
   <BindEditor :events="NO_EVENTS" />
   <SelectInput
-    label="theme"
+    :label="t('edits.props.theme')"
     :value="typoTheme"
     :options="[
       { label: 'default', value: 'default' },
@@ -45,7 +47,7 @@ const typoCode = createPropsProp<boolean>('code', false)
     @update:value="(v) => (typoTheme = v)"
   />
   <SelectInput
-    label="depth"
+    :label="t('edits.props.depth')"
     :value="typoDepth"
     :options="[
       { label: '1', value: '1' },
@@ -54,13 +56,29 @@ const typoCode = createPropsProp<boolean>('code', false)
     ]"
     @update:value="(v) => (typoDepth = v)"
   />
-  <SwitchInput label="strong" :value="typoStrong" @update:value="(v) => (typoStrong = v)" />
-  <SwitchInput label="italic" :value="typoItalic" @update:value="(v) => (typoItalic = v)" />
   <SwitchInput
-    label="underline"
+    :label="t('edits.props.strong')"
+    :value="typoStrong"
+    @update:value="(v) => (typoStrong = v)"
+  />
+  <SwitchInput
+    :label="t('edits.props.italic')"
+    :value="typoItalic"
+    @update:value="(v) => (typoItalic = v)"
+  />
+  <SwitchInput
+    :label="t('edits.props.underline')"
     :value="typoUnderline"
     @update:value="(v) => (typoUnderline = v)"
   />
-  <SwitchInput label="delete" :value="typoDelete" @update:value="(v) => (typoDelete = v)" />
-  <SwitchInput label="code" :value="typoCode" @update:value="(v) => (typoCode = v)" />
+  <SwitchInput
+    :label="t('edits.props.delete')"
+    :value="typoDelete"
+    @update:value="(v) => (typoDelete = v)"
+  />
+  <SwitchInput
+    :label="t('edits.props.code')"
+    :value="typoCode"
+    @update:value="(v) => (typoCode = v)"
+  />
 </template>

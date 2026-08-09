@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
+import { useFormBuilderI18n } from '@/i18n/context'
 import { useFormField } from '../../../../composables/form-fields'
 import JsonTextarea from './JsonTextarea.vue'
 
 // 所属 FormBuilder 实例状态：选中 token 绑定到各自实例。
 const { selectedIndex, selectedKey } = useFormBuilderState()
 const { optionsRaw } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const draft = ref('')
 const error = ref('')
@@ -25,13 +27,13 @@ const model = computed({
     try {
       const parsed = JSON.parse(value) as unknown
       if (!Array.isArray(parsed)) {
-        error.value = 'Options 必须是数组 JSON'
+        error.value = t('edits.optionsSource.jsonArrayError')
         return
       }
       optionsRaw.value = parsed
       error.value = ''
     } catch {
-      error.value = 'JSON 格式错误'
+      error.value = t('edits.optionsSource.jsonParseError')
     }
   },
 })
@@ -48,7 +50,7 @@ watch(
 
 <template>
   <JsonTextarea
-    label="Options (JSON)"
+    :label="t('edits.optionsJsonLabel')"
     placeholder='[{"label":"Option 1","value":"1","children":[{"label":"Option 1-1","value":"1-1"}]}]'
     :value="model"
     :error="error"

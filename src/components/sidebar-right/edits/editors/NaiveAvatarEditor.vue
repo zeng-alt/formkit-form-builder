@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import SwitchInput from '../common/SwitchInput.vue'
@@ -8,6 +9,7 @@ import TextInput from '../common/TextInput.vue'
 import { DISPLAY_CLICK_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const avatarSrc = createPropsProp<string>('src', '')
 const avatarSizeRaw = createPropsProp<unknown>('avatarSize', 48)
@@ -32,26 +34,30 @@ const avatarFallbackText = createPropsProp<string>('fallbackText', 'A')
   <BindEditor :events="DISPLAY_CLICK_EVENTS" />
   <LabelHelpSection />
   <TextInput
-    label="src"
+    :label="t('edits.props.src')"
     placeholder="https://..."
     :value="avatarSrc"
     @update:value="(v) => (avatarSrc = v)"
   />
   <TextInput
-    label="size"
+    :label="t('edits.props.size')"
     placeholder="48"
     :value="avatarSize"
     @update:value="(v) => (avatarSize = v)"
   />
   <TextInput
-    label="fallback-text"
+    :label="t('edits.props.fallbackText')"
     placeholder="A"
     :value="avatarFallbackText"
     @update:value="(v) => (avatarFallbackText = v)"
   />
-  <SwitchInput label="round" :value="avatarRound" @update:value="(v) => (avatarRound = v)" />
   <SwitchInput
-    label="bordered"
+    :label="t('edits.props.round')"
+    :value="avatarRound"
+    @update:value="(v) => (avatarRound = v)"
+  />
+  <SwitchInput
+    :label="t('edits.props.bordered')"
     :value="avatarBordered"
     @update:value="(v) => (avatarBordered = v)"
   />

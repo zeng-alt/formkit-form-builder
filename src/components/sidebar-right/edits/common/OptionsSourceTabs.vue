@@ -364,7 +364,7 @@ const removePairRow = (idx: number) => {
         :tab="t('edits.optionsSource.tabs.json')"
       >
         <JsonTextarea
-          label="Options (JSON)"
+          :label="t('edits.optionsJsonLabel')"
           placeholder='[{"label":"Option 1","value":"1"}]'
           :value="jsonDraft"
           :error="jsonError"

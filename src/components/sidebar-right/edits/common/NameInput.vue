@@ -50,11 +50,10 @@ const isNameTaken = (name: string) => {
 // 字段：必填 + 格式 + 唯一；容器/布局/tab pane：可选，有值时校验格式与唯一
 const nameError = computed(() => {
   if (!isNamedNode.value) return ''
-  if (isFieldsCategory.value && !fieldName.value) return 'Name 不能为空'
+  if (isFieldsCategory.value && !fieldName.value) return t('edits.nameRequired')
   if (!fieldName.value) return ''
-  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName.value))
-    return 'Name 只能包含字母/数字/_ 且不能以数字开头'
-  if (isNameTaken(fieldName.value)) return 'Name 已存在'
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName.value)) return t('edits.nameFormat')
+  if (isNameTaken(fieldName.value)) return t('edits.nameExists')
   return ''
 })
 </script>
@@ -63,14 +62,14 @@ const nameError = computed(() => {
   <!-- tab pane：Name（数据字段名）+ Label（tab 标题） -->
   <template v-if="hasField && isTabsPane">
     <TextInput
-      label="Name"
+      :label="t('edits.name')"
       :placeholder="t('edits.placeholder.fieldName')"
       :value="fieldName"
       :error="nameError"
       @update:value="(v) => (fieldName = v)"
     />
     <TextInput
-      label="Label"
+      :label="t('edits.label')"
       :placeholder="t('edits.placeholder.label')"
       :value="label"
       @update:value="(v) => (label = v)"
@@ -78,7 +77,7 @@ const nameError = computed(() => {
   </template>
   <TextInput
     v-else-if="hasField && isNamedNode"
-    label="Name"
+    :label="t('edits.name')"
     :placeholder="t('edits.placeholder.fieldName')"
     :value="fieldName"
     :error="nameError"

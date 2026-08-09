@@ -9,7 +9,7 @@ const { t } = useFormBuilderI18n()
 
 <template>
   <TextInput
-    label="Placeholder"
+    :label="t('edits.placeholderLabel')"
     :placeholder="t('edits.placeholder.placeholder')"
     :value="placeholder"
     @update:value="(v) => (placeholder = v)"

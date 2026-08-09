@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import { DEFAULT_DATE_VALUE_FORMAT, DEFAULT_TIME_VALUE_FORMAT } from '@/elements/constants'
 import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
@@ -11,6 +12,7 @@ import SelectInput from '../common/SelectInput.vue'
 import { INPUT_FULL_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp, currentFieldType } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const defaultValueFormat = computed(() => {
   if (currentFieldType.value === 'time') return DEFAULT_TIME_VALUE_FORMAT
@@ -38,7 +40,7 @@ const naivePickerType = createPropsProp<string>('type', 'date')
   <PlaceholderSection />
   <SelectInput
     v-if="currentFieldType === 'date'"
-    label="type"
+    :label="t('edits.props.type')"
     :value="naivePickerType"
     :options="[
       { label: 'date', value: 'date' },
@@ -56,7 +58,7 @@ const naivePickerType = createPropsProp<string>('type', 'date')
     @update:value="(v) => (naivePickerType = v)"
   />
   <TextInput
-    label="value-format"
+    :label="t('edits.props.valueFormat')"
     :placeholder="defaultValueFormat"
     :value="valueFormat"
     @update:value="(v) => (valueFormat = v)"

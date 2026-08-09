@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import BindEditor from '../BindEditor.vue'
 import TextInput from '../common/TextInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const show = createPropsProp<boolean | undefined>('show', true)
 const rightRaw = createPropsProp<unknown>('right', 40)
@@ -50,11 +52,21 @@ const visibilityHeight = computed({
 
 <template>
   <BindEditor :events="NO_EVENTS" />
-  <SwitchInput label="show" :value="show" @update:value="(v) => (show = v)" />
-  <TextInput label="right" placeholder="40" :value="right" @update:value="(v) => (right = v)" />
-  <TextInput label="bottom" placeholder="40" :value="bottom" @update:value="(v) => (bottom = v)" />
+  <SwitchInput :label="t('edits.props.show')" :value="show" @update:value="(v) => (show = v)" />
   <TextInput
-    label="visibility-height"
+    :label="t('edits.props.right')"
+    placeholder="40"
+    :value="right"
+    @update:value="(v) => (right = v)"
+  />
+  <TextInput
+    :label="t('edits.props.bottom')"
+    placeholder="40"
+    :value="bottom"
+    @update:value="(v) => (bottom = v)"
+  />
+  <TextInput
+    :label="t('edits.props.visibilityHeight')"
     placeholder="0"
     :value="visibilityHeight"
     @update:value="(v) => (visibilityHeight = v)"

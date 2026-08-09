@@ -12,13 +12,13 @@ const suffix = createPropsProp<string>('suffix', '')
 
 <template>
   <TextInput
-    label="prefix"
+    :label="t('edits.props.prefix')"
     :placeholder="t('edits.placeholder.prefix')"
     :value="prefix"
     @update:value="(v) => (prefix = v)"
   />
   <TextInput
-    label="suffix"
+    :label="t('edits.props.suffix')"
     :placeholder="t('edits.placeholder.suffix')"
     :value="suffix"
     @update:value="(v) => (suffix = v)"

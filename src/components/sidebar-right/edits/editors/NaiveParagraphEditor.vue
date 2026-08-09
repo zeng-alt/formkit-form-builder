@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import BindEditor from '../BindEditor.vue'
 import SelectInput from '../common/SelectInput.vue'
 import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const typoTheme = createPropsProp<string>('theme', 'default')
 const typoDepthRaw = createPropsProp<unknown>('depth', 1)
@@ -27,7 +29,7 @@ const typoAlign = createPropsProp<string>('align', 'start')
 <template>
   <BindEditor :events="NO_EVENTS" />
   <SelectInput
-    label="theme"
+    :label="t('edits.props.theme')"
     :value="typoTheme"
     :options="[
       { label: 'default', value: 'default' },
@@ -40,7 +42,7 @@ const typoAlign = createPropsProp<string>('align', 'start')
     @update:value="(v) => (typoTheme = v)"
   />
   <SelectInput
-    label="depth"
+    :label="t('edits.props.depth')"
     :value="typoDepth"
     :options="[
       { label: '1', value: '1' },
@@ -50,7 +52,7 @@ const typoAlign = createPropsProp<string>('align', 'start')
     @update:value="(v) => (typoDepth = v)"
   />
   <SelectInput
-    label="align"
+    :label="t('edits.props.align')"
     :value="typoAlign"
     :options="[
       { label: 'start', value: 'start' },

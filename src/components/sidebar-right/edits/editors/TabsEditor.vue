@@ -4,9 +4,11 @@ import LabelHelpSection from '../common/LabelHelpSection.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 import { useFormField } from '../../../../composables/form-fields'
+import { useFormBuilderI18n } from '../../../../i18n/context'
 import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
+const { t } = useFormBuilderI18n()
 
 const type = createPropsProp<string>('type', 'line')
 const placement = createPropsProp<string>('placement', 'top')
@@ -19,7 +21,7 @@ const closable = createPropsProp<boolean>('closable', false)
   <BindEditor :events="NO_EVENTS" />
   <LabelHelpSection />
   <SelectInput
-    label="type"
+    :label="t('edits.props.type')"
     :value="type"
     :options="[
       { label: 'line', value: 'line' },
@@ -30,7 +32,7 @@ const closable = createPropsProp<boolean>('closable', false)
     @update:value="(v) => (type = v)"
   />
   <SelectInput
-    label="placement"
+    :label="t('edits.props.placement')"
     :value="placement"
     :options="[
       { label: 'top', value: 'top' },
@@ -41,7 +43,7 @@ const closable = createPropsProp<boolean>('closable', false)
     @update:value="(v) => (placement = v)"
   />
   <SelectInput
-    label="size"
+    :label="t('edits.props.size')"
     :value="size"
     :options="[
       { label: 'small', value: 'small' },
@@ -50,6 +52,14 @@ const closable = createPropsProp<boolean>('closable', false)
     ]"
     @update:value="(v) => (size = v)"
   />
-  <SwitchInput label="animated" :value="animated" @update:value="(v) => (animated = v)" />
-  <SwitchInput label="closable" :value="closable" @update:value="(v) => (closable = v)" />
+  <SwitchInput
+    :label="t('edits.props.animated')"
+    :value="animated"
+    @update:value="(v) => (animated = v)"
+  />
+  <SwitchInput
+    :label="t('edits.props.closable')"
+    :value="closable"
+    @update:value="(v) => (closable = v)"
+  />
 </template>
