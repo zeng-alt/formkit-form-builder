@@ -313,6 +313,8 @@ export default {
       pageSize: 'Page size',
       scrollX: 'Scroll width (scrollX)',
       scrollXPlaceholder: 'e.g. 1200',
+      modalWidth: 'Modal width (px)',
+      modalWidthPlaceholder: 'e.g. 520',
       column: 'Column',
       columnKey: 'Field key',
       columnKeyPlaceholder: 'e.g. name',

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, h, inject, ref, watch, type Ref } from 'vue'
-import { NButton, NCard, NDataTable, NInput, NModal } from 'naive-ui'
-import { runBindCode, useBindAxios } from '@/utils/bind-runtime'
+import { NButton, NCard, NDataTable, NModal, NScrollbar } from 'naive-ui'
+import { runBindCode } from '@/utils/bind-runtime'
+import { useBinderHttp } from '@/composables/use-bind-http'
 import { useFormDefinition } from '@/composables/form-fields'
 import { useFormBuilderI18n } from '@/i18n/context'
 import {
@@ -17,6 +18,7 @@ import {
 } from './utils'
 import DataTableCellRenderer from './DataTableCellRenderer.vue'
 import DataTableRowCellInput from './DataTableRowCellInput.vue'
+import DataTableSearchField from './DataTableSearchField.vue'
 import type { DataTableColumn } from './types'
 
 // 预览组件：运行时（FormSchemaRenderer）以 $cmp: dataTable 渲染。
@@ -39,6 +41,7 @@ const props = withDefaults(
     bordered?: boolean
     size?: 'small' | 'medium' | 'large'
     scrollX?: number
+    modalWidth?: number
     pagination?: boolean
     pageSize?: number
     remote?: boolean
@@ -61,7 +64,7 @@ const { t } = useFormBuilderI18n()
 const { formId, formVersion } = useFormDefinition()
 // 当前表单数据（FormSchemaRenderer 注入的响应式对象；未注入则用空对象）
 const injectedFormData = inject<Ref<Record<string, unknown>> | null>('previewFormData', null)
-const bindAxios = useBindAxios()
+const bindAxios = useBinderHttp()
 
 const getDataCode = computed(() => {
   const code = props.getData
@@ -127,14 +130,20 @@ const rowKey = computed(() => toRowKey({ data: props.data, rowKey: props.rowKey 
 const pageSizeDefault = computed(() =>
   toPageSize({ data: props.data, pageSize: props.pageSize }, 10),
 )
+// 新增/编辑弹窗宽度：缺省 520px；配置后固定宽度并限制最大 90vw，高度始终随内容自适应
+const addModalWidth = computed(() => {
+  const w = Number(props.modalWidth)
+  return Number.isFinite(w) && w > 0 ? w : 520
+})
 
 // ─── 搜索区：按搜索字段录入条件，搜索/重置过滤 ────────────────────────────────
-const searchValues = ref<Record<string, string>>({})
+// 值类型放宽为 unknown：搜索控件按来源元素渲染，select/switch 等值未必是字符串
+const searchValues = ref<Record<string, unknown>>({})
 const searchExpanded = ref(false)
 watch(
   () => searchFields.value.map((f) => f.key).join('|'),
   () => {
-    const next: Record<string, string> = {}
+    const next: Record<string, unknown> = {}
     for (const f of searchFields.value) next[f.key] = searchValues.value[f.key] ?? ''
     searchValues.value = next
   },
@@ -348,25 +357,28 @@ function deleteRow(row: Record<string, unknown>) {
 
     <!-- 搜索区：有搜索字段才显示 -->
     <div v-if="searchFields.length" class="mb-3">
-      <div class="flex items-center gap-2">
-        <div
-          :class="[
-            'flex-1 min-w-0 items-center gap-2',
-            searchExpanded ? 'flex flex-wrap' : 'flex flex-nowrap overflow-hidden',
-          ]"
+      <!-- items-start：滚动条底部为横向滚动条留白（content pb），顶对齐保证输入框与操作按钮同一条线 -->
+      <div class="flex items-start gap-2">
+        <!-- 一行模式：n-scrollbar 主题化横向滚动（x-scrollable，内容 fit-content），字段保持原始宽度；展开模式换行 -->
+        <n-scrollbar
+          :x-scrollable="!searchExpanded"
+          class="flex-1 min-w-0"
+          :content-class="
+            searchExpanded
+              ? 'flex flex-wrap items-center gap-2'
+              : 'flex items-center gap-2 pb-2.5'
+          "
         >
           <div v-for="sf in searchFields" :key="sf.key" class="flex items-center gap-1.5 shrink-0">
-            <span class="text-[11px] text-muted-foreground">{{ sf.title }}</span>
-            <n-input
+            <span class="whitespace-nowrap text-xs text-neutral-700 dark:text-zinc-300">{{ sf.title
+            }}</span>
+            <DataTableSearchField
+              :column="sf"
               :value="searchValues[sf.key] ?? ''"
-              size="small"
-              clearable
-              :placeholder="sf.title"
-              class="!w-40"
               @update:value="(v) => (searchValues[sf.key] = v)"
             />
           </div>
-        </div>
+        </n-scrollbar>
         <div class="flex items-center gap-1 shrink-0">
           <n-button size="small" @click="applySearch">
             <template #icon><span class="i-lucide-search h-3.5 w-3.5"></span></template>
@@ -410,7 +422,11 @@ function deleteRow(row: Record<string, unknown>) {
       @update:page="onPageChange"
     />
 
-    <n-modal v-model:show="addOpen" preset="card" class="max-w-[520px]">
+    <n-modal
+      v-model:show="addOpen"
+      preset="card"
+      :style="{ width: `${addModalWidth}px`, maxWidth: '90vw' }"
+    >
       <template #header>
         <span class="text-sm font-medium">{{ rowModalTitle }}</span>
       </template>

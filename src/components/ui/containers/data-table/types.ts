@@ -39,6 +39,8 @@ export interface DataTableConfig {
   size?: 'small' | 'medium' | 'large'
   /** 固定列总宽（横向滚动阈值，px） */
   scrollX?: number
+  /** 新增/编辑弹窗宽度（px，缺省 520）；高度自适应内容不设 */
+  modalWidth?: number
   /** 是否启用分页 */
   pagination?: boolean
   /** 每页条数 */

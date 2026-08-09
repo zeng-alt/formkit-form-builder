@@ -16,6 +16,7 @@ import { getElementTypeDef } from '@/dsl'
 import type { FieldNode } from '@/types/dsl'
 import {
   columnKind,
+  columnsFromChildren,
   evaluateColumnExpr,
   isColumnVisible,
   toColspan,
@@ -24,6 +25,7 @@ import {
 } from './utils'
 import DataTableCellRenderer from './DataTableCellRenderer.vue'
 import DataTableRowCellInput from './DataTableRowCellInput.vue'
+import DataTableSearchField from './DataTableSearchField.vue'
 import type { DataTableColumn } from './types'
 
 // 画布组件：数据表格容器。分区契约（见 types.ts）：
@@ -171,6 +173,20 @@ function addColumn(type: string) {
 const deleteSearchItem = (index: number) => {
   dndSearch.items.value = dndSearch.items.value.filter((_, i) => i !== index)
   dndSearch.emitUpdate()
+}
+
+// 搜索区渲染实际控件：schema 子节点（children）→ { key, title, element }，按来源元素渲染输入控件
+const searchColumns = computed(() =>
+  columnsFromChildren(dndSearch.items.value as unknown as Record<string, unknown>[]),
+)
+// 画布本地搜索值（仅展示/演示用，不入表单数据模型；搜索过滤在预览组件中执行）
+const canvasSearchValues = ref<Record<string, unknown>>({})
+function onSearchValue(key: string | undefined, v: unknown) {
+  if (key) canvasSearchValues.value[key] = v
+}
+function searchValueAt(idx: number): unknown {
+  const col = searchColumns.value[idx]
+  return col ? (canvasSearchValues.value[col.key] ?? '') : ''
 }
 
 const deleteColumn = (index: number) => {
@@ -349,12 +365,13 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
         </n-dropdown>
       </div>
 
-      <div v-if="searchItems.length" class="flex items-center gap-2">
+      <div v-if="searchItems.length" class="flex items-start gap-2">
+        <!-- 画布搜索区：直接渲染来源元素控件；单行超宽时原生横向滚动（thin-scrollbar 细条化） -->
         <div
           :ref="dndSearch.containerRef"
           :class="[
             'flex-1 min-w-0 items-center gap-1.5',
-            searchExpanded ? 'flex flex-wrap' : 'flex flex-nowrap overflow-hidden',
+            searchExpanded ? 'flex flex-wrap' : 'flex flex-nowrap overflow-x-auto thin-scrollbar pb-1',
           ]"
         >
           <div
@@ -362,16 +379,22 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
             :key="(item as any)?.__key || (item as any)?.name || idx"
             data-canvas-item="true"
             :class="[
-              'group relative flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs select-none',
-              'cursor-grab active:cursor-grabbing',
+              'group relative flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-xs cursor-grab active:cursor-grabbing',
               isSelected(item)
                 ? 'border-solid border-[#a277ff] bg-[#a277ff]/[0.08] text-[#a277ff]'
                 : 'border-dashed border-transparent hover:border-[#7c9ef8] hover:bg-[#f0f4ff] dark:hover:bg-[rgba(100,130,255,0.07)]',
             ]"
             @pointerdown.stop="onSelect(item)"
           >
-            <span class="i-lucide-search h-3 w-3 text-muted-foreground"></span>
-            <span class="pr-2">{{ titleOf(item) }}</span>
+            <span class="i-lucide-search h-3 w-3 text-muted-foreground shrink-0"></span>
+            <span class="whitespace-nowrap text-[11px] text-muted-foreground">{{
+              titleOf(item)
+            }}</span>
+            <DataTableSearchField
+              :column="searchColumns[idx]"
+              :value="searchValueAt(idx)"
+              @update:value="(v) => onSearchValue(searchColumns[idx]?.key, v)"
+            />
             <n-button
               quaternary
               size="tiny"
@@ -379,7 +402,7 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
               :aria-label="t('builder.deleteField')"
               @pointerdown.stop.prevent
               @click.stop="deleteSearchItem(idx)"
-              class="!h-[16px] !w-[16px] !text-muted-foreground hover:!text-red-600"
+              class="shrink-0 !h-[16px] !w-[16px] opacity-0 transition-opacity group-hover:opacity-100 !text-muted-foreground hover:!text-red-600"
             >
               <template #icon><span class="i-lucide-x h-3 w-3"></span></template>
             </n-button>

@@ -1,6 +1,6 @@
 // 数据表格（n-data-table）画布 / 预览共用的列与数据归一化工具。
 import { compileExpr } from '@/expression/evaluator'
-import { evalExpr } from '@/dsl'
+import { evalExpr, schemaNodeToDslNode } from '@/dsl'
 import type { FieldNode } from '@/types/dsl'
 import type { DataTableColumn, DataTableConfig } from './types'
 
@@ -82,7 +82,9 @@ export function columnKind(render?: string): ColumnCellKind {
   return 'text'
 }
 
-/** 由 schema 字段节点派生 { key, title }：搜索区（children）渲染输入框时取 key/title */
+/** 由 schema 字段节点派生 { key, title, element }：搜索区（children）按来源元素渲染原控件。
+ *  引擎渲染后传入的 children 是已转换的 FormKit schema 节点（$formkit/$cmp/$el），
+ *  经 schemaNodeToDslNode 回转为 DSL FieldNode；本身已是 DSL 节点则直接复用。 */
 export function columnsFromChildren(children: Array<Record<string, unknown>>): DataTableColumn[] {
   if (!Array.isArray(children)) return []
   return children.map((c) => {
@@ -95,7 +97,20 @@ export function columnsFromChildren(children: Array<Record<string, unknown>>): D
       (anyC.label as string | undefined) ||
       (anyC.props?.label as string | undefined) ||
       (key as string)
-    return { key: key as string, title: title as string }
+    let element: FieldNode | undefined
+    if (anyC && typeof anyC === 'object') {
+      if (anyC.category === 'field') {
+        element = anyC as FieldNode
+      } else if (
+        typeof anyC.$formkit === 'string' ||
+        typeof anyC.$cmp === 'string' ||
+        typeof anyC.$el === 'string'
+      ) {
+        const node = schemaNodeToDslNode(anyC)
+        if (node && node.category === 'field') element = node as FieldNode
+      }
+    }
+    return { key: key as string, title: title as string, element }
   })
 }
 

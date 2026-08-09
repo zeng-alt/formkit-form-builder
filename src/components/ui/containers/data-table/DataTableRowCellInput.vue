@@ -64,5 +64,7 @@ const onUpdate = (v: unknown) => emit('update:value', v)
     :disabled="props.disabled === true"
     class="!w-full"
     @update:value="onUpdate"
-  />
+  >
+  <template v-slot:password-invisible-icon></template>
+</n-input>
 </template>

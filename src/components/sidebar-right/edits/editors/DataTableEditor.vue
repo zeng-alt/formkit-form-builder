@@ -85,6 +85,7 @@ watch(
 const rowKey = createPropsProp<string>('rowKey', 'id')
 const pageSize = createPropsProp<number>('pageSize', 10)
 const scrollX = createPropsProp<number | null>('scrollX', null)
+const modalWidth = createPropsProp<number | null>('modalWidth', null)
 const tableSize = createPropsProp<string>('size', 'medium')
 const pagination = createPropsProp<boolean>('pagination', false)
 const remote = createPropsProp<boolean>('remote', false)
@@ -305,5 +306,12 @@ function saveCode() {
     :placeholder="t('edits.dataTable.scrollXPlaceholder')"
     :value="scrollX"
     @update:value="(v: number | null) => (scrollX = v)"
+  />
+
+  <NumberInput
+    :label="t('edits.dataTable.modalWidth')"
+    :placeholder="t('edits.dataTable.modalWidthPlaceholder')"
+    :value="modalWidth"
+    @update:value="(v: number | null) => (modalWidth = v)"
   />
 </template>

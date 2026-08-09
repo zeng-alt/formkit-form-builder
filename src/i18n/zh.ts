@@ -273,6 +273,8 @@ export default {
       pageSize: '每页条数',
       scrollX: '固定列总宽（scrollX）',
       scrollXPlaceholder: '如：1200',
+      modalWidth: '新增弹窗宽度（px）',
+      modalWidthPlaceholder: '如：520',
       column: '列',
       columnKey: '字段名（key）',
       columnKeyPlaceholder: '如：name',

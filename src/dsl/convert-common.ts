@@ -311,6 +311,14 @@ export function fieldNodeFromSchema(s: SchemaNode, fallbackType = 'text'): Field
     }
   } else {
     collect(anyS)
+    // formkit 字段：非语义配置（disabled/clearable/maxlength/size 等）由 toSchema 放入
+    // props 嵌套，需回流避免 schema→DSL 往返丢属性（数据表格搜索区重建元素依赖此处）
+    collect(anyS.props ?? {})
+    for (const [key, value] of Object.entries(anyS)) {
+      if (key === 'props' || FIELD_KNOWN_KEYS.has(key)) continue
+      if (value === undefined || props[key] !== undefined) continue
+      props[key] = value
+    }
   }
   if (Object.keys(props).length) node.props = props
 
