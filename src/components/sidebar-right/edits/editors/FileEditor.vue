@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
+import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import NaiveBasicSection from '../common/NaiveBasicSection.vue'
 import ToggleInput from '../common/ToggleInput.vue'
+import { INPUT_BASIC_EVENTS } from '@/elements/definitions/bind-events'
 
 const { numOfFiles } = useFormField()
 </script>
 
 <template>
+  <BindEditor :events="INPUT_BASIC_EVENTS" />
   <LabelHelpSection />
   <ToggleInput
     label="Number of files"

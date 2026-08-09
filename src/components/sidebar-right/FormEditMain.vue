@@ -6,7 +6,6 @@ import { useFormField } from '../../composables/form-fields'
 import EditsSection from './edits/EditsSection.vue'
 import ExpressionEditor from './edits/ExpressionEditor.vue'
 import IfConditionEditor from './edits/IfConditionEditor.vue'
-import BindEditor from './edits/BindEditor.vue'
 import { getElementTypeDef } from '@/dsl'
 import FormEditor from './edits/editors/FormEditor.vue'
 import DataTableColumnEditor from './edits/editors/DataTableColumnEditor.vue'
@@ -29,7 +28,6 @@ const isFieldsCategory = computed(() => {
       <template v-else>
         <ExpressionEditor v-if="isFieldsCategory" />
         <IfConditionEditor />
-        <BindEditor />
         <EditsSection />
         <n-divider />
         <ValidationSection />

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
+import BindEditor from '../BindEditor.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
+import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
 
@@ -11,6 +13,7 @@ const dividerVertical = createPropsProp<boolean>('vertical', false)
 </script>
 
 <template>
+  <BindEditor :events="NO_EVENTS" />
   <SelectInput
     label="title-placement"
     :value="dividerTitlePlacement"

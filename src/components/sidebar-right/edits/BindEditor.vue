@@ -12,7 +12,8 @@ type EventDef = {
   placeholder: string
 }
 
-const events: EventDef[] = [
+// 可绑定事件全集（与 bind-runtime.ts 的 allowedEventKeys 对齐）
+const allEvents: EventDef[] = [
   {
     key: 'onClick',
     title: 'Click',
@@ -55,6 +56,20 @@ await axios.get('/api/ping')`,
 const { hasField, bindEvents: bindRef, availableFieldNames } = useFormField()
 const { t } = useFormBuilderI18n()
 
+// 允许绑定的事件 key 列表（由各字段编辑器通过 events prop 传入，见 editors/* 与 elements/definitions/bind-events）；缺省 = 全部
+const props = defineProps<{
+  events?: string[]
+}>()
+
+const allowedKeys = computed<Set<string>>(() => {
+  const list = props.events
+  if (!list || !list.length) return new Set(allEvents.map((e) => e.key))
+  return new Set(list)
+})
+
+// 仅渲染字段可绑定的事件开关/按钮
+const visibleEvents = computed(() => allEvents.filter((e) => allowedKeys.value.has(e.key)))
+
 const isOpen = ref(false)
 const activeEventKey = ref<string>('onClick')
 const draft = ref('')
@@ -71,7 +86,7 @@ const bindObj = computed<Record<string, unknown>>({
 })
 
 const enabledEvents = computed(() => {
-  return events.filter((e) => Boolean(bindObj.value[e.key]))
+  return visibleEvents.value.filter((e) => Boolean(bindObj.value[e.key]))
 })
 
 function isEventEnabled(key: string): boolean {
@@ -95,7 +110,7 @@ function setEventEnabled(key: string, enabled: boolean) {
     bindObj.value = next
     return
   }
-  const def = events.find((e) => e.key === key)
+  const def = allEvents.find((e) => e.key === key)
   next[key] = def?.placeholder ?? ''
   bindObj.value = next
 }
@@ -119,7 +134,7 @@ function save() {
 </script>
 
 <template>
-  <div v-if="hasField" class="space-y-2">
+  <div v-if="hasField && visibleEvents.length > 0" class="space-y-2">
     <n-card size="small" class="rounded-xl border border-border/50">
       <div class="flex items-start gap-3">
         <div class="w-28 shrink-0">
@@ -151,7 +166,7 @@ function save() {
           <n-divider class="!my-2" />
           <div class="space-y-1">
             <SwitchInput
-              v-for="ev in events"
+              v-for="ev in visibleEvents"
               :key="ev.key"
               :label="ev.title"
               :value="isEventEnabled(ev.key)"

@@ -3,9 +3,7 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NInput } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
-import { runBindCode } from '@/utils/bind-runtime'
-import { useBinderHttp } from '@/composables/use-bind-http'
-import { useFormDefinition } from '@/composables/form-fields'
+import { useBindEvents } from '@/composables/use-bind-events'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
@@ -13,8 +11,7 @@ const { context } = defineProps<{
 
 // 配置经 context.attrs 响应式流入（属性面板修改即触发重渲染）；prefix/suffix 是插槽内容键
 const { config, props, bind } = useSchemaAttrs(context, { omit: ['prefix', 'suffix'] })
-const { formId, formVersion } = useFormDefinition()
-const bindAxios = useBinderHttp()
+const { runEvent } = useBindEvents(context, bind)
 
 const inputType = computed(() => {
   const type = context.type
@@ -44,12 +41,6 @@ const value = computed(() => {
   }
   return ['', ''] as [string, string]
 })
-const runEvent = async (key: string, event: any) => {
-  const code = bind.value[key]
-  if (typeof code !== 'string' || !code.trim()) return
-  await runBindCode(code, event, context, formId.value, formVersion.value, undefined, bindAxios)
-}
-
 async function handleUpdateValue(next: string | [string, string]) {
   context.node.input(next)
   await runEvent('onInput', next)

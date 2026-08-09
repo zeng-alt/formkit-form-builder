@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
+import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import NaiveBasicSection from '../common/NaiveBasicSection.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 import TextInput from '../common/TextInput.vue'
+import { INPUT_BASIC_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
 
@@ -25,6 +27,7 @@ const naiveRateCount = computed({
 </script>
 
 <template>
+  <BindEditor :events="INPUT_BASIC_EVENTS" />
   <LabelHelpSection />
   <TextInput
     label="count"

@@ -4,12 +4,14 @@ import type { DatePickerProps } from 'naive-ui'
 import { NDatePicker } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
+import { useBindEvents } from '@/composables/use-bind-events'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { config, props } = useSchemaAttrs(context)
+const { config, props, bind } = useSchemaAttrs(context)
+const { runEvent } = useBindEvents(context, bind)
 
 // type 是 FormKit input 类型（runtimeProp，不进 attrs），据此派生 naive picker 类型
 const pickerType = computed<DatePickerProps['type']>(() => {
@@ -33,8 +35,19 @@ const formattedValue = computed<FormattedValue>({
   },
   set: (next: FormattedValue) => {
     context.node.input(next)
+    runEvent('onInput', next)
+    runEvent('onChange', next)
   },
 })
+
+const handleFocus = async (e: FocusEvent) => {
+  await runEvent('onFocus', e)
+}
+
+const handleBlur = async (e: FocusEvent) => {
+  await runEvent('onBlur', e)
+  context.handlers.blur(e)
+}
 </script>
 
 <template>
@@ -43,6 +56,7 @@ const formattedValue = computed<FormattedValue>({
     v-model:formatted-value="formattedValue"
     :type="pickerType"
     :input-props="{ id: context.id }"
-    @blur="context.handlers.blur"
+    @focus="handleFocus"
+    @blur="handleBlur"
   />
 </template>

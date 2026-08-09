@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
+import BindEditor from '../BindEditor.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
+import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 // 按钮组容器：无 label/help（纯展示容器），仅提供企业常用配置。
 const { createPropsProp } = useFormField()
@@ -12,6 +14,7 @@ const groupDisabled = createPropsProp<boolean>('disabled', false)
 </script>
 
 <template>
+  <BindEditor :events="NO_EVENTS" />
   <SelectInput
     label="size"
     :value="groupSize"

@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
+import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import NaiveBasicSection from '../common/NaiveBasicSection.vue'
 import RangeInputs from '../common/RangeInputs.vue'
+import { INPUT_BASIC_EVENTS } from '@/elements/definitions/bind-events'
 
 const { min, max } = useFormField()
 </script>
 
 <template>
+  <BindEditor :events="INPUT_BASIC_EVENTS" />
   <LabelHelpSection />
   <RangeInputs
     label-one="Min"

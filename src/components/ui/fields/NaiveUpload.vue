@@ -4,13 +4,15 @@ import type { UploadCustomRequestOptions, UploadFileInfo } from 'naive-ui'
 import { NUpload } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
+import { useBindEvents } from '@/composables/use-bind-events'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
 // size 只用于拖拽区字号 class，不作为 NUpload 属性传入
-const { config, props } = useSchemaAttrs(context, { omit: ['size'] })
+const { config, props, bind } = useSchemaAttrs(context, { omit: ['size'] })
+const { runEvent } = useBindEvents(context, bind)
 
 const size = computed(() => (config.size as string | undefined) ?? 'medium')
 const multiple = computed(() => {
@@ -59,10 +61,12 @@ watch(
   { immediate: true, deep: true },
 )
 
-function handleUpdateFileList(next: UploadFileInfo[]) {
+async function handleUpdateFileList(next: UploadFileInfo[]) {
   fileList.value = next
   const files = next.map((f) => f.file).filter((f): f is File => f instanceof File)
   context.node.input(multiple.value ? files : files[0] ? [files[0]] : [])
+  await runEvent('onInput', next)
+  await runEvent('onChange', next)
 }
 
 function customRequest(options: UploadCustomRequestOptions) {

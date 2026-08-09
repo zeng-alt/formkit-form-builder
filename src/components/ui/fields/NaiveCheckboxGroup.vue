@@ -4,13 +4,15 @@ import { NCheckbox, NCheckboxGroup } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import { useDynamicOptions } from '../formkit/use-dynamic-options'
+import { useBindEvents } from '@/composables/use-bind-events'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
 // horizontal 是布局键（wrapper class），不是 NCheckboxGroup 属性
-const { config, props } = useSchemaAttrs(context, { omit: ['horizontal'] })
+const { config, props, bind } = useSchemaAttrs(context, { omit: ['horizontal'] })
+const { runEvent } = useBindEvents(context, bind)
 
 type GroupSize = 'small' | 'medium' | 'large'
 
@@ -53,8 +55,10 @@ const value = computed(() => {
   return [raw]
 })
 
-function handleUpdateValue(next: Array<string | number>) {
+async function handleUpdateValue(next: Array<string | number>) {
   context.node.input(next)
+  await runEvent('onInput', next)
+  await runEvent('onChange', next)
 }
 </script>
 

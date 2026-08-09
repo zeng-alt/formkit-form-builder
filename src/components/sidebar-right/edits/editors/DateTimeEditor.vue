@@ -2,11 +2,13 @@
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
 import { DEFAULT_DATE_TIME_VALUE_FORMAT } from '@/elements/constants'
+import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import PlaceholderSection from '../common/PlaceholderSection.vue'
 import NaiveBasicSection from '../common/NaiveBasicSection.vue'
 import TextInput from '../common/TextInput.vue'
 import SelectInput from '../common/SelectInput.vue'
+import { INPUT_FULL_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
 const naiveValueFormat = createPropsProp<string>('valueFormat', '')
@@ -25,6 +27,7 @@ const naivePickerType = createPropsProp<string>('type', 'datetime')
 </script>
 
 <template>
+  <BindEditor :events="INPUT_FULL_EVENTS" />
   <LabelHelpSection />
   <PlaceholderSection />
   <SelectInput

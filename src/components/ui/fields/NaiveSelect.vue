@@ -5,12 +5,14 @@ import { NSelect } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import { useDynamicOptions } from '../formkit/use-dynamic-options'
+import { useBindEvents } from '@/composables/use-bind-events'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { config, props } = useSchemaAttrs(context)
+const { config, props, bind } = useSchemaAttrs(context)
+const { runEvent } = useBindEvents(context, bind)
 
 const multiple = computed<boolean>(() => (config.multiple as boolean | undefined) ?? false)
 
@@ -58,8 +60,19 @@ const value = computed<SelectValue>(() => {
   return null
 })
 
-function handleUpdateValue(next: SelectValue) {
+async function handleUpdateValue(next: SelectValue) {
   context.node.input(next)
+  await runEvent('onInput', next)
+  await runEvent('onChange', next)
+}
+
+const handleFocus = async (e: FocusEvent) => {
+  await runEvent('onFocus', e)
+}
+
+const handleBlur = async (e: FocusEvent) => {
+  await runEvent('onBlur', e)
+  context.handlers.blur(e)
 }
 </script>
 
@@ -70,6 +83,7 @@ function handleUpdateValue(next: SelectValue) {
     :options="options"
     :input-props="{ id: context.id }"
     @update:value="handleUpdateValue"
-    @blur="context.handlers.blur"
+    @focus="handleFocus"
+    @blur="handleBlur"
   />
 </template>

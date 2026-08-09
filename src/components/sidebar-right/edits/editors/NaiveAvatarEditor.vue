@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
+import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 import TextInput from '../common/TextInput.vue'
+import { DISPLAY_CLICK_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
 
@@ -27,6 +29,7 @@ const avatarFallbackText = createPropsProp<string>('fallbackText', 'A')
 </script>
 
 <template>
+  <BindEditor :events="DISPLAY_CLICK_EVENTS" />
   <LabelHelpSection />
   <TextInput
     label="src"

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
+import BindEditor from '../BindEditor.vue'
 import SelectInput from '../common/SelectInput.vue'
+import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
 
@@ -23,6 +25,7 @@ const typoAlign = createPropsProp<string>('align', 'start')
 </script>
 
 <template>
+  <BindEditor :events="NO_EVENTS" />
   <SelectInput
     label="theme"
     :value="typoTheme"

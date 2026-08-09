@@ -4,12 +4,14 @@ import { NTreeSelect } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import { useDynamicTreeOptions } from '../formkit/use-dynamic-tree-options'
+import { useBindEvents } from '@/composables/use-bind-events'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { config, props } = useSchemaAttrs(context)
+const { config, props, bind } = useSchemaAttrs(context)
+const { runEvent } = useBindEvents(context, bind)
 // multiple 供 value 计算（决定空值形状）使用；透传给 NTreeSelect 的仍是 props.multiple
 const multiple = computed<boolean>(() => (config.multiple as boolean | undefined) ?? false)
 
@@ -39,8 +41,19 @@ const value = computed<any>(() => {
   return raw
 })
 
-function handleUpdateValue(next: unknown) {
+async function handleUpdateValue(next: unknown) {
   context.node.input(next)
+  await runEvent('onInput', next)
+  await runEvent('onChange', next)
+}
+
+const handleFocus = async (e: FocusEvent) => {
+  await runEvent('onFocus', e)
+}
+
+const handleBlur = async (e: FocusEvent) => {
+  await runEvent('onBlur', e)
+  context.handlers.blur(e)
 }
 </script>
 
@@ -51,6 +64,7 @@ function handleUpdateValue(next: unknown) {
     :options="options"
     :input-props="{ id: context.id }"
     @update:value="handleUpdateValue"
-    @blur="context.handlers.blur"
+    @focus="handleFocus"
+    @blur="handleBlur"
   />
 </template>

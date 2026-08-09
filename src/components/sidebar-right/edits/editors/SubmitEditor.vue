@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
+import BindEditor from '../BindEditor.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 import TextInput from '../common/TextInput.vue'
+import { BUTTON_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createButtonProp, buttonText } = useFormField()
 
@@ -22,6 +24,7 @@ const buttonType = createButtonProp<string>('buttonType', 'default')
 </script>
 
 <template>
+  <BindEditor :events="BUTTON_EVENTS" />
   <TextInput
     label="text"
     placeholder="Button text"

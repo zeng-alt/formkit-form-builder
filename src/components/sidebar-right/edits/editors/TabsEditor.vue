@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 import { useFormField } from '../../../../composables/form-fields'
+import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
 
@@ -14,6 +16,7 @@ const closable = createPropsProp<boolean>('closable', false)
 </script>
 
 <template>
+  <BindEditor :events="NO_EVENTS" />
   <LabelHelpSection />
   <SelectInput
     label="type"

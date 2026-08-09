@@ -3,17 +3,21 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NColorPicker } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
+import { useBindEvents } from '@/composables/use-bind-events'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { props } = useSchemaAttrs(context)
+const { props, bind } = useSchemaAttrs(context)
+const { runEvent } = useBindEvents(context, bind)
 
 const value = computed(() => (context._value ?? '') as string)
 
-function handleUpdateValue(next: string) {
+async function handleUpdateValue(next: string) {
   context.node.input(next)
+  await runEvent('onInput', next)
+  await runEvent('onChange', next)
 }
 </script>
 

@@ -2,11 +2,13 @@
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../../i18n/context'
+import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import RowSpanSection from '../common/RowSpanSection.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 import TextInput from '../common/TextInput.vue'
+import { DISPLAY_CLICK_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
 const { t } = useFormBuilderI18n()
@@ -48,6 +50,7 @@ const lazy = createPropsProp<boolean>('lazy', false)
 </script>
 
 <template>
+  <BindEditor :events="DISPLAY_CLICK_EVENTS" />
   <LabelHelpSection />
   <RowSpanSection />
   <TextInput

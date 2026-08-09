@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormField } from '../../../../composables/form-fields'
+import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import TextInput from '../common/TextInput.vue'
 import SelectInput from '../common/SelectInput.vue'
@@ -12,6 +13,7 @@ import JsonTextarea from '../common/JsonTextarea.vue'
 import JsCodeEditor from '../common/JsCodeEditor.vue'
 import type { DataTableColumn } from '@/components/ui/containers/data-table/types'
 import { NButton, NModal } from 'naive-ui'
+import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { t } = useFormBuilderI18n()
 const { createPropsProp, availableFieldNames } = useFormField()
@@ -169,6 +171,7 @@ function saveCode() {
 </script>
 
 <template>
+  <BindEditor :events="NO_EVENTS" />
   <LabelHelpSection />
 
   <TextInput

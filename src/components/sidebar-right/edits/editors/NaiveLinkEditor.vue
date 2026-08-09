@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
+import BindEditor from '../BindEditor.vue'
 import TextInput from '../common/TextInput.vue'
 import SelectInput from '../common/SelectInput.vue'
+import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
 
@@ -10,6 +12,7 @@ const linkTarget = createPropsProp<string>('target', '_blank')
 </script>
 
 <template>
+  <BindEditor :events="NO_EVENTS" />
   <TextInput
     label="href"
     placeholder="https://..."

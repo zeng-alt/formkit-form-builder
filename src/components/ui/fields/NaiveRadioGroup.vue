@@ -4,13 +4,15 @@ import { NRadio, NRadioGroup } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import { useDynamicOptions } from '../formkit/use-dynamic-options'
+import { useBindEvents } from '@/composables/use-bind-events'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
 // horizontal 是布局键（wrapper class），不是 NRadioGroup 属性
-const { config, props } = useSchemaAttrs(context, { omit: ['horizontal'] })
+const { config, props, bind } = useSchemaAttrs(context, { omit: ['horizontal'] })
+const { runEvent } = useBindEvents(context, bind)
 
 const horizontal = computed<boolean>(() => (config.horizontal as boolean | undefined) ?? false)
 
@@ -40,8 +42,10 @@ const options = computed(() => {
 
 const value = computed(() => context._value as string | number | null | undefined)
 
-function handleUpdateValue(next: string | number) {
+async function handleUpdateValue(next: string | number) {
   context.node.input(next)
+  await runEvent('onInput', next)
+  await runEvent('onChange', next)
 }
 </script>
 

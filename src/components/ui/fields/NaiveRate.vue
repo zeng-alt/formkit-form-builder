@@ -3,12 +3,14 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NRate } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
+import { useBindEvents } from '@/composables/use-bind-events'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { config, props } = useSchemaAttrs(context)
+const { config, props, bind } = useSchemaAttrs(context)
+const { runEvent } = useBindEvents(context, bind)
 
 const count = computed<number>(() => {
   const raw = config.count as unknown
@@ -30,8 +32,10 @@ const value = computed<number>(() => {
   return 0
 })
 
-function handleUpdateValue(next: number) {
+async function handleUpdateValue(next: number) {
   context.node.input(next)
+  await runEvent('onInput', next)
+  await runEvent('onChange', next)
 }
 </script>
 

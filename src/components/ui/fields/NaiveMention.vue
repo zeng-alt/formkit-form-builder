@@ -3,12 +3,14 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NMention } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
+import { useBindEvents } from '@/composables/use-bind-events'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { config, props } = useSchemaAttrs(context)
+const { config, props, bind } = useSchemaAttrs(context)
+const { runEvent } = useBindEvents(context, bind)
 
 const options = computed(() => {
   const raw = (config.options ?? context.options) as unknown
@@ -33,8 +35,19 @@ const options = computed(() => {
 
 const value = computed(() => (context._value ?? '') as string)
 
-function handleUpdateValue(next: string) {
+async function handleUpdateValue(next: string) {
   context.node.input(next)
+  await runEvent('onInput', next)
+  await runEvent('onChange', next)
+}
+
+const handleFocus = async (e: FocusEvent) => {
+  await runEvent('onFocus', e)
+}
+
+const handleBlur = async (e: FocusEvent) => {
+  await runEvent('onBlur', e)
+  context.handlers.blur(e)
 }
 </script>
 
@@ -44,6 +57,7 @@ function handleUpdateValue(next: string) {
     :value="value"
     :options="options"
     @update:value="handleUpdateValue"
-    @blur="context.handlers.blur"
+    @focus="handleFocus"
+    @blur="handleBlur"
   />
 </template>

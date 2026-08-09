@@ -1,19 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { NButton, type ButtonProps } from 'naive-ui'
-import { runBindCode } from '@/utils/bind-runtime'
-import { useBinderHttp } from '@/composables/use-bind-http'
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import InlineEditableText from '../formkit/InlineEditableText.vue'
-import { useFormDefinition } from '@/composables/form-fields'
+import { useBindEvents } from '@/composables/use-bind-events'
 
 const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
-
-const { formId, formVersion } = useFormDefinition()
-const bindAxios = useBinderHttp()
 
 // buttonType/buttonText/text/fullWidth/align 不是 NButton 属性（需单独映射或走插槽/外层 div），
 // 其余配置（block/bordered/circle/dashed/focusable/ghost/round/secondary/size）与 NButton 原生
@@ -21,6 +16,7 @@ const bindAxios = useBinderHttp()
 const { config, props, bind } = useSchemaAttrs(context, {
   omit: ['buttonText', 'buttonType', 'text', 'fullWidth', 'align'],
 })
+const { runEvent } = useBindEvents(context, bind)
 
 const disabled = computed<boolean>(() => Boolean(context?.disabled ?? false))
 
@@ -57,11 +53,18 @@ async function handleClick(e: MouseEvent) {
     context?.node?.root?.reset?.()
     return
   }
-  const onClick = bind.value.onClick
-  if (typeof onClick === 'string' && onClick.trim()) {
-    await runBindCode(onClick, e, context, formId.value, formVersion.value, undefined, bindAxios)
-  }
+  await runEvent('onClick', e)
   context?.handlers?.click?.(e)
+}
+
+async function handleFocus(e: FocusEvent) {
+  await runEvent('onFocus', e)
+  context?.handlers?.focus?.(e)
+}
+
+async function handleBlur(e: FocusEvent) {
+  await runEvent('onBlur', e)
+  context?.handlers?.blur?.(e)
 }
 </script>
 
@@ -80,6 +83,8 @@ async function handleClick(e: MouseEvent) {
       :attr-type="attrType"
       :disabled="disabled"
       @click="handleClick"
+      @focus="handleFocus"
+      @blur="handleBlur"
     >
       <InlineEditableText :context="context" prop-key="buttonText" :value="text" />
     </NButton>
