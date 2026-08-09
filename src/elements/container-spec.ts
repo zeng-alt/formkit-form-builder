@@ -26,6 +26,7 @@ export const containerSpecs: Record<string, ContainerSpec> = {
   card: { dataShape: 'object', keyProp: 'cardKey', primitive: 'cmp' },
   inputGroup: { dataShape: 'object', keyProp: 'inputGroupKey', primitive: 'cmp' },
   buttonGroup: { dataShape: 'none', keyProp: 'buttonGroupKey', primitive: 'cmp' },
+  badge: { dataShape: 'none', keyProp: 'badgeKey', primitive: 'cmp' },
   tabs: { dataShape: 'objectOfObjects', keyProp: 'tabsKey', primitive: 'cmp' },
   // 数据表格：列与数据在右侧面板配置，无 DnD 子节点，纯展示壳（同 buttonGroup）
   dataTable: { dataShape: 'none', keyProp: 'dataTableKey', primitive: 'cmp' },

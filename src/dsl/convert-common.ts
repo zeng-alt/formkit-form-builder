@@ -332,6 +332,7 @@ const CONTAINER_INTERNAL_PROPS = new Set([
   'cardKey',
   'inputGroupKey',
   'buttonGroupKey',
+  'badgeKey',
   'tabsKey',
   'modelValue',
   'label',

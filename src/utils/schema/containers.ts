@@ -6,6 +6,7 @@ export type ContainerKind =
   | 'card'
   | 'inputGroup'
   | 'buttonGroup'
+  | 'badge'
   | 'tabs'
   | 'group'
   | 'dataTable'

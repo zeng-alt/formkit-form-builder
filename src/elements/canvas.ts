@@ -20,6 +20,8 @@ import InputGroupContainer from '@/components/ui/containers/input-group/InputGro
 import InputGroupContainerPreview from '@/components/ui/containers/input-group/InputGroupContainerPreview.vue'
 import ButtonGroupContainer from '@/components/ui/containers/button-group/ButtonGroupContainer.vue'
 import ButtonGroupContainerPreview from '@/components/ui/containers/button-group/ButtonGroupContainerPreview.vue'
+import BadgeContainer from '@/components/ui/containers/badge/BadgeContainer.vue'
+import BadgeContainerPreview from '@/components/ui/containers/badge/BadgeContainerPreview.vue'
 import TabsContainer from '@/components/ui/containers/tabs/TabsContainer.vue'
 import TabsContainerPreview from '@/components/ui/containers/tabs/TabsContainerPreview.vue'
 import GroupContainer from '@/components/ui/containers/group/GroupContainer.vue'
@@ -213,6 +215,14 @@ const defs: ContainerDefinition[] = [
       formatContainer(n, ctx, 'buttonGroup', specOf('buttonGroup'), {
         transformChildren: decorateButtonGroupChildren,
       }),
+  },
+  {
+    id: 'badge',
+    match: (n) => isContainerOf(n, 'badge'),
+    canvas: { libraryKey: 'badge', component: BadgeContainer as any },
+    preview: { libraryKey: 'badge', component: BadgeContainerPreview as any },
+    normalize: (n) => normalizeContainer(n, 'badge', specOf('badge')),
+    formatPreview: (n, ctx) => formatContainer(n, ctx, 'badge', specOf('badge')),
   },
   {
     id: 'tabs',

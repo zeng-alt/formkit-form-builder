@@ -50,6 +50,7 @@ function getContainerKey(el: HTMLElement | null | undefined): string | null {
     el.getAttribute('data-card-key') ||
     el.getAttribute('data-input-group-key') ||
     el.getAttribute('data-button-group-key') ||
+    el.getAttribute('data-badge-key') ||
     el.getAttribute('data-tabs-key') ||
     el.getAttribute('data-tabs-pane-key') ||
     el.getAttribute('data-group-key')
@@ -320,7 +321,7 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
   const listMap = new Map<string, FormKitSchemaFormKit[]>()
   const listEls = Array.from(
     rootEl.querySelectorAll<HTMLElement>(
-      '[data-list-key],[data-card-key],[data-input-group-key],[data-button-group-key],[data-tabs-key],[data-tabs-pane-key],[data-group-key]',
+      '[data-list-key],[data-card-key],[data-input-group-key],[data-button-group-key],[data-badge-key],[data-tabs-key],[data-tabs-pane-key],[data-group-key]',
     ),
   )
   for (const el of listEls) {
