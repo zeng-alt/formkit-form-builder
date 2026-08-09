@@ -148,6 +148,7 @@ const resizeHandleClass = computed(() => {
       :class="[
         baseUlClass,
         props.ulClass,
+        'box-border',
         layout === 'row' && props.items.value.length === 0 ? 'items-center justify-center' : '',
       ]"
       :style="
