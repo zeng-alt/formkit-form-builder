@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { NButton, type ButtonProps } from 'naive-ui'
-import { runBindCode, useBindAxios } from '@/utils/bind-runtime'
+import { runBindCode } from '@/utils/bind-runtime'
+import { useBinderHttp } from '@/composables/use-bind-http'
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import InlineEditableText from '../formkit/InlineEditableText.vue'
@@ -12,7 +13,7 @@ const { context } = defineProps<{
 }>()
 
 const { formId, formVersion } = useFormDefinition()
-const bindAxios = useBindAxios()
+const bindAxios = useBinderHttp()
 
 // buttonType/buttonText/text/fullWidth/align 不是 NButton 属性（需单独映射或走插槽/外层 div），
 // 其余配置（block/bordered/circle/dashed/focusable/ghost/round/secondary/size）与 NButton 原生

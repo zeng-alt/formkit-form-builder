@@ -3,7 +3,8 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NInput } from 'naive-ui'
 import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
-import { runBindCode, useBindAxios } from '@/utils/bind-runtime'
+import { runBindCode } from '@/utils/bind-runtime'
+import { useBinderHttp } from '@/composables/use-bind-http'
 import { useFormDefinition } from '@/composables/form-fields'
 
 const { context } = defineProps<{
@@ -13,7 +14,7 @@ const { context } = defineProps<{
 // 配置经 context.attrs 响应式流入（属性面板修改即触发重渲染）；prefix/suffix 是插槽内容键
 const { config, props, bind } = useSchemaAttrs(context, { omit: ['prefix', 'suffix'] })
 const { formId, formVersion } = useFormDefinition()
-const bindAxios = useBindAxios()
+const bindAxios = useBinderHttp()
 
 const inputType = computed(() => {
   const type = context.type

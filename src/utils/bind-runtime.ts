@@ -1,18 +1,8 @@
 import axios, { type AxiosInstance } from 'axios'
-import { useBinderHttp } from '@/composables/use-bind-http'
 
 export { BIND_AXIOS_KEY } from '@/composables/use-bind-http'
 
 type BindJs = { __js: string }
-
-/**
- * 解析当前生效的 axios 实例：优先读 FormSchemaRenderer / FormBuilder 注入的
- * computed 实例（可经 prop / config.http 传入），否则回退到模块内置的 axios。
- * @deprecated 使用 useBinderHttp
- */
-export function useBindAxios(): AxiosInstance {
-  return useBinderHttp()
-}
 
 const allowedEventKeys = new Set(['onClick', 'onChange', 'onInput', 'onFocus', 'onBlur'])
 
