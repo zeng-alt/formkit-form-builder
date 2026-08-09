@@ -36,6 +36,8 @@ const props = defineProps<{
   onResizeEnd: () => void
   /** 拖拽调整宽度时的 span 上限（如输入组：当前项 ≤ 12 - 其余项之和） */
   maxSpanFor?: (index: number, items: FormKitSchemaFormKit[]) => number
+  /** 空态最小高度（默认 140px；根画布空态可覆盖为 400px） */
+  emptyMinHeight?: string
 }>()
 
 const isDragging = ref(false)
@@ -103,11 +105,9 @@ const baseUlClass = computed(() => {
   return 'w-full flex-1 grid grid-cols-12 gap-x-4 gap-y-2 list-none p-2 m-0'
 })
 
-const emptyPlaceholderClass = computed(() => {
-  if (layout.value === 'row')
-    return 'w-full min-h-[140px] flex items-center justify-center pointer-events-none'
-  return 'col-span-12 min-h-[140px] flex items-center justify-center pointer-events-none'
-})
+const emptyPlaceholderClass = computed(
+  () => 'absolute inset-0 flex items-center justify-center pointer-events-none',
+)
 
 const itemStyle = (child: any) => {
   if (layout.value === 'row') {
@@ -148,9 +148,11 @@ const resizeHandleClass = computed(() => {
       :class="[
         baseUlClass,
         props.ulClass,
-        props.items.value.length === 0 ? 'min-h-[140px] bg-muted/20 rounded-lg' : '',
         layout === 'row' && props.items.value.length === 0 ? 'items-center justify-center' : '',
       ]"
+      :style="
+        props.items.value.length === 0 ? { minHeight: props.emptyMinHeight ?? '140px' } : undefined
+      "
       v-bind="props.dataAttrs"
       @pointerdown.self="props.onSelectBlank?.()"
       @dragover.capture="props.setNestedParentOnRoot?.(true)"
@@ -158,13 +160,6 @@ const resizeHandleClass = computed(() => {
       @dragend.capture="((isDragging = false), props.setNestedParentOnRoot?.(false))"
       @drop="((isDragging = false), props.setNestedParentOnRoot?.(false))"
     >
-      <li v-if="props.items.value.length === 0" :class="emptyPlaceholderClass">
-        <slot name="empty">
-          <div class="w-full h-full flex items-center justify-center">
-            <n-empty :description="props.emptyText" />
-          </div>
-        </slot>
-      </li>
       <li
         v-for="(child, idx) in props.items.value"
         :key="(child as any)?.__key || child.name || `${child.$formkit}-${idx}`"
@@ -287,5 +282,13 @@ const resizeHandleClass = computed(() => {
         </div>
       </li>
     </ul>
+
+    <div v-if="props.items.value.length === 0" :class="emptyPlaceholderClass">
+      <slot name="empty">
+        <div class="w-full h-full flex items-center justify-center">
+          <n-empty :description="props.emptyText" />
+        </div>
+      </slot>
+    </div>
   </div>
 </template>

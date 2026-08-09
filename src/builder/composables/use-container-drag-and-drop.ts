@@ -50,7 +50,7 @@ export function useContainerDragAndDrop<T>(params: {
       return params.accepts(value as T)
     },
     sortable: enabled.value,
-    draggable: () => true,
+    draggable: (el: HTMLElement) => el.getAttribute('data-canvas-item') === 'true',
     disabled: !enabled.value,
     dragHandle: dragHandle.value,
     plugins: [

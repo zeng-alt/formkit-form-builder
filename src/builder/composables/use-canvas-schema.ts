@@ -183,7 +183,7 @@ export function useCanvasSchema() {
     draggingClass: 'opacity-5 bg-green-400/50',
     accepts: () => true,
     sortable: true,
-    draggable: () => true,
+    draggable: (el: HTMLElement) => el.getAttribute('data-canvas-item') === 'true',
     handleNodePointerup(data) {
       data.targetData.node.el.setAttribute('draggable', 'true')
     },
@@ -210,11 +210,8 @@ export function useCanvasSchema() {
     },
   )
 
-  const dropAreaUlClass = computed(() =>
-    [
-      'w-full grid grid-cols-12 gap-x-4 gap-y-2 list-none p-0 m-0 flex-1',
-      fields.value.length === 0 ? 'min-h-[200px] h-full' : 'h-fit',
-    ].join(' '),
+  const dropAreaUlClass = computed(
+    () => 'w-full grid grid-cols-12 gap-x-4 gap-y-2 list-none p-0 m-0 flex-1 h-fit',
   )
 
   // ── 根节点交互回调（交给 ContainerChildrenGrid）────────────────────────────
