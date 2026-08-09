@@ -49,24 +49,27 @@ export interface ResolvedValidation {
 }
 
 export function resolveValidation(rules: ValidationRule[] | undefined): ResolvedValidation {
-  if (!rules?.length) return {}
+  const validationStr =
+    rules
+      ?.map((v) => {
+        const prefix = resolveModifiers(v)
+        const args = v.args?.length ? `:${v.args.join(',')}` : ''
+        return `${prefix}${v.rule}${args}`
+      })
+      .join('|') ?? ''
 
-  const validationStr = rules
-    .map((v) => {
-      const prefix = resolveModifiers(v)
-      const args = v.args?.length ? `:${v.args.join(',')}` : ''
-      return `${prefix}${v.rule}${args}`
-    })
-    .join('|')
-
-  const messages = rules
-    .filter((v) => v.message)
-    .reduce<Record<string, string>>((acc, v) => {
-      acc[v.rule] = v.message!
-      return acc
-    }, {})
+  const messages =
+    rules
+      ?.filter((v) => v.message)
+      .reduce<Record<string, string>>((acc, v) => {
+        acc[v.rule] = v.message!
+        return acc
+      }, {}) ?? {}
 
   return {
+    // 无规则也输出空字符串 validation：FormKit useInput 的 prop watcher 只在值非
+    // undefined 时同步到 node，省略 key 会导致移除校验后画布上的规则残留（如关闭
+    // 必填后字段仍报错）。
     validation: validationStr,
     ...(Object.keys(messages).length ? { 'validation-messages': messages } : {}),
   }

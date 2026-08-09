@@ -958,7 +958,10 @@ export function parseValidation(
       rule.optional = true
       rest = rest.slice(1)
     }
-    const [ruleName, argStr] = rest.split(':')
+    // 只切首个冒号：规则值可能含冒号（如 matches 正则 /^a:b$/、starts_with:https:）
+    const colonIndex = rest.indexOf(':')
+    const ruleName = colonIndex === -1 ? rest : rest.slice(0, colonIndex)
+    const argStr = colonIndex === -1 ? undefined : rest.slice(colonIndex + 1)
     rule.rule = ruleName ?? ''
     if (argStr) {
       rule.args = argStr.split(',').map((a) => {

@@ -469,19 +469,28 @@ export function useFormField() {
       validationString.value = newValidation.join('|')
       return
     } else {
-      const [validationType, validationValue] = value.split(':')
-      if (currentValidation.includes(value) && !active) {
-        newValidation = currentValidation.filter((item: string) => item !== value)
+      // 只切首个冒号：值中可能含冒号（如 matches 正则 /^a:b$/、starts_with:https:）
+      const colonIndex = value.indexOf(':')
+      const validationType = value.slice(0, colonIndex)
+      const ruleNameOf = (item: string) => {
+        const idx = item.indexOf(':')
+        return idx === -1 ? item : item.slice(0, idx)
+      }
+      // 关闭时按规则名整体移除；开启/编辑时按规则名替换（含无参规则，避免重复追加）
+      if (!active) {
+        newValidation = currentValidation.filter(
+          (item: string) => ruleNameOf(item) !== validationType,
+        )
       } else {
-        const indexOfType = currentValidation.findIndex((item: string) =>
-          item.startsWith(`${validationType}:`),
+        const indexOfType = currentValidation.findIndex(
+          (item: string) => ruleNameOf(item) === validationType,
         )
         if (indexOfType === -1) {
           newValidation = [...currentValidation, value]
         } else {
           newValidation = [
             ...currentValidation.slice(0, indexOfType),
-            `${validationType}:${validationValue}`,
+            value,
             ...currentValidation.slice(indexOfType + 1),
           ]
         }
@@ -498,12 +507,18 @@ export function useFormField() {
   const getParameterizedValidation = (validationType: string) => {
     if (!validationString.value) return ''
 
+    const ruleNameOf = (item: string) => {
+      const colon = item.indexOf(':')
+      return colon === -1 ? item : item.slice(0, colon)
+    }
+
     const validations = validationString.value.split('|')
-    const validation = validations.find((item: string) => item.startsWith(`${validationType}`))
+    const validation = validations.find((item: string) => ruleNameOf(item) === validationType)
 
     if (!validation) return ''
 
-    return validation.replace(`${validationType}:`, '')
+    const colon = validation.indexOf(':')
+    return colon === -1 ? '' : validation.slice(colon + 1)
   }
 
   // ─── 状态 ─────────────────────────────────────────────────────────────────────
