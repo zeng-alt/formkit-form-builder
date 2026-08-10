@@ -9,9 +9,10 @@ import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-cont
 import { useBadgeSupPosition } from '@/composables/use-badge-sup-position'
 import { useBadgeValue } from '@/composables/use-badge-value'
 import ContainerChildrenGrid from '../shared/ContainerChildrenGrid.vue'
+import { collectSchemaNames, duplicateNode } from '@/utils/dnd/schema'
 
 // 所属 FormBuilder 实例状态：选中高亮绑定到各自画布实例。
-const { selectedKey } = useFormBuilderState()
+const { selectedKey, formSchema } = useFormBuilderState()
 
 // 徽标容器（NBadge）：只允许拖入一个元素，徽标角标挂在唯一子元素上。
 const props = defineProps<{
@@ -128,6 +129,18 @@ const deleteChild = (index: number) => {
   dnd.items.value = next
   emitUpdateNormalized()
 }
+
+const duplicateChild = (index: number) => {
+  const source = dnd.items.value[index]
+  if (!source) return
+  const names = new Set<string>()
+  collectSchemaNames(formSchema.value as any, names)
+  const clone = duplicateNode(source, names)
+  const next = [...dnd.items.value]
+  next.splice(index + 1, 0, clone)
+  dnd.items.value = next
+  emitUpdateNormalized()
+}
 </script>
 
 <template>
@@ -160,6 +173,8 @@ const deleteChild = (index: number) => {
             :selected-key="selectedKey"
             :empty-text="t('builder.listDropHere')"
             :delete-aria-label="t('builder.deleteField')"
+            :copy-aria-label="t('builder.duplicateField')"
+            :copy-tooltip-text="t('builder.duplicateField')"
             :resize-aria-label="t('builder.resizeFieldWidth')"
             :show-delete-tooltip="true"
             :delete-tooltip-text="t('builder.deleteField')"
@@ -167,6 +182,7 @@ const deleteChild = (index: number) => {
             :set-nested-parent-on-root="dnd.setNestedParentOnRoot"
             :on-select="onSelect"
             :on-delete="deleteChild"
+            :on-copy="duplicateChild"
             :on-resize-end="emitUpdateNormalized"
             ul-class="p-1"
           />

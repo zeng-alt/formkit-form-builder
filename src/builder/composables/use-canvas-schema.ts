@@ -8,7 +8,12 @@ import type { DndContext } from '@/utils/dnd/context'
 import { findNodeByKey, updateAtPath } from '@/utils/schema/tree'
 import { canvasSchemaLibrary } from '@/builder/containers'
 import { createDefaultInsertPointElement } from '@/utils/dnd/insert-point-element'
-import { collectSchemaNames, generateKey, generateNextFieldName } from '@/utils/dnd/schema'
+import {
+  collectSchemaNames,
+  duplicateNode,
+  generateKey,
+  generateNextFieldName,
+} from '@/utils/dnd/schema'
 import { toCanvasSchemaNode } from '@/utils/canvas-schema'
 import { normalizeContainerNode } from '@/elements/canvas'
 import { provideCanvasSchemaContext } from './canvas-schema-context'
@@ -50,6 +55,19 @@ export function useCanvasSchema() {
     const nextSchema = formSchema.value.filter((_, i) => i !== index)
     commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], { reason: 'delete' })
     fields.value = fields.value.filter((_, i) => i !== index)
+  }
+
+  // ── 复制根节点（在下方插入副本，name 重新生成，其余配置保持一致）────────────
+  const duplicateField = (index: number) => {
+    const source = fields.value[index]
+    if (!source) return
+    const existingNames = new Set<string>()
+    collectSchemaNames(formSchema.value as any, existingNames)
+    const clone = duplicateNode(source, existingNames)
+    const next = [...fields.value]
+    next.splice(index + 1, 0, clone)
+    fields.value = next
+    commitSchemaReconcile(next as FormKitSchemaFormKit[], { reason: 'duplicate' })
   }
 
   // ── 更新容器子节点（拖拽进出容器后写回 schema）──────────────────────────────
@@ -260,6 +278,7 @@ export function useCanvasSchema() {
     onSelectRoot,
     onSelectBlank,
     onDelete: deleteField,
+    onDuplicate: duplicateField,
     onResizeEnd,
     /** 实例标识：画布根 drop-area 的 testid 后缀，保证多设计器并存时 DnD 作用域隔离 */
     instanceId: state.instanceId,

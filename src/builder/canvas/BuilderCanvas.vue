@@ -26,6 +26,7 @@ defineSlots<{
       :on-select="canvas.onSelectRoot"
       :on-select-blank="canvas.onSelectBlank"
       :on-delete="canvas.onDelete"
+      :on-copy="canvas.onDuplicate"
       :on-resize-end="canvas.onResizeEnd"
     >
       <template v-if="$slots['empty']" #empty>

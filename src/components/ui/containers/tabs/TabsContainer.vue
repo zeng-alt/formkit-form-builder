@@ -6,10 +6,10 @@ import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useContainerDragAndDrop } from '@/builder/composables/use-container-drag-and-drop'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
 import ContainerChildrenGrid from '../shared/ContainerChildrenGrid.vue'
-import { generateKey } from '@/utils/dnd/schema'
+import { collectSchemaNames, duplicateNode, generateKey } from '@/utils/dnd/schema'
 
 // 所属 FormBuilder 实例状态：选中高亮绑定到各自画布实例。
-const { selectedKey } = useFormBuilderState()
+const { selectedKey, formSchema } = useFormBuilderState()
 
 type TabsPane = {
   __key: string
@@ -163,6 +163,18 @@ const deleteChild = (index: number) => {
   paneDnd.items.value = next
   paneDnd.emitUpdate()
 }
+
+const duplicateChild = (index: number) => {
+  const source = paneDnd.items.value[index]
+  if (!source) return
+  const names = new Set<string>()
+  collectSchemaNames(formSchema.value as any, names)
+  const clone = duplicateNode(source, names)
+  const next = [...paneDnd.items.value]
+  next.splice(index + 1, 0, clone)
+  paneDnd.items.value = next
+  paneDnd.emitUpdate()
+}
 </script>
 
 <template>
@@ -216,6 +228,8 @@ const deleteChild = (index: number) => {
         :selected-key="selectedKey"
         :empty-text="t('builder.listDropHere')"
         :delete-aria-label="t('builder.deleteField')"
+        :copy-aria-label="t('builder.duplicateField')"
+        :copy-tooltip-text="t('builder.duplicateField')"
         :resize-aria-label="t('builder.resizeFieldWidth')"
         :show-delete-tooltip="true"
         :delete-tooltip-text="t('builder.deleteField')"
@@ -223,6 +237,7 @@ const deleteChild = (index: number) => {
         :set-nested-parent-on-root="paneDnd.setNestedParentOnRoot"
         :on-select="(child) => onSelectChild(child)"
         :on-delete="deleteChild"
+        :on-copy="duplicateChild"
         :on-resize-end="paneDnd.emitUpdate"
       />
     </div>

@@ -1,4 +1,5 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
+import { getContainerSpec } from '@/elements/container-spec'
 
 // 生成稳定的字段 key，用于拖拽过程中的字段身份识别
 export const generateKey = () => {
@@ -70,4 +71,48 @@ export const generateNextFieldName = (existing: Set<string>) => {
   }
   existing.add(candidate)
   return candidate
+}
+
+// 复制节点：深拷贝并重新生成 __key / name / id（连同 children 递归处理），
+// 其余配置属性保持不变。画布复制按钮与容器复制共用；name 避开全树已存在的字段名。
+export const duplicateNode = (
+  node: FormKitSchemaFormKit,
+  existingNames: Set<string>,
+): FormKitSchemaFormKit => {
+  const val = JSON.parse(JSON.stringify(node)) as any
+  if (typeof val !== 'object' || val === null) return val as FormKitSchemaFormKit
+  const nextKey = generateKey()
+  const nextName = val.$formkit === 'submit' ? val.name : generateNextFieldName(existingNames)
+  if (val.$formkit === 'submit') {
+    val.__key = nextKey
+    val.outerClass = val.outerClass || 'col-span-12 pt-2'
+    if (Array.isArray(val.children)) delete val.children
+    return val as FormKitSchemaFormKit
+  }
+  // $cmp 节点的语义 name 在 props.name（DSL 回读取 props），顶层 name 仅画布展示，需同步
+  if (typeof val.$cmp === 'string') {
+    val.props =
+      val.props && typeof val.props === 'object'
+        ? { ...val.props, name: nextName, __key: nextKey }
+        : { name: nextName, __key: nextKey }
+  }
+  // 容器按规格注入各自的身份键（keyProp），modelValue 由 children 承载，统一从 props 删除
+  const spec = getContainerSpec(val.$cmp ?? val.$formkit)
+  if (spec && spec.primitive === 'cmp') {
+    const props = { ...val.props, [spec.keyProp]: nextKey }
+    if (props && typeof props === 'object') delete props.modelValue
+    val.__key = nextKey
+    val.name = nextName
+    val.id = `field_${nextKey}`
+    val.props = props
+    val.children = Array.isArray(val.children) ? val.children : []
+  } else {
+    val.__key = nextKey
+    val.name = nextName
+    val.id = `field_${nextKey}`
+  }
+  if (Array.isArray(val.children)) {
+    val.children = val.children.map((c: any) => duplicateNode(c, existingNames))
+  }
+  return val as FormKitSchemaFormKit
 }

@@ -7,9 +7,10 @@ import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useContainerDragAndDrop } from '@/builder/composables/use-container-drag-and-drop'
 import ContainerChildrenGrid from '../shared/ContainerChildrenGrid.vue'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
+import { collectSchemaNames, duplicateNode } from '@/utils/dnd/schema'
 
 // 所属 FormBuilder 实例状态：选中高亮绑定到各自画布实例。
-const { selectedKey } = useFormBuilderState()
+const { selectedKey, formSchema } = useFormBuilderState()
 
 const props = defineProps<{
   listKey?: string
@@ -59,6 +60,18 @@ const deleteChild = (index: number) => {
   dnd.items.value = next
   dnd.emitUpdate()
 }
+
+const duplicateChild = (index: number) => {
+  const source = dnd.items.value[index]
+  if (!source) return
+  const names = new Set<string>()
+  collectSchemaNames(formSchema.value as any, names)
+  const clone = duplicateNode(source, names)
+  const next = [...dnd.items.value]
+  next.splice(index + 1, 0, clone)
+  dnd.items.value = next
+  dnd.emitUpdate()
+}
 </script>
 
 <template>
@@ -95,11 +108,13 @@ const deleteChild = (index: number) => {
         :selected-key="selectedKey"
         :empty-text="t('builder.listDropHere')"
         :delete-aria-label="t('builder.deleteField')"
+        :copy-aria-label="t('builder.duplicateField')"
         :resize-aria-label="t('builder.resizeFieldWidth')"
         :data-attrs="{ 'data-list-key': props.listKey }"
         :set-nested-parent-on-root="dnd.setNestedParentOnRoot"
         :on-select="onSelect"
         :on-delete="deleteChild"
+        :on-copy="duplicateChild"
         :on-resize-end="dnd.emitUpdate"
       />
     </div>

@@ -8,9 +8,10 @@ import { useContainerDragAndDrop } from '@/builder/composables/use-container-dra
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
 import ContainerChildrenGrid from '@/components/ui/containers/shared/ContainerChildrenGrid.vue'
 import { applyGroupDisabled, stripInputGroupOuterClass } from '@/utils/dnd/grid'
+import { collectSchemaNames, duplicateNode } from '@/utils/dnd/schema'
 
 // 所属 FormBuilder 实例状态：选中高亮绑定到各自画布实例。
-const { selectedKey } = useFormBuilderState()
+const { selectedKey, formSchema } = useFormBuilderState()
 
 // 按钮组容器（NButtonGroup）：纯展示容器，无 label/help。
 // 子项为按钮类静态元素，宽度自适应内容，整体 disabled 时注入到各子按钮。
@@ -84,6 +85,18 @@ const deleteChild = (index: number) => {
   dnd.items.value = next
   emitUpdateNormalized()
 }
+
+const duplicateChild = (index: number) => {
+  const source = dnd.items.value[index]
+  if (!source) return
+  const names = new Set<string>()
+  collectSchemaNames(formSchema.value as any, names)
+  const clone = duplicateNode(source, names)
+  const next = [...dnd.items.value]
+  next.splice(index + 1, 0, clone)
+  dnd.items.value = next
+  emitUpdateNormalized()
+}
 </script>
 
 <template>
@@ -96,6 +109,7 @@ const deleteChild = (index: number) => {
           :selected-key="selectedKey"
           :empty-text="t('builder.listDropHere')"
           :delete-aria-label="t('builder.deleteField')"
+          :copy-aria-label="t('builder.duplicateField')"
           :data-attrs="{
             'data-button-group-key': props.buttonGroupKey,
             'data-dnd-axis': props.vertical ? 'y' : 'x',
@@ -106,6 +120,7 @@ const deleteChild = (index: number) => {
           :set-nested-parent-on-root="dnd.setNestedParentOnRoot"
           :on-select="onSelect"
           :on-delete="deleteChild"
+          :on-copy="duplicateChild"
           :on-resize-end="emitUpdateNormalized"
           ul-class="p-0"
         />

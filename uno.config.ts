@@ -1,5 +1,4 @@
 import { defineConfig, presetAttributify, presetWind3, presetIcons } from "unocss";
-import { presetTwAnimate } from "unocss-tw-animate-css";
 import presetRemToPx from "@unocss/preset-rem-to-px";
 // import { getIconData, iconToHTML, iconToSVG, replaceIDs, type IconifyJSON } from "@iconify/utils";
 // import lucide from "@iconify-json/lucide/icons.json";
@@ -20,6 +19,32 @@ import presetRemToPx from "@unocss/preset-rem-to-px";
 // }
 
 export default defineConfig({
+  presets: [
+    presetAttributify(),
+    presetWind3(),
+    presetIcons({
+      collections: {
+        // lucide: createIconLoader(lucide),
+        // stash: createIconLoader(stash),
+        lucide: () => import("@iconify-json/lucide/icons.json").then((m) => m.default),
+        stash: () => import("@iconify-json/stash/icons.json").then((m) => m.default),
+      },
+      scale: 1.2,
+      warn: true,
+      // 统一图标基线与尺寸（随 font-size 缩放），显式 w-/h- 类优先级更高可覆盖
+      extraProperties: {
+        display: "inline-block",
+        width: "8em",
+        height: "8em",
+      },
+    }),
+    presetRemToPx({ baseFontSize: 16 }),
+  ],
+  content: {
+    pipeline: {
+      include: [/\.(vue|svelte|[jt]sx|mdx?|astro|elm|php|phtml|html)($|\?)/, "src/**/*.{js,ts}"],
+    },
+  },
   safelist: [
     "mt-1",
     "mb-0.5",
@@ -85,6 +110,7 @@ export default defineConfig({
     "i-lucide-plus",
     "i-lucide-align-horizontal-justify-start",
     "i-lucide-rectangle-horizontal",
+    "i-lucide-badge",
     "!w-[8.33%]",
     "!w-[16.67%]",
     "!w-[25%]",
@@ -110,33 +136,6 @@ export default defineConfig({
     "col-span-11",
     "col-span-12",
   ],
-  presets: [
-    presetAttributify(),
-    presetWind3(),
-    presetIcons({
-      collections: {
-        // lucide: createIconLoader(lucide),
-        // stash: createIconLoader(stash),
-        lucide: () => import("@iconify-json/lucide/icons.json").then((m) => m.default),
-        stash: () => import("@iconify-json/stash/icons.json").then((m) => m.default),
-      },
-      scale: 1.2,
-      warn: true,
-      // 统一图标基线与尺寸（随 font-size 缩放），显式 w-/h- 类优先级更高可覆盖
-      extraProperties: {
-        display: "inline-block",
-        width: "8em",
-        height: "8em",
-      },
-    }),
-    presetTwAnimate(),
-    presetRemToPx({ baseFontSize: 16 }),
-  ],
-  content: {
-    pipeline: {
-      include: [/\.(vue|svelte|[jt]sx|mdx?|astro|elm|php|phtml|html)($|\?)/, "src/**/*.{js,ts}"],
-    },
-  },
   theme: {
     colors: {
       background: "var(--background)",

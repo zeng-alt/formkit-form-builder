@@ -18,6 +18,7 @@ export default {
     undo: '撤销',
     redo: '重做',
     deleteField: '删除字段',
+    duplicateField: '复制字段',
     resizeFieldWidth: '调整字段宽度',
     clearConfirm: '确定要清空吗？这会永久删除你创建的表单。',
     creatingForm: '正在生成新表单...',

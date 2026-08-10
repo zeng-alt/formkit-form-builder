@@ -15,6 +15,10 @@ const props = defineProps<{
   selectedKey: string | null
   emptyText: string
   deleteAriaLabel: string
+  /** 复制按钮的无障碍标签（缺省不渲染复制按钮） */
+  copyAriaLabel?: string
+  /** 复制按钮 tooltip 文案（配合 showDeleteTooltip 使用） */
+  copyTooltipText?: string
   resizeAriaLabel?: string
   dragHandle?: boolean
   dragEnabled?: boolean
@@ -33,6 +37,8 @@ const props = defineProps<{
   onSelect: (child: FormKitSchemaFormKit, index: number) => void
   onSelectBlank?: () => void
   onDelete: (index: number) => void
+  /** 复制：在下方插入相同配置、重新生成 name 的副本 */
+  onCopy?: (index: number) => void
   onResizeEnd: () => void
   /** 拖拽调整宽度时的 span 上限（如输入组：当前项 ≤ 12 - 其余项之和） */
   maxSpanFor?: (index: number, items: FormKitSchemaFormKit[]) => number
@@ -102,7 +108,7 @@ const baseUlClass = computed(() => {
       return 'w-full flex-1 flex flex-row flex-nowrap items-center gap-0 list-none p-0 m-0 overflow-x-hidden'
     return 'w-full flex-1 flex flex-row flex-nowrap items-stretch gap-0 list-none p-0 m-0 overflow-x-hidden'
   }
-  return 'w-full flex-1 grid grid-cols-12 gap-x-4 gap-y-2 list-none p-2 m-0'
+  return 'w-full flex-1 grid grid-cols-12 gap-x-4 gap-y-6 list-none p-2 m-0'
 })
 
 const emptyPlaceholderClass = computed(
@@ -133,7 +139,8 @@ const itemStyle = (child: any) => {
 }
 
 const resizeHandleClass = computed(() => {
-  if (layout.value === 'row') return 'absolute top-2 right-1 z-30'
+  // row 布局：右上角留给删除按钮，调节把手左移一格避免重叠
+  if (layout.value === 'row') return 'absolute top-2 right-10 z-30'
   return 'absolute top-1/2 -translate-y-1/2 -right-3 z-30'
 })
 </script>
@@ -201,6 +208,121 @@ const resizeHandleClass = computed(() => {
           </div>
         </div>
 
+        <!-- 左上角显示元素名称（左对齐，浮在顶边框上方）：悬停（虚线框）或选中（实线框）时显示 -->
+        <div
+          class="absolute -top-[23px] left-0 z-30 flex h-[22px] max-w-[160px] items-center rounded-[7px] border border-border/70 bg-card px-2 shadow-[0_1px_4px_rgba(0,0,0,0.12)] transition-[opacity] duration-150 dark:border-border/50 dark:bg-neutral-900"
+          :class="[
+            'opacity-0 pointer-events-none',
+            'group-hover:opacity-100',
+            (child as any)?.__key === props.selectedKey ? '!opacity-100' : '',
+          ]"
+        >
+          <span class="truncate text-[11px] text-muted-foreground">
+            {{ (child as any)?.name || (child as any)?.$formkit || (child as any)?.$cmp }}
+          </span>
+        </div>
+
+        <!-- 悬停延伸区：覆盖复制/删除按钮及其左 8px、连接元素顶边，保证鼠标移向按钮时虚线框不消失 -->
+        <span aria-hidden="true" class="absolute -top-[23px] right-0 z-30 h-[23px] w-[52px]"></span>
+
+        <!-- 复制按钮：删除按钮左侧，浮在顶边框上方 -->
+        <n-tooltip v-if="props.onCopy && props.showDeleteTooltip" placement="top">
+          <template #trigger>
+            <n-button
+              quaternary
+              size="small"
+              :aria-label="props.copyAriaLabel"
+              draggable="false"
+              @pointerdown.stop.prevent
+              @click.stop="props.onCopy?.(idx)"
+              :class="[
+                'absolute -top-[23px] right-[22px] z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-[#7c9ef8]/25 hover:!text-[#4f6ef7] active:!scale-95 active:!bg-[#7c9ef8]/35 active:!text-[#4f6ef7] dark:!border-border/50 dark:hover:!bg-[#7c9ef8]/30 transition-[transform,background-color,color,opacity] duration-150',
+                'opacity-0 pointer-events-none',
+                'group-hover:opacity-100 group-hover:pointer-events-auto',
+                (child as any)?.__key === props.selectedKey
+                  ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
+                  : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
+              ]"
+            >
+              <template #icon
+                ><span aria-hidden="true" class="i-lucide-copy !h-[12px] !w-[12px]"></span
+              ></template>
+            </n-button>
+          </template>
+          {{ props.copyTooltipText }}
+        </n-tooltip>
+
+        <n-button
+          v-if="props.onCopy && !props.showDeleteTooltip"
+          quaternary
+          size="small"
+          :aria-label="props.copyAriaLabel"
+          draggable="false"
+          @pointerdown.stop.prevent
+          @click.stop="props.onCopy?.(idx)"
+          :class="[
+            'absolute -top-[23px] right-[22px] z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-[#7c9ef8]/25 hover:!text-[#4f6ef7] active:!scale-95 active:!bg-[#7c9ef8]/35 active:!text-[#4f6ef7] dark:!border-border/50 dark:hover:!bg-[#7c9ef8]/30 transition-[transform,background-color,color,opacity] duration-150',
+            'opacity-0 pointer-events-none',
+            'group-hover:opacity-100 group-hover:pointer-events-auto',
+            (child as any)?.__key === props.selectedKey
+              ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
+              : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
+          ]"
+        >
+          <template #icon
+            ><span aria-hidden="true" class="i-lucide-copy !h-[12px] !w-[12px]"></span
+          ></template>
+        </n-button>
+
+        <!-- 删除按钮浮在右上角边框外侧（与边框留间距，不相连）：悬停（虚线框）或选中（实线框）时显示 -->
+        <n-tooltip v-if="props.showDeleteTooltip" placement="top">
+          <template #trigger>
+            <n-button
+              quaternary
+              size="small"
+              :aria-label="props.deleteAriaLabel"
+              draggable="false"
+              @pointerdown.stop.prevent
+              @click.stop="props.onDelete(idx)"
+              :class="[
+                'absolute -top-[23px] right-0 z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-red-100 hover:!text-red-600 active:!scale-95 active:!bg-red-200 active:!text-red-700 dark:!border-border/50 dark:hover:!bg-red-950/50 dark:hover:!text-red-400 transition-[transform,background-color,color,opacity] duration-150',
+                'opacity-0 pointer-events-none',
+                'group-hover:opacity-100 group-hover:pointer-events-auto',
+                (child as any)?.__key === props.selectedKey
+                  ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
+                  : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
+              ]"
+            >
+              <template #icon
+                ><span aria-hidden="true" class="i-lucide-trash-2 !h-[12px] !w-[12px]"></span
+              ></template>
+            </n-button>
+          </template>
+          {{ props.deleteTooltipText }}
+        </n-tooltip>
+
+        <n-button
+          v-else
+          quaternary
+          size="small"
+          :aria-label="props.deleteAriaLabel"
+          draggable="false"
+          @pointerdown.stop.prevent
+          @click.stop="props.onDelete(idx)"
+          :class="[
+            'absolute -top-[23px] right-0 z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-red-100 hover:!text-red-600 active:!scale-95 active:!bg-red-200 active:!text-red-700 dark:!border-border/50 dark:hover:!bg-red-950/50 dark:hover:!text-red-400 transition-[transform,background-color,color,opacity] duration-150',
+            'opacity-0 pointer-events-none',
+            'group-hover:opacity-100 group-hover:pointer-events-auto',
+            (child as any)?.__key === props.selectedKey
+              ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
+              : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
+          ]"
+        >
+          <template #icon
+            ><span aria-hidden="true" class="i-lucide-trash-2 !h-[12px] !w-[12px]"></span
+          ></template>
+        </n-button>
+
         <div class="absolute bottom-2 right-2 flex flex-row z-40">
           <div
             v-if="(child as any)?.__key && (child as any).__key === props.selectedKey"
@@ -210,40 +332,6 @@ const resizeHandleClass = computed(() => {
               {{ validationCount(child) }} {{ pluralize(validationCount(child), 'rule') }}
             </span>
           </div>
-
-          <n-tooltip v-if="props.showDeleteTooltip" placement="top">
-            <template #trigger>
-              <n-button
-                quaternary
-                size="small"
-                :aria-label="props.deleteAriaLabel"
-                draggable="false"
-                @pointerdown.stop.prevent
-                @click.stop="props.onDelete(idx)"
-                class="!h-[26px] !w-[26px] !rounded-[7px] !text-muted-foreground hover:!bg-red-100 hover:!text-red-600 active:!scale-95 active:!bg-red-200 active:!text-red-700 dark:hover:!bg-red-950/50 dark:hover:!text-red-400 transition-[transform,background-color,color,opacity] duration-150"
-              >
-                <template #icon
-                  ><span aria-hidden="true" class="i-lucide-trash-2 !h-[13px] !w-[13px]"></span
-                ></template>
-              </n-button>
-            </template>
-            {{ props.deleteTooltipText }}
-          </n-tooltip>
-
-          <n-button
-            v-else
-            quaternary
-            size="small"
-            :aria-label="props.deleteAriaLabel"
-            draggable="false"
-            @pointerdown.stop.prevent
-            @click.stop="props.onDelete(idx)"
-            class="!h-[26px] !w-[26px] !rounded-[7px] !text-muted-foreground hover:!bg-red-100 hover:!text-red-600 active:!scale-95 active:!bg-red-200 active:!text-red-700 dark:hover:!bg-red-950/50 dark:hover:!text-red-400 transition-[transform,background-color,color,opacity] duration-150"
-          >
-            <template #icon
-              ><span aria-hidden="true" class="i-lucide-trash-2 !h-[13px] !w-[13px]"></span
-            ></template>
-          </n-button>
         </div>
 
         <n-button

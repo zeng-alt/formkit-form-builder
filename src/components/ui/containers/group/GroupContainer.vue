@@ -6,9 +6,10 @@ import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useContainerDragAndDrop } from '@/builder/composables/use-container-drag-and-drop'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
 import ContainerChildrenGrid from '../shared/ContainerChildrenGrid.vue'
+import { collectSchemaNames, duplicateNode } from '@/utils/dnd/schema'
 
 // 所属 FormBuilder 实例状态：选中高亮绑定到各自画布实例。
-const { selectedKey } = useFormBuilderState()
+const { selectedKey, formSchema } = useFormBuilderState()
 
 // group 容器（对应 FormKit 原生 $formkit: 'group'）：嵌套 object 数据结构。
 // 画布上以虚线框承载子字段，预览时由 formatContainer（规格 primitive:group）还原为原生 FormKit group。
@@ -51,6 +52,18 @@ const deleteChild = (index: number) => {
   dnd.items.value = next
   dnd.emitUpdate()
 }
+
+const duplicateChild = (index: number) => {
+  const source = dnd.items.value[index]
+  if (!source) return
+  const names = new Set<string>()
+  collectSchemaNames(formSchema.value as any, names)
+  const clone = duplicateNode(source, names)
+  const next = [...dnd.items.value]
+  next.splice(index + 1, 0, clone)
+  dnd.items.value = next
+  dnd.emitUpdate()
+}
 </script>
 
 <template>
@@ -62,11 +75,13 @@ const deleteChild = (index: number) => {
         :selected-key="selectedKey"
         :empty-text="t('builder.listDropHere')"
         :delete-aria-label="t('builder.deleteField')"
+        :copy-aria-label="t('builder.duplicateField')"
         :resize-aria-label="t('builder.resizeFieldWidth')"
         :data-attrs="{ 'data-group-key': props.groupKey }"
         :set-nested-parent-on-root="dnd.setNestedParentOnRoot"
         :on-select="onSelect"
         :on-delete="deleteChild"
+        :on-copy="duplicateChild"
         :on-resize-end="dnd.emitUpdate"
       />
     </div>

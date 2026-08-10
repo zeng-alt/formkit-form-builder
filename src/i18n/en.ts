@@ -18,6 +18,7 @@ export default {
     undo: 'Undo',
     redo: 'Redo',
     deleteField: 'Delete field',
+    duplicateField: 'Duplicate field',
     resizeFieldWidth: 'Resize field width',
     clearConfirm:
       'Are you absolutely sure? This will permanently delete the form you have created.',

@@ -144,9 +144,6 @@ importers:
       unocss:
         specifier: ^66.7.0
         version: 66.7.5(vite@8.0.8(@types/node@24.12.2)(esbuild@0.28.1)(jiti@2.6.1)(tsx@4.23.5))
-      unocss-tw-animate-css:
-        specifier: ^0.1.1
-        version: 0.1.1
       unplugin-auto-import:
         specifier: ^21.1.0
         version: 21.1.0(@vueuse/core@14.2.1(vue@3.5.32(typescript@6.0.2)))(esbuild@0.28.1)(oxc-parser@0.131.0)(vite@8.0.8(@types/node@24.12.2)(esbuild@0.28.1)(jiti@2.6.1)(tsx@4.23.5))
@@ -1347,9 +1344,6 @@ packages:
 
   '@unocss/config@66.7.5':
     resolution: {integrity: sha512-dkPl9glhEahJ+Xoja5ZseKKnH+vZaeaKQzg8b0otcKcPPNrHQgu1nu3QgfeOjnXOGrjZIotHwUeVtt4ZA2Skgg==}
-
-  '@unocss/core@66.6.8':
-    resolution: {integrity: sha512-P9IlQfgms+8/nka7fBhiiWU4SPwrTNKbTdK0z1SLnttXMHHjsB2zpG+Vi1JQDpICfY9Y1/2pWtguPE+zeOVu9Q==}
 
   '@unocss/core@66.7.5':
     resolution: {integrity: sha512-UdJb8MiMywcau8QrWEVgUAz0kvoFHyR+sACwYCgmBh/BpKJGyR/zw/Ys3wvysbm0f+i/20VGBex/QQxYVlzdyQ==}
@@ -2723,9 +2717,6 @@ packages:
   universalify@2.0.1:
     resolution: {integrity: sha512-gptHNQghINnc/vTGIk0SOFGFNXw7JVrlRUtConJRlvaw6DuX0wO5Jeko9sWrMBhh+PsYAZ7oXAiOnf/UKogyiw==}
     engines: {node: '>= 10.0.0'}
-
-  unocss-tw-animate-css@0.1.1:
-    resolution: {integrity: sha512-LovJFx1kkcJkfAtGLpnmNxCsbuPo58+eMfjDZK9cuA5ZLNqQ3cUkoQG6jwdNzwkcFYdAmKcvdkFNW3+PGlx/cQ==}
 
   unocss@66.7.5:
     resolution: {integrity: sha512-nAdmU8TwnQoiLnQjZ6Hm1GmHy9lTexKsAZNEJtZnxN9wyFRc1eLjQgmh9r7UEGxBQMQLD8OZOgmk5HpwObbh0Q==}
@@ -4103,8 +4094,6 @@ snapshots:
       colorette: 2.0.20
       consola: 3.4.2
       unconfig: 7.5.0
-
-  '@unocss/core@66.6.8': {}
 
   '@unocss/core@66.7.5': {}
 
@@ -5578,10 +5567,6 @@ snapshots:
       - webpack
 
   universalify@2.0.1: {}
-
-  unocss-tw-animate-css@0.1.1:
-    dependencies:
-      '@unocss/core': 66.6.8
 
   unocss@66.7.5(vite@8.0.8(@types/node@24.12.2)(esbuild@0.28.1)(jiti@2.6.1)(tsx@4.23.5)):
     dependencies:

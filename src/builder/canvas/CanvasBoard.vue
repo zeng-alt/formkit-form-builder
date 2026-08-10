@@ -23,6 +23,7 @@ defineProps<{
   onSelect: (child: FormKitSchemaFormKit, index: number) => void
   onSelectBlank: () => void
   onDelete: (index: number) => void
+  onCopy: (index: number) => void
   onResizeEnd: () => void
 }>()
 
@@ -64,12 +65,14 @@ defineSlots<{
         :selected-key="selectedKey"
         :empty-text="t('builder.listDropHere')"
         :delete-aria-label="t('builder.deleteField')"
+        :copy-aria-label="t('builder.duplicateField')"
         :data-attrs="rootDropAreaAttrs"
         :ul-class="ulClass"
         :empty-min-height="'400px'"
         :on-select="onSelect"
         :on-select-blank="onSelectBlank"
         :on-delete="onDelete"
+        :on-copy="onCopy"
         :on-resize-end="onResizeEnd"
       >
         <template v-if="$slots['empty']" #empty>
