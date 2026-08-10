@@ -7,6 +7,7 @@ import { defineAsyncComponent } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { getElementTypeDef, getElementTypeDefs, type ElementTypeDef } from '../dsl/registry'
 import { registerBuiltinElementTypes } from '../dsl/definitions'
+import type { SchemaNode } from '../dsl/convert-common'
 import type { FormNode } from '../types/dsl'
 import type { ElementDefinition, ElementPaletteProp } from './types'
 
@@ -94,13 +95,38 @@ function defaultDslNodeFromTemplate(def: ElementTypeDef, t: (key: string) => str
 }
 
 export function createDefaultFormElements(t: (key: string) => string): FormKitSchemaFormKit[] {
+  // DSL 节点 → schema：容器/布局需先递归转换 children 再交给 toSchema，
+  // 否则 ctx.children 为空，预置子节点（如 nestedList 内置 group）会被丢弃。
+  const convert = (node: FormNode): SchemaNode => {
+    const def = getElementTypeDef(node.type)
+    const hasChildren =
+      (node.category === 'container' || node.category === 'layout') &&
+      Array.isArray((node as { children?: FormNode[] }).children)
+    const children: SchemaNode[] | undefined = hasChildren
+      ? (node as { children: FormNode[] }).children.map(convert)
+      : undefined
+    return def!.toSchema(node, { children })
+  }
   const out: FormKitSchemaFormKit[] = []
   for (const def of getElementTypeDefs()) {
     if (!def.template) continue
     const node = defaultDslNodeFromTemplate(def, t)
-    const schema = def.toSchema(node, {}) as any
-    // 左侧面板副标题（非表单字段，仅面板展示用）
-    schema.description = t(def.template.descriptionKey)
+    const schema = convert(node) as any
+    // 面板展示元数据（副标题 / 便捷项图标）：仅左侧面板使用，标记为不可枚举，
+    // 保证拖拽 payload 经 JSON 序列化（JSON.parse(JSON.stringify(...))）时不会带进 DSL。
+    // description 若可枚举会泄漏进字段 props.description（DSL 里多出面板文案）。
+    Object.defineProperty(schema, 'description', {
+      value: t(def.template.descriptionKey),
+      enumerable: false,
+      configurable: true,
+    })
+    if (def.icon) {
+      Object.defineProperty(schema, '__paletteIcon', {
+        value: def.icon,
+        enumerable: false,
+        configurable: true,
+      })
+    }
     out.push(schema as FormKitSchemaFormKit)
   }
   return out

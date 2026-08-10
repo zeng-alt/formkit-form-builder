@@ -69,7 +69,7 @@ function isContainerOf(node: unknown, type: string): boolean {
 
 // ─── 通用归一化 ────────────────────────────────────────────────────────────────
 // 注入 DnD 身份键（props[keyProp]）+ modelValue=children；group 还原为 $cmp:group；
-// list（arrayOfObjects）默认 showActions=false。全部由规格驱动。
+// list（array / arrayOfObjects）默认 showActions=false。全部由规格驱动。
 
 export function normalizeContainer(
   node: SchemaNode,
@@ -88,7 +88,10 @@ export function normalizeContainer(
   props.modelValue = next.children
   if (spec.primitive === 'group' && typeof next.name === 'string' && next.name)
     props.name = next.name
-  if (spec.dataShape === 'arrayOfObjects' && props.showActions === undefined)
+  if (
+    (spec.dataShape === 'arrayOfObjects' || spec.dataShape === 'array') &&
+    props.showActions === undefined
+  )
     props.showActions = false
   next.props = props
   return next
@@ -297,7 +300,8 @@ export function formatContainerPreviewNode(
 // ─── 通用预览包装：按容器规格（dataShape + primitive）决定 group/list 怎么包一层 ──
 //  dataShape 决定数据结构：
 //    none             → 纯展示壳（buttonGroup），不包
-//    arrayOfObjects   → 动态 list（list），不包外层 group，每条记录 object
+//    array / arrayOfObjects → 动态 list（list），不包外层 group；
+//                             array 每条记录标量/单字段，arrayOfObjects 每条记录 object
 //    objectOfObjects  → 每个子节点（pane）包 group（tabs）
 //    object           → 单对象：primitive=group 原生 group；primitive=cmp 壳 + group 包一层
 
@@ -345,9 +349,10 @@ export function formatContainer(
     return nextNode as FormKitSchemaFormKit
   }
 
-  // arrayOfObjects（list）：渲染 ListContainerPreview.vue（动态 FormKit list，内置 +/删除 交互），
-  // 每条记录为 object，整体数据形态为数组 [{...},{...}]
-  if (spec.dataShape === 'arrayOfObjects') {
+  // array / arrayOfObjects（list）：渲染 ListContainerPreview.vue
+  //（动态 FormKit list，内置 +/删除 交互）。array 每条记录为标量/单字段，arrayOfObjects
+  // 每条记录为 object，但预览渲染共用同一组件。
+  if (spec.dataShape === 'arrayOfObjects' || spec.dataShape === 'array') {
     const containerProps = { ...(normalized as any).props }
     delete containerProps.modelValue
     const containerNode: any = {

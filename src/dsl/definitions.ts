@@ -1,6 +1,6 @@
 // ═══ 内置 DSL 元素类型注册 ════════════════════════════════════════════════════
 // 元素目录（src/elements/definitions/*，纯数据）统一经 elementTypeFromSchema 注册；
-// 本文件只保留非目录的基础设施类型（group 容器 / grid·row·column 布局 / tabsPane /
+// 本文件只保留非目录的基础设施类型（grid·row·column 布局 / tabsPane /
 // 原生 $el 静态 button·paragraph·heading·divider）。
 // 渲染层绑定（组件）在 src/elements/formkit.ts + canvas.ts，不在此处。
 
@@ -27,25 +27,6 @@ export function registerBuiltinElementTypes(): void {
   for (const def of [...fieldElements, ...staticElements, ...containerElements]) {
     registerElementType(elementTypeFromSchema(def))
   }
-
-  // ─── 容器（数据结构）：object 组 ─────────────────────────────────────────────
-  // group 与 FormKit 原生 $formkit: 'group' 等价：拖入后产出嵌套 object 数据。
-  // 画布/预览渲染绑定（GroupContainer.vue）见 src/elements/canvas.ts。
-  registerElementType(
-    containerType('group', {
-      dataType: 'object',
-      icon: 'i-lucide-group',
-      tooltipKey: 'fieldProps.tooltip.group',
-      editor: () => import('@/components/sidebar-right/edits/editors/GroupEditor.vue'),
-      template: {
-        renderAs: 'cmp',
-        nameKey: 'elements.group.name',
-        outerClass: 'col-span-12',
-        props: {},
-        descriptionKey: 'elements.group.description',
-      },
-    }),
-  )
 
   // ─── 布局 ────────────────────────────────────────────────────────────────────
   // grid/row/column 输出 $el: div（target 覆盖，type 为 DSL 逻辑名）

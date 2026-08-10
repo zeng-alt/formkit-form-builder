@@ -436,6 +436,7 @@ export default {
       naiveAlert: '提示（NAlert）',
       naiveBackTop: '浮动按钮（BackTop）',
       list: '列表',
+      nestedList: '嵌套列表（内置分组）',
       card: '卡片容器',
       inputGroup: '输入组（NInputGroup）',
       buttonGroup: '按钮组（NButtonGroup）',
@@ -546,6 +547,11 @@ export default {
     submit: { name: '提交按钮', label: '提交', description: '提交表单' },
     reset: { name: '重置按钮', label: '重置', description: '重置表单内容' },
     list: { name: '列表', label: '列表', description: '字段数组分组' },
+    nestedList: {
+      name: '嵌套列表',
+      label: '嵌套列表',
+      description: '列表 + 内置分组：拖入字段即生成对象数组 [{...}]',
+    },
     card: { name: '卡片容器', label: '卡片', description: '可包含子字段的卡片容器' },
     inputGroup: {
       name: '输入组',

@@ -29,6 +29,9 @@ import { collectSchemaNames, generateKey, generateNextFieldName } from './schema
 import { getContainerSpec } from '@/elements/container-spec'
 import { eq } from '@/utils/utils'
 
+// toSchema 用 id 兜底生成 name（UUID 形态）：视为无有效名，拖入时重新生成唯一名
+const UUID_NAME_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function normalizeInputGroupChildren(children: FormKitSchemaFormKit[]) {
   const list = Array.isArray(children) ? children : []
   if (list.length === 0) return []
@@ -65,6 +68,28 @@ function normalizeInsertValues(
   if (!isSource) return insertValues
   const existingNames = new Set<string>()
   collectSchemaNames(existingSchema, existingNames)
+
+  // 递归为容器子节点（如 nestedList 内置 group）生成唯一 name：与普通元素一致，
+  // 不做写死的显示名。只处理"没有有效 name"的节点（缺省 / 裸 id / UUID 兜底名）。
+  const nameChildren = (nodes: any[] | undefined) => {
+    if (!Array.isArray(nodes)) return
+    for (const n of nodes) {
+      if (!n || typeof n !== 'object') continue
+      const rawName = typeof n.name === 'string' ? n.name : ''
+      const isUuidName = UUID_NAME_RE.test(rawName)
+      if (!rawName || isUuidName || rawName === n.id || rawName === n.__key) {
+        const next = generateNextFieldName(existingNames)
+        if (typeof n.$cmp === 'string') {
+          n.props =
+            n.props && typeof n.props === 'object' ? { ...n.props, name: next } : { name: next }
+        } else {
+          n.name = next
+        }
+      }
+      nameChildren(n.children)
+    }
+  }
+
   return insertValues.map((value: any) => {
     const valObj = JSON.parse(JSON.stringify(value))
     if (typeof valObj === 'object' && valObj !== null) {
@@ -83,6 +108,8 @@ function normalizeInsertValues(
             ? { ...val.props, name: nextName }
             : { name: nextName }
       }
+      // 容器子节点（如 nestedList 内置 group）同样生成唯一 name
+      nameChildren(val.children)
       // 容器按规格注入各自的身份键（keyProp），不再逐个 kind 硬编码；
       // modelValue 由 children 承载，统一从 props 删除（DSL 往返经 CONTAINER_INTERNAL_PROPS 剥离）
       const spec = getContainerSpec(val.$cmp ?? val.$formkit)

@@ -1,5 +1,7 @@
 import type { ElementDefinition } from '../types'
 import { getContainerSpec } from '../container-spec'
+import type { FormNode } from '../../types/dsl'
+import { generateKey } from '../../utils/dnd/schema'
 
 // 纯数据目录：不 import 任何 .vue。容器画布/预览组件绑定在 elements/canvas.ts（按 type 索引）。
 // list/inputGroup 归类 container（数据结构），card/tabs 归类 layout（纯布局）。
@@ -7,7 +9,35 @@ import { getContainerSpec } from '../container-spec'
 // container 字段（数据结构规格：dataShape + keyProp + primitive）是容器行为统一驱动源，
 // 见 src/elements/container-spec.ts；convert-common / canvas / dnd/commit 据此而非按 kind 硬编码。
 
+// nestedList 预置的内部 group（DSL 形态）：无 name，列表项数据保持扁平（[{...}]），
+// 画布/预览与 list 共用同一套容器组件，group 可选中后删除。
+const innerGroupTemplate = (): FormNode => ({
+  id: generateKey(),
+  key: generateKey(),
+  category: 'container',
+  type: 'group',
+  renderAs: 'formkit',
+  dataType: 'object',
+  children: [],
+})
 export const containerElements: ElementDefinition[] = [
+  {
+    // group 与 FormKit 原生 $formkit: 'group' 等价：拖入后产出嵌套 object 数据。
+    // primitive group → renderAs:'formkit'（原生 $formkit），画布/预览绑定见 elements/canvas.ts
+    type: 'group',
+    category: 'container',
+    icon: 'i-lucide-group',
+    tooltipKey: 'fieldProps.tooltip.group',
+    editor: () => import('@/components/sidebar-right/edits/editors/GroupEditor.vue'),
+    container: getContainerSpec('group') ?? undefined,
+    schema: {
+      renderAs: 'formkit',
+      nameKey: 'elements.group.name',
+      outerClass: 'col-span-12',
+      props: {},
+      descriptionKey: 'elements.group.description',
+    },
+  },
   {
     type: 'list',
     category: 'container',
@@ -22,6 +52,27 @@ export const containerElements: ElementDefinition[] = [
       outerClass: 'col-span-12',
       props: { showActions: false },
       descriptionKey: 'elements.list.description',
+    },
+  },
+  {
+    // 便捷预置项：nestedList 本质就是 list（同一 type / $cmp），仅比 list 多"拖入即预置
+    // 一个内部 group"，用户无需手动拖 group 进列表。presetOf:'list' 让新建节点类型即 list，
+    // 本目录项仅用于左侧面板展示（icon / 名称 / 描述）。
+    type: 'nestedList',
+    category: 'container',
+    icon: 'i-lucide-list-plus',
+    tooltipKey: 'fieldProps.tooltip.nestedList',
+    schema: {
+      renderAs: 'cmp',
+      presetOf: 'list',
+      nameKey: 'elements.nestedList.name',
+      labelKey: 'elements.nestedList.label',
+      outerClass: 'col-span-12',
+      props: { showActions: false },
+      descriptionKey: 'elements.nestedList.description',
+      // 拖入即预置一个内部 group（输入框形态）：字段拖进 group，列表项产出 [{...}]；
+      // group 的 name 不写死，拖入时与普通元素一样由 normalizeInsertValues 生成唯一名
+      defaultChildren: () => [innerGroupTemplate()],
     },
   },
   {

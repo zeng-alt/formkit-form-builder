@@ -31,16 +31,45 @@ const { t } = useFormBuilderI18n()
 
 const initial = computed(() => (Array.isArray(props.modelValue) ? props.modelValue : []))
 
+const listKey = computed(() => props.listKey ?? '')
+
 const canvasCtx = useCanvasSchemaContext()
+
+// 列表容器只能容纳一个子元素（列表项模板，通常是一个 group）：
+// 已满时拒绝新元素进入；容器内唯一子项的重排/拖出再放回（同 __key）放行。
+const acceptsListChild = (value: unknown): boolean => {
+  if (dnd.items.value.length < 1) return true
+  const v = value as { __key?: unknown } | null | undefined
+  const key = typeof v?.__key === 'string' ? v.__key : undefined
+  if (key) return dnd.items.value.some((c: any) => c?.__key === key)
+  return false
+}
+
+const normalizeChildren = (values: FormKitSchemaFormKit[]) => {
+  const list = Array.isArray(values) ? values : []
+  // 兜底：只保留第一个元素，保证单元素约束
+  return list.slice(0, 1)
+}
 
 const dnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
   modelValue: initial,
+  accepts: acceptsListChild,
   onUpdateModelValue: (value) => {
-    const k = props.listKey
-    if (k && canvasCtx?.updateContainerChildren) canvasCtx.updateContainerChildren(k, value)
-    else emit('update:modelValue', value)
+    const next = normalizeChildren(value)
+    const k = listKey.value
+    if (k && canvasCtx?.updateContainerChildren) canvasCtx.updateContainerChildren(k, next)
+    else emit('update:modelValue', next)
   },
 })
+
+const emitUpdateNormalized = () => {
+  const next = normalizeChildren(dnd.items.value)
+  dnd.items.value = next
+  dnd.emitUpdate()
+}
+
+// 列表已满（已有 1 个子项）时隐藏复制按钮，避免复制后被归一化截断成无效操作
+const canCopy = computed(() => dnd.items.value.length < 1)
 
 const showActions = computed(() => props.showActions === true)
 const title = computed(() =>
@@ -58,7 +87,7 @@ const onSelect = (child: any, _index: number) => {
 const deleteChild = (index: number) => {
   const next = dnd.items.value.filter((_, i) => i !== index)
   dnd.items.value = next
-  dnd.emitUpdate()
+  emitUpdateNormalized()
 }
 
 const duplicateChild = (index: number) => {
@@ -70,7 +99,7 @@ const duplicateChild = (index: number) => {
   const next = [...dnd.items.value]
   next.splice(index + 1, 0, clone)
   dnd.items.value = next
-  dnd.emitUpdate()
+  emitUpdateNormalized()
 }
 </script>
 
@@ -110,12 +139,12 @@ const duplicateChild = (index: number) => {
         :delete-aria-label="t('builder.deleteField')"
         :copy-aria-label="t('builder.duplicateField')"
         :resize-aria-label="t('builder.resizeFieldWidth')"
-        :data-attrs="{ 'data-list-key': props.listKey }"
+        :data-attrs="{ 'data-list-key': listKey }"
         :set-nested-parent-on-root="dnd.setNestedParentOnRoot"
         :on-select="onSelect"
         :on-delete="deleteChild"
-        :on-copy="duplicateChild"
-        :on-resize-end="dnd.emitUpdate"
+        :on-copy="canCopy ? duplicateChild : undefined"
+        :on-resize-end="emitUpdateNormalized"
       />
     </div>
   </div>

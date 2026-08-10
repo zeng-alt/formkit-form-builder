@@ -238,6 +238,35 @@ watch(
   { deep: true },
 )
 
+// FormKitSchema 渲染上下文会把内部 slots 写进传入的 data 对象（Object.assign(reactive(data), { slots })），
+// 而这里 data 同时是表单 v-model 的数据源，slots 会因此泄漏进表单值（结构里多出 slots:{}）。
+// 给 FormKitSchema 传一个挡住 slots 写入的代理，阻断泄漏源头。
+const schemaRenderData = computed<Record<string, unknown>>(() => {
+  const base = data.value as Record<string, unknown>
+  if (!base || typeof base !== 'object') return {}
+  return new Proxy(base, {
+    set(target, key, value) {
+      if (key === 'slots') return true
+      return Reflect.set(target, key, value)
+    },
+    deleteProperty(target, key) {
+      if (key === 'slots') return true
+      return Reflect.deleteProperty(target, key)
+    },
+  }) as Record<string, unknown>
+})
+
+// 表单 v-model 回写同样会带 slots（FormKit 节点值内部合并了 __slots），在这里统一剥离
+const onFormModelValueUpdate = (value: ModelValue) => {
+  if (!value || typeof value !== 'object') return
+  const next: ModelValue = {}
+  for (const key of Object.keys(value)) {
+    if (key === 'slots') continue
+    next[key] = value[key]
+  }
+  data.value = next
+}
+
 const schemaLibrary = computed<Record<string, Component>>(() => {
   if (props.schemaLibrary) return props.schemaLibrary
   return getPreviewSchemaLibrary()
@@ -670,12 +699,17 @@ const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.
       type="form"
       :name="resolvedFormName"
       :actions="false"
-      v-model="data"
+      :model-value="data"
+      @update:model-value="onFormModelValueUpdate"
       @submit="handleSubmit"
       :form-class="resolvedFormClass"
       :style="{ '--fk-label-width': `${resolvedLabelWidth}px` }"
     >
-      <FormKitSchemaWrapper :schema="resolvedSchema" :data="data" :library="schemaLibrary" />
+      <FormKitSchemaWrapper
+        :schema="resolvedSchema"
+        :data="schemaRenderData"
+        :library="schemaLibrary"
+      />
       <template v-if="$slots.actions">
         <slot name="actions" :submit="submit" :reset="reset" :loading="loading" />
       </template>

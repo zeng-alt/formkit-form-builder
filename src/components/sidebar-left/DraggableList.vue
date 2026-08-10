@@ -60,6 +60,13 @@ const getTypeName = (item: any) => {
   return getElementTypeBySchema(item) ?? String(item?.$formkit ?? item?.$cmp ?? '')
 }
 
+// 面板项图标：便捷预置项自带 __paletteIcon（schema 类型是 list 无法反查嵌套列表图标），
+// 否则按类型查 fieldProps
+const iconOf = (item: any) =>
+  (item?.__paletteIcon as string | undefined) ??
+  fieldProps.value.find((prop) => prop.name === getTypeName(item))?.icon ??
+  ''
+
 // Sync items when props.elements changes (e.g. during search)
 watch(
   () => props.elements,
@@ -94,9 +101,7 @@ watch(
         <n-popover placement="right">
           <template #trigger>
             <div class="h-32px w-32px rounded-md flex items-center justify-center">
-              <span
-                :class="`${fieldProps.find((prop) => prop.name === getTypeName(item))?.icon ?? ''} h-16px w-16px`"
-              />
+              <span :class="`${iconOf(item)} h-16px w-16px`" />
             </div>
           </template>
           <div>
@@ -106,7 +111,7 @@ watch(
       </div>
       <span
         v-else
-        :class="`${fieldProps.find((prop) => prop.name === getTypeName(item))?.icon ?? ''} h-5 w-5 shrink-0`"
+        :class="`${iconOf(item)} h-5 w-5 shrink-0`"
       ></span>
       <div v-if="!collapsed" class="ml-3 flex flex-col justify-center overflow-hidden">
         <span class="text-[11px] text-secondary-foreground/80 font-medium">{{ item.name }}</span>

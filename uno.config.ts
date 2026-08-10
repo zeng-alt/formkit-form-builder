@@ -53,6 +53,7 @@ export default defineConfig({
     "text-[11px]",
     "[line-height:1.15]",
     "i-lucide-calendar",
+    "i-lucide-list-plus",
     "i-lucide-calendar-clock",
     "i-lucide-circle-dot",
     "i-lucide-clock",

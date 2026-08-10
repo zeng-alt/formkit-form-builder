@@ -175,6 +175,20 @@ function handleInsertBasedOnRange<T>(
 export function moveBetween<T>(data: ParentRecord<T>, state: DragState<T>) {
   if (data.data.config.sortable === false) return
 
+  // 单元素容器（list / badge 等）：容器已满时 accepts 会拒绝新元素，但拖入瞬间
+  // currentParent 已被置为该容器，后续内部移动走 moveBetween（不 consult accepts），
+  // 导致内层元素上出现"可插入"的辅助拖拽线。这里同样按 accepts 拦截，满时不再显示插入线。
+  const accepts = data.data.config.accepts as
+    | ((target: ParentRecord<T>, initial: ParentRecord<T>, current: ParentRecord<T>, state: DragState<T>) => boolean)
+    | undefined
+  if (typeof accepts === 'function') {
+    try {
+      if (!accepts(data, state.initialParent, state.currentParent, state)) return
+    } catch {
+      // 校验异常时放行，保持既有行为
+    }
+  }
+
   insertState.draggedRowSpan = Math.max(
     1,
     ...state.draggedNodes.map((n) => {

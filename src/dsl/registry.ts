@@ -50,6 +50,11 @@ export interface ElementTemplate {
   value?: unknown
   options?: unknown[]
   validation?: string
+  /** 容器/布局新建节点时的默认子节点（DSL 形态）；如 nestedList 预置一个内部 group */
+  defaultChildren?: () => FormNode[]
+  /** 便捷预置：新建节点改用指定类型（如 nestedList → presetOf:'list'，仅比 list 多内置 group），
+   *  生成的 DSL / schema 类型即该类型，本目录项仅作面板展示用 */
+  presetOf?: string
   /** 自定义 DSL→schema；缺省按 category+renderAs 走内置转换 */
   toSchema?: (node: FormNode, ctx: DslToSchemaCtx) => SchemaNode
   /** 自定义 schema→DSL；缺省按 category 走内置转换 */
@@ -190,13 +195,16 @@ export function elementTypeFromSchema(entry: ElementCatalogEntry): ElementTypeDe
 
 function defaultFormNode(entry: ElementCatalogEntry): FormNode {
   const { type, category, schema } = entry
+  // 便捷预置（presetOf）：新节点改用 presetOf 指定的类型，本目录项只负责面板展示。
+  // 如 nestedList → 'list'：产物与拖入普通 list 完全一致，仅多预置一个内部 group。
+  const nodeType = schema.presetOf ?? type
   const base: any = {
     id: generateKey(),
     category,
-    type,
+    type: nodeType,
     renderAs: schema.renderAs,
   }
-  if (schema.target && schema.target !== type) base.target = schema.target
+  if (schema.target && schema.target !== nodeType) base.target = schema.target
   if (schema.outerClass) base.outerClass = schema.outerClass
 
   const props = { ...schema.props }
@@ -214,7 +222,15 @@ function defaultFormNode(entry: ElementCatalogEntry): FormNode {
     if (schema.options !== undefined) props.options = schema.options
   }
   if (Object.keys(props).length) base.props = props
-  if (category === 'container' || category === 'layout') base.children = []
+  if (category === 'container' || category === 'layout') {
+    base.children = typeof schema.defaultChildren === 'function' ? schema.defaultChildren() : []
+    // 容器节点的 dataType 由数据结构规格派生（与 containerType / 往返一致）：
+    // object → 'object'，其余（array / arrayOfObjects / none）→ 'array'
+    const spec = entry.container ?? getContainerSpec(nodeType)
+    if (spec && category === 'container') {
+      base.dataType = spec.dataShape === 'object' ? 'object' : 'array'
+    }
+  }
   return base as FormNode
 }
 

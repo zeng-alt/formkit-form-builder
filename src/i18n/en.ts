@@ -477,6 +477,7 @@ export default {
       naiveAlert: 'Naive UI alert',
       naiveBackTop: 'BackTop (floating button)',
       list: 'Allows user to group fields into an array',
+      nestedList: 'Nested list (with built-in group)',
       card: 'Card container',
       inputGroup: 'Input group (NInputGroup)',
       buttonGroup: 'Button group (NButtonGroup)',
@@ -599,6 +600,11 @@ export default {
     submit: { name: 'Submit Button', label: 'Submit', description: 'Allows form submission' },
     reset: { name: 'Reset Button', label: 'Reset', description: 'Resets form values' },
     list: { name: 'List', label: 'List', description: 'Array grouping of fields' },
+    nestedList: {
+      name: 'Nested List',
+      label: 'Nested List',
+      description: 'List + built-in group: drop fields to produce an object array [{...}]',
+    },
     card: { name: 'Card', label: 'Card', description: 'Card container with children' },
     inputGroup: {
       name: 'Input Group',
