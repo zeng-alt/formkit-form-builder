@@ -17,6 +17,7 @@ import {
 import { toCanvasSchemaNode } from '@/utils/canvas-schema'
 import { normalizeContainerNode } from '@/elements/canvas'
 import { provideCanvasSchemaContext } from './canvas-schema-context'
+import { CANVAS_DRAGGING_CLASS, CANVAS_DROP_ZONE_CLASS } from '@/utils/dnd/drag-classes'
 
 // 画布（根 DropArea）组合函数：负责根级 DnD 列表 + schema 变更/选中逻辑
 export function useCanvasSchema() {
@@ -198,7 +199,8 @@ export function useCanvasSchema() {
   const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.value, {
     group: 'form-builder',
     nativeDrag: true,
-    draggingClass: 'opacity-5 bg-green-400/50',
+    draggingClass: CANVAS_DRAGGING_CLASS,
+    dropZoneClass: CANVAS_DROP_ZONE_CLASS,
     accepts: () => true,
     sortable: true,
     draggable: (el: HTMLElement) => el.getAttribute('data-canvas-item') === 'true',

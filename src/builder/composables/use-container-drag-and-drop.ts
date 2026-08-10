@@ -4,6 +4,7 @@ import { parents, setParentValues } from '@formkit/drag-and-drop'
 import { customInsertPlugin } from '@/utils/custom-insert-plugin'
 import { eq } from '@/utils/utils'
 import { createDefaultInsertPointElement } from '@/utils/dnd/insert-point-element'
+import { CANVAS_DRAGGING_CLASS, CANVAS_DROP_ZONE_CLASS } from '@/utils/dnd/drag-classes'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import type { DndContext } from '@/utils/dnd/context'
 
@@ -53,6 +54,8 @@ export function useContainerDragAndDrop<T>(params: {
     draggable: (el: HTMLElement) => el.getAttribute('data-canvas-item') === 'true',
     disabled: !enabled.value,
     dragHandle: dragHandle.value,
+    draggingClass: CANVAS_DRAGGING_CLASS,
+    dropZoneClass: CANVAS_DROP_ZONE_CLASS,
     plugins: [
       customInsertPlugin(
         {
