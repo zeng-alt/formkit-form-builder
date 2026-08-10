@@ -24,7 +24,6 @@ export const fieldElements: ElementDefinition[] = [
       outerClass: "col-span-12",
       props: { ...commonProps },
       placeholderKey: "elements.text.placeholder",
-
       descriptionKey: "elements.text.description",
     },
   },
@@ -41,7 +40,6 @@ export const fieldElements: ElementDefinition[] = [
       outerClass: "col-span-12",
       props: { ...commonProps },
       placeholderKey: "elements.textarea.placeholder",
-
       descriptionKey: "elements.textarea.description",
     },
   },
@@ -58,7 +56,6 @@ export const fieldElements: ElementDefinition[] = [
       outerClass: "col-span-12",
       props: { ...commonProps },
       placeholderKey: "elements.email.placeholder",
-
       validation: "email",
       descriptionKey: "elements.email.description",
     },
@@ -76,7 +73,6 @@ export const fieldElements: ElementDefinition[] = [
       outerClass: "col-span-12",
       props: { ...commonProps, number: "integer" },
       placeholderKey: "elements.number.placeholder",
-
       validation: "number",
       descriptionKey: "elements.number.description",
     },
@@ -91,7 +87,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.url.name",
       labelKey: "elements.url.label",
-
       outerClass: "col-span-12",
       props: { ...commonProps },
       placeholderKey: "elements.url.placeholder",
@@ -109,7 +104,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.checkbox.name",
       labelKey: "elements.checkbox.label",
-
       outerClass: "col-span-12",
       props: { ...commonProps, options: ["One"] },
       descriptionKey: "elements.checkbox.description",
@@ -126,7 +120,6 @@ export const fieldElements: ElementDefinition[] = [
       nameKey: "elements.color.name",
       labelKey: "elements.color.label",
       value: "#00ff00",
-
       outerClass: "col-span-12",
       props: { ...commonProps },
       descriptionKey: "elements.color.description",
@@ -142,7 +135,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.date.name",
       labelKey: "elements.date.label",
-
       outerClass: "col-span-12",
       props: { ...commonProps, valueFormat: DEFAULT_DATE_VALUE_FORMAT, type: "date" },
       descriptionKey: "elements.date.description",
@@ -158,7 +150,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.time.name",
       labelKey: "elements.time.label",
-
       outerClass: "col-span-12",
       props: { ...commonProps, valueFormat: DEFAULT_TIME_VALUE_FORMAT },
       descriptionKey: "elements.time.description",
@@ -174,7 +165,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.dateTime.name",
       labelKey: "elements.dateTime.label",
-
       outerClass: "col-span-12",
       props: {
         ...commonProps,
@@ -211,7 +201,6 @@ export const fieldElements: ElementDefinition[] = [
       nameKey: "elements.password.name",
       labelKey: "elements.password.label",
       placeholderKey: "elements.password.placeholder",
-
       outerClass: "col-span-12",
       props: { ...commonProps },
       descriptionKey: "elements.password.description",
@@ -228,7 +217,6 @@ export const fieldElements: ElementDefinition[] = [
       nameKey: "elements.radio.name",
       labelKey: "elements.radio.label",
       outerClass: "col-span-12",
-
       props: { ...commonProps, options: ["one"] },
       descriptionKey: "elements.radio.description",
     },
@@ -243,7 +231,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.range.name",
       labelKey: "elements.range.label",
-
       outerClass: "col-span-12",
       props: {
         ...commonProps,
@@ -272,7 +259,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.select.name",
       labelKey: "elements.select.label",
-
       outerClass: "col-span-12",
       props: {
         ...commonProps,
@@ -293,7 +279,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.naiveCascader.name",
       labelKey: "elements.naiveCascader.label",
-
       outerClass: "col-span-12",
       props: {
         ...commonProps,
@@ -328,7 +313,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.naiveTreeSelect.name",
       labelKey: "elements.naiveTreeSelect.label",
-
       outerClass: "col-span-12",
       props: {
         ...commonProps,
@@ -360,7 +344,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.naiveMention.name",
       labelKey: "elements.naiveMention.label",
-
       outerClass: "col-span-12",
       props: { size: "medium", disabled: false },
       placeholderKey: "elements.naiveMention.placeholder",
@@ -378,7 +361,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.naiveRate.name",
       labelKey: "elements.naiveRate.label",
-
       outerClass: "col-span-12",
       props: { disabled: false, clearable: true, allowHalf: false, count: 5 },
       value: 0,
@@ -395,7 +377,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.naiveSwitch.name",
       labelKey: "elements.naiveSwitch.label",
-
       outerClass: "col-span-12",
       props: { size: "medium", disabled: false },
       value: false,
@@ -412,9 +393,8 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.naiveAvatar.name",
       labelKey: "elements.naiveAvatar.label",
-
-      outerClass: "col-span-12",
-      props: { src: "", avatarSize: 48, round: true, bordered: false, fallbackText: "A" },
+      outerClass: "col-span-2",
+      props: { src: "", size: "small", round: true, bordered: false, fallbackText: "A" },
       descriptionKey: "elements.naiveAvatar.description",
     },
   },
@@ -428,7 +408,6 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: "cmp",
       nameKey: "elements.naiveImage.name",
       labelKey: "elements.naiveImage.label",
-
       outerClass: "col-span-12",
       props: {
         src: "",
@@ -454,7 +433,6 @@ export const fieldElements: ElementDefinition[] = [
       labelKey: "elements.tel.label",
       placeholderKey: "elements.tel.placeholder",
       outerClass: "col-span-12",
-
       props: { ...commonProps },
       descriptionKey: "elements.tel.description",
     },

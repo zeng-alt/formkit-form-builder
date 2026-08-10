@@ -14,6 +14,7 @@ const props = defineProps<{
   label?: string
   name?: string
   isPlaceholder?: boolean
+  bordered?: boolean
   /** 嵌套列表项模式：以 :index 绑定到外层 list 的数组元素（array of arrays） */
   itemIndex?: number
 }>()
@@ -28,6 +29,7 @@ const schemaLibrary = getPreviewSchemaLibrary()
 const title = computed(() =>
   typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
 )
+const bordered = computed<boolean>(() => props.bordered ?? true)
 const nodeKey = computed(() => props.nodeKey ?? props.listKey ?? '')
 const listName = computed(() =>
   typeof props.name === 'string' && props.name.trim() ? props.name.trim() : props.listKey || 'list',
@@ -165,7 +167,7 @@ const removeItem = (node: unknown, value: unknown, index: number) => {
 </script>
 
 <template>
-  <div class="w-full rounded-xl border border-border/50 pt-2">
+  <div :class="['w-full rounded-xl pt-2', bordered ? 'border border-border/50' : '']">
     <div v-if="title" class="mb-2px">
       <div v-if="title" class="text-12px font-bold">{{ title }}</div>
     </div>

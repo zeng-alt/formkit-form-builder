@@ -18,6 +18,7 @@ const props = defineProps<{
   label?: string
   disabled?: boolean
   showActions?: boolean
+  bordered?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -72,6 +73,7 @@ const emitUpdateNormalized = () => {
 const canCopy = computed(() => dnd.items.value.length < 1)
 
 const showActions = computed(() => props.showActions === true)
+const bordered = computed<boolean>(() => props.bordered ?? true)
 const title = computed(() =>
   typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
 )
@@ -104,10 +106,13 @@ const duplicateChild = (index: number) => {
 </script>
 
 <template>
-  <div class="w-full rounded-xl border border-border/50">
+  <div :class="['w-full rounded-xl', bordered ? 'border border-border/50' : '']">
     <div
       v-if="showHeader"
-      class="flex items-center justify-between px-3 py-2 border-b border-border/50"
+      :class="[
+        'flex items-center justify-between px-3 py-2',
+        bordered ? 'border-b border-border/50' : '',
+      ]"
     >
       <div v-if="title" class="text-12px font-bold">{{ title }}</div>
       <n-button-group v-if="showActions">

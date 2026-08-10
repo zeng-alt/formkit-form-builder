@@ -50,7 +50,7 @@ export const containerElements: ElementDefinition[] = [
       nameKey: 'elements.list.name',
       labelKey: 'elements.list.label',
       outerClass: 'col-span-12',
-      props: { showActions: false },
+      props: { showActions: false, bordered: true },
       descriptionKey: 'elements.list.description',
     },
   },
@@ -68,7 +68,7 @@ export const containerElements: ElementDefinition[] = [
       nameKey: 'elements.nestedList.name',
       labelKey: 'elements.nestedList.label',
       outerClass: 'col-span-12',
-      props: { showActions: false },
+      props: { showActions: false, bordered: true },
       descriptionKey: 'elements.nestedList.description',
       // 拖入即预置一个内部 group（输入框形态）：字段拖进 group，列表项产出 [{...}]；
       // group 的 name 不写死，拖入时与普通元素一样由 normalizeInsertValues 生成唯一名

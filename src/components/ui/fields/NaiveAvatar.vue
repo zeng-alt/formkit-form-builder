@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { computed, h } from 'vue'
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { NAvatar } from 'naive-ui'
-import { computed } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import { useBindEvents } from '@/composables/use-bind-events'
+import { omit } from 'naive-ui/es/_utils';
 
 // 纯配置驱动、无需值绑定；context 仅作为配置来源传入 useSchemaAttrs
 const { context } = defineProps<{
@@ -11,21 +12,18 @@ const { context } = defineProps<{
 }>()
 
 // avatarSize 是本库配置键（映射到 NAvatar 的 size）；fallbackText 是插槽内容
-const { config, props, bind } = useSchemaAttrs(context, { omit: ['avatarSize', 'fallbackText'] })
+const { config, props, bind } = useSchemaAttrs(context, omit(['fallbackText']))
 const { runEvent } = useBindEvents(context, bind)
-
-const round = computed<boolean>(() => Boolean((config.round as boolean | undefined) ?? true))
 const fallbackText = computed(() => (config.fallbackText as string | undefined) ?? '')
 
-const size = computed(() => {
-  const raw = config.avatarSize as unknown
-  if (typeof raw === 'number' && Number.isFinite(raw)) return raw
-  if (typeof raw === 'string') {
-    const parsed = Number(raw)
-    if (Number.isFinite(parsed)) return parsed
-  }
-  return 48
-})
+const renderFallback = () =>
+  h(
+    'span',
+    {
+      class: 'flex items-center justify-center w-full h-full',
+    },
+    fallbackText.value || '?'
+  )
 
 async function handleClick(e: MouseEvent) {
   await runEvent('onClick', e)
@@ -35,8 +33,6 @@ async function handleClick(e: MouseEvent) {
 
 <template>
   <div class="w-full py-2 flex items-center" @click="handleClick">
-    <NAvatar v-bind="props" :round="round" :size="size">
-      {{ fallbackText }}
-    </NAvatar>
+    <NAvatar v-bind="props" :render-fallback="renderFallback" :render-placeholder="renderFallback" />
   </div>
 </template>
