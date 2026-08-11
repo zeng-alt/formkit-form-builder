@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type Ref } from 'vue'
+import { computed, nextTick, ref, watch, type Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { FormKitSchema } from '@formkit/vue'
 import { NButton, NTooltip, NEmpty } from 'naive-ui'
@@ -97,6 +97,66 @@ const { resizingIndex, startResize } = useGridSpanResize({
   maxSpanFor: props.maxSpanFor,
 })
 
+// ── 手动 FLIP 动画：排序/重排（items 数量不变但顺序变化）时让元素平滑滑动到新位置。
+// 不用 <TransitionGroup> 的 move 类（其 leave 动画会触发 DnD 库的 DOM 数量警告），
+// 这里在 DOM 更新前后各测一次位置，对位移的元素施加反向 transform 再过渡回原位。
+const FLIP_DURATION_MS = 200
+const flipCssVar = '--canvas-item-flip'
+let prevFlipRects: Map<string, DOMRect> | null = null
+
+const itemKeyOf = (child: FormKitSchemaFormKit, idx: number): string =>
+  (child as any)?.__key || child.name || `${child.$formkit}-${idx}`
+
+const readChildRects = (): Map<string, DOMRect> => {
+  const map = new Map<string, DOMRect>()
+  const ul = props.containerRef?.value as HTMLElement | null
+  if (!ul) return map
+  const items = props.items.value
+  for (const li of Array.from(ul.children)) {
+    const key = (li as HTMLElement).getAttribute('data-item-key')
+    if (!key) continue
+    const rect = (li as HTMLElement).getBoundingClientRect()
+    map.set(key, rect)
+    void items
+  }
+  return map
+}
+
+// 仅在"数量不变"时做 FLIP（纯排序 / 撤销重排）；增删（含清空）时跳过，
+// 避免对被删除/新增的节点施加位移，也与 leave 即时移除保持一致。
+watch(
+  () => props.items.value,
+  (next, prev) => {
+    if (!prev) return
+    prevFlipRects = readChildRects()
+    nextTick(() => {
+      const prevRects = prevFlipRects
+      prevFlipRects = null
+      if (!prevRects || next.length !== prev.length) return
+      const ul = props.containerRef?.value as HTMLElement | null
+      if (!ul) return
+      for (const li of Array.from(ul.children) as HTMLElement[]) {
+        const key = li.getAttribute('data-item-key')
+        if (!key) continue
+        const prevRect = prevRects.get(key)
+        if (!prevRect) continue
+        const nextRect = li.getBoundingClientRect()
+        const dx = prevRect.left - nextRect.left
+        const dy = prevRect.top - nextRect.top
+        if (dx === 0 && dy === 0) continue
+        li.style.transform = `translate(${dx}px, ${dy}px)`
+        li.style.transition = 'none'
+        void li.offsetWidth // 强制 reflow 使起点生效
+        li.style.transition = `transform ${FLIP_DURATION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`
+        li.style.transform = ''
+      }
+      void ul
+    })
+  },
+  { flush: 'pre' },
+)
+void flipCssVar
+
 const layout = computed(() => props.layout ?? 'grid')
 const dragEnabled = computed(() => props.dragEnabled !== false)
 const dragHandle = computed(() => props.dragHandle === true)
@@ -168,13 +228,21 @@ const resizeHandleClass = computed(() => {
       @dragend.capture="((isDragging = false), props.setNestedParentOnRoot?.(false))"
       @drop="((isDragging = false), props.setNestedParentOnRoot?.(false))"
     >
-      <TransitionGroup name="canvas-item">
-        <li
-          v-for="(child, idx) in props.items.value"
-          :key="(child as any)?.__key || child.name || `${child.$formkit}-${idx}`"
-          data-canvas-item="true"
-          :class="[
-            'group rounded-xl transition-[border-color,background-color,box-shadow] duration-150',
+      <!-- 普通渲染 + 手动 FLIP：不用 <TransitionGroup>。
+           TransitionGroup 的 leave 动画会逐个异步移除 DOM 节点，而 @formkit/drag-and-drop
+           的 MutationObserver 要求 DOM 数量与 values 数组始终一致（动画期间数量不匹配会触发
+           "does not match the number of values" 警告）。改为：
+           - 进入：CSS animation（.canvas-item-enter）
+           - 排序/移动：手动 FLIP（watch items → 记录旧位置 → nextTick 后对比 → transform 过渡）
+           - 离开：即时移除（无 leave 动画） -->
+      <li
+        v-for="(child, idx) in props.items.value"
+        :key="(child as any)?.__key || child.name || `${child.$formkit}-${idx}`"
+        :data-item-key="(child as any)?.__key || child.name || `${child.$formkit}-${idx}`"
+        data-canvas-item="true"
+        :class="[
+          'canvas-item-enter',
+          'group rounded-xl transition-[border-color,background-color,box-shadow] duration-150',
             'px-2 py-1 pr-4 h-full !z-20 relative border-[1.5px] min-w-0 box-border',
             dragEnabled ? (dragHandle ? '!cursor-default' : '!cursor-grab') : '!cursor-default',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a277ff] focus-visible:ring-offset-2',
@@ -374,7 +442,6 @@ const resizeHandleClass = computed(() => {
             </span>
           </div>
         </li>
-      </TransitionGroup>
     </ul>
 
     <div v-if="props.items.value.length === 0" :class="emptyPlaceholderClass">
@@ -388,29 +455,22 @@ const resizeHandleClass = computed(() => {
 </template>
 
 <style scoped>
-/* 画布条目过渡：进入（拖入/复制/撤销恢复）淡入 + 轻微上浮回位 */
-.canvas-item-enter-from {
-  opacity: 0;
-  transform: scale(0.98) translateY(8px);
+/* 画布条目进入动画：拖入 / 复制 / 撤销恢复时淡入 + 轻微上浮回位。
+   用元素挂载时自动播放的 animation（而非 TransitionGroup 的 enter-from/enter-active），
+   配合上方手动 FLIP 实现排序移动动画，同时避免 DnD 库因 TransitionGroup 的
+   leave 动画期间 DOM 与 values 数量不一致而告警。 */
+.canvas-item-enter {
+  animation: canvas-item-enter 180ms ease-out;
 }
-.canvas-item-enter-active {
-  transition:
-    opacity 180ms ease-out,
-    transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-/* 离开（删除）：淡出 + 缩小，留在网格流内以避免周围元素跳动 */
-.canvas-item-leave-to {
-  opacity: 0;
-  transform: scale(0.95);
-}
-.canvas-item-leave-active {
-  transition:
-    opacity 140ms ease-in,
-    transform 140ms ease-in;
-}
-/* 重排（拖拽排序）：FLIP 平滑滑动 */
-.canvas-item-move {
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+@keyframes canvas-item-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 /* 选中：一次性紫色 ring 扩散提示，结束后回落到常规选中阴影 */
 @keyframes canvas-item-select-pop {
@@ -426,15 +486,8 @@ const resizeHandleClass = computed(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .canvas-item-enter-active,
-  .canvas-item-leave-active,
-  .canvas-item-move {
-    transition: none !important;
-  }
-  .canvas-item-enter-from,
-  .canvas-item-leave-to {
-    opacity: 1 !important;
-    transform: none !important;
+  .canvas-item-enter {
+    animation: none;
   }
   .canvas-item-select-pop {
     animation: none !important;
