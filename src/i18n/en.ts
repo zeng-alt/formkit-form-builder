@@ -458,6 +458,7 @@ export default {
       select: 'Allows user to select from a list of options',
       naiveCascader: 'Allows user to select from a cascader',
       naiveTreeSelect: 'Allows user to select from a tree',
+      naiveTransfer: 'Allows user to transfer items between lists',
       naiveMention: 'Allows user to mention options',
       naiveRate: 'Allows user to rate with stars',
       naiveSwitch: 'Allows user to toggle a boolean value',
@@ -570,6 +571,11 @@ export default {
       name: 'Naive Tree Select',
       label: 'Tree Select Field',
       description: 'Tree selection',
+    },
+    naiveTransfer: {
+      name: 'Naive Transfer',
+      label: 'Transfer Field',
+      description: 'Transfer selection',
     },
     naiveMention: {
       name: 'Naive Mention',

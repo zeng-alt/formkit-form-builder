@@ -29,6 +29,7 @@ import NaiveMention from '@/components/ui/fields/NaiveMention.vue'
 import NaiveRate from '@/components/ui/fields/NaiveRate.vue'
 import NaiveSwitch from '@/components/ui/fields/NaiveSwitch.vue'
 import NaiveTreeSelect from '@/components/ui/fields/NaiveTreeSelect.vue'
+import NaiveTransfer from '@/components/ui/fields/NaiveTransfer.vue'
 import CustomButton from '@/components/ui/fields/CustomButton.vue'
 import NaiveTypographyText from '@/components/ui/structure/NaiveTypographyText.vue'
 import NaiveTypographyP from '@/components/ui/structure/NaiveTypographyP.vue'
@@ -70,6 +71,7 @@ export const formkitBindings: Record<string, FormkitBinding> = {
   select: { component: NaiveSelect, libraryName: 'NaiveSelect' },
   naiveCascader: { component: NaiveCascader, libraryName: 'NaiveCascader' },
   naiveTreeSelect: { component: NaiveTreeSelect, libraryName: 'NaiveTreeSelect' },
+  naiveTransfer: { component: NaiveTransfer, libraryName: 'NaiveTransfer' },
   naiveMention: { component: NaiveMention, libraryName: 'NaiveMention' },
   naiveRate: { component: NaiveRate, libraryName: 'NaiveRate' },
   naiveSwitch: { component: NaiveSwitch, libraryName: 'NaiveSwitch' },

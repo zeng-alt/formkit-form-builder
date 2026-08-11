@@ -417,6 +417,7 @@ export default {
       select: '下拉选择',
       naiveCascader: '级联选择',
       naiveTreeSelect: '树选择',
+      naiveTransfer: '穿梭框',
       naiveMention: '提及',
       naiveRate: '评分',
       naiveSwitch: '开关',
@@ -518,6 +519,7 @@ export default {
     select: { name: '下拉选择', label: '选择字段', description: '下拉选择框' },
     naiveCascader: { name: '级联选择', label: '级联字段', description: '级联选择' },
     naiveTreeSelect: { name: '树选择', label: '树选择字段', description: '树形选择' },
+    naiveTransfer: { name: '穿梭框', label: '穿梭字段', description: '穿梭选择' },
     naiveMention: {
       name: '提及',
       label: '提及字段',
