@@ -709,6 +709,19 @@ export function useFormField() {
     },
   })
 
+  // 自定义属性：key → value 文本 map，渲染时透传给 naive-ui 组件属性
+  const customAttrs = computed<Record<string, string>>({
+    get: () => {
+      const value = selectedField.value?.props?.__attrs
+      if (value && typeof value === 'object') return value as Record<string, string>
+      return {}
+    },
+    set: (value: Record<string, string>) => {
+      const hasAny = value && typeof value === 'object' && Object.keys(value).length > 0
+      setPropsProp('__attrs', hasAny ? value : undefined)
+    },
+  })
+
   return {
     selectedField,
     selectedTableField,
@@ -757,6 +770,7 @@ export function useFormField() {
     rowSpan,
     colSpan,
     bindEvents,
+    customAttrs,
   }
 }
 

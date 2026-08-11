@@ -11,6 +11,7 @@ const INTERNAL_KEYS = new Set([
   'key',
   '__key',
   '__bind',
+  '__attrs',
   'outerClass',
   'value',
   'modelValue',
@@ -54,6 +55,14 @@ export function useSchemaAttrs(context: FormKitFrameworkContext, opts: { omit?: 
     for (const [key, value] of Object.entries(config)) {
       if (INTERNAL_KEYS.has(key) || omitSet.has(key) || value === undefined) continue
       out[key] = value
+    }
+    // 自定义属性 map（node.props.__attrs）展开为 naive-ui 组件属性，未定义值跳过
+    const attrs = config.__attrs
+    if (attrs && typeof attrs === 'object') {
+      for (const [key, value] of Object.entries(attrs as Record<string, unknown>)) {
+        if (value === undefined) continue
+        out[key] = value
+      }
     }
     return out
   })

@@ -7,6 +7,7 @@ import { getElementTypeDef } from '@/dsl'
 import NameInput from './common/NameInput.vue'
 import StaticContentSection from './common/StaticContentSection.vue'
 import ColSpanSection from './common/ColSpanSection.vue'
+import CustomAttrsSection from './common/CustomAttrsSection.vue'
 
 const { hasField, currentFieldType, selectedIsForm } = useFormField()
 const { t } = useFormBuilderI18n()
@@ -32,6 +33,7 @@ const editorComponent = computed(() => {
         <ColSpanSection v-if="!selectedIsForm" />
         <StaticContentSection v-if="isStatic" />
         <component :is="editorComponent" v-if="editorComponent" />
+        <CustomAttrsSection />
       </div>
     </div>
   </template>
