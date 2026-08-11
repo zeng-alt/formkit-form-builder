@@ -313,7 +313,9 @@ const draftRow = ref<Record<string, unknown>>({})
 let localSeq = 0
 
 const rowModalTitle = computed(() =>
-  editTarget.value !== null ? t('builder.dataTableEditRowTitle') : t('builder.dataTableAddRowTitle'),
+  editTarget.value !== null
+    ? t('builder.dataTableEditRowTitle')
+    : t('builder.dataTableAddRowTitle'),
 )
 
 function initDraft() {
@@ -391,9 +393,7 @@ async function saveRemoteRow(row: Record<string, unknown>) {
   const isEdit = editTarget.value !== null
   const code = isEdit ? updateDataCode.value : createDataCode.value
   if (!code) {
-    console.warn(
-      isEdit ? '[dataTable] updateData 代码缺失' : '[dataTable] createData 代码缺失',
-    )
+    console.warn(isEdit ? '[dataTable] updateData 代码缺失' : '[dataTable] createData 代码缺失')
     return
   }
   const form = injectedFormData?.value ?? {}
@@ -452,113 +452,128 @@ async function deleteRow(row: Record<string, unknown>) {
   <n-message-provider>
     <MessageHost ref="messageHost" />
     <n-card size="small" class="rounded-xl border border-border/50" :title="title || undefined">
-    <template #header-extra>
-      <div class="flex items-center gap-1">
-        <n-button type="primary" v-if="props.allowAdd === true" text size="small" @click="openAdd">
-          <template #icon><span class="i-lucide-plus h-3.5 w-3.5"></span></template>
-          {{ t('builder.dataTableAdd') }}
-        </n-button>
-        <n-button text size="small" :loading="loading" @click="refreshData">
-          <template #icon><span class="i-lucide-refresh-cw h-3.5 w-3.5"></span></template>
-          {{ t('builder.dataTableRefresh') }}
-        </n-button>
-      </div>
-    </template>
-
-    <!-- 搜索区：有搜索字段才显示 -->
-    <div v-if="searchFields.length" class="mb-3">
-      <!-- items-start：滚动条底部为横向滚动条留白（content pb），顶对齐保证输入框与操作按钮同一条线 -->
-      <div class="flex items-start gap-2">
-        <!-- 一行模式：n-scrollbar 主题化横向滚动（x-scrollable，内容 fit-content），字段保持原始宽度；展开模式换行 -->
-        <n-scrollbar
-          :x-scrollable="!searchExpanded"
-          class="flex-1 min-w-0"
-          :content-class="
-            searchExpanded ? 'flex flex-wrap items-center gap-2' : 'flex items-center gap-2 pb-2.5'
-          "
-        >
-          <div v-for="sf in searchFields" :key="sf.key" class="flex items-center gap-1.5 shrink-0">
-            <span class="whitespace-nowrap text-xs text-neutral-700 dark:text-zinc-300">{{
-              sf.title
-            }}</span>
-            <DataTableSearchField
-              :column="sf"
-              :value="searchValues[sf.key] ?? ''"
-              @update:value="(v) => (searchValues[sf.key] = v)"
-            />
-          </div>
-        </n-scrollbar>
-        <div class="flex items-center gap-1 shrink-0">
-          <n-button size="small" @click="resetSearch">
-            <template #icon><span class="i-lucide-rotate-ccw h-3.5 w-3.5"></span></template>
-            {{ t('builder.dataTableReset') }}
-          </n-button>
-          <n-button type="primary" size="small" @click="applySearch">
-            <template #icon><span class="i-lucide-search h-3.5 w-3.5"></span></template>
-            {{ t('builder.dataTableSearch') }}
-          </n-button>
+      <template #header-extra>
+        <div class="flex items-center gap-1">
           <n-button
-            v-if="props.searchExpandable"
+            type="primary"
+            v-if="props.allowAdd === true"
             text
             size="small"
-            @click="searchExpanded = !searchExpanded"
+            @click="openAdd"
           >
-            <template #icon>
-              <span
-                :class="
-                  searchExpanded
-                    ? 'i-lucide-chevrons-up h-3.5 w-3.5'
-                    : 'i-lucide-chevrons-down h-3.5 w-3.5'
-                "
-              ></span>
-            </template>
-            {{ searchExpanded ? t('builder.dataTableCollapse') : t('builder.dataTableExpand') }}
+            <template #icon><span class="i-lucide-plus h-3.5 w-3.5"></span></template>
+            {{ t('builder.dataTableAdd') }}
+          </n-button>
+          <n-button text size="small" :loading="loading" @click="refreshData">
+            <template #icon><span class="i-lucide-refresh-cw h-3.5 w-3.5"></span></template>
+            {{ t('builder.dataTableRefresh') }}
           </n-button>
         </div>
-      </div>
-    </div>
-
-    <n-data-table
-      :columns="tableColumns as any"
-      :data="displayRows as any"
-      :row-key="(row: any) => row[rowKey]"
-      :bordered="props.bordered !== false"
-      :size="(props.size ?? 'medium') as any"
-      :scroll-x="props.scrollX"
-      :loading="loading"
-      :pagination="useRemote ? remotePagination : localPagination"
-      :remote="useRemote"
-      @update:page="onPageChange"
-    />
-
-    <n-modal
-      v-model:show="addOpen"
-      preset="card"
-      :style="{ width: `${addModalWidth}px`, maxWidth: '90vw' }"
-    >
-      <template #header>
-        <span class="text-sm font-medium">{{ rowModalTitle }}</span>
       </template>
-      <div class="grid grid-cols-12 gap-x-3 gap-y-3">
-        <template v-for="col in columns" :key="col.key">
-          <div v-if="col.key && draftCells[col.key]?.visible" :class="`col-span-${toColspan(col)}`">
-            <div class="mb-1 text-xs text-muted-foreground">{{ col.title }}</div>
-            <div class="min-w-0">
-              <DataTableRowCellInput
-                :column="col"
-                :value="draftCells[col.key]?.value"
-                :disabled="Boolean(draftCells[col.key]?.derived)"
-                @update:value="(v) => (draftRow[col.key] = v)"
+
+      <!-- 搜索区：有搜索字段才显示 -->
+      <div v-if="searchFields.length" class="mb-3">
+        <!-- items-start：滚动条底部为横向滚动条留白（content pb），顶对齐保证输入框与操作按钮同一条线 -->
+        <div class="flex items-start gap-2">
+          <!-- 一行模式：n-scrollbar 主题化横向滚动（x-scrollable，内容 fit-content），字段保持原始宽度；展开模式换行 -->
+          <n-scrollbar
+            :x-scrollable="!searchExpanded"
+            class="flex-1 min-w-0"
+            :content-class="
+              searchExpanded
+                ? 'flex flex-wrap items-center gap-2'
+                : 'flex items-center gap-2 pb-2.5'
+            "
+          >
+            <div
+              v-for="sf in searchFields"
+              :key="sf.key"
+              class="flex items-center gap-1.5 shrink-0"
+            >
+              <span class="whitespace-nowrap text-xs text-neutral-700 dark:text-zinc-300">{{
+                sf.title
+              }}</span>
+              <DataTableSearchField
+                :column="sf"
+                :value="searchValues[sf.key] ?? ''"
+                @update:value="(v) => (searchValues[sf.key] = v)"
               />
             </div>
+          </n-scrollbar>
+          <div class="flex items-center gap-1 shrink-0">
+            <n-button size="small" @click="resetSearch">
+              <template #icon><span class="i-lucide-rotate-ccw h-3.5 w-3.5"></span></template>
+              {{ t('builder.dataTableReset') }}
+            </n-button>
+            <n-button type="primary" size="small" @click="applySearch">
+              <template #icon><span class="i-lucide-search h-3.5 w-3.5"></span></template>
+              {{ t('builder.dataTableSearch') }}
+            </n-button>
+            <n-button
+              v-if="props.searchExpandable"
+              text
+              size="small"
+              @click="searchExpanded = !searchExpanded"
+            >
+              <template #icon>
+                <span
+                  :class="
+                    searchExpanded
+                      ? 'i-lucide-chevrons-up h-3.5 w-3.5'
+                      : 'i-lucide-chevrons-down h-3.5 w-3.5'
+                  "
+                ></span>
+              </template>
+              {{ searchExpanded ? t('builder.dataTableCollapse') : t('builder.dataTableExpand') }}
+            </n-button>
           </div>
+        </div>
+      </div>
+
+      <n-data-table
+        :columns="tableColumns as any"
+        :data="displayRows as any"
+        :row-key="(row: any) => row[rowKey]"
+        :bordered="props.bordered !== false"
+        :size="(props.size ?? 'medium') as any"
+        :scroll-x="props.scrollX"
+        :loading="loading"
+        :pagination="useRemote ? remotePagination : localPagination"
+        :remote="useRemote"
+        @update:page="onPageChange"
+      />
+
+      <n-modal
+        v-model:show="addOpen"
+        preset="card"
+        :style="{ width: `${addModalWidth}px`, maxWidth: '90vw' }"
+      >
+        <template #header>
+          <span class="text-sm font-medium">{{ rowModalTitle }}</span>
         </template>
-      </div>
-      <div class="mt-4 flex justify-end gap-2">
-        <n-button size="small" @click="addOpen = false">{{ t('common.cancel') }}</n-button>
-        <n-button size="small" type="primary" @click="saveAdd">{{ t('common.save') }}</n-button>
-      </div>
-    </n-modal>
-  </n-card>
+        <div class="grid grid-cols-12 gap-x-3 gap-y-3">
+          <template v-for="col in columns" :key="col.key">
+            <div
+              v-if="col.key && draftCells[col.key]?.visible"
+              :class="`col-span-${toColspan(col)}`"
+            >
+              <div class="mb-1 text-xs text-muted-foreground">{{ col.title }}</div>
+              <div class="min-w-0">
+                <DataTableRowCellInput
+                  :column="col"
+                  :value="draftCells[col.key]?.value"
+                  :disabled="Boolean(draftCells[col.key]?.derived)"
+                  @update:value="(v) => (draftRow[col.key] = v)"
+                />
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="mt-4 flex justify-end gap-2">
+          <n-button size="small" @click="addOpen = false">{{ t('common.cancel') }}</n-button>
+          <n-button size="small" type="primary" @click="saveAdd">{{ t('common.save') }}</n-button>
+        </div>
+      </n-modal>
+    </n-card>
   </n-message-provider>
 </template>

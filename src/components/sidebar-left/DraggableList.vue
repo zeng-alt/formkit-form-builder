@@ -109,10 +109,7 @@ watch(
           </div>
         </n-popover>
       </div>
-      <span
-        v-else
-        :class="`${iconOf(item)} h-5 w-5 shrink-0`"
-      ></span>
+      <span v-else :class="`${iconOf(item)} h-5 w-5 shrink-0`"></span>
       <div v-if="!collapsed" class="ml-3 flex flex-col justify-center overflow-hidden">
         <span class="text-[11px] text-secondary-foreground/80 font-medium">{{ item.name }}</span>
         <span class="text-[9px] text-muted-foreground truncate">{{ item.description }}</span>

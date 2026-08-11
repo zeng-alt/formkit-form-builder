@@ -145,10 +145,7 @@ const duplicateChild = (index: number) => {
 
 <template>
   <div class="w-full rounded-xl border border-border/50 bg-card/50">
-    <div
-      v-if="showHeader"
-      class="flex flex-col gap-0.5 px-3 py-2 border-b border-border/50"
-    >
+    <div v-if="showHeader" class="flex flex-col gap-0.5 px-3 py-2 border-b border-border/50">
       <div v-if="title" class="text-sm font-medium">{{ title }}</div>
       <div v-if="helpText" class="text-xs text-muted-foreground">{{ helpText }}</div>
     </div>

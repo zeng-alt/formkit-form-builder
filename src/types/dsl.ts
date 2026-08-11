@@ -2,7 +2,7 @@
 // 语义化、版本化、JSON-safe 的表单描述，与 FormKit 渲染层完全解耦。
 // 后端（如 Java）可直接反序列化：version 用于兼容迁移，category 用于多态判别。
 
-export const DSL_VERSION = 2
+export const DSL_VERSION = 1
 
 // ─── 语义分层标识 ───────────────────────────────────────────────────────────────
 // 替代旧的 kind: 'formkit' | 'cmp' | 'el' 与 form: 'field' | 'container' | 'static'

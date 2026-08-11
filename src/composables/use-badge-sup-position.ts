@@ -97,11 +97,7 @@ export function useBadgeSupPosition(opts: {
     { immediate: true },
   )
 
-  watch(
-    () => [opts.enabled.value, opts.refreshTrigger?.value] as const,
-    refresh,
-    { deep: true },
-  )
+  watch(() => [opts.enabled.value, opts.refreshTrigger?.value] as const, refresh, { deep: true })
 
   onScopeDispose(stopBurst)
 

@@ -179,7 +179,12 @@ export function moveBetween<T>(data: ParentRecord<T>, state: DragState<T>) {
   // currentParent 已被置为该容器，后续内部移动走 moveBetween（不 consult accepts），
   // 导致内层元素上出现"可插入"的辅助拖拽线。这里同样按 accepts 拦截，满时不再显示插入线。
   const accepts = data.data.config.accepts as
-    | ((target: ParentRecord<T>, initial: ParentRecord<T>, current: ParentRecord<T>, state: DragState<T>) => boolean)
+    | ((
+        target: ParentRecord<T>,
+        initial: ParentRecord<T>,
+        current: ParentRecord<T>,
+        state: DragState<T>,
+      ) => boolean)
     | undefined
   if (typeof accepts === 'function') {
     try {

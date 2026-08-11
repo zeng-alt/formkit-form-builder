@@ -4,7 +4,7 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NAvatar } from 'naive-ui'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import { useBindEvents } from '@/composables/use-bind-events'
-import { omit } from 'naive-ui/es/_utils';
+import { omit } from 'naive-ui/es/_utils'
 
 // 纯配置驱动、无需值绑定；context 仅作为配置来源传入 useSchemaAttrs
 const { context } = defineProps<{
@@ -22,7 +22,7 @@ const renderFallback = () =>
     {
       class: 'flex items-center justify-center w-full h-full',
     },
-    fallbackText.value || '?'
+    fallbackText.value || '?',
   )
 
 async function handleClick(e: MouseEvent) {
@@ -33,6 +33,10 @@ async function handleClick(e: MouseEvent) {
 
 <template>
   <div class="w-full py-2 flex items-center" @click="handleClick">
-    <NAvatar v-bind="props" :render-fallback="renderFallback" :render-placeholder="renderFallback" />
+    <NAvatar
+      v-bind="props"
+      :render-fallback="renderFallback"
+      :render-placeholder="renderFallback"
+    />
   </div>
 </template>
