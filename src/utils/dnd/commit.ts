@@ -101,12 +101,13 @@ function normalizeInsertValues(
       const nextName = val.$formkit === 'submit' ? val.name : generateNextFieldName(existingNames)
       if (val.$formkit === 'submit')
         return { ...valObj, __key: nextKey, outerClass: 'col-span-12 pt-2' }
-      // $cmp 节点的语义 name 在 props.name（DSL 回读取 props），顶层 name 仅画布展示，需同步
+      // $cmp 节点的语义 name 在 props.name（DSL 回读取 props），顶层 name 仅画布展示，需同步；
+      // props.id 同样刷新为 field_<key>，与 $formkit 路径一致（$cmp 字段/静态节点的 id 在 props 内）
       if (typeof val.$cmp === 'string') {
         val.props =
           val.props && typeof val.props === 'object'
-            ? { ...val.props, name: nextName }
-            : { name: nextName }
+            ? { ...val.props, name: nextName, id: `field_${nextKey}` }
+            : { name: nextName, id: `field_${nextKey}` }
       }
       // 容器子节点（如 nestedList 内置 group）同样生成唯一 name
       nameChildren(val.children)

@@ -186,9 +186,10 @@ const FIELD_TOP_PROPS = new Set([
   'buttonText',
 ])
 
-export function fieldNodeToSchema(node: FieldNode, _rt?: RenderTarget): SchemaNode {
-  const kind = 'formkit'
-  const base: any = buildNodeHead(node, kind, node.type)
+export function fieldNodeToSchema(node: FieldNode, rt?: RenderTarget): SchemaNode {
+  const kind = rt?.renderAs ?? 'formkit'
+  const target = rt?.target ?? node.type
+  const base: any = buildNodeHead(node, kind, target)
 
   if (node.name) putByKind(base, 'name', node.name, kind)
   else if (node.id) putByKind(base, 'name', node.id, kind)
@@ -199,7 +200,9 @@ export function fieldNodeToSchema(node: FieldNode, _rt?: RenderTarget): SchemaNo
   if (typeof node.expr === 'string' && node.expr.trim()) {
     putByKind(base, 'expr', node.expr, kind)
     // 带 expr 的字段不设初始 value，由运行时求值填充
-    delete base.value
+    if (kind === 'formkit') delete base.value
+    else if (kind === 'cmp') delete base.props?.value
+    else delete base.attrs?.value
   }
   applyByKind(base, { ...resolveValidation(node.validation) }, kind)
   if (Array.isArray(node.options) ? node.options.length : node.options !== undefined)
@@ -208,14 +211,29 @@ export function fieldNodeToSchema(node: FieldNode, _rt?: RenderTarget): SchemaNo
   if (node.props) {
     const nested: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(node.props)) {
-      if (FIELD_TOP_PROPS.has(key)) base[key] = value
+      if (kind === 'formkit' && FIELD_TOP_PROPS.has(key)) base[key] = value
       else nested[key] = value
     }
-    if (Object.keys(nested).length) base.props = nested
+    if (Object.keys(nested).length) {
+      if (kind === 'cmp') base.props = { ...base.props, ...nested }
+      else if (kind === 'el') base.attrs = { ...base.attrs, ...nested }
+      else base.props = nested
+    }
   }
 
   const outerClass = nodeOuterClass(node)
   base.outerClass = outerClass
+
+  // $cmp 字段：FormKit 语义键与组件配置都收进 props（包装组件只转发 props），
+  // 外框类顶层与 props 双写——画布 grid / DnD 读顶层 outerClass，渲染经 props 落到 FormKit；
+  // 画布/面板读取顶层 name（key 兜底 / 唯一命名），组件经 props.name 接收（与 static 一致）
+  if (kind === 'cmp') {
+    if (Object.keys(base.props ?? {}).length === 0) delete base.props
+    if (typeof base.outerClass === 'string' && base.outerClass)
+      base.props = { ...base.props, outerClass: base.outerClass }
+    if (typeof base.props?.name === 'string') base.name = base.props.name
+  }
+
   return base as SchemaNode
 }
 

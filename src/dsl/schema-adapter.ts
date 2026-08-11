@@ -83,8 +83,14 @@ function wrapNodeWithGroup(node: any): any {
   if (node.$formkit === 'submit' || node.$formkit === 'reset') return node
 
   const hasChildren = Array.isArray(node.children) && node.children.length > 0
+  // $cmp 化后字段（如 $cmp: text）不再是容器，不能按旧“$cmp 即容器”的规则误判包裹；
+  // 容器/布局按注册表分类判断，未注册节点沿用旧行为（$cmp 即包）
+  const cmpType = typeof node.$cmp === 'string' && node.$cmp !== '' ? node.$cmp : undefined
+  const def = cmpType ? getElementTypeDef(cmpType) : undefined
   const isContainerOrLayout =
-    (typeof node.$cmp === 'string' && node.$cmp !== '') ||
+    (typeof node.$cmp === 'string' &&
+      node.$cmp !== '' &&
+      (def ? def.category === 'container' || def.category === 'layout' : true)) ||
     (typeof node.$el === 'string' && hasChildren)
   if (!isContainerOrLayout) return node
 

@@ -5,6 +5,7 @@ import { FormKit, FormKitSchema } from '@formkit/vue'
 import { NButton, NTooltip, NEmpty } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
+import { getElementTypeDef } from '@/dsl'
 
 const props = defineProps<{
   nodeKey?: string
@@ -95,15 +96,27 @@ const itemTemplate = computed<{
   // 列表项最外层 $el 包装的 col-span（容器的占列数，如 card 的 layout.colspan=6 → col-span-6）；
   // 解壳后用它回包 $cmp 子节点，保证布局宽度不被丢弃
   const outerElClass =
-    typeof (list[0] as any)?.$el === 'string' &&
-    typeof (list[0] as any)?.attrs?.class === 'string'
+    typeof (list[0] as any)?.$el === 'string' && typeof (list[0] as any)?.attrs?.class === 'string'
       ? ((list[0] as any).attrs.class as string)
       : ''
   const outerSpanClass = outerElClass.match(/\bcol-span-\d+\b/)?.[0] ?? ''
-  // 直接字段：标量项
-  if (typeof only?.$formkit === 'string' && kind !== 'group' && kind !== 'list') {
-    const { $formkit: _formkit, name: _name, id: _id, __key: _key, ...attrs } = only
-    return { type: only.$formkit, attrs }
+  // 直接字段：标量项（$formkit / $cmp 化字段均可）。字段由外层 :index 定位，
+  // attrs 不携带 name/id，避免多包一层对象键；$cmp 字段的 FormKit 配置在 props 内。
+  const isField = getElementTypeDef(kind)?.category === 'field'
+  const isScalar =
+    (typeof only?.$formkit === 'string' && kind !== 'group' && kind !== 'list') || isField
+  if (isScalar) {
+    let attrs: Record<string, unknown>
+    if (typeof only?.$formkit === 'string') {
+      const { $formkit: _formkit, name: _name, id: _id, __key: _key, ...rest } = only
+      attrs = rest
+    } else {
+      attrs = { ...(only?.props && typeof only.props === 'object' ? only.props : {}) }
+      delete attrs.name
+      delete attrs.id
+      delete attrs.__key
+    }
+    return { type: kind, attrs }
   }
   // 顶层 group：扁平对象项。剥离组名，展开内部字段（解掉内部 grid 壳），
   // 由模板外层统一铺 grid，避免组内再套一层 group / 网格
@@ -124,12 +137,15 @@ const itemTemplate = computed<{
           : ''
       inner = (inner[0] as any).children as FormKitSchemaFormKit[]
     }
-    // 容器子节点（$cmp，如 list 内嵌 card）：组件根不是 formkit-outer，网格里缺 col-span
-    // 会退化成 1/12 列宽（xxxx---），按最外层 col-span 回包（缺省 12 = 撑满父容器整行）
-    const wrapClass =
-      innerElClass.match(/\bcol-span-\d+\b/)?.[0] || outerSpanClass || 'col-span-12'
+    // 容器/布局子节点（$cmp，如 list 内嵌 card）：组件根不是 formkit-outer，网格里缺 col-span
+    // 会退化成 1/12 列宽（xxxx---），按最外层 col-span 回包（缺省 12 = 撑满父容器整行）。
+    // $cmp 化的字段（$cmp: text 等）自带 formkit-outer + props.outerClass，不能回包，否则被
+    // 套进全宽 div 丢失自身的 col-span 布局。
+    const wrapClass = innerElClass.match(/\bcol-span-\d+\b/)?.[0] || outerSpanClass || 'col-span-12'
     inner = inner.map((c) =>
-      c && typeof (c as any).$cmp === 'string'
+      c &&
+      typeof (c as any).$cmp === 'string' &&
+      getElementTypeDef((c as any).$cmp)?.category !== 'field'
         ? ({
             $el: 'div',
             attrs: { class: wrapClass },
