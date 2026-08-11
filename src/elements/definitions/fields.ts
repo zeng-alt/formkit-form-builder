@@ -361,6 +361,23 @@ export const fieldElements: ElementDefinition[] = [
     },
   },
   {
+    type: 'naiveAutoComplete',
+    category: 'field',
+    icon: 'i-lucide-sparkles',
+    tooltipKey: 'fieldProps.tooltip.naiveAutoComplete',
+    editor: () => import('@/components/sidebar-right/edits/editors/NaiveAutoCompleteEditor.vue'),
+    schema: {
+      renderAs: 'cmp',
+      nameKey: 'elements.naiveAutoComplete.name',
+      labelKey: 'elements.naiveAutoComplete.label',
+      outerClass: 'col-span-12',
+      props: { ...commonProps },
+      placeholderKey: 'elements.naiveAutoComplete.placeholder',
+      options: ['Apple', 'Banana'],
+      descriptionKey: 'elements.naiveAutoComplete.description',
+    },
+  },
+  {
     type: 'naiveSwitch',
     category: 'field',
     icon: 'i-lucide-square-check',

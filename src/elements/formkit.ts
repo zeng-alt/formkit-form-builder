@@ -26,6 +26,7 @@ import NaiveAvatar from '@/components/ui/fields/NaiveAvatar.vue'
 import NaiveImage from '@/components/ui/fields/NaiveImage.vue'
 import NaiveCascader from '@/components/ui/fields/NaiveCascader.vue'
 import NaiveMention from '@/components/ui/fields/NaiveMention.vue'
+import NaiveAutoComplete from '@/components/ui/fields/NaiveAutoComplete.vue'
 import NaiveRate from '@/components/ui/fields/NaiveRate.vue'
 import NaiveSwitch from '@/components/ui/fields/NaiveSwitch.vue'
 import NaiveTreeSelect from '@/components/ui/fields/NaiveTreeSelect.vue'
@@ -42,6 +43,7 @@ import NaiveTypographyLi from '@/components/ui/structure/NaiveTypographyLi.vue'
 import NaiveDivider from '@/components/ui/structure/NaiveDivider.vue'
 import NaiveAlert from '@/components/ui/structure/NaiveAlert.vue'
 import NaiveBackTop from '@/components/ui/structure/NaiveBackTop.vue'
+import NaiveQrCode from '@/components/ui/structure/NaiveQrCode.vue'
 
 registerBuiltinElementTypes()
 
@@ -73,6 +75,7 @@ export const formkitBindings: Record<string, FormkitBinding> = {
   naiveTreeSelect: { component: NaiveTreeSelect, libraryName: 'NaiveTreeSelect' },
   naiveTransfer: { component: NaiveTransfer, libraryName: 'NaiveTransfer' },
   naiveMention: { component: NaiveMention, libraryName: 'NaiveMention' },
+  naiveAutoComplete: { component: NaiveAutoComplete, libraryName: 'NaiveAutoComplete' },
   naiveRate: { component: NaiveRate, libraryName: 'NaiveRate' },
   naiveSwitch: { component: NaiveSwitch, libraryName: 'NaiveSwitch' },
   naiveAvatar: { component: NaiveAvatar, libraryName: 'NaiveAvatar' },
@@ -102,6 +105,7 @@ export const formkitBindings: Record<string, FormkitBinding> = {
   naiveDivider: { component: NaiveDivider, libraryName: 'NaiveDivider' },
   naiveAlert: { component: NaiveAlert, libraryName: 'NaiveAlert' },
   naiveBackTop: { component: NaiveBackTop, libraryName: 'NaiveBackTop' },
+  naiveQrCode: { component: NaiveQrCode, libraryName: 'NaiveQrCode' },
 }
 
 // legacy $cmp 别名单一来源：由 formkitBindings 派生注入 DSL 注册表（识别旧 Naive* 数据）

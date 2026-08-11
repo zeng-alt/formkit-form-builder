@@ -335,6 +335,9 @@ export default {
       color: '标记颜色',
       offsetX: '水平偏移',
       offsetY: '垂直偏移',
+      padding: '内边距',
+      errorCorrectionLevel: '纠错级别',
+      backgroundColor: '背景色',
       valuePlaceholder: '如：5 / NEW / $count',
     },
     dataTable: {
@@ -419,6 +422,7 @@ export default {
       naiveTreeSelect: '树选择',
       naiveTransfer: '穿梭框',
       naiveMention: '提及',
+      naiveAutoComplete: '自动完成',
       naiveRate: '评分',
       naiveSwitch: '开关',
       naiveAvatar: '头像',
@@ -446,6 +450,7 @@ export default {
       naiveDivider: '分割线（Naive）',
       naiveAlert: '提示（NAlert）',
       naiveBackTop: '浮动按钮（BackTop）',
+      naiveQrCode: '二维码（QR Code）',
       list: '列表',
       nestedList: '嵌套列表（内置分组）',
       card: '卡片容器',
@@ -526,6 +531,12 @@ export default {
       placeholder: '输入 @ 提及',
       description: '提及输入',
     },
+    naiveAutoComplete: {
+      name: '自动完成',
+      label: '自动完成字段',
+      placeholder: '输入以搜索...',
+      description: '带自动补全的输入框',
+    },
     naiveRate: { name: '评分', label: '评分字段', description: '评分输入' },
     naiveSwitch: { name: '开关', label: '开关字段', description: '布尔开关' },
     naiveAvatar: { name: '头像', label: '头像', description: '头像展示' },
@@ -548,6 +559,11 @@ export default {
     naiveBackTop: {
       name: '浮动按钮（BackTop）',
       description: 'Naive UI 回到顶部按钮（可当浮动按钮使用）',
+    },
+    naiveQrCode: {
+      name: '二维码（QR Code）',
+      label: '二维码',
+      description: '二维码展示',
     },
     tel: {
       name: '电话',

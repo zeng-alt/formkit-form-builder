@@ -28,6 +28,7 @@ const CONTENT_FIELDS: Record<string, StaticContentField[]> = {
     { key: 'title', labelKey: 'edits.content.title' },
     { key: 'content', labelKey: 'edits.content.content', multiline: true },
   ],
+  naiveQrCode: [{ key: 'value', labelKey: 'edits.content.text' }],
 }
 
 export function getStaticContentFields(type: string | null | undefined): StaticContentField[] {

@@ -376,6 +376,9 @@ export default {
       color: 'Badge color',
       offsetX: 'Horizontal offset',
       offsetY: 'Vertical offset',
+      padding: 'Padding',
+      errorCorrectionLevel: 'Error correction level',
+      backgroundColor: 'Background color',
       valuePlaceholder: 'e.g. 5 / NEW / $count',
     },
     dataTable: {
@@ -460,6 +463,7 @@ export default {
       naiveTreeSelect: 'Allows user to select from a tree',
       naiveTransfer: 'Allows user to transfer items between lists',
       naiveMention: 'Allows user to mention options',
+      naiveAutoComplete: 'Allows user to type with auto-complete suggestions',
       naiveRate: 'Allows user to rate with stars',
       naiveSwitch: 'Allows user to toggle a boolean value',
       naiveAvatar: 'Avatar display',
@@ -487,6 +491,7 @@ export default {
       naiveDivider: 'Naive UI divider',
       naiveAlert: 'Naive UI alert',
       naiveBackTop: 'BackTop (floating button)',
+      naiveQrCode: 'QR code display',
       list: 'Allows user to group fields into an array',
       nestedList: 'Nested list (with built-in group)',
       card: 'Card container',
@@ -583,6 +588,12 @@ export default {
       placeholder: 'Type @ to mention',
       description: 'Mention input',
     },
+    naiveAutoComplete: {
+      name: 'Naive Auto Complete',
+      label: 'Auto Complete Field',
+      placeholder: 'Type to search...',
+      description: 'Input with auto-complete',
+    },
     naiveRate: { name: 'Naive Rate', label: 'Rate Field', description: 'Rating input' },
     naiveSwitch: { name: 'Naive Switch', label: 'Switch Field', description: 'Boolean switch' },
     naiveAvatar: { name: 'Naive Avatar', label: 'Avatar', description: 'Avatar display' },
@@ -605,6 +616,11 @@ export default {
     naiveBackTop: {
       name: 'BackTop',
       description: 'Naive UI back-top button (can be used as a floating button)',
+    },
+    naiveQrCode: {
+      name: 'Naive QR Code',
+      label: 'QR Code',
+      description: 'QR code display',
     },
     tel: {
       name: 'Telephone Number',

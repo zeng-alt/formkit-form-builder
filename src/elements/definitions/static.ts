@@ -304,4 +304,25 @@ export const staticElements: ElementDefinition[] = [
       descriptionKey: 'elements.naiveBackTop.description',
     },
   },
+  {
+    type: 'naiveQrCode',
+    category: 'static',
+    icon: 'i-lucide-qr-code',
+    tooltipKey: 'fieldProps.tooltip.naiveQrCode',
+    editor: () => import('@/components/sidebar-right/edits/editors/NaiveQrCodeEditor.vue'),
+    schema: {
+      renderAs: 'cmp',
+      outerClass: 'col-span-12',
+      value: 'https://github.com/zeng-alt/formkit-form-builder',
+      props: {
+        size: 128,
+        color: '#000000',
+        backgroundColor: '#ffffff',
+        padding: 10,
+        errorCorrectionLevel: 'M',
+      },
+      nameKey: 'elements.naiveQrCode.name',
+      descriptionKey: 'elements.naiveQrCode.description',
+    },
+  },
 ]
