@@ -65,6 +65,10 @@ export default {
     dataTableColumnSearch: '搜索字段类型...',
     dataTableColumnSearchEmpty: '未找到匹配的字段',
     dataTableColumnCount: '共 {count} 个字段',
+    dataTableSaveSuccess: '保存成功',
+    dataTableSaveError: '保存失败',
+    dataTableDeleteSuccess: '删除成功',
+    dataTableDeleteError: '删除失败',
   },
   importExport: {
     title: '导入 / 导出 Schema',
@@ -246,6 +250,12 @@ export default {
     optionsLabel: '添加选项',
     label: '标签',
     helpText: '帮助文本',
+    customAttrs: {
+      title: '自定义属性',
+      keyPlaceholder: '属性名（key）',
+      valuePlaceholder: '属性值（value）',
+      add: '添加属性',
+    },
     name: '名称',
     placeholderLabel: '占位符',
     items: '条目',

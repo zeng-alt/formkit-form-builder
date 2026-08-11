@@ -88,6 +88,14 @@ export function useFormBuilderI18n() {
   return inject<I18nContext>(I18N_KEY, {
     locale: computed(() => 'zh-CN'),
     localeFallback: computed(() => 'zh-CN'),
-    t: (key) => key,
+    // 无 provider（如 FormRenderer 单独使用未传 config、外层无 BuilderProvider）时，
+    // 仍按内置默认文案（zh-CN → en）解析，而不是原样返回 key
+    t: (key, params) => {
+      const zh = getByPath(defaultMessages['zh-CN'] ?? {}, key)
+      const en = getByPath(defaultMessages.en ?? {}, key)
+      const raw = (zh ?? en) as unknown
+      if (typeof raw === 'string') return formatMessage(raw, params)
+      return key
+    },
   })
 }

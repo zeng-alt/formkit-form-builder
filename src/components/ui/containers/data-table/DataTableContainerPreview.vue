@@ -1,6 +1,15 @@
 <script setup lang="ts">
-import { computed, h, inject, ref, watch, type Ref } from 'vue'
-import { NButton, NCard, NDataTable, NModal, NScrollbar } from 'naive-ui'
+import { computed, defineComponent, h, inject, ref, watch, type Ref } from 'vue'
+import {
+  NButton,
+  NCard,
+  NDataTable,
+  NModal,
+  NScrollbar,
+  NMessageProvider,
+  useMessage,
+  type MessageApi,
+} from 'naive-ui'
 import { runBindCode } from '@/utils/bind-runtime'
 import { useBinderHttp } from '@/composables/use-bind-http'
 import { useFormDefinition } from '@/composables/form-fields'
@@ -21,12 +30,28 @@ import DataTableRowCellInput from './DataTableRowCellInput.vue'
 import DataTableSearchField from './DataTableSearchField.vue'
 import type { DataTableColumn } from './types'
 
+// 根节点是 n-message-provider（Fragment 渲染，无法继承属性）；DSL 透传的 id 等
+// 非 props 属性走 attrs 会触发 Vue 警告，这里显式关闭继承（这些 attrs 本无用途）。
+defineOptions({ inheritAttrs: false })
+
 // 预览组件：运行时（FormSchemaRenderer）以 $cmp: dataTable 渲染。
 // 结构：搜索区（容器 children 字段 → 输入框 + 搜索/重置）+ 内容区（表格，props.columns）。
 // 数据通道：
 //   - 固定数据（默认）：data 本地数组，pagination=true 时前端分页；
 //   - 远程数据：remote=true 时执行节点 props.getData 里的 JS 代码拉取（runBindCode
 //     执行，参数见 bindHint + page/pageSize/search，form 为当前表单数据）。
+
+// 消息宿主：远程新增/编辑/删除的成功与失败提示（n-message）。
+// NMessageProvider 渲染为 Fragment + Teleport（不产生包裹节点），useMessage 需在子组件内调用。
+const MessageHost = defineComponent({
+  setup(_, { expose }) {
+    const message = useMessage()
+    expose({ message })
+    return () => null
+  },
+})
+const messageHost = ref<{ message: MessageApi } | null>(null)
+const message = computed(() => messageHost.value?.message)
 
 const props = withDefaults(
   defineProps<{
@@ -48,6 +73,12 @@ const props = withDefaults(
     searchExpandable?: boolean
     // 远程获取数据的 JS 代码（设计侧编辑器编写，runBindCode 执行）
     getData?: string
+    /** 远程新增数据的 JS 代码（runBindCode 执行，参数：row · form · axios） */
+    createData?: string
+    /** 远程编辑数据的 JS 代码（runBindCode 执行，参数：row · form · axios） */
+    updateData?: string
+    /** 远程删除数据的 JS 代码（runBindCode 执行，参数：row · form · axios） */
+    deleteData?: string
     /** 固定数据模式：是否允许新增 / 编辑 / 删除（直接操作 data） */
     allowAdd?: boolean
     allowEdit?: boolean
@@ -68,6 +99,18 @@ const bindAxios = useBinderHttp()
 
 const getDataCode = computed(() => {
   const code = props.getData
+  return typeof code === 'string' && code.trim() ? code.trim() : ''
+})
+const createDataCode = computed(() => {
+  const code = props.createData
+  return typeof code === 'string' && code.trim() ? code.trim() : ''
+})
+const updateDataCode = computed(() => {
+  const code = props.updateData
+  return typeof code === 'string' && code.trim() ? code.trim() : ''
+})
+const deleteDataCode = computed(() => {
+  const code = props.deleteData
   return typeof code === 'string' && code.trim() ? code.trim() : ''
 })
 const useRemote = computed(() => props.remote === true && !!getDataCode.value)
@@ -91,10 +134,11 @@ const tableColumns = computed(() => {
       h(DataTableCellRenderer, { column: col, value: row[col.key] })
     return naiveCol
   })
-  // 固定数据模式：按开关追加「操作」列（编辑/删除直接改 data）
-  if (!useRemote.value && (props.allowEdit === true || props.allowDelete === true)) {
+  // 固定数据模式：按开关追加「操作」列（编辑/删除直接改 data）；
+  // 远程模式：allowEdit / allowDelete 为真同样追加，编辑走 updateData、删除走 deleteData（runBindCode 执行后刷新当前页）
+  if (props.allowEdit === true || props.allowDelete === true) {
     cols.push({
-      key: '__actions',
+      key: 'actions',
       title: t('builder.dataTableActions'),
       width: 96,
       render: (row: Record<string, unknown>) =>
@@ -113,6 +157,7 @@ const tableColumns = computed(() => {
                   size: 'tiny',
                   text: true,
                   type: 'error',
+                  style: 'margin-left: 12px;',
                   onClick: () => deleteRow(row),
                 },
                 { icon: () => h('span', { class: 'i-lucide-trash-2 h-3.5 w-3.5' }) },
@@ -260,14 +305,15 @@ function refreshData() {
 }
 
 // ─── 新增 / 编辑数据行（弹窗按列录入，控件按列来源元素类型渲染）──────────────────
-// 固定数据模式：新增/编辑直接写 dataRows；远程模式暂沿用本地新增（远程 CRUD 后续接入）
+// 固定数据模式：新增/编辑直接写 dataRows；远程模式走 createData / updateData 代码。
+// editTarget 保存原行引用：固定模式用于定位 dataRows 索引，远程模式作为 row 传参。
 const addOpen = ref(false)
-const editIndex = ref<number | null>(null)
+const editTarget = ref<Record<string, unknown> | null>(null)
 const draftRow = ref<Record<string, unknown>>({})
 let localSeq = 0
 
 const rowModalTitle = computed(() =>
-  editIndex.value !== null ? t('builder.dataTableEditRowTitle') : t('builder.dataTableAddRowTitle'),
+  editTarget.value !== null ? t('builder.dataTableEditRowTitle') : t('builder.dataTableAddRowTitle'),
 )
 
 function initDraft() {
@@ -289,15 +335,13 @@ function initDraft() {
 }
 
 function openAdd() {
-  editIndex.value = null
+  editTarget.value = null
   draftRow.value = initDraft()
   addOpen.value = true
 }
 
 function openEdit(row: Record<string, unknown>) {
-  const idx = dataRows.value.indexOf(row)
-  if (idx < 0) return
-  editIndex.value = idx
+  editTarget.value = row
   draftRow.value = { ...row }
   addOpen.value = true
 }
@@ -316,35 +360,101 @@ const draftCells = computed(() => {
   return out
 })
 
-function saveAdd() {
+async function saveAdd() {
   const row: Record<string, unknown> = { ...draftRow.value }
   // 表达式驱动列：落库取派生计算值（与表单运行时 expr 语义一致）
   for (const c of columns.value) {
     const cell = c.key ? draftCells.value[c.key] : undefined
     if (cell?.derived) row[c.key] = cell.value
   }
-  if (editIndex.value !== null) {
-    const idx = editIndex.value
-    dataRows.value = dataRows.value.map((r, i) => (i === idx ? row : r))
+  // 远程模式：走 createData / updateData 代码，成功后刷新当前页
+  if (useRemote.value) {
+    await saveRemoteRow(row)
+    return
+  }
+  if (editTarget.value !== null) {
+    const idx = dataRows.value.indexOf(editTarget.value)
+    if (idx >= 0) {
+      dataRows.value = dataRows.value.map((r, i) => (i === idx ? row : r))
+    }
   } else {
     const rk = rowKey.value
     if (rk && !row[rk]) row[rk] = `local_${Date.now()}_${localSeq++}`
     dataRows.value = [...dataRows.value, row]
   }
-  editIndex.value = null
+  editTarget.value = null
   addOpen.value = false
 }
 
-function deleteRow(row: Record<string, unknown>) {
+// 远程新增 / 编辑：执行 createData / updateData JS 代码（runBindCode 注入 row），成功后刷新
+async function saveRemoteRow(row: Record<string, unknown>) {
+  const isEdit = editTarget.value !== null
+  const code = isEdit ? updateDataCode.value : createDataCode.value
+  if (!code) {
+    console.warn(
+      isEdit ? '[dataTable] updateData 代码缺失' : '[dataTable] createData 代码缺失',
+    )
+    return
+  }
+  const form = injectedFormData?.value ?? {}
+  try {
+    await runBindCode(
+      code,
+      undefined,
+      { form },
+      formId.value,
+      formVersion.value,
+      { row },
+      bindAxios,
+    )
+    editTarget.value = null
+    addOpen.value = false
+    await fetchRemote()
+    message.value?.success(t('builder.dataTableSaveSuccess'))
+  } catch (e) {
+    console.error(isEdit ? '[dataTable] updateData 失败' : '[dataTable] createData 失败', e)
+    message.value?.error(t('builder.dataTableSaveError'))
+  }
+}
+
+async function deleteRow(row: Record<string, unknown>) {
+  // 远程模式：执行 deleteData 代码后刷新当前页
+  if (useRemote.value) {
+    const code = deleteDataCode.value
+    if (!code) {
+      console.warn('[dataTable] deleteData 代码缺失')
+      return
+    }
+    const form = injectedFormData?.value ?? {}
+    try {
+      await runBindCode(
+        code,
+        undefined,
+        { form },
+        formId.value,
+        formVersion.value,
+        { row },
+        bindAxios,
+      )
+      await fetchRemote()
+      message.value?.success(t('builder.dataTableDeleteSuccess'))
+    } catch (e) {
+      console.error('[dataTable] deleteData 失败', e)
+      message.value?.error(t('builder.dataTableDeleteError'))
+    }
+    return
+  }
   dataRows.value = dataRows.value.filter((r) => r !== row)
 }
 </script>
 
 <template>
-  <n-card size="small" class="rounded-xl border border-border/50" :title="title || undefined">
+  <n-message-provider>
+    <MessageHost ref="messageHost" />
+    <n-card size="small" class="rounded-xl border border-border/50" :title="title || undefined">
     <template #header-extra>
       <div class="flex items-center gap-1">
-        <n-button v-if="props.allowAdd === true" text size="small" @click="openAdd">
+        <n-button type="primary" v-if="props.allowAdd === true" text size="small" @click="openAdd">
           <template #icon><span class="i-lucide-plus h-3.5 w-3.5"></span></template>
           {{ t('builder.dataTableAdd') }}
         </n-button>
@@ -379,13 +489,13 @@ function deleteRow(row: Record<string, unknown>) {
           </div>
         </n-scrollbar>
         <div class="flex items-center gap-1 shrink-0">
-          <n-button size="small" @click="applySearch">
-            <template #icon><span class="i-lucide-search h-3.5 w-3.5"></span></template>
-            {{ t('builder.dataTableSearch') }}
-          </n-button>
-          <n-button type="primary" size="small" @click="resetSearch">
+          <n-button size="small" @click="resetSearch">
             <template #icon><span class="i-lucide-rotate-ccw h-3.5 w-3.5"></span></template>
             {{ t('builder.dataTableReset') }}
+          </n-button>
+          <n-button type="primary" size="small" @click="applySearch">
+            <template #icon><span class="i-lucide-search h-3.5 w-3.5"></span></template>
+            {{ t('builder.dataTableSearch') }}
           </n-button>
           <n-button
             v-if="props.searchExpandable"
@@ -450,4 +560,5 @@ function deleteRow(row: Record<string, unknown>) {
       </div>
     </n-modal>
   </n-card>
+  </n-message-provider>
 </template>
