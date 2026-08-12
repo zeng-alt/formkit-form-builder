@@ -52,6 +52,7 @@ export default defineConfig({
     'dark:text-red-400',
     'text-[11px]',
     '[line-height:1.15]',
+    'i-lucide-list-ordered',
     'i-lucide-arrow-left-right',
     'i-lucide-calendar',
     'i-lucide-list-plus',
