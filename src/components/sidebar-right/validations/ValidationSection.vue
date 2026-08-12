@@ -303,10 +303,18 @@ const visibleValidations = computed(() => {
   <n-collapse
     v-if="selectedField?.type !== 'submit'"
     :default-expanded-names="['validation']"
-    size="small"
     class="validation-section"
   >
-    <n-collapse-item name="validation" :title="t('validation.rulesTitle')">
+    <n-collapse-item name="validation">
+      <template #header>
+        <span class="text-[11px]">{{ t('validation.rulesTitle') }}</span>
+      </template>
+      <template #arrow="{ collapsed }">
+        <span
+          :class="collapsed ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
+          class="h-3 w-3 text-muted-foreground/70 transition-[transform] duration-150"
+        ></span>
+      </template>
       <div class="space-y-2 md:space-y-3 pt-1">
         <template v-for="validation in visibleValidations.singleValue" :key="validation.value">
           <SingleValueValidation
@@ -343,8 +351,8 @@ const visibleValidations = computed(() => {
 
 <style scoped>
 .validation-section {
-  --n-title-font-size: 13px;
   --n-item-margin: 0;
-  --n-title-padding: 4px 0;
+  --n-title-padding: 2px 0;
+  margin-left: 3px;
 }
 </style>

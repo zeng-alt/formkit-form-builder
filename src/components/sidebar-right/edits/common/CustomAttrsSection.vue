@@ -52,29 +52,38 @@ function removeRow(idx: number) {
 </script>
 
 <template>
-  <n-collapse :default-expanded-names="['customAttrs']" size="small" class="custom-attrs-section">
-    <n-collapse-item name="customAttrs" :title="t('edits.customAttrs.title')">
-      <div class="flex flex-col gap-2 pt-1">
-        <div v-for="(row, idx) in rows" :key="idx" class="flex flex-row gap-2 items-center">
+  <n-collapse :default-expanded-names="['customAttrs']" class="custom-attrs-section">
+    <n-collapse-item name="customAttrs">
+      <template #header>
+        <span class="text-[11px]">{{ t('edits.customAttrs.title') }}</span>
+      </template>
+      <template #arrow="{ collapsed }">
+        <span
+          :class="collapsed ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
+          class="h-3 w-3 text-muted-foreground/70 transition-[transform] duration-150"
+        ></span>
+      </template>
+      <div class="flex flex-col gap-1.5 pt-1">
+        <div v-for="(row, idx) in rows" :key="idx" class="flex flex-row gap-1.5 items-center">
           <n-input
             size="small"
-            class="flex-1"
+            class="flex-1 custom-attrs-input"
             :placeholder="t('edits.customAttrs.keyPlaceholder')"
             :value="row.key"
             @update:value="(v) => updateRow(idx, 'key', String(v))"
           />
           <n-input
             size="small"
-            class="flex-1"
+            class="flex-1 custom-attrs-input"
             :placeholder="t('edits.customAttrs.valuePlaceholder')"
             :value="row.value"
             @update:value="(v) => updateRow(idx, 'value', String(v))"
           />
-          <n-button type="error" text size="small" @click="removeRow(idx)" class="!px-2">
-            <span class="i-lucide-trash-2 h-4 w-4"></span>
+          <n-button type="error" text size="tiny" @click="removeRow(idx)" class="!px-1">
+            <span class="i-lucide-trash-2 h-3.5 w-3.5"></span>
           </n-button>
         </div>
-        <n-button type="success" size="small" secondary @click="addRow">
+        <n-button type="success" size="tiny" secondary @click="addRow">
           {{ t('edits.customAttrs.add') }}
         </n-button>
       </div>
@@ -84,8 +93,11 @@ function removeRow(idx: number) {
 
 <style scoped>
 .custom-attrs-section {
-  --n-title-font-size: 13px;
   --n-item-margin: 0;
-  --n-title-padding: 4px 0;
+  --n-title-padding: 2px 0;
+}
+.custom-attrs-section :deep(.custom-attrs-input) {
+  --n-height: 22px;
+  --n-font-size: 12px;
 }
 </style>

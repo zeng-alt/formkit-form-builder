@@ -4,10 +4,11 @@ import { getElementTypeDef } from '@/dsl'
 import { useFormField } from '@/composables/form-fields'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormBuilderI18n } from '@/i18n/context'
+import { dslChildrenOf, findDslNodeByKey } from '@/utils/schema/dsl-tree'
 import TextInput from './TextInput.vue'
 
 // 所属 FormBuilder 实例状态：name 唯一性校验 / 选中定位绑定到各自实例。
-const { formSchema, selectedIndex, selectedKey } = useFormBuilderState()
+const { formDefinition, selectedIndex, selectedKey } = useFormBuilderState()
 const { currentFieldType, fieldName, label, hasField } = useFormField()
 const { t } = useFormBuilderI18n()
 
@@ -32,21 +33,16 @@ const isFieldsCategory = computed(() => category.value === 'field')
 
 const currentFieldKey = computed(() => selectedKey.value ?? undefined)
 
+// name 唯一性：只校验同层兄弟节点（FormKit 的 name 按父级 group 作用域隔离，跨层级不冲突）
 const isNameTaken = (name: string) => {
-  const currentIndex = selectedIndex.value
-  const walk = (schema: any[]): boolean => {
-    for (const field of schema) {
-      if (field?.name === name) {
-        const key = field?.__key as string | undefined
-        if (currentFieldKey.value && key && key !== currentFieldKey.value) return true
-        if (!currentFieldKey.value && field !== formSchema.value[currentIndex]) return true
-      }
-      if (Array.isArray(field?.children) && walk(field.children)) return true
-    }
-    return false
-  }
   if (!name) return false
-  return walk(formSchema.value as any[])
+  const root = formDefinition.value?.root?.children
+  if (!Array.isArray(root) || !root.length) return false
+  const key = currentFieldKey.value
+  const located = key ? findDslNodeByKey(root, key) : null
+  const siblings = located?.parent ? dslChildrenOf(located.parent) : root
+  const self = located?.node ?? root[selectedIndex.value]
+  return siblings.some((node) => node !== self && node.name === name)
 }
 
 // 字段：必填 + 格式 + 唯一；容器/布局/tab pane：可选，有值时校验格式与唯一
