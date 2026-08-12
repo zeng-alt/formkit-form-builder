@@ -171,6 +171,24 @@ export const containerElements: ElementDefinition[] = [
     },
   },
   {
+    // 步骤向导：与 tabs 同构（dataShape objectOfObjects，每个 step 内容包一个命名 group）。
+    // 仅能放在根画布且全局唯一，拖入时自动把根已有元素移入第一个 step。
+    type: 'steps',
+    category: 'layout',
+    icon: 'i-lucide-list-ordered',
+    tooltipKey: 'fieldProps.tooltip.steps',
+    editor: () => import('@/components/sidebar-right/edits/editors/StepsEditor.vue'),
+    container: getContainerSpec('steps') ?? undefined,
+    schema: {
+      renderAs: 'cmp',
+      nameKey: 'elements.steps.name',
+      labelKey: 'elements.steps.label',
+      outerClass: 'col-span-12',
+      props: {},
+      descriptionKey: 'elements.steps.description',
+    },
+  },
+  {
     type: 'dataTable',
     category: 'container',
     icon: 'i-lucide-table-2',

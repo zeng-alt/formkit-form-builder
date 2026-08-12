@@ -152,7 +152,15 @@ export interface ContainerNode extends BaseNode {
 }
 
 // ─── 布局节点（纯布局，不产出数据 key）──────────────────────────────────────────
-export type LayoutType = 'grid' | 'row' | 'column' | 'card' | 'tabs' | 'tabsPane'
+export type LayoutType =
+  | 'grid'
+  | 'row'
+  | 'column'
+  | 'card'
+  | 'tabs'
+  | 'tabsPane'
+  | 'steps'
+  | 'stepsPane'
 
 export interface LayoutNode extends BaseNode {
   category: 'layout'

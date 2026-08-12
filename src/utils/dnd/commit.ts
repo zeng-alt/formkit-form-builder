@@ -27,6 +27,7 @@ import {
 } from './grid'
 import { collectSchemaNames, generateKey, generateNextFieldName } from './schema'
 import { getContainerSpec } from '@/elements/container-spec'
+import { schemaContainsSteps } from '@/utils/schema/steps'
 import { eq } from '@/utils/utils'
 
 // toSchema 用 id 兜底生成 name（UUID 形态）：视为无有效名，拖入时重新生成唯一名
@@ -56,8 +57,54 @@ function getContainerKey(el: HTMLElement | null | undefined): string | null {
     el.getAttribute('data-badge-key') ||
     el.getAttribute('data-tabs-key') ||
     el.getAttribute('data-tabs-pane-key') ||
+    el.getAttribute('data-steps-pane-key') ||
+    el.getAttribute('data-steps-key') ||
     el.getAttribute('data-group-key')
   return raw && raw.trim() ? raw : null
+}
+
+/** 是否为根 drop-area（画布根，steps 向导仅允许落在这里） */
+function isRootDropArea(el: HTMLElement | null | undefined): boolean {
+  if (!el) return false
+  const testId = el.getAttribute('data-testid')
+  return typeof testId === 'string' && testId.startsWith('drop-area-')
+}
+
+/** 阻止一次拖放：清掉插入点与 dropZone 高亮后直接返回，不写任何数据 */
+function abortDrop<T>(state: DragState<T> | SynthDragState<T> | BaseDragState<T>) {
+  if (insertState.insertPoint) insertState.insertPoint.el.style.display = 'none'
+  if (isDragState(state)) {
+    const dropZoneClass = isSynthDragState(state)
+      ? state.initialParent.data.config.synthDropZoneClass
+      : state.initialParent.data.config.dropZoneClass
+    removeClass(
+      insertState.draggedOverNodes.map((node) => node.el),
+      dropZoneClass,
+    )
+  }
+  if (insertState.draggedOverParent) {
+    removeClass(
+      [insertState.draggedOverParent.el],
+      insertState.draggedOverParent.data.config.dropZoneClass,
+    )
+  }
+  insertState.draggedOverNodes = []
+  insertState.draggedOverParent = null
+  insertState.explicitIndex = undefined
+  insertState.explicitRow = undefined
+}
+
+/** steps 拖入根画布时预置的第一个 step pane（画布身份 + __paneType 标记保证往返还原为 stepsPane） */
+function createStepsPane(): any {
+  return {
+    __key: generateKey(),
+    // 自动生成稳定 name：作为 pane 内容的 group 数据键，不随 label 编辑变化，避免改标题后旧数据丢失
+    name: `step_${Math.random().toString(36).slice(2, 8)}`,
+    __paneType: 'steps',
+    label: 'Step 1',
+    outerClass: 'col-span-12',
+    children: [],
+  }
 }
 
 function normalizeInsertValues(
@@ -309,32 +356,68 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
     setParentValues(sourceParent.el, sourceParent.data, [...remaining] as any)
     sourceNextValues = remaining as any
   } else {
-    if (!isSource) {
-      const remaining = sourceValues.filter((v: any) => {
-        const k = v?.__key
-        if (typeof k === 'string' && k) return !draggedKeys.has(k)
-        return !draggedValues.some((y) => eq(v, y))
-      }) as any as FormKitSchemaFormKit[]
-      setParentValues(sourceParent.el, sourceParent.data, [...remaining] as any)
-      sourceNextValues = remaining as any
+    // ── steps 向导拖入特判 ────────────────────────────────────────────────────
+    // 全局唯一：表单中已有 steps 或目标不是根画布时直接阻止，不写任何数据；
+    // 合法时把根现有元素整体移入第一个 step，根 children 替换为单个 steps 节点。
+    const isStepsDrop =
+      isSource && insertValues.length === 1 && (insertValues[0] as any)?.$cmp === 'steps'
+
+    // 步骤向导存在时，根画布独占拖放区：任何非 steps 元素都不能落到根（只能拖进 step 内部）。
+    // 悬停高亮已由根 drop-area 的 accepts 拦截（见 use-canvas-schema），这里兜底阻断提交。
+    if (!isStepsDrop && isRootDropArea(targetParent.el) && schemaContainsSteps(schemaForNames)) {
+      abortDrop(state)
+      return
     }
 
-    const nextTargetValues = [...targetValues]
-
-    if (draggedOverNode) {
-      adjustColSpansForInsert(
-        nextTargetValues as any[],
-        draggedOverNode.data.value,
-        insertValues as any[],
-        insertState.verticalInsert ?? false,
-      )
+    if (isStepsDrop) {
+      if (schemaContainsSteps(schemaForNames) || !isRootDropArea(targetParent.el)) {
+        abortDrop(state)
+        return
+      }
+      const stepsNode = insertValues[0] as any
+      const panes =
+        Array.isArray(stepsNode.children) && stepsNode.children.length
+          ? (stepsNode.children as any[])
+          : [createStepsPane()]
+      const firstPane = panes[0] as any
+      firstPane.children = targetValues.map((v: any) => ({ ...v }))
+      const rootNext: any[] = [
+        {
+          ...stepsNode,
+          children: panes,
+          props: { ...stepsNode.props, modelValue: panes },
+        },
+      ]
+      setParentValues(targetParent.el, targetParent.data, rootNext as any)
+      targetNextValues = rootNext as any
     } else {
-      insertValues.forEach((val: any) => setColSpan(val, 12))
-    }
+      if (!isSource) {
+        const remaining = sourceValues.filter((v: any) => {
+          const k = v?.__key
+          if (typeof k === 'string' && k) return !draggedKeys.has(k)
+          return !draggedValues.some((y) => eq(v, y))
+        }) as any as FormKitSchemaFormKit[]
+        setParentValues(sourceParent.el, sourceParent.data, [...remaining] as any)
+        sourceNextValues = remaining as any
+      }
 
-    nextTargetValues.splice(index, 0, ...(insertValues as any as FormKitSchemaFormKit[]))
-    setParentValues(targetParent.el, targetParent.data, [...nextTargetValues] as any)
-    targetNextValues = nextTargetValues as any
+      const nextTargetValues = [...targetValues]
+
+      if (draggedOverNode) {
+        adjustColSpansForInsert(
+          nextTargetValues as any[],
+          draggedOverNode.data.value,
+          insertValues as any[],
+          insertState.verticalInsert ?? false,
+        )
+      } else {
+        insertValues.forEach((val: any) => setColSpan(val, 12))
+      }
+
+      nextTargetValues.splice(index, 0, ...(insertValues as any as FormKitSchemaFormKit[]))
+      setParentValues(targetParent.el, targetParent.data, [...nextTargetValues] as any)
+      targetNextValues = nextTargetValues as any
+    }
   }
 
   // 从目标向上找所属画布根（多实例时各自作用域，不再全局 querySelector）。
@@ -349,7 +432,7 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
   const listMap = new Map<string, FormKitSchemaFormKit[]>()
   const listEls = Array.from(
     rootEl.querySelectorAll<HTMLElement>(
-      '[data-list-key],[data-card-key],[data-input-group-key],[data-button-group-key],[data-badge-key],[data-tabs-key],[data-tabs-pane-key],[data-group-key]',
+      '[data-list-key],[data-card-key],[data-input-group-key],[data-button-group-key],[data-badge-key],[data-tabs-key],[data-tabs-pane-key],[data-steps-key],[data-steps-pane-key],[data-group-key]',
     ),
   )
   for (const el of listEls) {

@@ -8,6 +8,7 @@ export type ContainerKind =
   | 'buttonGroup'
   | 'badge'
   | 'tabs'
+  | 'steps'
   | 'group'
   | 'dataTable'
 

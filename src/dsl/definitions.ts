@@ -11,6 +11,7 @@ import {
   layoutType,
   staticType,
   tabsPaneType,
+  stepsPaneType,
   elementTypeFromSchema,
 } from './registry'
 import { fieldElements } from '../elements/definitions/fields'
@@ -34,6 +35,7 @@ export function registerBuiltinElementTypes(): void {
   registerElementType(layoutType('row', { target: 'div' }))
   registerElementType(layoutType('column', { target: 'div' }))
   registerElementType(tabsPaneType())
+  registerElementType(stepsPaneType())
 
   // ─── 静态展示：原生 $el 元素（无目录，画布直接输出 HTML 标签）─────────────────
   registerElementType(staticType('button', { match: (s) => (s as any).$el === 'button' }))
@@ -44,4 +46,4 @@ export function registerBuiltinElementTypes(): void {
   registerElementType(staticType('divider', { match: (s) => (s as any).$el === 'hr' }))
 }
 
-export { fieldType, containerType, layoutType, staticType, tabsPaneType }
+export { fieldType, containerType, layoutType, staticType, tabsPaneType, stepsPaneType }

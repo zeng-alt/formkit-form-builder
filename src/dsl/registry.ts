@@ -345,6 +345,7 @@ export function layoutType(
       const anyS: any = s
       if (type === 'card') return anyS.$cmp === 'card' || anyS.$formkit === 'card'
       if (type === 'tabs') return anyS.$cmp === 'tabs' || anyS.$formkit === 'tabs'
+      if (type === 'steps') return anyS.$cmp === 'steps' || anyS.$formkit === 'steps'
       if (type === 'grid')
         return (
           anyS.$el === 'div' &&
@@ -413,24 +414,40 @@ export function staticType(
   return def
 }
 
-// tabs 布局的 pane 特殊处理（非独立布局类型，由 tabs 容器内部使用）
-export function tabsPaneType(): ElementTypeDef {
+// tabs/steps 布局的子 pane（非独立布局类型，由容器内部使用）。
+// 共享同一转换器，pane 类型经 __paneType 标记（见 convert-common）区分，避免注册顺序影响。
+function paneType(type: 'tabsPane' | 'stepsPane'): ElementTypeDef {
+  const isSteps = type === 'stepsPane'
   return {
-    type: 'tabsPane',
+    type,
     category: 'layout',
     renderAs: 'el',
     defaults: () => ({
       id: generateKey(),
       category: 'layout',
-      type: 'tabsPane',
+      type,
       renderAs: 'el',
       children: [],
     }),
     toSchema: (node, ctx) => tabsPaneToSchema(node as LayoutNode, ctx.children),
     match: (s) => {
       const anyS: any = s
-      return typeof anyS.__key === 'string' && !anyS.$formkit && !anyS.$cmp && !anyS.$el
+      return (
+        typeof anyS.__key === 'string' &&
+        !anyS.$formkit &&
+        !anyS.$cmp &&
+        !anyS.$el &&
+        (isSteps ? anyS.__paneType === 'steps' : anyS.__paneType !== 'steps')
+      )
     },
     fromSchema: (s, ctx) => tabsPaneFromSchema(s, ctx),
   }
+}
+
+export function tabsPaneType(): ElementTypeDef {
+  return paneType('tabsPane')
+}
+
+export function stepsPaneType(): ElementTypeDef {
+  return paneType('stepsPane')
 }

@@ -352,6 +352,7 @@ const CONTAINER_INTERNAL_PROPS = new Set([
   'buttonGroupKey',
   'badgeKey',
   'tabsKey',
+  'stepsKey',
   'modelValue',
   'label',
   'title',
@@ -518,12 +519,17 @@ export function layoutNodeToSchema(
   const label = node.label
   const spec = rt?.container
 
-  // 容器规格驱动：card/tabs 等有规格的 cmp 布局 → $cmp:<type> + keyProp + modelValue。
-  // objectOfObjects（tabs）的每个子节点（pane）补齐 __key，保证身份可辨。
+  // 容器规格驱动：card/tabs/steps 等有规格的 cmp 布局 → $cmp:<type> + keyProp + modelValue。
+  // objectOfObjects（tabs/steps）的每个子节点（pane）补齐 __key，并带 __paneType 标记，
+  // 保证身份可辨、DSL 往返能还原为 tabsPane / stepsPane。
   if (spec) {
     const panes =
       spec.dataShape === 'objectOfObjects'
-        ? ch.map((p) => ({ ...(p as any), __key: (p as any)?.__key ?? generateKey() }))
+        ? ch.map((p) => ({
+            ...(p as any),
+            __key: (p as any)?.__key ?? generateKey(),
+            __paneType: node.type,
+          }))
         : ch
     const schema: any = {
       $cmp: node.type,
@@ -659,6 +665,7 @@ function inferLayoutType(s: SchemaNode): LayoutType {
   const anyS: any = s
   if (anyS.$cmp === 'card') return 'card'
   if (anyS.$cmp === 'tabs') return 'tabs'
+  if (anyS.$cmp === 'steps') return 'steps'
   if (anyS.$el === 'div' && typeof anyS.attrs?.class === 'string') {
     const cls: string = anyS.attrs.class
     if (cls.includes('grid-cols')) return 'grid'
@@ -670,9 +677,13 @@ function inferLayoutType(s: SchemaNode): LayoutType {
 }
 
 export function tabsPaneToSchema(node: LayoutNode, children?: SchemaNode[]): SchemaNode {
-  const schema: any = { __key: node.key ?? node.id }
+  // 携带 __paneType 标记：区分 tabs/steps 的子 pane，使 DSL 往返（schemaToDsl / reconcile）
+  // 能还原为 tabsPane / stepsPane，而不被注册顺序较早的通用匹配误判。
+  const schema: any = { __key: node.key ?? node.id, __paneType: node.type }
   if (node.label) schema.label = node.label
   if (node.name) schema.name = node.name
+  const description = (node.props as Record<string, unknown> | undefined)?.description
+  if (typeof description === 'string' && description) schema.description = description
   const ch = children ?? []
   if (ch.length) schema.children = ch
   schema.outerClass = nodeOuterClass(node)
@@ -685,13 +696,17 @@ export function tabsPaneFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx): Layo
   const node: any = {
     id: typeof anyS.__key === 'string' && anyS.__key ? anyS.__key : generateKey(),
     category: 'layout',
-    type: 'tabsPane',
+    type: anyS.__paneType === 'steps' ? 'stepsPane' : 'tabsPane',
     renderAs: 'el',
     children: ctx.children ? ctx.children(childrenArr) : [],
   }
   if (typeof anyS.__key === 'string' && anyS.__key) node.key = anyS.__key
   if (typeof anyS.name === 'string' && anyS.name) node.name = anyS.name
   if (typeof anyS.label === 'string' && anyS.label) node.label = anyS.label
+  const description = anyS.description
+  if (typeof description === 'string' && description) {
+    node.props = { ...node.props, description }
+  }
   parseOuterClass(anyS.outerClass, node)
   return node as LayoutNode
 }

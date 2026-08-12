@@ -268,7 +268,17 @@ const showForFieldType = (validationType: string, fieldType: string | null) => {
     is: ['text', 'textarea', 'password', 'url', 'tel', 'email', 'number'],
     not: ['text', 'textarea', 'password', 'url', 'tel', 'email', 'number'],
     require_one: ['checkbox', 'radio', 'select'],
-    length: ['text', 'textarea', 'password', 'url', 'tel', 'email', 'naiveMention', 'naiveAutoComplete', 'naiveTransfer'],
+    length: [
+      'text',
+      'textarea',
+      'password',
+      'url',
+      'tel',
+      'email',
+      'naiveMention',
+      'naiveAutoComplete',
+      'naiveTransfer',
+    ],
     between: ['number'],
   }
   return !fieldType || validationMap[validationType]?.includes(fieldType) || false

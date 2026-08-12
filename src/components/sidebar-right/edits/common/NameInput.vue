@@ -17,8 +17,10 @@ const category = computed(() => {
   return getElementTypeDef(currentFieldType.value)?.category ?? null
 })
 
-// tabsPane 无独立目录项（无 fieldProps），但其"名称" = tab 标题（node.label）
-const isTabsPane = computed(() => currentFieldType.value === 'tabsPane')
+// tabsPane/stepsPane 无独立目录项（无 fieldProps），但其"名称" = tab/step 标题（node.label）
+const isTabsPane = computed(
+  () => currentFieldType.value === 'tabsPane' || currentFieldType.value === 'stepsPane',
+)
 
 // 字段 / 容器 / 布局 + tab pane 都提供 name 编辑
 const isNamedNode = computed(() => {

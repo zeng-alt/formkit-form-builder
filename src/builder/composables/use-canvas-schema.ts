@@ -18,6 +18,7 @@ import { toCanvasSchemaNode } from '@/utils/canvas-schema'
 import { normalizeContainerNode } from '@/elements/canvas'
 import { provideCanvasSchemaContext } from './canvas-schema-context'
 import { CANVAS_DRAGGING_CLASS, CANVAS_DROP_ZONE_CLASS } from '@/utils/dnd/drag-classes'
+import { schemaContainsSteps } from '@/utils/schema/steps'
 
 // 画布（根 DropArea）组合函数：负责根级 DnD 列表 + schema 变更/选中逻辑
 export function useCanvasSchema() {
@@ -201,7 +202,8 @@ export function useCanvasSchema() {
     nativeDrag: true,
     draggingClass: CANVAS_DRAGGING_CLASS,
     dropZoneClass: CANVAS_DROP_ZONE_CLASS,
-    accepts: () => true,
+    // 步骤向导存在时根画布独占拖放区：元素只能拖进 step 内部，根不再作为 drop target
+    accepts: () => !schemaContainsSteps(formSchema.value),
     sortable: true,
     draggable: (el: HTMLElement) => el.getAttribute('data-canvas-item') === 'true',
     handleNodePointerup(data) {

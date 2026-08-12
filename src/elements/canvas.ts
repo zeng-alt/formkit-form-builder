@@ -24,6 +24,8 @@ import BadgeContainer from '@/components/ui/containers/badge/BadgeContainer.vue'
 import BadgeContainerPreview from '@/components/ui/containers/badge/BadgeContainerPreview.vue'
 import TabsContainer from '@/components/ui/containers/tabs/TabsContainer.vue'
 import TabsContainerPreview from '@/components/ui/containers/tabs/TabsContainerPreview.vue'
+import StepsContainer from '@/components/ui/containers/steps/StepsContainer.vue'
+import StepsContainerPreview from '@/components/ui/containers/steps/StepsContainerPreview.vue'
 import GroupContainer from '@/components/ui/containers/group/GroupContainer.vue'
 import DataTableContainer from '@/components/ui/containers/data-table/DataTableContainer.vue'
 import DataTableContainerPreview from '@/components/ui/containers/data-table/DataTableContainerPreview.vue'
@@ -236,6 +238,14 @@ const defs: ContainerDefinition[] = [
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'tabs', specOf('tabs')),
   },
   {
+    id: 'steps',
+    match: (n) => isContainerOf(n, 'steps'),
+    canvas: { libraryKey: 'steps', component: StepsContainer as any },
+    preview: { libraryKey: 'steps', component: StepsContainerPreview as any },
+    normalize: (n) => normalizeContainer(n, 'steps', specOf('steps')),
+    formatPreview: (n, ctx) => formatContainer(n, ctx, 'steps', specOf('steps')),
+  },
+  {
     id: 'group',
     match: (n) => isContainerOf(n, 'group'),
     canvas: { libraryKey: 'group', component: GroupContainer as any },
@@ -302,7 +312,7 @@ export function formatContainerPreviewNode(
 //    none             → 纯展示壳（buttonGroup），不包
 //    array / arrayOfObjects → 动态 list（list），不包外层 group；
 //                             array 每条记录标量/单字段，arrayOfObjects 每条记录 object
-//    objectOfObjects  → 每个子节点（pane）包 group（tabs）
+// objectOfObjects  → 每个子节点（pane）包 group（tabs/steps）
 //    object           → 单对象：primitive=group 原生 group；primitive=cmp 壳 + group 包一层
 
 export function formatContainer(
@@ -375,7 +385,7 @@ export function formatContainer(
     return nextNode as FormKitSchemaFormKit
   }
 
-  // objectOfObjects（tabs）：每个 pane 内容包在 group 中提供 structured data
+  // objectOfObjects（tabs/steps）：每个 pane/step 内容包在 group 中提供 structured data
   if (spec.dataShape === 'objectOfObjects') {
     const panes = Array.isArray(normalized.children)
       ? (normalized.children as FormKitSchemaFormKit[]).map((pane: any, idx) => {
