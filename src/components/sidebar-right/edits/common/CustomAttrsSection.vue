@@ -70,11 +70,11 @@ function removeRow(idx: number) {
             :value="row.value"
             @update:value="(v) => updateRow(idx, 'value', String(v))"
           />
-          <n-button quaternary size="small" @click="removeRow(idx)" class="!px-2">
+          <n-button type="error" text size="small" @click="removeRow(idx)" class="!px-2">
             <span class="i-lucide-trash-2 h-4 w-4"></span>
           </n-button>
         </div>
-        <n-button size="small" secondary @click="addRow">
+        <n-button type="success" size="small" secondary @click="addRow">
           {{ t('edits.customAttrs.add') }}
         </n-button>
       </div>

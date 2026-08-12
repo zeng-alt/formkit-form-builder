@@ -380,6 +380,11 @@ export default {
       errorCorrectionLevel: 'Error correction level',
       backgroundColor: 'Background color',
       valuePlaceholder: 'e.g. 5 / NEW / $count',
+      append: 'Append after select',
+      status: 'Validation status',
+      getShow: 'Show menu on focus (getShow)',
+      getShowHint:
+        'Decide whether to show the menu while focused, based on the input value. Param: value (current input), return a boolean. Example:\nvalue.length >= 2',
     },
     dataTable: {
       rowKey: 'Row key',

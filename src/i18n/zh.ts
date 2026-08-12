@@ -339,6 +339,11 @@ export default {
       errorCorrectionLevel: '纠错级别',
       backgroundColor: '背景色',
       valuePlaceholder: '如：5 / NEW / $count',
+      append: '选中后追加',
+      status: '验证状态',
+      getShow: '聚焦时是否显示菜单（getShow）',
+      getShowHint:
+        '根据输入值在聚焦的状态中决定是否显示菜单。可用参数：value（当前输入值），返回布尔值。示例：\nvalue.length >= 2',
     },
     dataTable: {
       rowKey: '行主键（rowKey）',

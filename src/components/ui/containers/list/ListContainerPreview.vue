@@ -242,7 +242,6 @@ const removeItem = (node: unknown, value: unknown, index: number) => {
             >
               <template #trigger>
                 <n-button
-                  quaternary
                   text
                   type="error"
                   size="small"
