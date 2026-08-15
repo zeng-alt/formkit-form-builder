@@ -96,7 +96,9 @@ const mockTreeDictionaries = [
 ]
 
 const formBuilderConfig = computed<FormBuilderConfig>(() => ({
-  apiKey: 'your-openai-api-key', // 可选：AI 生成 Schema 面板需要
+  apiKey: 'your-deepseek-api-key', // 可选：AI 生成 Schema 面板需要（生产建议服务端代理，勿暴露真实密钥）
+  aiBaseUrl: 'https://api.deepseek.com', // OpenAI 兼容端点
+  aiModel: 'deepseek-chat',
   locale: 'zh-CN', // 默认 zh-CN；可选 'en' 'de'
   localeFallback: 'zh-CN',
   availableLocales: ['zh-CN', 'en', 'de'],

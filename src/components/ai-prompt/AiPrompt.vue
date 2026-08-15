@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import OpenAI from 'openai'
 import instructions from './Instructions.txt?raw'
 import { ref } from 'vue'
 import { toast } from 'vue-sonner'
@@ -32,6 +31,16 @@ const parseFormSchema = (jsonString: string): FormKitSchemaFormKit[] => {
   }
 }
 
+// 从 AI 回复中提取 JSON 数组：兼容 ```json 代码块或直接以 [ 开头的纯 JSON
+const extractJson = (text: string): string => {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  if (fenced?.[1]?.trim()) return fenced[1].trim()
+  const start = text.indexOf('[')
+  const end = text.lastIndexOf(']')
+  if (start !== -1 && end > start) return text.slice(start, end + 1)
+  return text.trim()
+}
+
 const handleClick = async () => {
   if (inputRef.value === '') {
     toast(t('ai.emptyPrompt'), {
@@ -44,22 +53,51 @@ const handleClick = async () => {
   }
 
   isLoading.value = true
-  const client = new OpenAI({
-    apiKey: config.apiKey,
-    dangerouslyAllowBrowser: true,
-  })
+  try {
+    // OpenAI 兼容 Chat Completions 接口（零依赖，直接用 fetch）
+    const baseUrl = (config.aiBaseUrl || 'https://api.deepseek.com').replace(/\/+$/, '')
+    const model = config.aiModel || 'deepseek-chat'
+    const systemPrompt = config.aiSystemPrompt || instructions || t('ai.defaultInstructions')
 
-  const defaultInstructions = t('ai.defaultInstructions')
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: inputRef.value },
+        ],
+        temperature: 0.3,
+      }),
+    })
 
-  const response = await client.responses.create({
-    model: 'gpt-4.1-mini',
-    instructions: instructions || defaultInstructions,
-    input: inputRef.value,
-  })
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '')
+      throw new Error(t('ai.requestFailed') + ` (${response.status}) ${detail}`)
+    }
 
-  commitSchema(parseFormSchema(response.output_text) as FormKitSchemaFormKit[], { reason: 'ai' })
-  isLoading.value = false
-  inputRef.value = ''
+    const data = await response.json()
+    const content: string = data?.choices?.[0]?.message?.content ?? ''
+
+    const schema = parseFormSchema(extractJson(content))
+    if (!Array.isArray(schema) || schema.length === 0) {
+      throw new Error(t('ai.parseFailed'))
+    }
+
+    commitSchema(schema as FormKitSchemaFormKit[], { reason: 'ai' })
+    inputRef.value = ''
+  } catch (err: any) {
+    console.error('AI generate schema failed:', err)
+    toast(t('ai.requestFailed'), {
+      description: err?.message || String(err),
+    })
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const isFocused = () => {

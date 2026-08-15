@@ -118,6 +118,8 @@ export default {
     emptyPromptDescription: 'Please enter a prompt to generate a form.',
     close: 'Close',
     defaultInstructions: "Generate a FormKit schema based on the user's description",
+    requestFailed: 'AI request failed',
+    parseFailed: 'Could not parse the form schema returned by AI. Try again or rephrase.',
   },
   validation: {
     rulesTitle: 'Validation Rules',

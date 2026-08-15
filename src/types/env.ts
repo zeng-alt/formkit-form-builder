@@ -60,7 +60,14 @@ export interface TreeDictionaryPageResult {
 }
 
 export interface FormBuilderConfig {
+  /** AI 服务 API Key（建议仅在服务端代理场景使用，勿在前端暴露真实密钥） */
   apiKey?: string
+  /** OpenAI 兼容接口地址，默认 https://api.deepseek.com（可指向自建服务端代理） */
+  aiBaseUrl?: string
+  /** AI 模型名，默认 deepseek-chat（OpenAI 用户可设 gpt-4o-mini 等） */
+  aiModel?: string
+  /** 自定义 AI 系统提示词；默认使用内置 Instructions.txt */
+  aiSystemPrompt?: string
   /** 自定义 HTTP 请求库实例：供 JS 绑定代码里的 axios 变量使用（画布预览 + 渲染器）；
    *  缺省使用内置 axios。FormRenderer 的 http prop 优先级更高。 */
   http?: AxiosInstance

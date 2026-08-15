@@ -78,7 +78,6 @@
     "axios": "^1.12.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "openai": "^6.34.0",
     "vue-sonner": "^2.0.9"
   },
   "devDependencies": {
