@@ -17,6 +17,7 @@
       <div class="flex gap-4 p-4">
         <div class="min-w-0 flex-1">
           <FormSchemaRenderer
+            ref="rendererRef"
             :definition="formDefinition"
             v-model="data"
             :actions="actions"
@@ -43,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import { NModal, NScrollbar } from 'naive-ui'
 import type { FormDefinition } from '@/types/dsl'
 import { useFormBuilderI18n } from '@/i18n/context'
@@ -118,6 +119,25 @@ const handleSubmit = (formData: ModelValue) => {
   if (props.resetOnSubmit) data.value = {}
 }
 
+// ── 校验：转发到内部 FormSchemaRenderer（n-modal 内容随弹窗挂载，等待其就绪）──
+type RendererExposed = {
+  validate: () => Promise<boolean>
+}
+
+const rendererRef = ref<RendererExposed | null>(null)
+
+const waitForRenderer = async (): Promise<RendererExposed | null> => {
+  for (let i = 0; i < 20 && !rendererRef.value; i++) await nextTick()
+  return rendererRef.value
+}
+
+/** 校验表单：展示校验错误并返回是否通过 */
+const validate = async (): Promise<boolean> => {
+  const renderer = await waitForRenderer()
+  if (!renderer) return false
+  return renderer.validate()
+}
+
 defineExpose({
   open: () => {
     isOpen.value = true
@@ -128,5 +148,6 @@ defineExpose({
   reset: () => {
     data.value = {}
   },
+  validate,
 })
 </script>

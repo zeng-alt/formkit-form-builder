@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Component, DefineComponent } from 'vue'
 import { computed, provide, ref, watch } from 'vue'
-import type { FormKitSchemaFormKit } from '@formkit/core'
+import type { FormKitNode, FormKitSchemaFormKit } from '@formkit/core'
+import { createMessage } from '@formkit/core'
 import { FormKit, changeLocale } from '@formkit/vue'
 import FormKitSchemaWrapper from './FormKitSchemaWrapper.vue'
 import { NButton, type ConfigProviderProps } from 'naive-ui'
@@ -640,6 +641,26 @@ const submit = () => formNode.value?.submit?.()
 /** 重置表单到初始值 */
 const reset = () => formNode.value?.reset?.()
 
+/**
+ * 校验表单：触发并展示校验错误，返回是否全部通过。
+ * 对齐 FormKit 提交流程（标记 submitted + 等待 settle / 异步校验），但不触发 submit 事件。
+ */
+const validate = async (): Promise<boolean> => {
+  const node = formNode.value as FormKitNode | null
+  if (!node) return true
+  // 标记 submitted，使校验消息对用户可见（FormKit 提交流程同款行为）
+  const setSubmitted = (n: FormKitNode) => {
+    n.store.set(createMessage({ key: 'submitted', value: true, visible: false }))
+  }
+  node.walk(setSubmitted)
+  setSubmitted(node)
+  await node.settled
+  if (node.ledger.value('validating')) {
+    await node.ledger.settled('validating')
+  }
+  return !node.ledger.value('blocking')
+}
+
 const loading = ref(false)
 
 // ── 提交：优先执行 settings.submit 自定义逻辑（经 dslToSchema 写入表单节点 props），
@@ -662,7 +683,7 @@ const handleSubmit = async (formData: Record<string, unknown>) => {
   emit('submit', formData, props.definition?.id, props.definition?.version)
 }
 
-defineExpose({ submit, reset, loading })
+defineExpose({ submit, reset, validate, loading })
 
 const resolvedSubmitLabel = computed(() => props.submitLabel ?? t('elements.submit.label'))
 const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.label'))

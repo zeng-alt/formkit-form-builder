@@ -26,6 +26,7 @@
     <n-scrollbar style="max-height: 600px">
       <div class="py-4 px-3">
         <FormSchemaRenderer
+          ref="rendererRef"
           :schema="schemaSnapshot"
           v-model="data"
           :actions="props.actions"
@@ -52,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { NModal, NScrollbar } from 'naive-ui'
 import { dslToSchema } from '@/dsl'
 import type { FormKitSchemaFormKit } from '@formkit/core'
@@ -171,8 +172,28 @@ const close = () => {
   isOpen.value = false
 }
 
+// ── 校验：转发到内部 FormSchemaRenderer（n-modal 内容随弹窗挂载，等待其就绪）──
+type RendererExposed = {
+  validate: () => Promise<boolean>
+}
+
+const rendererRef = ref<RendererExposed | null>(null)
+
+const waitForRenderer = async (): Promise<RendererExposed | null> => {
+  for (let i = 0; i < 20 && !rendererRef.value; i++) await nextTick()
+  return rendererRef.value
+}
+
+/** 校验表单：展示校验错误并返回是否通过 */
+const validate = async (): Promise<boolean> => {
+  const renderer = await waitForRenderer()
+  if (!renderer) return false
+  return renderer.validate()
+}
+
 defineExpose({
   open,
   close,
+  validate,
 })
 </script>
