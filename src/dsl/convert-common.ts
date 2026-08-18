@@ -198,7 +198,8 @@ export function fieldNodeToSchema(node: FieldNode, rt?: RenderTarget): SchemaNod
     putByKind(base, 'value', node.value, kind)
   }
   if (typeof node.expr === 'string' && node.expr.trim()) {
-    putByKind(base, 'expr', node.expr, kind)
+    // expr 一律放 schema 顶层（与渲染原语无关）：运行时 useExprRun 只扫描顶层 expr
+    base.expr = node.expr
     // 带 expr 的字段不设初始 value，由运行时求值填充
     if (kind === 'formkit') delete base.value
     else if (kind === 'cmp') delete base.props?.value

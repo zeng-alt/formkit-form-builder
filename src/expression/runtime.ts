@@ -94,21 +94,26 @@ function collectExprBindings(nodes: unknown[], bindings: ExprBinding[] = []): Ex
   for (const node of nodes) {
     if (!node || typeof node !== 'object') continue
     const n = node as WritableNode
+    const props = (n.props ?? {}) as Record<string, unknown>
 
-    if (typeof n.expr === 'string' && n.expr && typeof n.name === 'string' && n.name) {
+    // $formkit 节点 expr/name 在顶层；$cmp / $el 节点收进 props（见 fieldNodeToSchema）
+    const name = typeof n.name === 'string' ? n.name : props.name
+    const expr = typeof n.expr === 'string' ? n.expr : props.expr
+
+    if (typeof name === 'string' && name && typeof expr === 'string' && expr) {
       try {
-        const compiled = compileExpr(n.expr)
-        bindings.push({ name: n.name, compiled })
+        const compiled = compileExpr(expr)
+        bindings.push({ name, compiled })
       } catch {
-        console.warn(`[expr-runtime] 表达式编译失败: ${n.name} = ${n.expr}`)
+        console.warn(`[expr-runtime] 表达式编译失败: ${name} = ${expr}`)
       }
     }
 
     if (Array.isArray(n.children)) {
       collectExprBindings(n.children, bindings)
     }
-    if (Array.isArray(n.props?.modelValue)) {
-      collectExprBindings(n.props.modelValue, bindings)
+    if (Array.isArray(props.modelValue)) {
+      collectExprBindings(props.modelValue, bindings)
     }
   }
 
