@@ -35,6 +35,7 @@
           :label-position="formLabelPosition"
           :label-width="formLabelWidth"
           :interactive-containers="props.interactiveContainers"
+          :disabled="props.disabled"
           @submit="handleSubmit"
         />
         <div
@@ -83,6 +84,7 @@ const props = withDefaults(
     formClass?: string
     interactiveContainers?: boolean
     resetOnSubmit?: boolean
+    disabled?: boolean
   }>(),
   {
     showDataPanel: true,
@@ -90,6 +92,7 @@ const props = withDefaults(
     formClass: 'w-full !grid !grid-cols-12 gap-x-4 gap-y-2',
     interactiveContainers: true,
     resetOnSubmit: true,
+    disabled: false,
   },
 )
 

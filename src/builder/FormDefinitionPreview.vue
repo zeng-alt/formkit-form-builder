@@ -23,6 +23,7 @@
             :actions="actions"
             :form-class="formClass"
             :interactive-containers="interactiveContainers"
+            :disabled="disabled"
             @submit="handleSubmit"
           />
         </div>
@@ -73,6 +74,7 @@ const props = withDefaults(
     /** 右侧数据面板宽度 */
     dataPanelWidth?: string
     resetOnSubmit?: boolean
+    disabled?: boolean
   }>(),
   {
     title: '',
@@ -83,6 +85,7 @@ const props = withDefaults(
     showDataPanel: true,
     dataPanelWidth: '320px',
     resetOnSubmit: true,
+    disabled: false,
   },
 )
 

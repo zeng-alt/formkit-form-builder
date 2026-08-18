@@ -47,6 +47,7 @@ type FormKitTypedProps = {
   name?: string
   actions?: boolean
   formClass?: string
+  disabled?: boolean
   modelValue?: ModelValue
   'onUpdate:modelValue'?: (value: ModelValue) => void
   onSubmit?: (formData: ModelValue) => void
@@ -58,6 +59,7 @@ export type FormActionsScope = {
   submit: () => void
   reset: () => void
   loading: boolean
+  disabled: boolean
 }
 
 const props = withDefaults(
@@ -94,6 +96,8 @@ const props = withDefaults(
       theme?: BuilderTheme
       /** 自定义 HTTP 请求库实例：供 JS 绑定代码里的 axios 变量使用；缺省使用内置 axios */
       http?: AxiosInstance
+      /** 禁用整个表单（所有输入 + 操作区按钮）；缺省 false */
+      disabled?: boolean
     } & Omit<Partial<ConfigProviderProps>, 'theme'>
   >(),
   {
@@ -102,6 +106,7 @@ const props = withDefaults(
     actionsJustify: 'start',
     formClass: 'w-full !grid !grid-cols-12 gap-x-4 gap-y-2',
     interactiveContainers: true,
+    disabled: false,
   },
 )
 
@@ -720,6 +725,7 @@ const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.
       type="form"
       :name="resolvedFormName"
       :actions="false"
+      :disabled="disabled"
       :model-value="data"
       @update:model-value="onFormModelValueUpdate"
       @submit="handleSubmit"
@@ -732,7 +738,7 @@ const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.
         :library="schemaLibrary"
       />
       <template v-if="$slots.actions">
-        <slot name="actions" :submit="submit" :reset="reset" :loading="loading" />
+        <slot name="actions" :submit="submit" :reset="reset" :loading="loading" :disabled="disabled" />
       </template>
       <template v-else-if="actions">
         <div
@@ -749,10 +755,18 @@ const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.
                   : 'justify-start',
           ]"
         >
-          <NButton type="primary" attr-type="submit" v-bind="submitAttrs ?? {}" :loading="loading">
+          <NButton
+            type="primary"
+            attr-type="submit"
+            v-bind="submitAttrs ?? {}"
+            :loading="loading"
+            :disabled="disabled"
+          >
             {{ resolvedSubmitLabel }}
           </NButton>
-          <NButton v-bind="resetAttrs ?? {}" @click="reset">{{ resolvedResetLabel }}</NButton>
+          <NButton v-bind="resetAttrs ?? {}" :disabled="disabled" @click="reset">{{
+            resolvedResetLabel
+          }}</NButton>
         </div>
       </template>
     </FormKitTyped>
