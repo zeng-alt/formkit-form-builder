@@ -45,14 +45,16 @@ const hasChild = computed(() => modelValue.value.length > 0)
 // 角标定位：徽标容器整行是 12 列网格，子元素只占自己的 col-span，
 // 测量子元素右边缘，把角标 left 对齐到子元素右上角。
 const badgeWrapRef = ref<HTMLElement | null>(null)
-const { supLeft } = useBadgeSupPosition({
+const { supLeft, supTop } = useBadgeSupPosition({
   badgeRef: badgeWrapRef,
   childSelector: '.formkit-outer',
   enabled: hasChild,
   refreshTrigger: modelValue,
 })
 const badgeStyle = computed(() =>
-  supLeft.value ? { '--badge-sup-left': supLeft.value } : undefined,
+  supLeft.value || supTop.value
+    ? { '--badge-sup-left': supLeft.value, '--badge-sup-top': supTop.value }
+    : undefined,
 )
 
 const badgeValueRaw = computed(() =>
@@ -112,12 +114,15 @@ const badgeOffset = computed(() =>
 </template>
 
 <style scoped>
-/* 徽标容器撑满整行（12 列网格）；角标由 --badge-sup-left 定位到子元素右上角 */
+/* 徽标容器撑满整行（12 列网格）；角标由 --badge-sup-left / --badge-sup-top 定位到子元素右上角 */
 :deep(.n-badge) {
   display: block;
   width: 100%;
 }
 :deep(.n-badge-sup) {
   left: var(--badge-sup-left, 100%) !important;
+  /* naive-ui 默认 bottom: calc(100% - 9px) 让 sup 中心对准容器顶边（18px 高的一半），
+     减去 --badge-sup-top 把中心下移到子元素顶边 */
+  bottom: calc(100% - var(--badge-sup-top, 0px) - 9px) !important;
 }
 </style>

@@ -5,9 +5,9 @@ import { useResizeObserver } from '@vueuse/core'
 // 子元素只占自己的 col-span 宽度。这里计算唯一子元素的右边缘相对徽标根的位置，
 // 通过 --badge-sup-left 把角标 left 对齐到子元素右上角（而非容器外沿）。
 
-// 沿 offsetParent 链累加 offsetLeft，得到 el 相对 ancestor 的布局左偏移。
-// offsetLeft/offsetWidth 返回布局值，不受 CSS transform 影响 —— modal 的 fade-in-scale
-// 入场动画期间 getBoundingClientRect 会返回缩放后的视觉值，而布局坐标始终准确。
+// 沿 offsetParent 链累加 offsetLeft/offsetTop，得到 el 相对 ancestor 的布局偏移。
+// offsetLeft/offsetTop/offsetWidth 返回布局值，不受 CSS transform 影响 —— modal 的
+// fade-in-scale 入场动画期间 getBoundingClientRect 会返回缩放后的视觉值，而布局坐标始终准确。
 function layoutLeftRelativeTo(el: HTMLElement, ancestor: HTMLElement): number | null {
   let node: HTMLElement | null = el
   let left = 0
@@ -16,6 +16,16 @@ function layoutLeftRelativeTo(el: HTMLElement, ancestor: HTMLElement): number | 
     node = node.offsetParent as HTMLElement | null
   }
   return node === ancestor ? left : null
+}
+
+function layoutTopRelativeTo(el: HTMLElement, ancestor: HTMLElement): number | null {
+  let node: HTMLElement | null = el
+  let top = 0
+  while (node && node !== ancestor) {
+    top += node.offsetTop
+    node = node.offsetParent as HTMLElement | null
+  }
+  return node === ancestor ? top : null
 }
 
 export function useBadgeSupPosition(opts: {
@@ -29,12 +39,14 @@ export function useBadgeSupPosition(opts: {
   refreshTrigger?: Ref<unknown>
 }) {
   const supLeft = ref<string | undefined>(undefined)
+  const supTop = ref<string | undefined>(undefined)
   const childRef = ref<HTMLElement | null>(null)
 
   const measure = () => {
     const badge = opts.badgeRef.value
     if (!badge || !opts.enabled.value) {
       supLeft.value = undefined
+      supTop.value = undefined
       return
     }
     // 每次重新查询，避免 FormKit 重建字段后 childRef 指向已卸载的旧节点
@@ -42,6 +54,7 @@ export function useBadgeSupPosition(opts: {
     if (!child) {
       childRef.value = null
       supLeft.value = undefined
+      supTop.value = undefined
       return
     }
     if (childRef.value !== child) childRef.value = child
@@ -57,7 +70,11 @@ export function useBadgeSupPosition(opts: {
       const childRect = child.getBoundingClientRect()
       left = childRect.right - badgeRect.left
     }
+    const layoutTop = layoutTopRelativeTo(child, badge)
+    const top =
+      layoutTop !== null ? layoutTop : child.getBoundingClientRect().top - badge.getBoundingClientRect().top
     supLeft.value = Number.isFinite(left) && left > 0 ? `${left}px` : undefined
+    supTop.value = Number.isFinite(top) && top > 0 ? `${top}px` : undefined
   }
 
   const refresh = () => nextTick(measure)
@@ -92,7 +109,10 @@ export function useBadgeSupPosition(opts: {
     [opts.badgeRef, opts.enabled],
     ([badge, on]) => {
       if (badge && on) startBurst()
-      else if (!on) supLeft.value = undefined
+      else if (!on) {
+        supLeft.value = undefined
+        supTop.value = undefined
+      }
     },
     { immediate: true },
   )
@@ -101,5 +121,5 @@ export function useBadgeSupPosition(opts: {
 
   onScopeDispose(stopBurst)
 
-  return { supLeft, refresh }
+  return { supLeft, supTop, refresh }
 }
