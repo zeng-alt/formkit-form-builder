@@ -2,24 +2,30 @@
   "name": "@zeng-alt/formkit-form-builder",
   "version": "1.2.0",
   "description": "A visual FormKit schema builder for Vue 3",
-  "type": "module",
+  "keywords": [
+    "drag-and-drop",
+    "form-builder",
+    "formkit",
+    "schema",
+    "vue",
+    "vue3"
+  ],
   "license": "LGPL",
   "repository": {
     "type": "git",
     "url": "https://github.com/zeng-alt/formkit-form-builder.git"
   },
-  "keywords": [
-    "vue",
-    "vue3",
-    "formkit",
-    "form-builder",
-    "schema",
-    "drag-and-drop"
+  "style": "./dist/builder.css",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
   ],
   "main": "./dist/builder.umd.js",
   "module": "./dist/builder.es.js",
   "types": "./dist/index.d.ts",
-  "style": "./dist/builder.css",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -31,12 +37,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "files": [
-    "dist"
-  ],
-  "sideEffects": [
-    "**/*.css"
-  ],
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" --",
@@ -48,28 +48,7 @@
     "lint:eslint": "eslint . --fix --cache",
     "format": "oxfmt src/"
   },
-  "peerDependencies": {
-    "@vueuse/core": "^14.2.1",
-    "naive-ui": "^2.44.0",
-    "vue": "^3.5.0",
-    "@codemirror/autocomplete": "^6.20.1",
-    "@codemirror/commands": "^6.10.3",
-    "@codemirror/language": "^6.9.2",
-    "@codemirror/state": "^6.5.2",
-    "@codemirror/view": "^6.38.2",
-    "@codemirror/lang-javascript": "^6.2.4",
-    "@codemirror/theme-one-dark": "^6.1.3",
-    "@codemirror/lint": "^6.8.5"
-  },
   "dependencies": {
-    "@codemirror/autocomplete": "^6.20.1",
-    "@codemirror/commands": "^6.10.3",
-    "@codemirror/language": "^6.9.2",
-    "@codemirror/state": "^6.5.2",
-    "@codemirror/view": "^6.38.2",
-    "@codemirror/lang-javascript": "^6.2.4",
-    "@codemirror/theme-one-dark": "^6.1.3",
-    "@codemirror/lint": "^6.8.5",
     "@formkit/core": "^2.0.0",
     "@formkit/drag-and-drop": "^0.5.0",
     "@formkit/i18n": "^2.0.0",
@@ -81,6 +60,14 @@
     "vue-sonner": "^2.0.9"
   },
   "devDependencies": {
+    "@codemirror/autocomplete": "^6.20.1",
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/lang-javascript": "^6.2.4",
+    "@codemirror/language": "^6.9.2",
+    "@codemirror/lint": "^6.8.5",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "@codemirror/view": "^6.38.2",
     "@formkit/core": "^2.0.0",
     "@formkit/drag-and-drop": "^0.5.3",
     "@formkit/vue": "^2.0.0",
@@ -89,6 +76,9 @@
     "@iconify/utils": "^3.1.0",
     "@tsconfig/node24": "^24.0.4",
     "@types/node": "^24.12.0",
+    "@unocss/eslint-config": "^66.7.0",
+    "@unocss/eslint-plugin": "^66.7.0",
+    "@unocss/preset-rem-to-px": "^66.7.0",
     "@vitejs/plugin-vue": "^6.0.5",
     "@vitejs/plugin-vue-jsx": "^5.1.5",
     "@vue/eslint-config-typescript": "^14.7.0",
@@ -108,9 +98,6 @@
     "tsx": "^4.21.0",
     "typescript": "~6.0.0",
     "unocss": "^66.7.0",
-    "@unocss/preset-rem-to-px": "^66.7.0",
-    "@unocss/eslint-config": "^66.7.0",
-    "@unocss/eslint-plugin": "^66.7.0",
     "unplugin-auto-import": "^21.1.0",
     "unplugin-vue-components": "^32.1.0",
     "vite": "^8.0.3",
@@ -118,6 +105,19 @@
     "vite-plugin-vue-devtools": "^8.1.1",
     "vue": "^3.5.31",
     "vue-tsc": "^3.2.6"
+  },
+  "peerDependencies": {
+    "@codemirror/autocomplete": "^6.20.1",
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/lang-javascript": "^6.2.4",
+    "@codemirror/language": "^6.9.2",
+    "@codemirror/lint": "^6.8.5",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "@codemirror/view": "^6.38.2",
+    "@vueuse/core": "^14.2.1",
+    "naive-ui": "^2.44.0",
+    "vue": "^3.5.0"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
