@@ -1,6 +1,6 @@
 {
   "name": "@zeng-alt/formkit-form-builder",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "A visual FormKit schema builder for Vue 3",
   "keywords": [
     "drag-and-drop",
