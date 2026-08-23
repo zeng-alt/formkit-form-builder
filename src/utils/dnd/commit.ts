@@ -42,7 +42,7 @@ function normalizeInputGroupChildren(children: FormKitSchemaFormKit[]) {
     return [stripInputGroupOuterClass(only) as any]
   }
   // 输入组单行：总 col-span 不得超过 12（一行网格上限），超出按比例缩放，避免溢出容器。
-  // 宽度只记 layout.colspan（经 col-span-N 往返回读），不再往 outerClass 写 w-[xx%]
+  // 宽度只记 outerClass 的 col-span-N（经 col-span-N 往返回读），不再往 outerClass 写 w-[xx%]
   rebalanceRowSpans(list, 12)
   return list.map((child: any) => stripInputGroupOuterClass(child))
 }

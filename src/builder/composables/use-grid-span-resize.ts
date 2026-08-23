@@ -3,7 +3,7 @@ import type { FormKitSchemaFormKit } from '@formkit/core'
 import { getColSpan as parseColSpan } from '@/utils/dnd/grid'
 
 function withColSpanClass(field: FormKitSchemaFormKit, span: number) {
-  const safeSpan = Math.max(1, Math.min(12, Math.round(span)))
+  const safeSpan = Math.max(2, Math.min(12, Math.round(span)))
   const currentOuterClass = typeof field.outerClass === 'string' ? field.outerClass : ''
   let classes = currentOuterClass
   if (/\bcol-span-\d+\b/.test(classes)) {

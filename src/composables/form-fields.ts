@@ -2,6 +2,7 @@ import type { WritableComputedRef } from 'vue'
 import { computed } from 'vue'
 import { findDslNodeByKey, updateDslNodeAtKey } from '@/utils/schema/dsl-tree'
 import { exprToJs, resolveValidation, parseExprString, parseValidation } from '@/dsl'
+import { getColSpan } from '@/utils/dnd/grid'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { DSL_VERSION } from '@/types/dsl'
 import type { FieldNode, FormNode, OptionItem } from '@/types/dsl'
@@ -633,16 +634,14 @@ export function useFormField() {
 
   const rowSpan = computed<number>({
     get: () => {
-      const node = selectedField.value
-      return node?.layout?.rowspan ?? 1
+      const classes = typeof selectedField.value?.outerClass === 'string' ? selectedField.value.outerClass : ''
+      const match = classes.match(/\brow-span-(\d+)\b/)
+      const parsed = match ? parseInt(match[1]!, 10) : 1
+      return Number.isFinite(parsed) && parsed > 1 ? parsed : 1
     },
     set: (value: number) => {
       const nextSpan = Math.max(1, Math.min(6, Math.round(value)))
       patchSelected((node) => {
-        const layout = { ...node.layout }
-        if (nextSpan > 1) layout.rowspan = nextSpan
-        else delete layout.rowspan
-        node.layout = Object.keys(layout).length ? layout : undefined
         let classes = typeof node.outerClass === 'string' ? node.outerClass : ''
         if (nextSpan > 1) {
           if (/\brow-span-\d+\b/.test(classes)) {
@@ -664,19 +663,11 @@ export function useFormField() {
   })
 
   const colSpan = computed<number>({
-    get: () => {
-      const node = selectedField.value
-      return node?.layout?.colspan ?? 12
-    },
+    get: () => getColSpan(selectedField.value),
     set: (value: number) => {
-      const nextSpan = Math.max(1, Math.min(12, Math.round(value)))
+      // 宽度唯一来源 outerClass：只改类名里的 col-span-N，不再写 layout；最小 2
+      const nextSpan = Math.max(2, Math.min(12, Math.round(value)))
       patchSelected((node) => {
-        const layout = { ...node.layout }
-        if (nextSpan < 12) layout.colspan = nextSpan
-        else delete layout.colspan
-        node.layout = Object.keys(layout).length ? layout : undefined
-        // 同步 outerClass 里的 col-span-N：nodeOuterClass 优先用原始字符串，
-        // 只改 layout 不改类名会导致画布仍按旧 col-span-N 渲染
         let classes = typeof node.outerClass === 'string' ? node.outerClass : ''
         if (nextSpan < 12) {
           if (/\bcol-span-\d+\b/.test(classes)) {

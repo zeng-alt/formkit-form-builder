@@ -10,7 +10,7 @@ import type { FormKitSchemaFormKit } from '@formkit/core'
 import { buildElementSchemaLibrary } from './formkit'
 import { registerBuiltinElementTypes } from '../dsl/definitions'
 import { getContainerSpec, type ContainerSpec } from './container-spec'
-import { applyGroupDisabled, stripInputGroupOuterClass } from '@/utils/dnd/grid'
+import { applyGroupDisabled, getColSpan, stripInputGroupOuterClass } from '@/utils/dnd/grid'
 
 import ListContainer from '@/components/ui/containers/list/ListContainer.vue'
 import ListContainerPreview from '@/components/ui/containers/list/ListContainerPreview.vue'
@@ -100,7 +100,7 @@ export function normalizeContainer(
 }
 
 // ─── inputGroup 预览子节点宽度装饰 ─────────────────────────────────────────────
-// children 的宽度按 layout.colspan 展示（4 → 33%、6 → 50%）。
+// children 的宽度按 outerClass 的 col-span-N 展示（4 → 33%、6 → 50%）。
 // 逐个 child 读 col-span，改写成对应的 !w-[xx%] 外框类，并去掉网格类/按钮 pt-2。
 // 用 !important（!w-）盖过主题 rootClasses 给 formkit-outer 的 w-full，
 // 否则与应用/主题 CSS 的级联顺序无关（w-full 100% 会赢过 w-[50%]，元素全宽）。
@@ -128,13 +128,7 @@ const stripGridWidthClasses = (outerClass: unknown) =>
     .trim()
 
 function inputGroupSpanOf(child: any): number {
-  const layoutSpan = child?.layout?.colspan
-  if (typeof layoutSpan === 'number' && Number.isFinite(layoutSpan) && layoutSpan > 0) {
-    return Math.max(1, Math.min(12, Math.round(layoutSpan)))
-  }
-  const outerClass = typeof child?.outerClass === 'string' ? child.outerClass : ''
-  const match = outerClass.match(/\bcol-span-(\d+)\b/)
-  return match ? Math.max(1, Math.min(12, parseInt(match[1]!, 10))) : 12
+  return getColSpan(child)
 }
 
 function decorateInputGroupChild(child: FormKitSchemaFormKit): FormKitSchemaFormKit {

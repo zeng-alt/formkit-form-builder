@@ -35,7 +35,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-2 pt-2',
+      outerClass: 'col-span-2',
       nameKey: 'elements.submit.name',
       descriptionKey: 'elements.submit.description',
       labelKey: 'elements.submit.label',
@@ -52,7 +52,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-2 pt-2',
+      outerClass: 'col-span-2',
       nameKey: 'elements.reset.name',
       descriptionKey: 'elements.reset.description',
       labelKey: 'elements.reset.label',
@@ -69,7 +69,7 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveButtonEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-2 pt-2',
+      outerClass: 'col-span-2',
       props: {
         block: false,
         bordered: true,

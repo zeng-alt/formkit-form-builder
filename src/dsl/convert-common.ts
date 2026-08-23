@@ -11,7 +11,6 @@ import type {
   StaticNode,
   FormNode,
   Expr,
-  NodeLayout,
   ValidationRule,
   EventBinding,
   LayoutType,
@@ -61,42 +60,18 @@ export function matchSchemaKind(s: SchemaNode, rt?: RenderTarget): boolean {
 
 // ─── 布局 ↔ outerClass ─────────────────────────────────────────────────────────
 
-export function compileLayout(layout?: NodeLayout, fallback = 'col-span-12'): string {
-  if (!layout) return fallback
-  const parts: string[] = []
-  if (layout.colspan != null && layout.colspan > 0) parts.push(`col-span-${layout.colspan}`)
-  if (layout.rowspan != null && layout.rowspan > 1) parts.push(`row-span-${layout.rowspan}`)
-  return parts.length ? parts.join(' ') : fallback
-}
-
-export function parseLayout(outerClass: unknown): NodeLayout | undefined {
-  if (typeof outerClass !== 'string' || !outerClass.trim()) return undefined
-  const layout: NodeLayout = {}
-  const col = outerClass.match(/\bcol-span-(\d+)\b/)
-  const row = outerClass.match(/\brow-span-(\d+)\b/)
-  if (col) layout.colspan = Number(col[1])
-  if (row) layout.rowspan = Number(row[1])
-  if (!Object.keys(layout).length) return undefined
-  // 默认 col-span-12 等价于无布局，保证往返恒等
-  if (layout.colspan === 12 && layout.rowspan == null) return undefined
-  return layout
-}
-
-/** 解析 outerClass：span 进 layout，附加类（pt-2 等）保留 raw 字符串 */
-export function parseOuterClass(
-  outerClass: unknown,
-  node: { layout?: NodeLayout; outerClass?: string },
-): void {
+/** 解析 outerClass：span 类保留在 outerClass（宽度唯一来源），不另存 layout */
+export function parseOuterClass(outerClass: unknown, node: { outerClass?: string }): void {
   const raw = typeof outerClass === 'string' ? outerClass.trim() : ''
   if (!raw) return
-  const layout = parseLayout(raw)
-  if (layout) node.layout = layout
-  if (compileLayout(layout) !== raw) node.outerClass = raw
+  // 默认 col-span-12 等价于无显式宽度，不写入 outerClass，保证往返干净
+  if (raw === 'col-span-12') return
+  node.outerClass = raw
 }
 
-/** 回写 outerClass：优先用 raw 字符串，保证带附加类的节点往返无损 */
-export function nodeOuterClass(node: { layout?: NodeLayout; outerClass?: string }): string {
-  return node.outerClass?.trim() ? node.outerClass : compileLayout(node.layout)
+/** 回写 outerClass：优先用 raw 字符串；缺失时回退默认 col-span-12 */
+export function nodeOuterClass(node: { outerClass?: string }): string {
+  return node.outerClass?.trim() ? node.outerClass : 'col-span-12'
 }
 
 // ─── 通用节点头（id/name/label/key/visibleIf/events）───────────────────────────
@@ -575,7 +550,7 @@ export function layoutNodeToSchema(
       if (node.key) schema.__key = node.key
       if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
       if (ch.length) schema.children = ch
-      schema.outerClass = compileLayout(node.layout)
+      schema.outerClass = nodeOuterClass(node)
       return schema as SchemaNode
     }
     default: {
@@ -769,8 +744,7 @@ export function staticNodeToSchema(node: StaticNode, rt?: RenderTarget): SchemaN
       set('type', native)
       applyByKind(base, anyProps, kind)
       const outer = nodeOuterClass(node)
-      base.outerClass =
-        outer === 'col-span-12' && !node.outerClass && !node.layout ? 'col-span-12 pt-2' : outer
+      base.outerClass = outer === 'col-span-12' && !node.outerClass ? 'col-span-12 pt-2' : outer
       break
     }
     case 'button': {

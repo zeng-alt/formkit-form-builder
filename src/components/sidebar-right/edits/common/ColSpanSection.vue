@@ -7,9 +7,10 @@ import SelectInput from './SelectInput.vue'
 const { colSpan } = useFormField()
 const { t } = useFormBuilderI18n()
 
-const colSpanOptions = Array.from({ length: 12 }, (_, i) => ({
-  label: String(i + 1),
-  value: String(i + 1),
+// 宽度最小为 2（不能为 1），最大 12
+const colSpanOptions = Array.from({ length: 11 }, (_, i) => ({
+  label: String(i + 2),
+  value: String(i + 2),
 }))
 
 const colSpanString = computed({

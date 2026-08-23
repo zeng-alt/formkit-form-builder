@@ -93,7 +93,7 @@ const itemTemplate = computed<{
   }
   const only = unwrapElLayers(list[0] as any)
   const kind = only?.$formkit ?? only?.$cmp
-  // 列表项最外层 $el 包装的 col-span（容器的占列数，如 card 的 layout.colspan=6 → col-span-6）；
+  // 列表项最外层 $el 包装的 col-span（容器的占列数，如 card 的 col-span-6）；
   // 解壳后用它回包 $cmp 子节点，保证布局宽度不被丢弃
   const outerElClass =
     typeof (list[0] as any)?.$el === 'string' && typeof (list[0] as any)?.attrs?.class === 'string'

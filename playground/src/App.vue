@@ -208,7 +208,7 @@ const sampleDefinition: FormDefinition = {
         renderAs: 'cmp',
         name: 'name',
         label: '姓名',
-        layout: { colspan: 12 },
+        outerClass: 'col-span-12',
         validation: [{ rule: 'required', message: '姓名为必填项' }],
       },
       {
@@ -218,7 +218,7 @@ const sampleDefinition: FormDefinition = {
         renderAs: 'cmp',
         name: 'city',
         label: '城市',
-        layout: { colspan: 6 },
+        outerClass: 'col-span-6',
         options: [
           { label: '北京', value: 'beijing' },
           { label: '上海', value: 'shanghai' },
@@ -232,7 +232,7 @@ const sampleDefinition: FormDefinition = {
         renderAs: 'cmp',
         name: 'age',
         label: '年龄',
-        layout: { colspan: 6 },
+        outerClass: 'col-span-6',
         validation: [
           { rule: 'min:18', message: '需年满 18 岁' },
           { rule: 'max:60', message: '不超过 60 岁' },
@@ -245,7 +245,7 @@ const sampleDefinition: FormDefinition = {
         renderAs: 'cmp',
         name: 'gender',
         label: '性别',
-        layout: { colspan: 6 },
+        outerClass: 'col-span-6',
         options: [
           { label: '男', value: 'male' },
           { label: '女', value: 'female' },
@@ -258,7 +258,7 @@ const sampleDefinition: FormDefinition = {
         renderAs: 'cmp',
         name: 'dictCity',
         label: '城市（动态字典）',
-        layout: { colspan: 6 },
+        outerClass: 'col-span-6',
         options: { dynamic: true, code: 'city', label: '城市' },
       },
       {
@@ -268,7 +268,7 @@ const sampleDefinition: FormDefinition = {
         renderAs: 'cmp',
         name: 'onboarded',
         label: '已入职',
-        layout: { colspan: 6 },
+        outerClass: 'col-span-6',
       },
       {
         id: 'f-test1',
@@ -277,7 +277,7 @@ const sampleDefinition: FormDefinition = {
         renderAs: 'cmp',
         name: 'test1',
         label: '测试输入',
-        layout: { colspan: 12 },
+        outerClass: 'col-span-12',
       },
       {
         id: 'f-test',
@@ -286,7 +286,7 @@ const sampleDefinition: FormDefinition = {
         renderAs: 'cmp',
         name: 'test',
         label: '表达式结果',
-        layout: { colspan: 12 },
+        outerClass: 'col-span-12',
         expr: "$test1 + '测试'",
       },
     ],

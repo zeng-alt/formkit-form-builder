@@ -46,20 +46,20 @@ const normalizeChildren = (values: FormKitSchemaFormKit[]) => {
     return [stripInputGroupOuterClass(only)]
   }
   // 输入组单行：总 col-span 不得超过 12（一行网格上限），超出按比例缩放。
-  // 宽度只记 layout.colspan，内层元素不再带 outerClass 宽度类（w-[xx%]/pt-2）
+  // 宽度只记 outerClass 的 col-span-N，内层元素不再带 outerClass 宽度类（w-[xx%]/pt-2）
   rebalanceRowSpans(list, 12)
   return list.map((f: any) => stripInputGroupOuterClass(f))
 }
 
-// 输入组单行：当前项 span 最大只能占到 12 - 其余各项之和（至少 1），
+// 输入组单行：当前项 span 最大只能占到 12 - 其余各项之和（至少 2），
 // 拖拽放大到总宽 = 12 后无法再向外，只能向左缩小
 const inputGroupMaxSpan = (index: number, items: FormKitSchemaFormKit[]) => {
   let sum = 0
   for (let i = 0; i < items.length; i++) {
     if (i === index) continue
-    sum += Math.max(1, Math.min(12, getColSpan(items[i])))
+    sum += Math.max(2, Math.min(12, getColSpan(items[i])))
   }
-  return Math.max(1, 12 - sum)
+  return Math.max(2, 12 - sum)
 }
 
 const dnd = useContainerDragAndDrop<FormKitSchemaFormKit>({

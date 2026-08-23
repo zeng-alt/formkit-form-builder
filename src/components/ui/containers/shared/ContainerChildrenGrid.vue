@@ -186,9 +186,9 @@ const itemStyle = (child: any) => {
     if (props.items.value.length === 1) return { width: '100%', flex: '0 0 auto' }
     // 输入组（row 布局）：按 col-span/12 显示宽度（4 → 33%、6 → 50%）。
     // 仅当历史数据总宽 > 12 时按比例缩放兜底，避免元素溢出容器、右侧按钮被裁掉
-    const spans = props.items.value.map((c: any) => Math.max(1, Math.min(12, getColSpan(c))))
+    const spans = props.items.value.map((c: any) => Math.max(2, Math.min(12, getColSpan(c))))
     const totalSpan = spans.reduce((a, b) => a + b, 0) || 1
-    const span = Math.max(1, Math.min(12, getColSpan(child)))
+    const span = Math.max(2, Math.min(12, getColSpan(child)))
     const pct = totalSpan > 12 ? (span / totalSpan) * 100 : (span / 12) * 100
     return { width: `${pct}%`, flex: '0 0 auto' }
   }

@@ -51,7 +51,7 @@ const modelValue = computed(() => {
 </template>
 
 <style scoped>
-/* 输入组：每个元素按 layout.colspan 的 !w-[xx%] 显示宽度（不拉伸、不压缩），
+/* 输入组：每个元素按 outerClass 的 col-span-N 的 !w-[xx%] 显示宽度（不拉伸、不压缩），
    隐藏字段 label/help，保证输入框与按钮同高、上下对齐 */
 :deep(.n-input-group .formkit-outer) {
   flex: 0 0 auto;

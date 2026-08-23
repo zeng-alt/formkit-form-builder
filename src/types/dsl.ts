@@ -67,22 +67,7 @@ export interface DynamicOptionSource {
   label?: string
 }
 
-// ─── 布局信息（每个节点可选）─────────────────────────────────────────────────────
-export interface NodeLayout {
-  /** 栅格占位（基于 settings.columns，默认 12） */
-  colspan?: number
-  rowspan?: number
-  /** 显式宽度（px / 百分比），grid 模式下忽略 */
-  width?: number | string
-  order?: number
-  /** 响应式断点覆盖 */
-  responsive?: {
-    sm?: NodeLayout
-    md?: NodeLayout
-    lg?: NodeLayout
-    xl?: NodeLayout
-  }
-}
+
 
 // ─── 事件绑定（handler 为不透明函数体字符串，前端运行时执行，Java 透传）──────────
 export type FormKitEvent = 'change' | 'input' | 'blur' | 'focus'
@@ -122,9 +107,7 @@ export interface BaseNode {
   props?: Record<string, unknown>
   /** 条件显示：布尔表达式 AST */
   visibleIf?: Expr
-  /** 布局信息（colspan / rowspan） */
-  layout?: NodeLayout
-  /** 原始 outerClass（含 pt-2 等附加类；与 layout 同时保留保证往返无损） */
+  /** 原始 outerClass（col-span-N / row-span-N 与任意附加类，宽度唯一来源） */
   outerClass?: string
   events?: EventBinding[]
   /** 任意业务元数据，Java 原样透传 */

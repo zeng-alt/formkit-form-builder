@@ -12,7 +12,6 @@ export type {
   LayoutType,
   FormSettings,
   NodeCategory,
-  NodeLayout,
   RenderKind,
   Expr,
   ExprLiteral,
@@ -62,8 +61,6 @@ export {
   parseExprString,
   parseValidation,
   parseEvents,
-  compileLayout,
-  parseLayout,
   parseOuterClass,
   nodeOuterClass,
 } from './convert-common'

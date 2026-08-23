@@ -1,30 +1,36 @@
-// 从 outerClass 中解析 col-span，默认 12；优先 DSL layout.colspan（输入组语义宽度来源）
-export function getColSpan(item: any): number {
-  const layoutSpan = item?.layout?.colspan
-  if (typeof layoutSpan === 'number' && Number.isFinite(layoutSpan) && layoutSpan > 0) {
-    return Math.max(1, Math.min(12, Math.round(layoutSpan)))
-  }
-  const outerClass = item?.outerClass
-  if (typeof outerClass !== 'string') return 12
-  const match = outerClass.match(/col-span-(\d+)/)
-  return match ? parseInt(match[1]!, 10) : 12
+// 栅格最小 / 最大宽度：不能为 1（避免元素过窄），上限 12
+const MIN_COL_SPAN = 2
+const MAX_COL_SPAN = 12
+
+function clampColSpan(span: number): number {
+  return Math.max(MIN_COL_SPAN, Math.min(MAX_COL_SPAN, Math.round(span)))
 }
 
-// 写入/替换 outerClass 中的 col-span-*
+// 从 outerClass 中解析 col-span，默认 12（宽度唯一来源）；下限钳制到 2
+export function getColSpan(item: any): number {
+  const outerClass = item?.outerClass
+  if (typeof outerClass === 'string') {
+    const match = outerClass.match(/col-span-(\d+)/)
+    if (match) return clampColSpan(parseInt(match[1]!, 10))
+  }
+  return MAX_COL_SPAN
+}
+
+// 写入/替换 outerClass 中的 col-span-*（自动钳制到 2..12）
 export function setColSpan(item: any, span: number) {
   if (!item) return
+  const safe = clampColSpan(span)
   let classes = item.outerClass || ''
   if (/col-span-\d+/.test(classes)) {
-    classes = classes.replace(/col-span-\d+/, `col-span-${span}`)
+    classes = classes.replace(/col-span-\d+/, `col-span-${safe}`)
   } else {
-    classes = `${classes} col-span-${span}`.trim()
+    classes = `${classes} col-span-${safe}`.trim()
   }
   item.outerClass = classes
 }
 
-// 输入组内层元素：宽度只由 layout.colspan 决定（经 outerClass.col-span-N 往返回读 layout），
+// 输入组内层元素：宽度只由 outerClass 的 col-span-N 决定，
 // 去掉 outerClass 里的 w-[xx%] 宽度类与按钮的 pt-2，避免遗留宽度类撑乱画布/预览。
-// 保留 col-span-N / row-span-N 以便 fromSchema 把宽度解析回 layout.colspan。
 export function stripInputGroupOuterClass(child: any): any {
   if (!child || typeof child !== 'object') return child
   const clean = (oc?: string) =>
@@ -72,21 +78,21 @@ export function getRowSpan(item: any): number {
 }
 
 // 输入组（单行 flex-nowrap）总 col-span 不得超过 maxSpan（默认 12 = 一行网格上限）。
-// 超出时按比例缩放各元素 span（每项至少 1），四舍五入后仍超限则从最大的项逐项减 1，
+// 超出时按比例缩放各元素 span（每项至少 2），四舍五入后仍超限则从最大的项逐项减 1，
 // 保证总和 ≤ maxSpan，避免元素溢出容器、右侧 resize/删除按钮被裁掉。
-export function rebalanceRowSpans(values: any[], maxSpan = 12): void {
+export function rebalanceRowSpans(values: any[], maxSpan = MAX_COL_SPAN): void {
   if (!Array.isArray(values) || values.length === 0) return
-  const spans = values.map((v) => Math.max(1, Math.min(maxSpan, getColSpan(v))))
+  const spans = values.map((v) => Math.max(MIN_COL_SPAN, Math.min(maxSpan, getColSpan(v))))
   const total = spans.reduce((a, b) => a + b, 0)
   if (total <= maxSpan) return
   const scale = maxSpan / total
-  const next = spans.map((s) => Math.max(1, Math.round(s * scale)))
+  const next = spans.map((s) => Math.max(MIN_COL_SPAN, Math.round(s * scale)))
   let used = next.reduce((a, b) => a + b, 0)
   const order = next.map((s, i) => [s, i] as [number, number]).sort((a, b) => b[0]! - a[0]!)
   let k = 0
   while (used > maxSpan && k < order.length) {
     const i = order[k]![1]
-    if (next[i]! > 1) {
+    if (next[i]! > MIN_COL_SPAN) {
       next[i] = next[i]! - 1
       used--
     }
@@ -126,11 +132,11 @@ export function computePlacements(values: any[]): Placement[] {
 
   for (let i = 0; i < values.length; i++) {
     const item = values[i]
-    const colSpan = Math.max(1, Math.min(12, getColSpan(item)))
+    const colSpan = Math.max(MIN_COL_SPAN, Math.min(MAX_COL_SPAN, getColSpan(item)))
     const rowSpan = Math.max(1, Math.min(6, getRowSpan(item)))
     let placed = false
     for (let row = 1; row <= 200 && !placed; row++) {
-      for (let col = 1; col <= 12 - colSpan + 1; col++) {
+      for (let col = 1; col <= MAX_COL_SPAN - colSpan + 1; col++) {
         if (canPlace(row, col, rowSpan, colSpan)) {
           occupy(row, col, rowSpan, colSpan)
           placements.push({ index: i, row, col, rowSpan, colSpan })
