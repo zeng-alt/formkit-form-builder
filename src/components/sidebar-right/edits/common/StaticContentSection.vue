@@ -26,17 +26,9 @@ const sections = computed(() =>
       t(section.labelKey)
     }}</label>
     <n-input
-      v-if="section.multiline"
       size="small"
       type="textarea"
-      :autosize="{ minRows: 2, maxRows: 6 }"
-      :placeholder="t('edits.placeholder.text')"
-      :value="section.model.value"
-      @update:value="(v: string) => (section.model.value = v)"
-    />
-    <n-input
-      v-else
-      size="small"
+      :autosize="true"
       :placeholder="t('edits.placeholder.text')"
       :value="section.model.value"
       @update:value="(v: string) => (section.model.value = v)"

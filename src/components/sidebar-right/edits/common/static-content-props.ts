@@ -12,17 +12,17 @@ export interface StaticContentField {
 }
 
 const CONTENT_FIELDS: Record<string, StaticContentField[]> = {
-  naiveH1: [{ key: 'text', labelKey: 'edits.content.text' }],
-  naiveH2: [{ key: 'text', labelKey: 'edits.content.text' }],
-  naiveH3: [{ key: 'text', labelKey: 'edits.content.text' }],
-  naiveH4: [{ key: 'text', labelKey: 'edits.content.text' }],
-  naiveH5: [{ key: 'text', labelKey: 'edits.content.text' }],
-  naiveH6: [{ key: 'text', labelKey: 'edits.content.text' }],
+  naiveH1: [{ key: 'text', labelKey: 'edits.content.text', multiline: true }],
+  naiveH2: [{ key: 'text', labelKey: 'edits.content.text', multiline: true }],
+  naiveH3: [{ key: 'text', labelKey: 'edits.content.text', multiline: true }],
+  naiveH4: [{ key: 'text', labelKey: 'edits.content.text', multiline: true }],
+  naiveH5: [{ key: 'text', labelKey: 'edits.content.text', multiline: true }],
+  naiveH6: [{ key: 'text', labelKey: 'edits.content.text', multiline: true }],
   naiveText: [{ key: 'text', labelKey: 'edits.content.text', multiline: true }],
   naiveP: [{ key: 'text', labelKey: 'edits.content.text', multiline: true }],
-  naiveA: [{ key: 'text', labelKey: 'edits.content.text' }],
+  naiveA: [{ key: 'text', labelKey: 'edits.content.text', multiline: true }],
   naiveBlockquote: [{ key: 'text', labelKey: 'edits.content.text', multiline: true }],
-  naiveLi: [{ key: 'value', labelKey: 'edits.content.text' }],
+  naiveLi: [{ key: 'value', labelKey: 'edits.content.text', multiline: true }],
   naiveDivider: [{ key: 'title', labelKey: 'edits.content.title' }],
   naiveAlert: [
     { key: 'title', labelKey: 'edits.content.title' },

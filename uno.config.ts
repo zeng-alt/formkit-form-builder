@@ -112,6 +112,7 @@ export default defineConfig({
     'i-lucide-upload',
     'i-lucide-rotate-ccw',
     'i-lucide-qr-code',
+    'i-lucide-gauge',
     'i-lucide-plus',
     'i-lucide-align-horizontal-justify-start',
     'i-lucide-rectangle-horizontal',

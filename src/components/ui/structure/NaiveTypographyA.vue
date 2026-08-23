@@ -23,6 +23,8 @@ const href = computed(() => (config.href as string | undefined) ?? '#')
 
 <template>
   <NA v-bind="props" :href="href">
-    <InlineEditableText :context="context" prop-key="text" :value="text" />
+    <span class="whitespace-pre-line">
+      <InlineEditableText :context="context" prop-key="text" :value="text" />
+    </span>
   </NA>
 </template>

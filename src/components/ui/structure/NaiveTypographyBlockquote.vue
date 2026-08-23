@@ -20,6 +20,8 @@ const text = computed(() => {
 
 <template>
   <NBlockquote>
-    <InlineEditableText :context="context" prop-key="text" :value="text" />
+    <span class="whitespace-pre-line">
+      <InlineEditableText :context="context" prop-key="text" :value="text" />
+    </span>
   </NBlockquote>
 </template>

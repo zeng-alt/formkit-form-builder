@@ -312,4 +312,25 @@ export const staticElements: ElementDefinition[] = [
       descriptionKey: 'elements.naiveQrCode.description',
     },
   },
+  {
+    type: 'naiveProgress',
+    category: 'static',
+    icon: 'i-lucide-gauge',
+    tooltipKey: 'fieldProps.tooltip.naiveProgress',
+    editor: () => import('@/components/sidebar-right/edits/editors/NaiveProgressEditor.vue'),
+    schema: {
+      renderAs: 'cmp',
+      props: {
+        percentage: 60,
+        progressType: 'line',
+        status: 'default',
+        processing: false,
+        showIndicator: true,
+        height: 8,
+        strokeWidth: 6,
+      },
+      nameKey: 'elements.naiveProgress.name',
+      descriptionKey: 'elements.naiveProgress.description',
+    },
+  },
 ]

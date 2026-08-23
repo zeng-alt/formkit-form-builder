@@ -30,6 +30,8 @@ const HeaderCmp = computed(() => {
 
 <template>
   <component :is="HeaderCmp">
-    <InlineEditableText :context="context" prop-key="text" :value="text" />
+    <span class="whitespace-pre-line">
+      <InlineEditableText :context="context" prop-key="text" :value="text" />
+    </span>
   </component>
 </template>

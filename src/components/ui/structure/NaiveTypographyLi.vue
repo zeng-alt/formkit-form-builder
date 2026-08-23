@@ -13,6 +13,8 @@ const text = computed(() => String(props.context._value ?? ''))
 
 <template>
   <NLi>
-    <InlineEditableText :context="props.context" prop-key="value" :value="text" />
+    <span class="whitespace-pre-line">
+      <InlineEditableText :context="props.context" prop-key="value" :value="text" />
+    </span>
   </NLi>
 </template>

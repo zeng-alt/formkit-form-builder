@@ -44,6 +44,7 @@ import NaiveDivider from '@/components/ui/structure/NaiveDivider.vue'
 import NaiveAlert from '@/components/ui/structure/NaiveAlert.vue'
 import NaiveBackTop from '@/components/ui/structure/NaiveBackTop.vue'
 import NaiveQrCode from '@/components/ui/structure/NaiveQrCode.vue'
+import NaiveProgress from '@/components/ui/structure/NaiveProgress.vue'
 
 registerBuiltinElementTypes()
 
@@ -106,6 +107,7 @@ export const formkitBindings: Record<string, FormkitBinding> = {
   naiveAlert: { component: NaiveAlert, libraryName: 'NaiveAlert' },
   naiveBackTop: { component: NaiveBackTop, libraryName: 'NaiveBackTop' },
   naiveQrCode: { component: NaiveQrCode, libraryName: 'NaiveQrCode' },
+  naiveProgress: { component: NaiveProgress, libraryName: 'NaiveProgress' },
 }
 
 // legacy $cmp 别名单一来源：由 formkitBindings 派生注入 DSL 注册表（识别旧 Naive* 数据）

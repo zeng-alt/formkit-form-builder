@@ -33,6 +33,8 @@ const depth = computed(() => {
 
 <template>
   <NP v-bind="props" :type="theme" :depth="depth as any">
-    <InlineEditableText :context="context" prop-key="text" :value="text" />
+    <span class="whitespace-pre-line">
+      <InlineEditableText :context="context" prop-key="text" :value="text" />
+    </span>
   </NP>
 </template>
