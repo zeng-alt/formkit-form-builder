@@ -33,7 +33,6 @@ export const containerElements: ElementDefinition[] = [
     schema: {
       renderAs: 'formkit',
       nameKey: 'elements.group.name',
-      outerClass: 'col-span-12',
       props: {},
       descriptionKey: 'elements.group.description',
     },
@@ -49,7 +48,6 @@ export const containerElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.list.name',
       labelKey: 'elements.list.label',
-      outerClass: 'col-span-12',
       props: { showActions: false, bordered: true },
       descriptionKey: 'elements.list.description',
     },
@@ -67,7 +65,6 @@ export const containerElements: ElementDefinition[] = [
       presetOf: 'list',
       nameKey: 'elements.nestedList.name',
       labelKey: 'elements.nestedList.label',
-      outerClass: 'col-span-12',
       props: { showActions: false, bordered: true },
       descriptionKey: 'elements.nestedList.description',
       // 拖入即预置一个内部 group（输入框形态）：字段拖进 group，列表项产出 [{...}]；
@@ -86,7 +83,6 @@ export const containerElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.inputGroup.name',
       labelKey: 'elements.inputGroup.label',
-      outerClass: 'col-span-12',
       props: {},
       descriptionKey: 'elements.inputGroup.description',
     },
@@ -101,7 +97,6 @@ export const containerElements: ElementDefinition[] = [
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.buttonGroup.name',
-      outerClass: 'col-span-12',
       props: {
         size: 'medium',
         vertical: false,
@@ -121,7 +116,6 @@ export const containerElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.card.name',
       labelKey: 'elements.card.label',
-      outerClass: 'col-span-12',
       props: {
         size: 'medium',
         bordered: true,
@@ -141,7 +135,6 @@ export const containerElements: ElementDefinition[] = [
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.badge.name',
-      outerClass: 'col-span-12',
       props: {
         value: 0,
         max: 99,
@@ -165,7 +158,6 @@ export const containerElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.tabs.name',
       labelKey: 'elements.tabs.label',
-      outerClass: 'col-span-12',
       props: {},
       descriptionKey: 'elements.tabs.description',
     },
@@ -183,7 +175,6 @@ export const containerElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.steps.name',
       labelKey: 'elements.steps.label',
-      outerClass: 'col-span-12',
       props: {},
       descriptionKey: 'elements.steps.description',
     },
@@ -199,7 +190,6 @@ export const containerElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.dataTable.name',
       labelKey: 'elements.dataTable.label',
-      outerClass: 'col-span-12',
       props: {
         rowKey: 'id',
         bordered: true,

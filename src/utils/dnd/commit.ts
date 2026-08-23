@@ -403,15 +403,19 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
 
       const nextTargetValues = [...targetValues]
 
-      if (draggedOverNode) {
-        adjustColSpansForInsert(
-          nextTargetValues as any[],
-          draggedOverNode.data.value,
-          insertValues as any[],
-          insertState.verticalInsert ?? false,
-        )
-      } else {
-        insertValues.forEach((val: any) => setColSpan(val, 12))
+      // 调色板拖入的新元素保留定义里的 outerClass（模板宽度），不做行内重排/强制 12；
+      // 仅对画布内已有元素移动做 col-span 调整，避免覆盖模板默认宽度。
+      if (!isSource) {
+        if (draggedOverNode) {
+          adjustColSpansForInsert(
+            nextTargetValues as any[],
+            draggedOverNode.data.value,
+            insertValues as any[],
+            insertState.verticalInsert ?? false,
+          )
+        } else {
+          insertValues.forEach((val: any) => setColSpan(val, 12))
+        }
       }
 
       nextTargetValues.splice(index, 0, ...(insertValues as any as FormKitSchemaFormKit[]))

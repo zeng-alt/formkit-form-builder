@@ -19,7 +19,6 @@ const heading = (
   editor,
   schema: {
     renderAs: 'cmp',
-    outerClass: 'col-span-12',
     props: { text: 'text' },
     nameKey: `elements.naiveH${depth}.name`,
     descriptionKey: `elements.naiveH${depth}.description`,
@@ -35,12 +34,12 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-2',
       nameKey: 'elements.submit.name',
       descriptionKey: 'elements.submit.description',
       labelKey: 'elements.submit.label',
       props: {
-        buttonType: 'default',
+        buttonType: 'warning',
+        block: true,
       },
     },
   },
@@ -52,12 +51,12 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-2',
       nameKey: 'elements.reset.name',
       descriptionKey: 'elements.reset.description',
       labelKey: 'elements.reset.label',
       props: {
         buttonType: 'error',
+        block: true,
       },
     },
   },
@@ -69,9 +68,8 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveButtonEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-2',
       props: {
-        block: false,
+        block: true,
         bordered: true,
         circle: false,
         dashed: false,
@@ -98,7 +96,6 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveTextEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-12',
       props: {
         text: 'text',
         theme: 'default',
@@ -121,7 +118,6 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveParagraphEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-12',
       props: {
         theme: 'default',
         depth: 1,
@@ -140,7 +136,6 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveLinkEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-12',
       props: {
         text: 'text',
         href: 'https://www.example.com',
@@ -158,7 +153,6 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveBlockquoteEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-12',
       props: {
         text: 'text',
       },
@@ -210,7 +204,6 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveUlEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-12',
       options: ['Item 1', 'Item 2', 'Item 3'],
       nameKey: 'elements.naiveUl.name',
       descriptionKey: 'elements.naiveUl.description',
@@ -224,7 +217,6 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveOlEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-12',
       options: ['Item 1', 'Item 2', 'Item 3'],
       nameKey: 'elements.naiveOl.name',
       descriptionKey: 'elements.naiveOl.description',
@@ -238,7 +230,6 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveLiEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-12',
       value: 'List Item',
       nameKey: 'elements.naiveLi.name',
       descriptionKey: 'elements.naiveLi.description',
@@ -252,7 +243,6 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveDividerEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-12',
       props: {
         title: 'Divider',
         titlePlacement: 'center',
@@ -271,7 +261,6 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveAlertEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-12',
       props: {
         title: 'Title',
         content: 'Alert',
@@ -293,7 +282,6 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveBackTopEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-12',
       props: {
         show: true,
         right: 40,
@@ -312,7 +300,6 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveQrCodeEditor.vue'),
     schema: {
       renderAs: 'cmp',
-      outerClass: 'col-span-12',
       value: 'https://github.com/zeng-alt/formkit-form-builder',
       props: {
         size: 128,
