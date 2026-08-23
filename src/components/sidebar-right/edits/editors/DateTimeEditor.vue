@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../../i18n/context'
-import { DEFAULT_DATE_TIME_VALUE_FORMAT } from '@/elements/constants'
+import { DATE_PICKER_TYPE_VALUE_FORMATS, DEFAULT_DATE_TIME_VALUE_FORMAT } from '@/elements/constants'
 import BindEditor from '../BindEditor.vue'
 import LabelHelpSection from '../common/LabelHelpSection.vue'
 import PlaceholderSection from '../common/PlaceholderSection.vue'
@@ -25,7 +25,17 @@ const valueFormat = computed<string>({
   },
 })
 
-const naivePickerType = createPropsProp<string>('type', 'datetime')
+const naivePickerType = createPropsProp<string>('pickerType', 'datetime')
+
+const typeOptions = computed(() =>
+  ['date', 'datetime', 'daterange', 'datetimerange', 'month', 'monthrange', 'year', 'yearrange', 'quarter', 'quarterrange', 'week'].map(
+    (value) => ({ label: t(`edits.pickerType.${value}`), value }),
+  ),
+)
+
+watch(naivePickerType, (type) => {
+  naiveValueFormat.value = DATE_PICKER_TYPE_VALUE_FORMATS[type] ?? DEFAULT_DATE_TIME_VALUE_FORMAT
+})
 </script>
 
 <template>
@@ -35,19 +45,7 @@ const naivePickerType = createPropsProp<string>('type', 'datetime')
   <SelectInput
     :label="t('edits.props.type')"
     :value="naivePickerType"
-    :options="[
-      { label: 'date', value: 'date' },
-      { label: 'datetime', value: 'datetime' },
-      { label: 'daterange', value: 'daterange' },
-      { label: 'datetimerange', value: 'datetimerange' },
-      { label: 'month', value: 'month' },
-      { label: 'monthrange', value: 'monthrange' },
-      { label: 'year', value: 'year' },
-      { label: 'yearrange', value: 'yearrange' },
-      { label: 'quarter', value: 'quarter' },
-      { label: 'quarterrange', value: 'quarterrange' },
-      { label: 'week', value: 'week' },
-    ]"
+    :options="typeOptions"
     @update:value="(v) => (naivePickerType = v)"
   />
   <TextInput

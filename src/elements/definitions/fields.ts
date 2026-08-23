@@ -156,7 +156,7 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.date.name',
       labelKey: 'elements.date.label',
-      props: { ...commonProps, valueFormat: DEFAULT_DATE_VALUE_FORMAT, type: 'date' },
+      props: { ...commonProps, valueFormat: DEFAULT_DATE_VALUE_FORMAT, pickerType: 'date' },
       descriptionKey: 'elements.date.description',
     },
   },
@@ -187,7 +187,7 @@ export const fieldElements: ElementDefinition[] = [
       props: {
         ...commonProps,
         valueFormat: DEFAULT_DATE_TIME_VALUE_FORMAT,
-        type: 'datetime',
+        pickerType: 'datetime',
       },
       descriptionKey: 'elements.dateTime.description',
     },

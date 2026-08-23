@@ -354,6 +354,19 @@ export default {
       getShowHint:
         '根据输入值在聚焦的状态中决定是否显示菜单。可用参数：value（当前输入值），返回布尔值。示例：\nvalue.length >= 2',
     },
+    pickerType: {
+      date: '日期',
+      datetime: '日期时间',
+      daterange: '日期范围',
+      datetimerange: '日期时间范围',
+      month: '月份',
+      monthrange: '月份范围',
+      year: '年份',
+      yearrange: '年份范围',
+      quarter: '季度',
+      quarterrange: '季度范围',
+      week: '周',
+    },
     dataTable: {
       rowKey: '行主键（rowKey）',
       rowKeyPlaceholder: '如：id',

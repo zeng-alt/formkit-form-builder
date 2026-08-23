@@ -395,6 +395,19 @@ export default {
       getShowHint:
         'Decide whether to show the menu while focused, based on the input value. Param: value (current input), return a boolean. Example:\nvalue.length >= 2',
     },
+    pickerType: {
+      date: 'Date',
+      datetime: 'Date & Time',
+      daterange: 'Date Range',
+      datetimerange: 'Date & Time Range',
+      month: 'Month',
+      monthrange: 'Month Range',
+      year: 'Year',
+      yearrange: 'Year Range',
+      quarter: 'Quarter',
+      quarterrange: 'Quarter Range',
+      week: 'Week',
+    },
     dataTable: {
       rowKey: 'Row key',
       rowKeyPlaceholder: 'e.g. id',

@@ -10,12 +10,14 @@ const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { config, props, bind } = useSchemaAttrs(context)
+// pickerType 是自定义配置键（旧 DSL 数据用 type，兜底兼容），
+// 不用 type 是避免与 FormKit 的 input type 语义冲突（type 是 runtimeProp，不会进 attrs）
+const { config, props, bind } = useSchemaAttrs(context, { omit: ['pickerType'] })
 const { runEvent } = useBindEvents(context, bind)
 
 // type 是 FormKit input 类型（runtimeProp，不进 attrs），据此派生 naive picker 类型
 const pickerType = computed<DatePickerProps['type']>(() => {
-  const configured = config.type
+  const configured = config.pickerType ?? config.type
   if (typeof configured === 'string' && configured.trim())
     return configured as DatePickerProps['type']
   const t = context.type
