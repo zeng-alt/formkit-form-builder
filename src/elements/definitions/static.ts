@@ -38,7 +38,7 @@ export const staticElements: ElementDefinition[] = [
       descriptionKey: 'elements.submit.description',
       labelKey: 'elements.submit.label',
       props: {
-        buttonType: 'warning',
+        buttonType: 'success',
         block: true,
       },
     },
@@ -55,7 +55,7 @@ export const staticElements: ElementDefinition[] = [
       descriptionKey: 'elements.reset.description',
       labelKey: 'elements.reset.label',
       props: {
-        buttonType: 'error',
+        buttonType: 'warning',
         block: true,
       },
     },
