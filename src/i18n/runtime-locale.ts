@@ -37,6 +37,12 @@ export function provideRuntimeLocale(options: {
   availableLocales?: string[]
   localeFallback?: string
 }) {
+  // 复用已注入的运行时代码（BuilderProvider 已提供时，子树内的 FormBuilder /
+  // FormRenderer 直接继承）：否则 Provider 持有的 n-config-provider 与画布语言切换器
+  // 各持一份 locale，naive-ui 组件（Transfer/日期/时间/按钮等）不会跟随切换。
+  const existing = inject<RuntimeLocaleContext | null>(RUNTIME_LOCALE_KEY, null)
+  if (existing) return existing
+
   const { initialLocale, availableLocales = ['zh-CN', 'en'], localeFallback = 'zh-CN' } = options
 
   const locale = ref<RuntimeLocale>(initialLocale)
