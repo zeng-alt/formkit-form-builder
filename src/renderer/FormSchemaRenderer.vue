@@ -23,7 +23,6 @@ import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 import {
   provideFormBuilderState,
   createMinimalFormBuilderState,
-  type FormBuilderState,
 } from '@/state/create-form-builder-state'
 import { runBindCode } from '@/utils/bind-runtime'
 import { provideBinderHttp } from '@/composables/use-bind-http'
@@ -110,28 +109,37 @@ const props = withDefaults(
   },
 )
 
-const builderState = computed<FormBuilderState>(() => {
-  if (props.definition) {
-    return createMinimalFormBuilderState(props.definition)
-  }
-  // 兜底：创建一个默认定义
-  return createMinimalFormBuilderState({
-    version: 2,
-    id: 'default-form',
-    name: 'form',
-    root: {
-      id: 'root',
-      category: 'container',
-      type: 'group',
-      renderAs: 'formkit',
-      dataType: 'object',
-      children: [],
-    },
-    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
-  })
-})
+// 兜底定义：仅以 schema 输入（无 definition）渲染时的表单级元信息
+const FALLBACK_RENDER_DEFINITION: FormDefinition = {
+  version: 2,
+  id: 'default-form',
+  name: 'form',
+  root: {
+    id: 'root',
+    category: 'container',
+    type: 'group',
+    renderAs: 'formkit',
+    dataType: 'object',
+    children: [],
+  },
+  settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+}
 
-provideFormBuilderState(builderState.value)
+// 实例状态：一次性创建，definition 变化时同步 formDefinition 真源。
+// 不能每次 provide 新状态（provide 只捕获 setup 快照），否则后续 definition 编辑
+// 不会反映到 useFormDefinition（字段 bind 的 id / version / name 会读到旧值）。
+const builderState = createMinimalFormBuilderState(
+  props.definition ? props.definition : FALLBACK_RENDER_DEFINITION,
+)
+watch(
+  () => props.definition,
+  (def) => {
+    if (def) builderState.formDefinition.value = def
+  },
+  { immediate: true },
+)
+
+provideFormBuilderState(builderState)
 
 defineSlots<{
   /** 自定义操作区（覆盖默认提交/重置两按钮）。作用域提供 submit / reset / loading */
@@ -678,8 +686,11 @@ const handleSubmit = async (formData: Record<string, unknown>) => {
       submitCode,
       undefined,
       { form: formData },
-      props.definition?.id,
-      props.definition?.version,
+      {
+        id: props.definition?.id,
+        version: props.definition?.version,
+        name: props.definition?.name,
+      },
       undefined,
       props.http ?? config?.http ?? axios,
     )

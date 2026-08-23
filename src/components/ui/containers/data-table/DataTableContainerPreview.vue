@@ -92,7 +92,7 @@ const props = withDefaults(
 )
 
 const { t } = useFormBuilderI18n()
-const { formId, formVersion } = useFormDefinition()
+const { formId, formVersion, formName } = useFormDefinition()
 // 当前表单数据（FormSchemaRenderer 注入的响应式对象；未注入则用空对象）
 const injectedFormData = inject<Ref<Record<string, unknown>> | null>('previewFormData', null)
 const bindAxios = useBinderHttp()
@@ -251,8 +251,7 @@ async function fetchRemote() {
       getDataCode.value,
       undefined,
       { form },
-      formId.value,
-      formVersion.value,
+      { id: formId.value, version: formVersion.value, name: formName.value },
       { page: pageRef.value, pageSize: pageSizeDefault.value, search: { ...searchValues.value } },
       bindAxios,
     )
@@ -402,8 +401,7 @@ async function saveRemoteRow(row: Record<string, unknown>) {
       code,
       undefined,
       { form },
-      formId.value,
-      formVersion.value,
+      { id: formId.value, version: formVersion.value, name: formName.value },
       { row },
       bindAxios,
     )
@@ -431,8 +429,7 @@ async function deleteRow(row: Record<string, unknown>) {
         code,
         undefined,
         { form },
-        formId.value,
-        formVersion.value,
+        { id: formId.value, version: formVersion.value, name: formName.value },
         { row },
         bindAxios,
       )

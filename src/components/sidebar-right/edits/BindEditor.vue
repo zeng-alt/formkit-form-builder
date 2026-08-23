@@ -17,11 +17,10 @@ const allEvents: EventDef[] = [
   {
     key: 'onClick',
     title: 'Click',
-    placeholder: `// 可用参数：event · form 表单数据 · id 表单ID · version 版本 · $value 当前值 · $node 节点 · $name 字段名 · $get(name) 取字段值 · $slots 插槽 · attrs 节点配置 · ctx 全量合并 · axios
+    placeholder: `// 可用参数：event 事件对象 · form 表单数据 · $form 表单元信息{id,version,name} · $value 当前值 · $node 节点 · $name 字段名 · $get(name) 取字段值 · $slots 插槽 · attrs 节点配置 · ctx 全量合并 · axios
 console.log('event', event)
 console.log('form', form)
-console.log('id', id)
-console.log('version', version)
+console.log('$form', $form)
 console.log('$value', $value)
 console.log('$node', $node)
 console.log('$name', $name)
@@ -34,23 +33,38 @@ await axios.get('/api/ping')`,
   {
     key: 'onChange',
     title: 'Change',
-    placeholder: `console.log('change', event)`,
+    placeholder: `console.log('change', event, form, $form)`,
   },
   {
     key: 'onInput',
     title: 'Input',
-    placeholder: `console.log('input', event)`,
+    placeholder: `console.log('input', event, form, $form)`,
   },
   {
     key: 'onFocus',
     title: 'Focus',
-    placeholder: `console.log('focus', event)`,
+    placeholder: `console.log('focus', event, form, $form)`,
   },
   {
     key: 'onBlur',
     title: 'Blur',
-    placeholder: `console.log('blur', event)`,
+    placeholder: `console.log('blur', event, form, $form)`,
   },
+]
+
+// 事件编辑器快捷插入的变量（对应 runBindCode 注入的全局参数）
+const BIND_QUICK_VARS = [
+  'event',
+  'form',
+  '$form',
+  '$value',
+  '$node',
+  '$name',
+  '$get',
+  '$slots',
+  'attrs',
+  'ctx',
+  'axios',
 ]
 
 const { hasField, bindEvents: bindRef, availableFieldNames } = useFormField()
@@ -189,7 +203,12 @@ function save() {
         <div class="text-[11px] text-muted-foreground">
           {{ t('builder.bindHint') }}
         </div>
-        <JsCodeEditor v-model:modelValue="draft" :height="360" :field-names="availableFieldNames" />
+        <JsCodeEditor
+          v-model:modelValue="draft"
+          :height="360"
+          :field-names="availableFieldNames"
+          :quick-vars="BIND_QUICK_VARS"
+        />
         <div class="flex justify-end gap-2">
           <n-button size="small" @click="isOpen = false">{{ t('common.cancel') }}</n-button>
           <n-button size="small" type="primary" @click="save">{{ t('common.save') }}</n-button>

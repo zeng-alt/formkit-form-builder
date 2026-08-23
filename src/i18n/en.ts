@@ -34,8 +34,9 @@ export default {
     bindEvents: 'Events',
     noEvents: 'No events',
     editEvent: 'Edit event',
+    quickInsert: 'Quick insert: ',
     bindHint:
-      'Write JavaScript. Available params: event (event object), form (form data), $value (current value), $node (node), $name (field name), $get(name) (get field value), $slots (slots), attrs (node config), ctx (full context), axios (HTTP).',
+      'Write JavaScript. Available params: event (event object), form (form data), $form (form meta {id, version, name}), $value (current value), $node (node), $name (field name), $get(name) (get field value), $slots (slots), attrs (node config), ctx (full context), axios (HTTP). Click the quick-insert chips above to insert.',
     addListContainer: 'Add list container',
     formDataTitle: 'Form Data:',
     formSubmitted: 'Form submitted!',

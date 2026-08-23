@@ -16,6 +16,8 @@ interface VarInfo {
   type: string
   description: string
   members?: MemberDef[]
+  /** 补全插入 snippet（含 $1..n 占位符），如 $get('$1') */
+  apply?: string
 }
 
 // ---- 运行时变量元数据 ----
@@ -53,13 +55,19 @@ const bindRuntimeVariables: Record<string, VarInfo> = {
     type: 'Record<string, unknown>',
     description: '当前表单数据',
   },
-  id: {
-    type: 'string | undefined',
-    description: '表单定义 id',
-  },
-  version: {
-    type: 'number | undefined',
-    description: '表单定义 version',
+  $form: {
+    type: '{ id?: string; version?: number; name?: string }',
+    description: '表单定义元信息（来自 DSL 顶层字段）',
+    members: [
+      { name: 'id', detail: 'string | undefined', type: 'property', info: '表单定义 id' },
+      {
+        name: 'version',
+        detail: 'number | undefined',
+        type: 'property',
+        info: '表单定义 version',
+      },
+      { name: 'name', detail: 'string | undefined', type: 'property', info: '表单定义 name' },
+    ],
   },
   $value: {
     type: 'unknown',
@@ -84,6 +92,11 @@ const bindRuntimeVariables: Record<string, VarInfo> = {
     type: 'string',
     description: '当前节点的字段名（即 $node.name）',
   },
+  $get: {
+    type: '(name: string) => unknown',
+    description: '按字段名取任意字段的当前值，如 $get("age")',
+    apply: "$get('$1')",
+  },
   $slots: {
     type: 'Record<string, Slot>',
     description: '节点插槽',
@@ -93,7 +106,7 @@ const bindRuntimeVariables: Record<string, VarInfo> = {
     description: '当前节点的全部配置',
   },
   ctx: {
-    type: '{ event, form, attrs, $value, $node, $name, $get, $slots }',
+    type: '{ event, form, attrs, $value, $node, $name, $get, $slots, $form }',
     description: '以上参数的合并上下文对象',
     members: [
       { name: 'event', detail: 'Event', type: 'property', info: '触发事件的事件对象' },
@@ -114,6 +127,12 @@ const bindRuntimeVariables: Record<string, VarInfo> = {
         info: '按字段名取任意字段的当前值',
       },
       { name: '$slots', detail: 'Record<string, Slot>', type: 'property', info: '节点插槽' },
+      {
+        name: '$form',
+        detail: '{ id?: string; version?: number; name?: string }',
+        type: 'property',
+        info: '表单定义元信息',
+      },
     ],
   },
   extra: {
@@ -434,20 +453,10 @@ export const bindRuntimeCompletionsSource: CompletionSource = (context) => {
     if (!name.startsWith(word.text)) continue
     options.push({
       label: name,
-      type: info.members?.length ? 'class' : 'variable',
+      type: info.members?.length ? 'class' : info.apply ? 'function' : 'variable',
       detail: info.type,
       info: () => renderInfoPanel(name, info),
-    })
-  }
-
-  // $get 特殊补全（函数 + snippet）
-  if ('$get'.startsWith(word.text)) {
-    options.push({
-      label: '$get',
-      type: 'function',
-      detail: '(name: string) => unknown',
-      info: '按字段名取任意字段的当前值',
-      apply: "$get('$1')",
+      apply: info.apply,
     })
   }
 

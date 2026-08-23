@@ -20,12 +20,15 @@ import {
   setFormFieldNames,
 } from '@/utils/bind-runtime-completions'
 import { jsLintSource } from '@/utils/bind-runtime-lint'
+import { useFormBuilderI18n } from '@/i18n/context'
 
 const props = defineProps<{
   modelValue: string
   height?: number
   /** 表单字段名列表，用于 form.xxx 智能补全 */
   fieldNames?: string[]
+  /** 内容区上方的快捷插入变量名列表；缺省不显示快捷栏 */
+  quickVars?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -35,6 +38,20 @@ const emit = defineEmits<{
 const hostRef = ref<HTMLElement | null>(null)
 let view: EditorView | null = null
 let suppress = false
+
+const { t } = useFormBuilderI18n()
+const quickVarsLabel = computed(() => t('builder.quickInsert'))
+
+/** 在光标处插入变量名（快捷栏点击） */
+function insertAtCursor(name: string) {
+  if (!view) return
+  const { from, to } = view.state.selection.main
+  view.dispatch({
+    changes: { from, to, insert: name },
+    selection: { anchor: from + name.length },
+  })
+  view.focus()
+}
 
 const colorMode = useColorMode()
 const preferredDark = usePreferredDark()
@@ -133,7 +150,24 @@ watch(
 </script>
 
 <template>
-  <div class="w-full">
+  <div class="w-full space-y-1.5">
+    <div
+      v-if="quickVars && quickVars.length"
+      class="flex flex-wrap items-center gap-1 px-0.5"
+    >
+      <span class="text-[10px] text-muted-foreground mr-0.5 shrink-0">
+        {{ quickVarsLabel }}
+      </span>
+      <button
+        v-for="name in quickVars"
+        :key="name"
+        type="button"
+        class="px-1.5 py-0.5 rounded border border-border/50 bg-muted/40 text-[11px] font-mono text-foreground/80 transition-colors hover:bg-muted hover:text-foreground cursor-pointer select-none"
+        @mousedown.prevent="insertAtCursor(name)"
+      >
+        {{ name }}
+      </button>
+    </div>
     <div ref="hostRef" class="w-full" />
   </div>
 </template>

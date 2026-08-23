@@ -112,7 +112,12 @@ function save() {
       <div class="text-[11px] text-muted-foreground">
         {{ t('builder.bindHint') }}
       </div>
-      <JsCodeEditor v-model:modelValue="draft" :height="360" :field-names="availableFieldNames" />
+      <JsCodeEditor
+        v-model:modelValue="draft"
+        :height="360"
+        :field-names="availableFieldNames"
+        :quick-vars="['form', '$form', 'ctx', 'axios']"
+      />
       <div class="flex justify-end gap-2">
         <n-button size="small" @click="isOpen = false">{{ t('common.cancel') }}</n-button>
         <n-button size="small" type="primary" @click="save">{{ t('common.save') }}</n-button>

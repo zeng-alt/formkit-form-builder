@@ -92,6 +92,7 @@ function saveCode() {
         v-model:modelValue="codeDraft"
         :height="220"
         :field-names="availableFieldNames"
+        :quick-vars="['form', '$form', '$get', 'ctx', 'axios']"
       />
       <div class="flex justify-end gap-2">
         <n-button size="small" @click="codeOpen = false">

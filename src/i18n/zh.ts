@@ -33,8 +33,9 @@ export default {
     bindEvents: '事件',
     noEvents: '暂无事件',
     editEvent: '编辑事件',
+    quickInsert: '快捷插入：',
     bindHint:
-      '编写 JavaScript。可用参数：event（事件对象）、form（表单数据）、$value（当前值）、$node（节点）、$name（字段名）、$get(name)（取字段值）、$slots（插槽）、attrs（节点配置）、ctx（全量）、axios（HTTP 请求）。',
+      '编写 JavaScript。可用参数：event（事件对象）、form（表单数据）、$form（表单元信息 {id,version,name}）、$value（当前值）、$node（节点）、$name（字段名）、$get(name)（取字段值）、$slots（插槽）、attrs（节点配置）、ctx（全量）、axios（HTTP 请求）。点击上方快捷标签即可插入。',
     addListContainer: '添加列表容器',
     formDataTitle: '表单数据：',
     formSubmitted: '表单已提交！',

@@ -6,8 +6,7 @@ import type { SyntaxNode, TreeCursor } from '@lezer/common'
 const BIND_GLOBALS = new Set([
   'event',
   'form',
-  'id',
-  'version',
+  '$form',
   '$value',
   '$node',
   '$name',
