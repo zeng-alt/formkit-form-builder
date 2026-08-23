@@ -7,8 +7,19 @@ import { useFormBuilderI18n } from '../../../i18n/context'
 import ExprEditModal from './common/ExprEditModal.vue'
 
 const { selectedIndex, selectedKey, elementEditTarget } = useFormBuilderState()
-const { availableFields, useExpressionValue, valueExpression, fieldValue } = useFormField()
+const {
+  availableFields,
+  useExpressionValue,
+  valueExpression,
+  fieldValue,
+  fieldName,
+} = useFormField()
 const { t } = useFormBuilderI18n()
+
+// 表达式编辑器不提示字段自身（自引用会死循环）
+const completionFields = computed(() =>
+  availableFields.value.filter((f) => f.name !== fieldName.value),
+)
 
 const isExpression = ref(false)
 const expressionDraft = ref('')
@@ -89,7 +100,7 @@ function handleSave(value: string) {
     <ExprEditModal
       :show="modalOpen"
       :model-value="expressionDraft"
-      :field-names="availableFields"
+      :field-names="completionFields"
       :title="t('expression.useExpressionValue')"
       @update:show="(v) => (modalOpen = v)"
       @save="handleSave"

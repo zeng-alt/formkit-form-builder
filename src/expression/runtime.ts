@@ -49,6 +49,11 @@ export function useExprRun(
     if (!bindings.length) return
 
     const write = (binding: ExprBinding) => {
+      if (binding.compiled.deps.includes(binding.name)) {
+        // 自引用表达式（如 $test + '.com'）会形成死循环，跳过写入
+        console.warn(`[expr-runtime] 字段 "${binding.name}" 的表达式引用了自身，已忽略写入`)
+        return
+      }
       try {
         const result = binding.compiled.evaluate(formData.value)
         const target = resolveNode(binding.name)
