@@ -5,7 +5,7 @@ import { FormKitSchema } from '@formkit/vue'
 import { NEmpty, NTabPane, NTabs } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
-import { EXPR_SCHEMA_HELPERS } from '@/dsl'
+import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[]
@@ -22,6 +22,8 @@ const props = defineProps<{
 const { t } = useFormBuilderI18n()
 
 const schemaLibrary = getPreviewSchemaLibrary()
+// 表单数据 + 表达式 helper：容器内嵌套 FormKitSchema 需要表单数据才能正确求值 visibleIf
+const schemaRenderData = useSchemaRenderData()
 
 const modelValue = computed(() => {
   if (Array.isArray(props.modelValue)) return props.modelValue
@@ -73,7 +75,7 @@ const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false))
             v-if="Array.isArray((child as any)?.children) && (child as any).children.length > 0"
             :schema="Array.isArray((child as any)?.children) ? (child as any).children : []"
             :library="schemaLibrary"
-            :data="EXPR_SCHEMA_HELPERS"
+            :data="schemaRenderData"
           />
           <n-empty v-else :description="t('builder.listDropHere')" />
         </div>

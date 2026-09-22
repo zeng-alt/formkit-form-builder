@@ -11,7 +11,7 @@ import { collectSchemaNames, generateKey, toSafeName } from '@/utils/dnd/schema'
 import { getContainerKind } from '@/utils/schema/containers'
 import { getContainerSpec } from '@/elements/container-spec'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
-import { dslToOutputSchema, dslToSchema, EXPR_SCHEMA_HELPERS } from '@/dsl'
+import { dslToOutputSchema, dslToSchema } from '@/dsl'
 import type { FormDefinition } from '@/types/dsl'
 import type { BuilderTheme } from '@/types/theme'
 import type { FormBuilderConfig } from '@/types/env'
@@ -26,6 +26,7 @@ import {
 } from '@/state/create-form-builder-state'
 import { runBindCode } from '@/utils/bind-runtime'
 import { provideBinderHttp } from '@/composables/use-bind-http'
+import { createSchemaRenderData, PREVIEW_FORM_DATA_KEY } from '@/composables/use-schema-render-data'
 import axios from 'axios'
 import type { AxiosInstance } from 'axios'
 import { useExprRun } from '@/expression/runtime'
@@ -252,37 +253,9 @@ watch(
   { deep: true },
 )
 
-// FormKitSchema 渲染上下文会把内部 slots 写进传入的 data 对象（Object.assign(reactive(data), { slots })），
-// 而这里 data 同时是表单 v-model 的数据源，slots 会因此泄漏进表单值（结构里多出 slots:{}）。
-// 给 FormKitSchema 传一个挡住 slots 写入的代理，阻断泄漏源头。
-//
-// 同一个代理顺带注入 EXPR_SCHEMA_HELPERS（visibleIf 编译出的 $fkb_* 调用在这里解析）：
-// 之所以在 get 里做优先级判断、而不是简单 `{ ...base, ...EXPR_SCHEMA_HELPERS }` 拼一个
-// 新对象，是因为 base 是表单 v-model 的原始响应式对象——拼新对象会丢失字段级响应性
-// （深层字段变化不会让这个 computed 重新求值），直接 Object.assign 进 base 又会把
-// helper 函数写脏进表单输出数据（重蹈上面 slots 泄漏的覆辙）。get 陷阱不改变 base
-// 本身，只在读取时让同名 helper 覆盖字段（字段名不能以 fkb_ 开头，见 NameInput 校验，
-// 所以正常情况下不会有真实字段被挡住）。
-const schemaRenderData = computed<Record<string, unknown>>(() => {
-  const base = data.value as Record<string, unknown>
-  if (!base || typeof base !== 'object') return { ...EXPR_SCHEMA_HELPERS }
-  return new Proxy(base, {
-    get(target, key, receiver) {
-      if (typeof key === 'string' && Object.hasOwn(EXPR_SCHEMA_HELPERS, key)) {
-        return EXPR_SCHEMA_HELPERS[key]
-      }
-      return Reflect.get(target, key, receiver)
-    },
-    set(target, key, value) {
-      if (key === 'slots') return true
-      return Reflect.set(target, key, value)
-    },
-    deleteProperty(target, key) {
-      if (key === 'slots') return true
-      return Reflect.deleteProperty(target, key)
-    },
-  }) as Record<string, unknown>
-})
+// 传给顶层 FormKitSchema 的 data：表单数据 + 表达式 helper（helper 优先），
+// 具体的 Proxy 逻辑（挡 slots 写入 + get 陷阱）见 use-schema-render-data.ts 的注释。
+const schemaRenderData = createSchemaRenderData(data)
 
 // 表单 v-model 回写同样会带 slots（FormKit 节点值内部合并了 __slots），在这里统一剥离
 const onFormModelValueUpdate = (value: ModelValue) => {
@@ -526,8 +499,9 @@ const collectSchemaNamesSafe = (schema: FormKitSchemaFormKit[], names: Set<strin
   })
 }
 
-// 注入当前表单数据（dataTable 远程数据 JS 代码通过 form 读取当前值）
-provide('previewFormData', data)
+// 注入当前表单数据（dataTable 远程数据 JS 代码通过 form 读取当前值；容器组件的
+// 嵌套 FormKitSchema 也用它拼出各自的 schemaRenderData，见 useSchemaRenderData）
+provide(PREVIEW_FORM_DATA_KEY, data)
 
 // 注入 JS 绑定代码用的 HTTP 实例：用户 http prop > config.http > 外层注入 > 内置 axios
 provideBinderHttp(computed(() => props.http ?? config?.http))

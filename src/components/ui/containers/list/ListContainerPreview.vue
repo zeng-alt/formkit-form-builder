@@ -5,7 +5,8 @@ import { FormKit, FormKitSchema } from '@formkit/vue'
 import { NButton, NTooltip, NEmpty } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
-import { getElementTypeDef, EXPR_SCHEMA_HELPERS } from '@/dsl'
+import { getElementTypeDef } from '@/dsl'
+import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 
 const props = defineProps<{
   nodeKey?: string
@@ -26,6 +27,11 @@ const interactive = inject('previewListInteractive', true)
 const { t } = useFormBuilderI18n()
 
 const schemaLibrary = getPreviewSchemaLibrary()
+// 表单数据 + 表达式 helper：list 是数组容器，条目内字段的 visibleIf 按字段名引用
+// 表单数据——默认 dataStructure:'flat' 下字段名平铺在表单数据顶层，传根表单数据是对的；
+// dataStructure:'nested' 时容器子字段会嵌套进 group，这里仍传根级数据取不到同名字段，
+// 是已知限制（不在本次修复范围，见 use-schema-render-data.ts 顶部注释）。
+const schemaRenderData = useSchemaRenderData()
 
 const title = computed(() =>
   typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
@@ -223,7 +229,7 @@ const removeItem = (node: unknown, value: unknown, index: number) => {
               v-if="itemTemplate?.nestedList"
               :schema="nestedItemSchema(itemTemplate.nestedList, index as number)"
               :library="schemaLibrary"
-              :data="EXPR_SCHEMA_HELPERS"
+              :data="schemaRenderData"
             />
             <FormKit
               v-else-if="itemTemplate"
@@ -236,7 +242,7 @@ const removeItem = (node: unknown, value: unknown, index: number) => {
                   <FormKitSchema
                     :schema="itemTemplate.children"
                     :library="schemaLibrary"
-                    :data="EXPR_SCHEMA_HELPERS"
+                    :data="schemaRenderData"
                   />
                 </div>
               </template>

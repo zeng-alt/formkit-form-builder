@@ -5,7 +5,7 @@ import { FormKitSchema } from '@formkit/vue'
 import { NButton, NTooltip, NEmpty } from 'naive-ui'
 import { getColSpan, getRowSpan } from '@/utils/dnd/grid'
 import { toCanvasSchemaNode } from '@/utils/canvas-schema'
-import { EXPR_SCHEMA_HELPERS } from '@/dsl'
+import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
 import { pluralize, validationCount } from '@/utils/text'
 import { useGridSpanResize } from '@/builder/composables/use-grid-span-resize'
@@ -51,6 +51,10 @@ const isDragging = ref(false)
 
 const canvasCtx = useCanvasSchemaContext()
 const schemaLibrary = computed(() => canvasCtx?.library as any)
+// 画布设计态：这里通常注入不到 FormRenderer 的 previewFormData（画布不在 FormRenderer
+// 树下），退化为只有 helper——设计态本来就没有真实表单数据，行为与此前直接传
+// EXPR_SCHEMA_HELPERS 一致，只是改用统一入口，不再是特例
+const schemaRenderData = useSchemaRenderData()
 const renderSchemaNode = (node: unknown) => {
   return (
     canvasCtx?.renderNode ? canvasCtx.renderNode(node) : toCanvasSchemaNode(node as any)
@@ -273,7 +277,7 @@ const resizeHandleClass = computed(() => {
             <FormKitSchema
               :schema="[renderSchemaNode(child)]"
               :library="schemaLibrary"
-              :data="EXPR_SCHEMA_HELPERS"
+              :data="schemaRenderData"
               :key="`container-child-${idx}`"
             />
           </div>

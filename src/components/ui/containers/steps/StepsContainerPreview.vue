@@ -5,7 +5,7 @@ import { FormKitSchema } from '@formkit/vue'
 import { NEmpty, NStep, NSteps } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
-import { EXPR_SCHEMA_HELPERS } from '@/dsl'
+import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[]
@@ -20,6 +20,8 @@ const props = defineProps<{
 const { t } = useFormBuilderI18n()
 
 const schemaLibrary = getPreviewSchemaLibrary()
+// 表单数据 + 表达式 helper：容器内嵌套 FormKitSchema 需要表单数据才能正确求值 visibleIf
+const schemaRenderData = useSchemaRenderData()
 
 const modelValue = computed(() => {
   if (Array.isArray(props.modelValue)) return props.modelValue
@@ -92,7 +94,7 @@ const hasPaneContent = (child: any) =>
             v-if="hasPaneContent(child)"
             :schema="paneChildren(child)"
             :library="schemaLibrary"
-            :data="EXPR_SCHEMA_HELPERS"
+            :data="schemaRenderData"
           />
           <n-empty v-else :description="t('builder.listDropHere')" />
         </div>

@@ -5,7 +5,7 @@ import { FormKitSchema } from '@formkit/vue'
 import { NBadge, NEmpty } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
-import { EXPR_SCHEMA_HELPERS } from '@/dsl'
+import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 import { useBadgeSupPosition } from '@/composables/use-badge-sup-position'
 import { useBadgeValue } from '@/composables/use-badge-value'
 
@@ -28,6 +28,8 @@ const props = defineProps<{
 const { t } = useFormBuilderI18n()
 
 const schemaLibrary = getPreviewSchemaLibrary()
+// 表单数据 + 表达式 helper：容器内嵌套 FormKitSchema 需要表单数据才能正确求值 visibleIf
+const schemaRenderData = useSchemaRenderData()
 
 const title = computed(() =>
   typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
@@ -100,7 +102,7 @@ const badgeOffset = computed(() =>
         :style="badgeStyle"
       >
         <div class="w-full grid grid-cols-12 gap-x-4 gap-y-2">
-          <FormKitSchema :schema="modelValue" :library="schemaLibrary" :data="EXPR_SCHEMA_HELPERS" />
+          <FormKitSchema :schema="modelValue" :library="schemaLibrary" :data="schemaRenderData" />
         </div>
       </n-badge>
 

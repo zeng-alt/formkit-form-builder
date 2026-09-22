@@ -12,6 +12,7 @@ import {
 } from 'naive-ui'
 import { runBindCode } from '@/utils/bind-runtime'
 import { useBinderHttp } from '@/composables/use-bind-http'
+import { PREVIEW_FORM_DATA_KEY } from '@/composables/use-schema-render-data'
 import { useFormDefinition } from '@/composables/form-fields'
 import { useFormBuilderI18n } from '@/i18n/context'
 import {
@@ -94,7 +95,7 @@ const props = withDefaults(
 const { t } = useFormBuilderI18n()
 const { formId, formVersion, formName } = useFormDefinition()
 // 当前表单数据（FormRenderer 注入的响应式对象；未注入则用空对象）
-const injectedFormData = inject<Ref<Record<string, unknown>> | null>('previewFormData', null)
+const injectedFormData = inject<Ref<Record<string, unknown>> | null>(PREVIEW_FORM_DATA_KEY, null)
 const bindAxios = useBinderHttp()
 
 const getDataCode = computed(() => {
