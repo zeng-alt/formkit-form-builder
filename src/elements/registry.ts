@@ -7,7 +7,7 @@ import { defineAsyncComponent } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { getElementTypeDef, getElementTypeDefs, type ElementTypeDef } from '../dsl/registry'
 import { registerBuiltinElementTypes } from '../dsl/definitions'
-import type { SchemaNode } from '../dsl/convert-common'
+import type { SchemaNode } from '../dsl/convert'
 import type { FormNode } from '../types/dsl'
 import type { ElementDefinition, ElementPaletteProp } from './types'
 

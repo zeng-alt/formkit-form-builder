@@ -27,7 +27,7 @@ import {
   type SchemaNode,
   type ChildrenConvertCtx,
   type RenderTarget,
-} from './convert-common'
+} from './convert'
 
 export interface DslToSchemaCtx {
   form?: FormDefinition
@@ -417,7 +417,7 @@ export function staticType(
 }
 
 // tabs/steps 布局的子 pane（非独立布局类型，由容器内部使用）。
-// 共享同一转换器，pane 类型经 __paneType 标记（见 convert-common）区分，避免注册顺序影响。
+// 共享同一转换器，pane 类型经 __paneType 标记（见 dsl/convert/layout.ts）区分，避免注册顺序影响。
 function paneType(type: 'tabsPane' | 'stepsPane'): ElementTypeDef {
   const isSteps = type === 'stepsPane'
   return {

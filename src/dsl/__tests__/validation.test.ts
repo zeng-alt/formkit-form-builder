@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { resolveValidation } from '@/dsl/compile'
-import { parseValidation } from '@/dsl/convert-common'
+import { parseValidation } from '@/dsl/convert'
 import type { ValidationRule } from '@/types/dsl'
 
 function roundTrip(rules: ValidationRule[] | undefined) {

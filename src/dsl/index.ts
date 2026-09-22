@@ -72,5 +72,5 @@ export {
   parseValidation,
   parseOuterClass,
   nodeOuterClass,
-} from './convert-common'
-export type { SchemaNode } from './convert-common'
+} from './convert'
+export type { SchemaNode } from './convert'

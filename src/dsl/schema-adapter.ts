@@ -8,7 +8,7 @@ import { DSL_VERSION } from '../types/dsl'
 import { generateKey } from '../utils/dnd/schema'
 import { getElementTypeDef, getElementTypeDefs } from './registry'
 import { registerBuiltinElementTypes } from './definitions'
-import type { SchemaNode } from './convert-common'
+import type { SchemaNode } from './convert'
 
 registerBuiltinElementTypes()
 

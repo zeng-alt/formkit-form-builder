@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { eventsToBind, bindToEvents } from '@/dsl/events'
-import { fieldNodeToSchema } from '@/dsl/convert-common'
+import { fieldNodeToSchema } from '@/dsl/convert'
 import { normalizeBind } from '@/utils/bind-runtime'
 import { dslToSchema, schemaToDsl, DSL_VERSION } from '@/dsl'
 import type { FieldNode, FormDefinition } from '@/types/dsl'
