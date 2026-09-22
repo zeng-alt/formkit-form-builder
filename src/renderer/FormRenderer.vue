@@ -20,10 +20,7 @@ import { useFormBuilderI18n, provideFormBuilderI18n } from '@/i18n/context'
 import { useFormBuilderConfig, provideFormBuilderConfig } from '@/composables/use-config'
 import { registerElements } from '@/plugin/register-element'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
-import {
-  provideFormBuilderState,
-  createMinimalFormBuilderState,
-} from '@/state/create-form-builder-state'
+import { provideFormDefinition } from '@/composables/use-form-definition'
 import { runBindCode } from '@/utils/bind-runtime'
 import { provideBinderHttp } from '@/composables/use-bind-http'
 import { createSchemaRenderData, PREVIEW_FORM_DATA_KEY } from '@/composables/use-schema-render-data'
@@ -126,21 +123,21 @@ const FALLBACK_RENDER_DEFINITION: FormDefinition = {
   settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
 }
 
-// 实例状态：一次性创建，definition 变化时同步 formDefinition 真源。
-// 不能每次 provide 新状态（provide 只捕获 setup 快照），否则后续 definition 编辑
+// 表单定义窄上下文：一次性 provide 一个稳定的 ref，definition 变化时同步改它的值。
+// 不能每次 provide 新 ref（provide 只捕获 setup 快照），否则后续 definition 编辑
 // 不会反映到 useFormDefinition（字段 bind 的 id / version / name 会读到旧值）。
-const builderState = createMinimalFormBuilderState(
+const renderDefinition = ref<FormDefinition>(
   props.definition ? props.definition : FALLBACK_RENDER_DEFINITION,
 )
 watch(
   () => props.definition,
   (def) => {
-    if (def) builderState.formDefinition.value = def
+    if (def) renderDefinition.value = def
   },
   { immediate: true },
 )
 
-provideFormBuilderState(builderState)
+provideFormDefinition(renderDefinition)
 
 defineSlots<{
   /** 自定义操作区（覆盖默认提交/重置两按钮）。作用域提供 submit / reset / loading */

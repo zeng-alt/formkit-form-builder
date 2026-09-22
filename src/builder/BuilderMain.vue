@@ -14,6 +14,7 @@ import type { FormBuilderConfig } from '../types/env'
 import { provideFormBuilderI18n } from '../i18n/context'
 import { provideRuntimeLocale } from '../i18n/runtime-locale'
 import { provideFormBuilderState } from '@/state/create-form-builder-state'
+import { provideFormDefinition } from '@/composables/use-form-definition'
 import { provideBinderHttp } from '@/composables/use-bind-http'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 import type { FormDefinition } from '@/types/dsl'
@@ -51,6 +52,9 @@ const emit = defineEmits<{
 // ── 实例状态：每个 FormBuilder 独立的 formDefinition / 历史 / 选中 / 画布 ──
 const state = provideFormBuilderState()
 const { formDefinition, setFormDefinition } = state
+// 窄只读上下文：画布内的字段事件绑定 / 数据表格预览等只读消费方，走这条与
+// FormRenderer 共用的接口，不需要拿到完整 FormBuilderState（undo/redo/选中态）。
+provideFormDefinition(formDefinition)
 
 // ── 配置：prop 优先，否则回落注入（BuilderProvider 提供）──
 const injectedCfg = useFormBuilderConfig()

@@ -84,7 +84,8 @@ export interface EventBinding {
 export interface BaseNode {
   /** 稳定唯一 id（前端生成，用于树操作 / 选中 / 绑定） */
   id: string
-  /** 画布 DnD 身份（映射 legacy schema 的 __key；非画布场景可省略） */
+  /** 画布 DnD 身份（映射 legacy schema 的 __key；非画布场景可省略）。
+   *  仅前端使用，交给后端前用 toPortableDefinition() 剥离（见 src/dsl/portable.ts）。 */
   key?: string
   /** 字段名（提交到后端的数据 key）；容器 / 布局 / 静态节点可不填 */
   name?: string

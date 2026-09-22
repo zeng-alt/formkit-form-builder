@@ -4,7 +4,7 @@
 
 A visual FormKit Schema designer based on Vue 3 + FormKit (left sidebar / center canvas / right property panel), supporting drag-and-drop building, validation configuration, preview, and optional AI-powered Schema generation.
 
-Core concept: The designer outputs a **versioned DSL (`FormDefinition`)** rather than raw schema. The `FormRenderer` (internally using `dslToSchema` conversion) renders it into a FormKit form. The DSL is a JSON-safe structure that can be directly deserialized by backends (e.g., Java).
+Core concept: The designer outputs a **versioned DSL (`FormDefinition`)** rather than raw schema. The `FormRenderer` (internally using `dslToSchema` conversion) renders it into a FormKit form. The DSL body is a JSON-safe structure that can be directly deserialized by backends (e.g., Java); `key` (canvas DnD identity) and `meta.rawSchema` (fallback for unregistered types) are frontend-only fields — strip them with `toPortableDefinition` before persisting (see "DSL & Conversion" below).
 
 ## Installation
 
@@ -318,6 +318,21 @@ import type { FormDefinition } from "@zeng-alt/formkit-form-builder";
 const schema = dslToSchema(definition); // For rendering
 const outputSchema = dslToOutputSchema(definition); // Containers as group nesting (backend-model friendly)
 const backToDsl = schemaToDsl(schema);
+```
+
+**Strip frontend-only fields before persisting to the backend**: `BaseNode.key` is
+the canvas DnD identity (maps to the legacy schema's `__key`, used for drag
+reordering / selection), and `meta.rawSchema` is the lossless fallback `schemaToDsl`
+stores for unregistered node types (the original raw schema node, kept only so the
+frontend doesn't fail to render). Both are frontend-only concepts that mean nothing
+to a backend and shouldn't end up in your form-definition storage. Run
+`toPortableDefinition` before saving:
+
+```ts
+import { toPortableDefinition } from "@zeng-alt/formkit-form-builder";
+
+const portable = toPortableDefinition(definition); // deep-clones and strips key / meta.rawSchema recursively
+await saveFormDefinition(portable); // hand this to the backend
 ```
 
 A node's `events: [{ event: "click", handler: "..." }]` is the single source of truth for

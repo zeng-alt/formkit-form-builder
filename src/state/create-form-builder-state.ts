@@ -4,8 +4,6 @@ import { createFormDefinitionState, type FormDefinitionState } from '@/state/for
 import { createSelectionState, type SelectionState } from '@/state/form-schema'
 import { createCanvasUiState, type CanvasUiState } from '@/state/canvas-ui'
 import { createSchemaHistory, type SchemaHistory } from '@/composables/schema-history'
-import { computed, ref } from 'vue'
-import type { FormDefinition } from '@/types/dsl'
 
 /** 单个 FormBuilder 实例的全部状态（表单定义 + 选中 + 画布 UI + 历史漏斗）。 */
 export interface FormBuilderState
@@ -33,37 +31,6 @@ export function createFormBuilderState(): FormBuilderState {
   }
 }
 
-/** 创建最小 FormBuilder 状态（仅含 formDefinition 真源，其余字段为空实现满足类型）。
- *  供 FormRenderer 等只读渲染场景使用，不需要 undo/redo/选中/画布交互。 */
-export function createMinimalFormBuilderState(definition: FormDefinition): FormBuilderState {
-  const def = createFormDefinitionState(definition)
-  const noop = () => {}
-  const noopWithArg = <T>(_arg: T) => {}
-  const falseRef = computed(() => false)
-
-  return {
-    ...def,
-    selectedIndex: ref(0),
-    selectedKey: ref<string | null>(null),
-    selectedTarget: ref<'field' | 'form'>('form'),
-    selectedColumnIndex: ref<number | null>(null),
-    elementEditTarget: ref(null),
-    elementEditCommit: ref(null),
-    canvasView: ref<'desktop' | 'tablet' | 'mobile'>('desktop'),
-    isLoading: ref(false),
-    commitFormDefinition: noopWithArg,
-    commitSchema: noopWithArg,
-    commitSchemaReconcile: noopWithArg,
-    undo: noop,
-    redo: noop,
-    resetHistory: noop,
-    setFormDefinition: noopWithArg,
-    canUndo: falseRef,
-    canRedo: falseRef,
-    instanceId: `renderer-${Date.now()}`,
-  }
-}
-
 export const BUILDER_STATE_KEY: InjectionKey<FormBuilderState> = Symbol('formBuilderState')
 
 /** 为当前组件子树提供 FormBuilder 状态。 */
@@ -74,15 +41,17 @@ export function provideFormBuilderState(
   return state
 }
 
-/** 读取所在 FormBuilder / FormRenderer 实例的状态；子树外调用直接报错（不再回落全局单例）。
- *  多实例场景下，静默写进一个谁也看不见的全局实例比报错更难排查——找不到上下文时
- *  宁可让调用方立刻看到问题，也不要悄悄改错状态。独立使用的组件请改用
- *  useOptionalFormBuilderState()。 */
+/** 读取所在 FormBuilder 实例的完整状态（含 undo/redo/选中/画布交互）；子树外调用
+ *  直接报错（不再回落全局单例）。FormRenderer 子树不提供这份状态——它是只读渲染
+ *  场景，用不到设计器专属的写操作，改读窄得多的 useFormDefinition()（见
+ *  src/composables/use-form-definition.ts）。多实例场景下，静默写进一个谁也看不见
+ *  的全局实例比报错更难排查——找不到上下文时宁可让调用方立刻看到问题，也不要悄悄
+ *  改错状态。独立使用的组件请改用 useOptionalFormBuilderState()。 */
 export function useFormBuilderState(): FormBuilderState {
   const state = inject(BUILDER_STATE_KEY, null)
   if (!state) {
     throw new Error(
-      '[formkit-form-builder] useFormBuilderState() 必须在 FormBuilder / FormRenderer（或 provideFormBuilderState）子树内调用：未找到实例状态。独立使用的组件请改用 useOptionalFormBuilderState()。',
+      '[formkit-form-builder] useFormBuilderState() 必须在 FormBuilder（或 provideFormBuilderState）子树内调用：未找到实例状态。FormRenderer 子树请改用 useFormDefinition()；独立使用的组件请改用 useOptionalFormBuilderState()。',
     )
   }
   return state

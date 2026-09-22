@@ -33,6 +33,8 @@ export {
 } from './schema-adapter'
 export type { SchemaToDslOptions } from './schema-adapter'
 
+export { toPortableDefinition } from './portable'
+
 export {
   registerElementType,
   getElementTypeDef,

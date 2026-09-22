@@ -13,7 +13,7 @@ import {
 import { runBindCode } from '@/utils/bind-runtime'
 import { useBinderHttp } from '@/composables/use-bind-http'
 import { PREVIEW_FORM_DATA_KEY } from '@/composables/use-schema-render-data'
-import { useFormDefinition } from '@/composables/form-fields'
+import { useFormDefinition } from '@/composables/use-form-definition'
 import { useFormBuilderI18n } from '@/i18n/context'
 import {
   columnsFromChildren,

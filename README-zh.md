@@ -4,7 +4,7 @@
 
 基于 Vue 3 + FormKit 的可视化表单 Schema 设计器（左侧物料库 / 中间画布 / 右侧属性面板），支持拖拽搭建、校验配置、预览，以及可选的 AI 生成 Schema。
 
-核心概念：设计器产出的是**版本化 DSL（`FormDefinition`）**而非裸 schema，通过 `FormRenderer`（内部 `dslToSchema` 转换）渲染成 FormKit 表单。DSL 是 JSON-safe 的结构，后端（如 Java）可直接反序列化。
+核心概念：设计器产出的是**版本化 DSL（`FormDefinition`）**而非裸 schema，通过 `FormRenderer`（内部 `dslToSchema` 转换）渲染成 FormKit 表单。DSL 主体是 JSON-safe 的结构，后端（如 Java）可直接反序列化；其中 `key`（画布 DnD 身份）与 `meta.rawSchema`（未注册类型兜底）是前端专用字段，持久化前建议先用 `toPortableDefinition` 剥离（见下文「DSL 与转换」）。
 
 ## 安装
 
@@ -314,6 +314,19 @@ import type { FormDefinition } from "@zeng-alt/formkit-form-builder";
 const schema = dslToSchema(definition); // 渲染用
 const outputSchema = dslToOutputSchema(definition); // 容器转 group 嵌套（后端模型友好）
 const backToDsl = schemaToDsl(schema);
+```
+
+**持久化到后端前剥离前端专用字段**：`BaseNode.key` 是画布 DnD 身份标识（映射旧
+schema 的 `__key`，用于拖拽排序 / 选中定位），`meta.rawSchema` 是 `schemaToDsl`
+对未注册类型节点的无损兜底（原样存了一份原始 schema，只为保证前端渲染不崩）。两者
+都是纯前端概念，对后端没有意义，也不该存进你的表单定义存储。保存前过一遍
+`toPortableDefinition`：
+
+```ts
+import { toPortableDefinition } from "@zeng-alt/formkit-form-builder";
+
+const portable = toPortableDefinition(definition); // 深拷贝并递归剥掉 key / meta.rawSchema
+await saveFormDefinition(portable); // 再交给后端持久化
 ```
 
 节点的 `events: [{ event: "click", handler: "..." }]` 是事件绑定的唯一真源：`handler`

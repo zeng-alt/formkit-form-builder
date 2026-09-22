@@ -68,5 +68,7 @@ export type { FormBuilderPluginOptions } from './plugin/form-builder-plugin'
 
 // DSL 转换工具（含 group 包裹的结构化输出）
 export { dslToSchema, dslToOutputSchema, schemaToDsl } from './dsl'
+// 后端持久化前剥离前端专用字段（key / meta.rawSchema），见 src/dsl/portable.ts
+export { toPortableDefinition } from './dsl'
 // today() 表达式的语言 → 时区映射：宿主可扩展映射表，或手动设置求值语言
 export { setExprLocale, resolveTimeZoneForLocale, LOCALE_TIME_ZONES } from './dsl'
