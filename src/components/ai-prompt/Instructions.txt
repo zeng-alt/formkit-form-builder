@@ -40,7 +40,7 @@ based on the users requirements.
     "id": "text_field",
     "placeholder": "Enter your name",
     "help": "This is help text",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Single line text field"
   },
@@ -52,7 +52,7 @@ based on the users requirements.
     "id": "textarea_field",
     "placeholder": "Enter your address",
     "help": "This is help text",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Multi-line text field"
   },
@@ -64,7 +64,7 @@ based on the users requirements.
     "id": "email_field",
     "placeholder": "Enter your email",
     "help": "This is help text",
-    "validation": "email",
+    "validation": [["email"]],
     "validationVisibility": "live",
     "description": "Email field input"
   },
@@ -77,7 +77,7 @@ based on the users requirements.
     "placeholder": "Enter your age",
     "number": "integer",
     "help": "This is help text",
-    "validation": "number",
+    "validation": [["number"]],
     "validationVisibility": "live",
     "description": "Single number input"
   },
@@ -89,7 +89,7 @@ based on the users requirements.
     "placeholder": "www.example.com",
     "name": "URL",
     "id": "url_field",
-    "validation": "url",
+    "validation": [["url"]],
     "validationVisibility": "live",
     "description": "URL field input"
   },
@@ -101,7 +101,7 @@ based on the users requirements.
     "name": "Checkbox",
     "options": ["One"],
     "id": "checkbox_field",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Multiple choice checkbox"
   },
@@ -113,7 +113,7 @@ based on the users requirements.
     "outerClass": "col-span-2",
     "name": "Color",
     "id": "color_field",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Color picker"
   },
@@ -124,7 +124,7 @@ based on the users requirements.
     "outerClass": "col-span-2",
     "name": "Date",
     "id": "date_field",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Date input picker"
   },
@@ -135,7 +135,7 @@ based on the users requirements.
     "outerClass": "col-span-2",
     "name": "Time",
     "id": "time_field",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Time input picker"
   },
@@ -146,7 +146,7 @@ based on the users requirements.
     "outerClass": "col-span-2",
     "name": "Date-Time",
     "id": "datetime_local_field",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Date and time input"
   },
@@ -157,7 +157,7 @@ based on the users requirements.
     "outerClass": "col-span-2",
     "name": "File Picker",
     "id": "file_field",
-    "validation": "",
+    "validation": [],
     "multiple": false,
     "validationVisibility": "live",
     "description": "One or more file uploads"
@@ -170,7 +170,7 @@ based on the users requirements.
     "help": "This is help text",
     "name": "Password",
     "id": "password_field",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Password masked field"
   },
@@ -182,7 +182,7 @@ based on the users requirements.
     "outerClass": "col-span-2",
     "name": "Radio",
     "id": "radio_field",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Single choice select"
   },
@@ -206,7 +206,7 @@ based on the users requirements.
     "id": "range_field",
     "min": 0,
     "max": 10,
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Slider field input"
   },
@@ -217,7 +217,7 @@ based on the users requirements.
     "outerClass": "col-span-2",
     "name": "Dropdown Select",
     "id": "select_field",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "options": ["one"],
     "description": "Selection dropdown"
@@ -230,7 +230,7 @@ based on the users requirements.
     "outerClass": "col-span-2",
     "name": "Telephone Number",
     "id": "tel_field",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Telephone input field"
   },
@@ -259,7 +259,7 @@ Build me a form with two text inputs, one number input, one text area input, and
     "outerClass": "col-span-2",
     "placeholder": "Enter your name",
     "help": "This is help text",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Single line text field"
     "__key": "12k3l1l1l2KC234321"
@@ -272,7 +272,7 @@ Build me a form with two text inputs, one number input, one text area input, and
     "outerClass": "col-span-2",
     "placeholder": "Enter your name",
     "help": "This is help text",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Single line text field"
         "__key": "FDS231000fmAS"
@@ -286,7 +286,7 @@ Build me a form with two text inputs, one number input, one text area input, and
     "placeholder": "Enter your age",
     "number": "integer",
     "help": "This is help text",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Single number input"
         "__key": "ALOSKW20394kdFDs"
@@ -299,7 +299,7 @@ Build me a form with two text inputs, one number input, one text area input, and
     "outerClass": "col-span-2",
     "placeholder": "Enter your address",
     "help": "This is help text",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Multi-line text field"
     "__key": "DJKQOQ39920323"
@@ -324,7 +324,7 @@ Build me a form with two text inputs, one number input, one text area input, and
     "id": "range_field",
     "min": 0,
     "max": 10,
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Slider field input"
     "__key": "FDJSKLA3233nn22k12j"
@@ -354,7 +354,7 @@ Build me a form with two text inputs next to each other, one text area, and an e
     "outerClass": "col-span-1",
     "placeholder": "Enter your name",
     "help": "This is help text",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Single line text field"
     "__key": "12k3l1l1l2KC234321"
@@ -367,7 +367,7 @@ Build me a form with two text inputs next to each other, one text area, and an e
     "outerClass": "col-span-1",
     "placeholder": "Enter your name",
     "help": "This is help text",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Single line text field"
     "__key": "12k3l1l1l2KC234321"
@@ -380,7 +380,7 @@ Build me a form with two text inputs next to each other, one text area, and an e
     "outerClass": "col-span-2",
     "placeholder": "Enter your address",
     "help": "This is help text",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Multi-line text field"
     "__key": "DJKQOQ39920323"
@@ -393,7 +393,7 @@ Build me a form with two text inputs next to each other, one text area, and an e
     "id": "email_field",
     "placeholder": "Enter your email",
     "help": "This is help text",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Email field input"
   },
@@ -404,7 +404,7 @@ Build me a form with two text inputs next to each other, one text area, and an e
     "outerClass": "col-span-1",
     "name": "Date",
     "id": "date_field",
-    "validation": "",
+    "validation": [],
     "validationVisibility": "live",
     "description": "Date input picker"
   },

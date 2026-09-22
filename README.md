@@ -54,7 +54,9 @@ import type { FormDefinition } from "@zeng-alt/formkit-form-builder";
 
 const definition = ref<FormDefinition>();
 const config = {
-  apiKey: "", // Optional: required for AI panel with OpenAI
+  apiKey: "", // Optional: required for AI panel with OpenAI. Never ship a real key to
+  // the browser in production — point `aiBaseUrl` at your own server-side proxy instead.
+  // See "Security" below.
 };
 </script>
 
@@ -69,7 +71,7 @@ const config = {
 
 ### 3) Render Forms
 
-`FormRenderer` (renamed from `FormSchemaRenderer`) renders `FormDefinition` into a fillable, submittable FormKit form:
+`FormRenderer` renders `FormDefinition` into a fillable, submittable FormKit form:
 
 ```vue
 <script setup lang="ts">
@@ -142,8 +144,7 @@ import {
   BuilderProvider, // Global config provider
   BuilderPreview, // Reusable preview modal component
   FormDefinitionPreview, // Standalone split preview: form left, live data right
-  FormRenderer, // Form rendering component (renamed from FormSchemaRenderer)
-  FormSchemaRenderer, // @deprecated use FormRenderer
+  FormRenderer, // Form rendering component
   FormBuilderPlugin, // One-step plugin
   formkitConfig, // FormKit config factory (accepts custom elements)
   registerElement, // Config-based element extension
@@ -201,7 +202,7 @@ without it there is no form definition to render.
 
 ---
 
-### FormRenderer API (formerly FormSchemaRenderer)
+### FormRenderer API
 
 #### Props
 
@@ -255,8 +256,8 @@ Two ready-made preview components reuse `FormRenderer` internally to fill and te
 
 | Component | Internal renderer | Layout |
 |-----------|-------------------|--------|
-| `BuilderPreview` | `FormSchemaRenderer` | Single form; optional data panel below |
-| `FormDefinitionPreview` | `FormSchemaRenderer` | Split view: form on the left, live form data on the right |
+| `BuilderPreview` | `FormRenderer` | Single form; optional data panel below |
+| `FormDefinitionPreview` | `FormRenderer` | Split view: form on the left, live form data on the right |
 
 Both expose `open` / `close` methods via `defineExpose`, and emit `update:show` + `submit` (`formData, id?, version?`).
 
@@ -324,8 +325,7 @@ event bindings: `handler` is an opaque function-body string executed by the fron
 (with injected params such as `event` / `form` / `$form` / `$value` / `$node` / `$get`); a
 backend like Java only needs to pass it through untouched. Bindable events are
 `click` / `change` / `input` / `focus` / `blur`. `dslToSchema` compiles it to the schema-side
-`__bind: { onClick: handler, ... }`; legacy `props.__bind` from older DSL is migrated to
-`events` automatically on load/edit, no manual handling needed.
+`__bind: { onClick: handler, ... }`.
 
 ### Extending Elements
 
@@ -376,6 +376,34 @@ import { setExprLocale, LOCALE_TIME_ZONES } from "@zeng-alt/formkit-form-builder
 LOCALE_TIME_ZONES["fr"] = "Europe/Paris"; // extend the mapping
 setExprLocale("zh-CN"); // manual override (synced automatically inside FormBuilder/FormRenderer)
 ```
+
+## Security
+
+A `FormDefinition` can carry opaque JS strings in a few places: field/static-node
+`events` (event bindings, e.g. `onClick`), `settings.submit` (custom submit logic),
+and a data-table's `getData` / `createData` / `updateData` / `deleteData` (remote
+data hooks). `FormRenderer` executes these client-side with `new Function`, and the
+executed code can reach the injected `axios` instance — which by default carries
+the page's same-origin credentials (cookies).
+
+What this means: **whoever can edit a form definition can run arbitrary JS in the
+browser of every user who fills that form.** This is a standard trade-off for a
+low-code/no-code platform, not a bug — but if the people who design forms and the
+people who fill them out sit in different trust zones (e.g. an internal ops team
+authors forms that end customers fill in), an unreviewed `FormDefinition` is
+equivalent to stored XSS.
+
+Recommendations:
+
+- When persisting a `FormDefinition` on the backend, apply an allow-list or a
+  signature check to `props.__bind` (event handlers), `settings.submit`, and the
+  data-table `getData`/`createData`/`updateData`/`deleteData` fields before
+  trusting them again.
+- Only expose the designer (`FormBuilder`) to roles you trust to write JS; treat a
+  submitted `FormDefinition` from a lower-trust role as untrusted input.
+- `config.apiKey` is sent straight from the browser to the AI endpoint. Never ship
+  a real key to production; point `config.aiBaseUrl` at your own server-side proxy
+  instead and keep the key there.
 
 ## Examples
 

@@ -4,13 +4,14 @@ import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { FormDefinition, FormSettings } from '../types/dsl'
 import { dslToSchema, schemaToDsl } from '../dsl'
 
-// 默认画布初始节点（带稳定 __key，保证投影 / 选中一致）
+// 默认画布初始节点（带稳定 __key，保证投影 / 选中一致）。不在这里写死 label：
+// 这里没有 i18n（t 函数）可用，硬编码的英文 'Submit' 在中文界面下就是错的；
+// 留空交给 BuilderMain 在拿到 t() 后补上当前语言的文案（见 BuilderMain.vue）。
 const DEFAULT_CHILDREN: FormKitSchemaFormKit[] = [
   {
     $formkit: 'submit',
     type: 'submit',
     name: 'submit_button',
-    label: 'Submit',
     __key: 'submit_default',
   },
 ]

@@ -215,7 +215,9 @@ function defaultFormNode(entry: ElementCatalogEntry): FormNode {
       base.options = props.options
       delete props.options
     }
-    const rules = parseValidation(schema.validation)
+    // schema.validation 是模板作者写的单条规则名（如 'email'，从不带参数），
+    // 包一层数组形态交给 parseValidation 复用同一套修饰符解析逻辑
+    const rules = parseValidation(schema.validation ? [[schema.validation]] : undefined)
     if (rules?.length) base.validation = rules
   } else {
     if (schema.value !== undefined) props.value = schema.value

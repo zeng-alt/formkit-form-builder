@@ -34,7 +34,7 @@ import type { DataTableColumn } from './types'
 // 非 props 属性走 attrs 会触发 Vue 警告，这里显式关闭继承（这些 attrs 本无用途）。
 defineOptions({ inheritAttrs: false })
 
-// 预览组件：运行时（FormSchemaRenderer）以 $cmp: dataTable 渲染。
+// 预览组件：运行时（FormRenderer）以 $cmp: dataTable 渲染。
 // 结构：搜索区（容器 children 字段 → 输入框 + 搜索/重置）+ 内容区（表格，props.columns）。
 // 数据通道：
 //   - 固定数据（默认）：data 本地数组，pagination=true 时前端分页；
@@ -93,7 +93,7 @@ const props = withDefaults(
 
 const { t } = useFormBuilderI18n()
 const { formId, formVersion, formName } = useFormDefinition()
-// 当前表单数据（FormSchemaRenderer 注入的响应式对象；未注入则用空对象）
+// 当前表单数据（FormRenderer 注入的响应式对象；未注入则用空对象）
 const injectedFormData = inject<Ref<Record<string, unknown>> | null>('previewFormData', null)
 const bindAxios = useBinderHttp()
 

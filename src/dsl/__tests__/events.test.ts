@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { eventsToBind, bindToEvents } from '@/dsl/events'
-import { fieldNodeToSchema, fieldNodeFromSchema } from '@/dsl/convert-common'
+import { fieldNodeToSchema } from '@/dsl/convert-common'
 import { normalizeBind } from '@/utils/bind-runtime'
 import { dslToSchema, schemaToDsl, DSL_VERSION } from '@/dsl'
 import type { FieldNode, FormDefinition } from '@/types/dsl'
@@ -132,7 +132,7 @@ describe('events → schema（三种 renderAs 落位）', () => {
   })
 })
 
-describe('schema → DSL：__bind 落位与遗留兼容', () => {
+describe('schema → DSL：__bind 落位', () => {
   it('schema 带 __bind → schemaToDsl 后 events 正确，且 props 里没有 __bind', () => {
     const node: FieldNode = {
       id: 'n4',
@@ -156,17 +156,7 @@ describe('schema → DSL：__bind 落位与遗留兼容', () => {
     expect(field2.props?.__bind).toBeUndefined()
   })
 
-  it('遗留 schema onClick: "($event) => { doIt() }" → events [{event:"click",handler:"doIt()"}]', () => {
-    const legacySchema: any = {
-      $formkit: 'text',
-      name: 'legacy',
-      onClick: '($event) => { doIt() }',
-    }
-    const node = fieldNodeFromSchema(legacySchema, 'text')
-    expect(node.events).toEqual([{ event: 'click', handler: 'doIt()' }])
-  })
-
-  it('遗留 DSL 节点 props.__bind + 新版 events 同时存在 → dslToSchema 合并输出 __bind，props 无 __bind', () => {
+  it('DSL 节点 props.__bind（非真源位置）不再参与合并，不出现在输出 __bind 里', () => {
     const node: FieldNode = {
       id: 'n5',
       category: 'field',
@@ -179,7 +169,7 @@ describe('schema → DSL：__bind 落位与遗留兼容', () => {
     const def = buildFormDef(node)
     const schema = dslToSchema(def)
     const fieldSchema: any = (schema[0] as any).children[0]
-    expect(fieldSchema.props.__bind).toEqual({ onClick: 'c()', onBlur: 'b()' })
+    expect(fieldSchema.props.__bind).toEqual({ onClick: 'c()' })
     expect(Object.keys(fieldSchema.props)).not.toContain('onBlur')
     expect(Object.keys(fieldSchema.props)).not.toContain('onClick')
   })

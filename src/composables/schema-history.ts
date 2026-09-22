@@ -24,40 +24,19 @@ function dslRoot(def: DefSnapshot): FormNode[] {
   return Array.isArray(def?.root?.children) ? def.root.children : []
 }
 
-function migrateExpressionKeys(schema: FormKitSchemaFormKit[]) {
+// 补齐节点 __key：新拖入 / 外部导入的节点可能缺少画布 DnD 身份标识（选中 / 树操作
+// 按 key 定位），这里统一兜底生成。这不是格式迁移——只负责这一件事；旧版本这里还
+// 顺带做过 valueExpression/expr/if → __raw__* 与 bind → __bind 的字段搬迁，但那些
+// 迁移目标要么从无消费者（__raw__valueExpression/__raw__expr 全仓库只有这里写入，
+// 没有任何地方读取），要么只在别处被过滤/丢弃（__raw__ifExpression 同理；bind 迁移
+// 也没有内部生产者，只覆盖极旧的 FormKit 原生 bind 用法）——本库无历史数据兼容负担，
+// 已随之删除，避免在每次 DnD 提交的热路径上做无人消费的搬字段。
+function ensureNodeKeys(schema: FormKitSchemaFormKit[]) {
   const visit = (nodes: any[]) => {
     for (const node of nodes) {
       if (!node || typeof node !== 'object') continue
       if (typeof node.__key !== 'string' || !node.__key) {
         node.__key = generateKey()
-      }
-      if (
-        typeof node.valueExpression === 'string' &&
-        typeof node.__raw__valueExpression !== 'string'
-      ) {
-        node.__raw__valueExpression = node.valueExpression
-      }
-      if (typeof node.expr === 'string' && typeof node.__raw__expr !== 'string') {
-        node.__raw__expr = node.expr
-      }
-      if (typeof node.if === 'string' && typeof node.__raw__ifExpression !== 'string') {
-        node.__raw__ifExpression = node.if
-      }
-      if ('valueExpression' in node) delete node.valueExpression
-      if ('expr' in node) delete node.expr
-      const bind = (node as any).bind
-      if (bind && typeof bind !== 'string') {
-        if (
-          typeof bind === 'object' &&
-          !Array.isArray(bind) &&
-          typeof (node as any).__bind !== 'object'
-        ) {
-          ;(node as any).__bind = bind
-        }
-        delete (node as any).bind
-      } else if (typeof bind === 'string') {
-        if (bind === '$someAttributes') delete (node as any).bind
-        else if (bind.startsWith('$bind_')) delete (node as any).bind
       }
       if (Array.isArray(node.children)) visit(node.children)
     }
@@ -174,7 +153,7 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
     applyDefinition(nextDef)
   }
 
-  // schema 数组提交（DnD / 容器更新 / legacy 导入）：迁移后转 DSL 再走统一漏斗。
+  // schema 数组提交（DnD / 容器更新 / 外部导入）：补齐 key 后转 DSL 再走统一漏斗。
   // name / settings 可选：覆盖表单级设置（如导入带 name / labelAlign 的外部 schema）
   function commitSchema(
     nextSchema: FormKitSchemaFormKit[],
@@ -188,7 +167,7 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
     const working = cloneDef(
       nextSchema as unknown as DefSnapshot,
     ) as unknown as FormKitSchemaFormKit[]
-    migrateExpressionKeys(working)
+    ensureNodeKeys(working)
     const source =
       options?.name || options?.settings
         ? {
@@ -199,7 +178,7 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
     commitFormDefinition(commitSchemaChildren(working, source), options)
   }
 
-  // 画布/DnD 写路径：迁移后按 key 差异调和 DSL 树（仅转换变更节点，未变子树原样复用）
+  // 画布/DnD 写路径：补齐 key 后按 key 差异调和 DSL 树（仅转换变更节点，未变子树原样复用）
   function commitSchemaReconcile(
     nextSchema: FormKitSchemaFormKit[],
     options?: { reason?: string; merge?: boolean },
@@ -207,7 +186,7 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
     const working = cloneDef(
       nextSchema as unknown as DefSnapshot,
     ) as unknown as FormKitSchemaFormKit[]
-    migrateExpressionKeys(working)
+    ensureNodeKeys(working)
     const def = formDefinition.value
     // 以 DSL 真源重新投影作为"旧 schema"基线：formSchema.value 是缓存投影，可能被画布
     // DnD 的共享引用原地改写，导致 reconcile 误判为"无变更"而复用旧 DSL 子树。

@@ -16,7 +16,7 @@
     <n-scrollbar>
       <div class="flex gap-4 p-4">
         <div class="min-w-0 flex-1">
-          <FormSchemaRenderer
+          <FormRenderer
             ref="rendererRef"
             :definition="formDefinition"
             v-model="data"
@@ -49,7 +49,7 @@ import { computed, ref, nextTick } from 'vue'
 import { NModal, NScrollbar } from 'naive-ui'
 import type { FormDefinition } from '@/types/dsl'
 import { useFormBuilderI18n } from '@/i18n/context'
-import FormSchemaRenderer from '@/renderer/FormSchemaRenderer.vue'
+import FormRenderer from '@/renderer/FormRenderer.vue'
 
 const { t } = useFormBuilderI18n()
 
@@ -122,7 +122,7 @@ const handleSubmit = (formData: ModelValue) => {
   if (props.resetOnSubmit) data.value = {}
 }
 
-// ── 校验：转发到内部 FormSchemaRenderer（n-modal 内容随弹窗挂载，等待其就绪）──
+// ── 校验：转发到内部 FormRenderer（n-modal 内容随弹窗挂载，等待其就绪）──
 type RendererExposed = {
   validate: () => Promise<boolean>
 }

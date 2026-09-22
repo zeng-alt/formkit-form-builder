@@ -4,7 +4,6 @@
 // $formkit / $cmp / $el 节点；任何分类都能使用任意一种渲染原语。
 
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { FORM_EVENTS } from '../types/dsl'
 import type {
   FieldNode,
   ContainerNode,
@@ -13,14 +12,12 @@ import type {
   FormNode,
   Expr,
   ValidationRule,
-  EventBinding,
-  FormEvent,
   LayoutType,
   RenderKind,
 } from '../types/dsl'
 import { generateKey } from '../utils/dnd/schema'
 import { exprToJs, resolveValidation, resolveEvents } from './compile'
-import { collectNodeEvents, bindToEvents, eventOfBindKey } from './events'
+import { bindToEvents } from './events'
 import { getContainerSpec, type ContainerSpec } from '../elements/container-spec'
 
 export type SchemaNode = FormKitSchemaFormKit & Record<string, unknown>
@@ -112,9 +109,9 @@ function buildNodeHead(node: FormNode, kind: RenderKind, target?: string): any {
         ? { $el: target ?? node.type }
         : { $formkit: node.type }
   if (node.key) base.__key = node.key
-  if (node.visibleIf) base.if = exprToJs(node.visibleIf, 'var')
-  // events 唯一真源：连同遗留 props.__bind 一并收敛为 schema 侧的 __bind（见 dsl/events.ts）
-  const events = resolveEvents(collectNodeEvents(node))
+  if (node.visibleIf) base.if = exprToJs(node.visibleIf)
+  // events 唯一真源：直接收敛为 schema 侧的 __bind（见 dsl/events.ts）
+  const events = resolveEvents(node.events)
   if (events && Object.keys(events).length) applyByKind(base, events, kind)
   if (node.label) putByKind(base, 'label', node.label, kind)
   if (node.id) putByKind(base, 'id', node.id, kind)
@@ -192,8 +189,7 @@ export function fieldNodeToSchema(node: FieldNode, rt?: RenderTarget): SchemaNod
   if (node.props) {
     const nested: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(node.props)) {
-      // __bind 已由 events 统一产出（见上），遗留 props.__bind 只参与 collectNodeEvents 合并，
-      // 不再原样透传，避免与 events 产出的 __bind 重复/冲突
+      // __bind 已由 events 统一产出（见上），不再从 node.props 原样透传，避免重复/冲突
       if (key === '__bind') continue
       if (kind === 'formkit' && FIELD_TOP_PROPS.has(key)) base[key] = value
       else nested[key] = value
@@ -283,14 +279,14 @@ export function fieldNodeFromSchema(s: SchemaNode, fallbackType = 'text'): Field
   if (typeof anyS.if === 'string' && anyS.if) node.visibleIf = parseExprString(anyS.if)
   else if (typeof anyS.if === 'boolean') node.visibleIf = { type: 'literal', value: anyS.if }
 
-  // events 唯一真源：P.__bind（真源位置）优先，兼容 top（anyS）遗留 __bind / 旧版 onXxx 字符串键
-  const events = parseEvents(P, anyS)
+  // events 唯一真源：P.__bind 是真源位置（formkit 顶层 / cmp、el 节点各自的 props/attrs）
+  const events = bindToEvents(P.__bind)
   if (events?.length) node.events = events
 
   parseOuterClass(anyS.outerClass, node)
 
   const props: Record<string, unknown> = {}
-  // 事件键（onClick 等）已由 parseEvents 消费，不再作为普通配置回流 props（与静态节点一致）。
+  // 事件键（onClick 等）已由上面的 __bind 消费，不再作为普通配置回流 props（与静态节点一致）。
   // nested：从嵌套 props / attrs 收集时，children 是组件的普通配置（如 range 的
   // '$slots.default' slot 转发），只有节点顶层的 children 才是 schema 结构键——
   // 不区分会让往返丢掉这个属性。
@@ -368,7 +364,7 @@ export function containerNodeToSchema(
       if (node.id) schema.id = node.id
       if (node.key) schema.__key = node.key
       if (label) schema.label = label
-      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
+      if (node.visibleIf) schema.if = exprToJs(node.visibleIf)
       if (node.props) Object.assign(schema, node.props)
       if (ch.length) schema.children = ch
       schema.outerClass = nodeOuterClass(node)
@@ -383,7 +379,7 @@ export function containerNodeToSchema(
     if (label) containerProps.label = label
     const schema: any = { $cmp: node.type, props: containerProps }
     if (node.key) schema.__key = node.key
-    if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
+    if (node.visibleIf) schema.if = exprToJs(node.visibleIf)
     // 画布/面板读取顶层 name（key 兜底 / 唯一命名）；组件经 props.name 接收
     if (typeof schema.props?.name === 'string') schema.name = schema.props.name
     schema.children = ch
@@ -535,7 +531,7 @@ export function layoutNodeToSchema(
     }
     if (label) schema.props = { ...schema.props, label }
     if (node.key) schema.__key = node.key
-    if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
+    if (node.visibleIf) schema.if = exprToJs(node.visibleIf)
     // 画布/面板读取顶层 name；组件经 props.name 接收
     if (typeof schema.props?.name === 'string') schema.name = schema.props.name
     schema.children = panes
@@ -549,7 +545,7 @@ export function layoutNodeToSchema(
       const gap = Number((node.props as any)?.gap) || 4
       const schema: any = { $el: 'div', attrs: { class: `grid grid-cols-${columns} gap-${gap}` } }
       if (node.key) schema.__key = node.key
-      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
+      if (node.visibleIf) schema.if = exprToJs(node.visibleIf)
       if (ch.length) schema.children = ch
       schema.outerClass = nodeOuterClass(node)
       return schema as SchemaNode
@@ -557,7 +553,7 @@ export function layoutNodeToSchema(
     case 'row': {
       const schema: any = { $el: 'div', attrs: { class: 'flex flex-row flex-wrap gap-2' } }
       if (node.key) schema.__key = node.key
-      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
+      if (node.visibleIf) schema.if = exprToJs(node.visibleIf)
       if (ch.length) schema.children = ch
       schema.outerClass = nodeOuterClass(node)
       return schema as SchemaNode
@@ -565,7 +561,7 @@ export function layoutNodeToSchema(
     case 'column': {
       const schema: any = { $el: 'div', attrs: { class: 'flex flex-col gap-2' } }
       if (node.key) schema.__key = node.key
-      if (node.visibleIf) schema.if = exprToJs(node.visibleIf, 'var')
+      if (node.visibleIf) schema.if = exprToJs(node.visibleIf)
       if (ch.length) schema.children = ch
       schema.outerClass = nodeOuterClass(node)
       return schema as SchemaNode
@@ -792,7 +788,7 @@ export function staticNodeToSchema(node: StaticNode, rt?: RenderTarget): SchemaN
       if (node.id) set('id', node.id)
       if (node.label) set('label', node.label)
       for (const [key, value] of Object.entries(anyProps)) {
-        // __bind 已由 events 统一产出（见下），遗留 props.__bind 只参与 collectNodeEvents 合并
+        // __bind 已由 events 统一产出（见下），不再从 node.props 原样透传
         if (key === '__bind') continue
         if (kind === 'formkit' && STATIC_TOP_PROPS.has(key)) base[key] = value
         else putByKind(base, key, value, kind)
@@ -802,8 +798,8 @@ export function staticNodeToSchema(node: StaticNode, rt?: RenderTarget): SchemaN
   }
 
   if (node.key) base.__key = node.key
-  if (node.visibleIf) base.if = exprToJs(node.visibleIf, 'var')
-  const events = resolveEvents(collectNodeEvents(node))
+  if (node.visibleIf) base.if = exprToJs(node.visibleIf)
+  const events = resolveEvents(node.events)
   if (events && Object.keys(events).length) applyByKind(base, events, kind)
   if (kind === 'cmp') {
     if (Object.keys(base.props ?? {}).length === 0) delete base.props
@@ -862,8 +858,8 @@ export function staticNodeFromSchema(s: SchemaNode, hintType?: string): StaticNo
     else if (typeof anyS.children === 'number') node.text = String(anyS.children)
   }
 
-  // events 唯一真源：P.__bind（真源位置）优先，兼容 top（anyS）遗留 __bind / 旧版 onXxx 字符串键
-  const events = parseEvents(P, anyS)
+  // events 唯一真源：P.__bind 是真源位置（formkit 顶层 / cmp、el 节点各自的 props/attrs）
+  const events = bindToEvents(P.__bind)
   if (events?.length) node.events = events
 
   parseOuterClass(anyS.outerClass, node)
@@ -969,15 +965,20 @@ export function nodeFromSchemaByCategory(
 
 // ─── 校验 ↔ schema ─────────────────────────────────────────────────────────────
 
+/** validation 数组语法 → ValidationRule[]（resolveValidation 的逆操作）。数组形态下
+ *  参数原样透传（不再需要 split(',') 反解析），只有规则名前缀里的修饰符
+ *  （debounce/empty/force/optional）还是字符串前缀，仍需解析。无需兼容旧的
+ *  pipe 字符串形态（"rule:arg1,arg2|rule2"）——本库没有历史数据负担。 */
 export function parseValidation(
   validation: unknown,
   messages?: unknown,
 ): ValidationRule[] | undefined {
-  if (typeof validation !== 'string' || !validation.trim()) return undefined
+  if (!Array.isArray(validation) || !validation.length) return undefined
   const msgMap: Record<string, string> =
     messages && typeof messages === 'object' ? (messages as Record<string, string>) : {}
-  return validation.split('|').map((seg) => {
-    let rest = seg.trim()
+  return validation.map((entry) => {
+    const [rawName, ...args] = Array.isArray(entry) ? entry : [entry]
+    let rest = typeof rawName === 'string' ? rawName : ''
     const rule: ValidationRule = { rule: '' }
     const debounceMatch = rest.match(/^\((\d+)\)/)
     if (debounceMatch) {
@@ -996,59 +997,16 @@ export function parseValidation(
       rule.optional = true
       rest = rest.slice(1)
     }
-    // 只切首个冒号：规则值可能含冒号（如 matches 正则 /^a:b$/、starts_with:https:）
-    const colonIndex = rest.indexOf(':')
-    const ruleName = colonIndex === -1 ? rest : rest.slice(0, colonIndex)
-    const argStr = colonIndex === -1 ? undefined : rest.slice(colonIndex + 1)
-    rule.rule = ruleName ?? ''
-    if (argStr) {
-      rule.args = argStr.split(',').map((a) => {
-        const t = a.trim()
-        if (/^-?\d+(\.\d+)?$/.test(t)) return Number(t)
-        if (t === 'true') return true
-        if (t === 'false') return false
-        return t
-      })
-    }
+    rule.rule = rest
+    if (args.length) rule.args = args
     if (msgMap[rule.rule]) rule.message = msgMap[rule.rule]
     return rule
   })
 }
 
 // ─── 事件 ↔ schema ─────────────────────────────────────────────────────────────
-// __bind 是 events 唯一真源在 schema 侧的表示；旧版 onXxx: "($event) => {...}" 字符串键
-// 仅作 best-effort 兼容（存量数据 / 外部导入），二者合并去重，同一 event 先到先得：
-// P.__bind（真源位置） > top.__bind（cmp/el 节点 __bind 遗留在顶层） > 旧版 onXxx 字符串键。
-
-export function parseEvents(
-  P: Record<string, unknown>,
-  top?: Record<string, unknown>,
-): EventBinding[] | undefined {
-  const map = new Map<FormEvent, string>()
-  const addAll = (list: EventBinding[] | undefined) => {
-    for (const e of list ?? []) if (!map.has(e.event)) map.set(e.event, e.handler)
-  }
-  addAll(bindToEvents(P.__bind))
-  addAll(bindToEvents(top?.__bind))
-
-  const addLegacyOnKeys = (obj: Record<string, unknown> | undefined) => {
-    if (!obj) return
-    for (const [key, value] of Object.entries(obj)) {
-      if (typeof value !== 'string') continue
-      const event = eventOfBindKey(key)
-      if (!event || map.has(event)) continue
-      let handler = value
-      const wrapper = handler.match(/^\(\$event\)\s*=>\s*\{\s*([\s\S]*?)\s*\}$/)
-      if (wrapper && wrapper[1] !== undefined) handler = wrapper[1]
-      map.set(event, handler)
-    }
-  }
-  addLegacyOnKeys(P)
-  if (top && top !== P) addLegacyOnKeys(top)
-
-  if (!map.size) return undefined
-  return FORM_EVENTS.filter((e) => map.has(e)).map((event) => ({ event, handler: map.get(event)! }))
-}
+// __bind 是 events 唯一真源在 schema 侧的表示（见 dsl/events.ts 的 bindToEvents）；
+// 各 fromSchema 直接调用 bindToEvents(P.__bind)，不再需要本文件单独包一层。
 
 // ─── 旧表达式字符串 → AST（best-effort，失败则 __raw__ 无损兜底）───────────────
 

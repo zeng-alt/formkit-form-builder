@@ -34,7 +34,7 @@ export function createFormBuilderState(): FormBuilderState {
 }
 
 /** 创建最小 FormBuilder 状态（仅含 formDefinition 真源，其余字段为空实现满足类型）。
- *  供 FormSchemaRenderer 等只读渲染场景使用，不需要 undo/redo/选中/画布交互。 */
+ *  供 FormRenderer 等只读渲染场景使用，不需要 undo/redo/选中/画布交互。 */
 export function createMinimalFormBuilderState(definition: FormDefinition): FormBuilderState {
   const def = createFormDefinitionState(definition)
   const noop = () => {}

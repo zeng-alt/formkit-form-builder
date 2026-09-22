@@ -177,6 +177,3 @@ export interface FormDefinition {
   settings: FormSettings
   meta?: Record<string, unknown>
 }
-
-// ─── 向后兼容别名（迁移期）───────────────────────────────────────────────────────
-export type ConditionNode = Expr

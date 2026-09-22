@@ -18,6 +18,65 @@ export interface ExprBinding {
   compiled: CompiledExpr
 }
 
+// ─── 表达式依赖环检测（静态，setup 时跑一次，运行时零开销）─────────────────────
+
+export interface ExprCycleResult {
+  /** 处在某条环上的字段名（含自环） */
+  cyclicNames: Set<string>
+  /** 每条环的完整路径，如 ['a', 'b', 'a'] */
+  cycles: string[][]
+}
+
+/**
+ * 在“被表达式驱动的字段”之间找环：依赖普通输入字段（不在 bindings 里）不构成环，
+ * 只有 A.expr 依赖 B、B.expr 又（直接或间接）依赖回 A 时才算。DFS 三色标记，
+ * 找到的每条回边对应一条环路径；自引用（deps 含自身）是环长度为 1 的特例，
+ * 同一套逻辑自然覆盖，不需要单独判断。
+ */
+export function findExprCycles(bindings: ExprBinding[]): ExprCycleResult {
+  const names = new Set(bindings.map((b) => b.name))
+  const graph = new Map<string, string[]>()
+  for (const b of bindings) {
+    graph.set(
+      b.name,
+      b.compiled.deps.filter((dep) => names.has(dep)),
+    )
+  }
+
+  const cyclicNames = new Set<string>()
+  const cycles: string[][] = []
+  const UNVISITED = 0,
+    IN_STACK = 1,
+    DONE = 2
+  const color = new Map<string, 0 | 1 | 2>()
+  const stack: string[] = []
+
+  const visit = (node: string) => {
+    color.set(node, IN_STACK)
+    stack.push(node)
+    for (const dep of graph.get(node) ?? []) {
+      const depColor = color.get(dep) ?? UNVISITED
+      if (depColor === UNVISITED) {
+        visit(dep)
+      } else if (depColor === IN_STACK) {
+        // dep 已在栈上：从 dep 到当前栈顶再回到 dep，构成一条完整环路径
+        const idx = stack.indexOf(dep)
+        const cyclePath = [...stack.slice(idx), dep]
+        cycles.push(cyclePath)
+        for (const n of stack.slice(idx)) cyclicNames.add(n)
+      }
+    }
+    stack.pop()
+    color.set(node, DONE)
+  }
+
+  for (const name of names) {
+    if ((color.get(name) ?? UNVISITED) === UNVISITED) visit(name)
+  }
+
+  return { cyclicNames, cycles }
+}
+
 /**
  * 扫描 schema 中的 expr 字段，编译表达式，建立 watch。
  * 依赖变化时求值，并把结果写入对应 FormKit 字段节点。
@@ -48,12 +107,19 @@ export function useExprRun(
     const bindings = collectExprBindings(nodes)
     if (!bindings.length) return
 
+    // 静态环检测：两节点环（A 依赖 B、B 依赖 A）、自环（A 依赖自身）都会让
+    // target.input() 互相触发 watch，值不收敛就无限循环。这里在建 watch 前
+    // 一次性找出所有环上的字段，跳过它们的 watch（字段仍可手工输入，只是不
+    // 参与表达式联动），运行时零额外开销。
+    const { cyclicNames, cycles } = findExprCycles(bindings)
+    if (cycles.length) {
+      console.warn(
+        `[expr-runtime] 检测到表达式依赖环，已跳过建立监听（字段仍可手动输入）：\n` +
+          cycles.map((c) => `  ${c.join(' → ')}`).join('\n'),
+      )
+    }
+
     const write = (binding: ExprBinding) => {
-      if (binding.compiled.deps.includes(binding.name)) {
-        // 自引用表达式（如 $test + '.com'）会形成死循环，跳过写入
-        console.warn(`[expr-runtime] 字段 "${binding.name}" 的表达式引用了自身，已忽略写入`)
-        return
-      }
       try {
         const result = binding.compiled.evaluate(formData.value)
         const target = resolveNode(binding.name)
@@ -64,6 +130,7 @@ export function useExprRun(
     }
 
     for (const binding of bindings) {
+      if (cyclicNames.has(binding.name)) continue
       const { compiled } = binding
 
       const stop = watch(

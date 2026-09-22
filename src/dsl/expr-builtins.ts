@@ -26,13 +26,37 @@ const toNum = (v: unknown): number => {
 
 const truthy = (v: unknown) => Boolean(v)
 
-// 与旧解释器对齐的相等语义：两者可数值化则按数值比较，否则字符串比较
+// ─── eq / ne 语义表（Java 侧对齐契约）───────────────────────────────────────────
+// DSL 的卖点是前后端共用同一份函数清单，Java 侧实现同名函数即可对齐——这套语义
+// 必须能在两种语言里各自独立实现出一致的结果，因此不能用 JS 的 == 强制转换
+// （会把 '' / null / true 等各种东西按数值悄悄拉到一起比较，Java 侧几乎没法照抄）。
+// eq(a, b) 按下列 6 条规则依次判定（第一条命中的规则即为最终结果）：
+//   1. 两边都是 null/undefined → true；只有一边是 → false
+//   2. 两边都是 boolean → 严格相等
+//   3. 两边都是 number → 严格相等（NaN 与任何值都不等，包括 NaN 自身）
+//   4. 一边 number、另一边是纯数字字符串（正则 /^-?\d+(\.\d+)?$/，不接受十六进制 /
+//      科学计数法 / 前后空白）→ 按数值比较
+//   5. 两边都是 string → 严格相等
+//   6. 其余组合（含 boolean 对 number、数组 / 对象）→ false
+// ne 是 eq 取反，不单独定义。
+const NUMERIC_STRING = /^-?\d+(\.\d+)?$/
+
 const equal = (a: unknown, b: unknown): boolean => {
-  if ((a === null || a === undefined) && (b === null || b === undefined)) return true
-  const na = toNum(a)
-  const nb = toNum(b)
-  if (Number.isFinite(na) && Number.isFinite(nb)) return na === nb
-  return String(a ?? '') === String(b ?? '')
+  const aNil = a === null || a === undefined
+  const bNil = b === null || b === undefined
+  if (aNil || bNil) return aNil && bNil
+  const aIsBool = typeof a === 'boolean'
+  const bIsBool = typeof b === 'boolean'
+  if (aIsBool || bIsBool) return aIsBool && bIsBool && a === b
+  const aIsNum = typeof a === 'number'
+  const bIsNum = typeof b === 'number'
+  if (aIsNum && bIsNum) return a === b
+  const aIsStr = typeof a === 'string'
+  const bIsStr = typeof b === 'string'
+  if (aIsNum && bIsStr) return NUMERIC_STRING.test(b) && a === Number(b)
+  if (bIsNum && aIsStr) return NUMERIC_STRING.test(a) && Number(a) === b
+  if (aIsStr && bIsStr) return a === b
+  return false
 }
 
 const numBinary =
@@ -76,6 +100,15 @@ export const builtins: Record<string, BuiltinFn> = {
     toJs: ([a]) => `!(${a})`,
     eval: ([a]) => !truthy(a),
   },
+  // toJs 只用于 schema 的 if 可见性条件字符串，由 FormKit 内置的表达式编译器
+  // （@formkit/core 的 compile()：一个只认识 && || === !== == != >= <= > < + - * / %
+  // 和 $token / $fn(args) 调用的手写迷你解析器）在浏览器端解释执行，不是 new
+  // Function/eval——没有函数作用域，不支持 typeof / 正则字面量 / 箭头函数 /
+  // 立即执行函数，所以没法把上面 equal() 的第 4 条规则（数字 ↔ 纯数字字符串）
+  // 内联进生成的 JS，只能退回 JS 原生 ===/!==（该解析器原生支持的操作符）。
+  // 这意味着 if 表达式在这一条规则上与 eval()（供 expr 计算字段 / 后端对齐使用）
+  // 不一致：eq('10', 10) 在 evalExpr 路径为 true，但用在 visibleIf 条件里
+  // （在浏览器里按 === 解释）为 false。这个差异已按任务要求提出，等待决策。
   eq: {
     name: 'eq',
     arity: [2, 2],

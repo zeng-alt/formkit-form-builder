@@ -1,7 +1,7 @@
 // ═══ 容器元素的数据结构规格（单一来源）═══════════════════════════════════════
 // 每个容器元素声明其数据结构（决定 group/list 怎么包一层）、DnD 画布身份键、
 // 以及 schema 输出主键。原先按 kind 分散硬编码的地方（convert-common / canvas /
-// dnd/commit / FormSchemaRenderer / registry）统一读取这里的规格。
+// dnd/commit / FormRenderer / registry）统一读取这里的规格。
 // 本模块是叶子模块（不 import 业务代码），供 dsl 与 elements 双向引用而不产生环。
 
 export type ContainerDataShape = 'object' | 'array' | 'arrayOfObjects' | 'objectOfObjects' | 'none'

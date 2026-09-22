@@ -2,7 +2,7 @@
 // DSL 的 events 是唯一真源；schema 侧的表示统一收敛为 __bind: { onClick: handler }。
 // bindKeyOf / eventOfBindKey 是两者之间的唯一映射，避免各处各自拼 'on' + capitalize。
 
-import { FORM_EVENTS, type EventBinding, type FormEvent, type FormNode } from '../types/dsl'
+import { FORM_EVENTS, type EventBinding, type FormEvent } from '../types/dsl'
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
@@ -57,19 +57,5 @@ export function bindToEvents(bind: unknown): EventBinding[] | undefined {
     if (typeof code === 'string' && code.trim()) map.set(event, code)
   }
   if (!map.size) return undefined
-  return FORM_EVENTS.filter((e) => map.has(e)).map((event) => ({ event, handler: map.get(event)! }))
-}
-
-/**
- * node.events ∪ 遗留 node.props.__bind（编辑器写入位置迁移前的旧数据）。
- * 同一 event 以 node.events 为准；按 FORM_EVENTS 顺序输出，保证 schema 稳定。
- */
-export function collectNodeEvents(node: FormNode): EventBinding[] | undefined {
-  const own = node.events
-  const legacy = bindToEvents((node.props as Record<string, unknown> | undefined)?.__bind)
-  if (!own?.length && !legacy?.length) return undefined
-  const map = new Map<FormEvent, string>()
-  for (const e of legacy ?? []) map.set(e.event, e.handler)
-  for (const e of own ?? []) map.set(e.event, e.handler)
   return FORM_EVENTS.filter((e) => map.has(e)).map((event) => ({ event, handler: map.get(event)! }))
 }

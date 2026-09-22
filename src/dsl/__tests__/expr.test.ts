@@ -197,3 +197,57 @@ describe('today() 时区解析（expr-env）', () => {
     expect(enJs).not.toContain('timeZone')
   })
 })
+
+describe('eq / ne 语义（收紧后的 6 条规则，Java 侧对齐契约）', () => {
+  const eq = (a: unknown, b: unknown) => getBuiltin('eq')!.eval([a, b])
+  const neq = (a: unknown, b: unknown) => getBuiltin('neq')!.eval([a, b])
+
+  it('规则 1：两边都是 null/undefined → true；只有一边是 → false', () => {
+    expect(eq(null, null)).toBe(true)
+    expect(eq(undefined, undefined)).toBe(true)
+    expect(eq(null, undefined)).toBe(true)
+    expect(eq(null, 0)).toBe(false)
+    expect(eq(undefined, '')).toBe(false)
+  })
+
+  it('规则 2：两边都是 boolean → 严格相等；boolean 对 number 一律 false', () => {
+    expect(eq(true, true)).toBe(true)
+    expect(eq(true, false)).toBe(false)
+    expect(eq(true, 1)).toBe(false)
+    expect(eq(false, 0)).toBe(false)
+  })
+
+  it('规则 3：两边都是 number → 严格相等；NaN 与任何值都不等（含自身）', () => {
+    expect(eq(1, 1)).toBe(true)
+    expect(eq(1, 2)).toBe(false)
+    expect(eq(NaN, NaN)).toBe(false)
+    expect(eq(NaN, 0)).toBe(false)
+  })
+
+  it('规则 4：number 对纯数字字符串 → 按数值比较；十六进制/科学计数法/空白串不算纯数字字符串', () => {
+    expect(eq('10', 10)).toBe(true)
+    expect(eq(10, '10')).toBe(true)
+    expect(eq('-3.5', -3.5)).toBe(true)
+    expect(eq('0x10', 16)).toBe(false)
+    expect(eq('1e2', 100)).toBe(false)
+    expect(eq('', 0)).toBe(false)
+    expect(eq(' 10 ', 10)).toBe(false)
+  })
+
+  it('规则 5：两边都是 string → 严格相等', () => {
+    expect(eq('a', 'a')).toBe(true)
+    expect(eq('a', 'b')).toBe(false)
+  })
+
+  it('规则 6：其余组合（数组/对象等）一律 false', () => {
+    expect(eq([1], [1])).toBe(false)
+    expect(eq({ a: 1 }, { a: 1 })).toBe(false)
+    expect(eq([1], 1)).toBe(false)
+  })
+
+  it('neq 是 eq 的取反', () => {
+    expect(neq('10', 10)).toBe(false)
+    expect(neq('', 0)).toBe(true)
+    expect(neq(true, 1)).toBe(true)
+  })
+})

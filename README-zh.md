@@ -54,7 +54,8 @@ import type { FormDefinition } from "@zeng-alt/formkit-form-builder";
 
 const definition = ref<FormDefinition>();
 const config = {
-  apiKey: "", // 可选：AI 面板使用 OpenAI 时需要
+  apiKey: "", // 可选：AI 面板使用 OpenAI 时需要。生产环境不要把真实密钥下发到浏览器，
+  // 应改用 `aiBaseUrl` 指向自建服务端代理，见下方"安全说明"。
 };
 </script>
 
@@ -69,7 +70,7 @@ const config = {
 
 ### 3) 渲染表单
 
-`FormRenderer`（`FormSchemaRenderer` 的现名）渲染 `FormDefinition` 为可填写、可提交的 FormKit 表单：
+`FormRenderer` 渲染 `FormDefinition` 为可填写、可提交的 FormKit 表单：
 
 ```vue
 <script setup lang="ts">
@@ -142,8 +143,7 @@ import {
   BuilderProvider, // 全局配置提供者
   BuilderPreview, // 可复用弹窗预览组件
   FormDefinitionPreview, // 独立分栏预览组件：左侧渲染表单、右侧实时展示数据
-  FormRenderer, // 表单渲染组件（FormSchemaRenderer 的现名）
-  FormSchemaRenderer, // @deprecated 用 FormRenderer
+  FormRenderer, // 表单渲染组件
   FormBuilderPlugin, // 一键接入插件
   formkitConfig, // FormKit 装配工厂（可传扩展元素）
   registerElement, // 配置式扩展元素
@@ -198,7 +198,7 @@ import {
 
 ---
 
-### FormRenderer API (原 FormSchemaRenderer)
+### FormRenderer API
 
 #### Props
 
@@ -252,8 +252,8 @@ import {
 
 | 组件 | 内部渲染器 | 布局 |
 |------|-----------|------|
-| `BuilderPreview` | `FormSchemaRenderer` | 单个表单；可选数据面板在下方 |
-| `FormDefinitionPreview` | `FormSchemaRenderer` | 分栏：左侧表单，右侧实时表单数据 |
+| `BuilderPreview` | `FormRenderer` | 单个表单；可选数据面板在下方 |
+| `FormDefinitionPreview` | `FormRenderer` | 分栏：左侧表单，右侧实时表单数据 |
 
 两者都通过 `defineExpose` 暴露 `open` / `close` 方法，并触发 `update:show` 与 `submit`（`formData, id?, version?`）事件。
 
@@ -320,8 +320,7 @@ const backToDsl = schemaToDsl(schema);
 为不透明的函数体字符串，由前端运行时执行（可访问 `event` / `form` / `$form` / `$value` /
 `$node` / `$get` 等注入参数），Java 等后端只需原样透传。可绑定事件为
 `click` / `change` / `input` / `focus` / `blur`。`dslToSchema` 会把它编译成 schema 侧的
-`__bind: { onClick: handler, ... }`；旧版 DSL 里的 `props.__bind` 在加载 / 编辑时会自动
-迁移到 `events`，无需手动处理。
+`__bind: { onClick: handler, ... }`。
 
 ### 扩展元素
 
@@ -372,6 +371,29 @@ import { setExprLocale, LOCALE_TIME_ZONES } from "@zeng-alt/formkit-form-builder
 LOCALE_TIME_ZONES["fr"] = "Europe/Paris"; // 扩展映射
 setExprLocale("zh-CN"); // 手动设置（FormBuilder/FormRenderer 内会随 locale 自动同步）
 ```
+
+## 安全说明
+
+`FormDefinition` 有几处会携带不透明的 JS 字符串：字段/静态节点的 `events`（事件绑定，
+如 `onClick`）、`settings.submit`（自定义提交逻辑）、数据表格的 `getData` /
+`createData` / `updateData` / `deleteData`（远程数据钩子）。`FormRenderer` 在浏览器端
+用 `new Function` 执行这些代码，代码里可以访问注入的 `axios` 实例——默认携带页面的
+同源凭据（cookie）。
+
+含义：**谁能编辑表单定义，谁就能在所有填表用户的浏览器里执行任意 JS。** 这是低代码/
+无代码平台的常见设计取舍，不是漏洞——但如果设计表单的人和填表的人处于不同的信任域
+（例如运营团队配表单、终端客户来填），一份未经审查的 `FormDefinition` 就等价于存储型
+XSS。
+
+建议：
+
+- 后端持久化 `FormDefinition` 时，对 `props.__bind`（事件绑定）、`settings.submit`、
+  数据表格的 `getData`/`createData`/`updateData`/`deleteData` 字段做白名单或签名校验，
+  再重新信任它们。
+- 只把设计器（`FormBuilder`）开放给你信任其可以写 JS 的角色；对来自低信任角色提交的
+  `FormDefinition`，按不可信输入处理。
+- `config.apiKey` 由浏览器直接发往 AI 端点。生产环境不要下发真实密钥，应改用
+  `config.aiBaseUrl` 指向自建服务端代理，密钥留在服务端。
 
 ## 示例
 

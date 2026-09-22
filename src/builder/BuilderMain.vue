@@ -81,11 +81,35 @@ watch(
   { immediate: true },
 )
 
-provideFormBuilderI18n({
+const { t } = provideFormBuilderI18n({
   locale: computed(() => runtimeLocale.locale.value),
   localeFallback: computed(() => runtimeLocale.localeFallback.value),
   messages: computed(() => cfg?.messages as Record<string, any> | undefined),
 })
+
+// 全新画布（未传 modelValue）时，用当前语言补齐默认提交按钮的文案：state 创建时
+// （上面 provideFormBuilderState()）i18n 上下文还没就绪，画布初始定义里的提交按钮
+// 没法带 label，只能留空；这里语言一就绪就立刻补一次，避免用户看到空文案或
+// 写死的英文——不推历史（这是初始化补全，不是一次用户编辑）。
+if (!props.modelValue) {
+  const initialDef = formDefinition.value
+  const children = initialDef.root.children
+  const submitNode = children.find((n) => n.category === 'static' && n.type === 'submit')
+  if (submitNode && !submitNode.label) {
+    setFormDefinition(
+      {
+        ...initialDef,
+        root: {
+          ...initialDef.root,
+          children: children.map((n) =>
+            n === submitNode ? { ...n, label: t('elements.submit.label') } : n,
+          ),
+        },
+      },
+      { resetHistory: false },
+    )
+  }
+}
 
 // ── v-model 双向同步 ────────────────────────────────────────────────────────
 // syncingFromProps：外部 modelValue 变更（预载 / 父级替换）正在落到内部状态，不回吐。

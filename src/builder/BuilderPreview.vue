@@ -25,7 +25,7 @@
     </template>
     <n-scrollbar style="max-height: 600px">
       <div class="py-4 px-3">
-        <FormSchemaRenderer
+        <FormRenderer
           ref="rendererRef"
           :schema="schemaSnapshot"
           v-model="data"
@@ -60,7 +60,7 @@ import { dslToSchema } from '@/dsl'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useFormBuilderI18n } from '@/i18n/context'
 import type { CanvasView } from '@/state/canvas-ui'
-import FormSchemaRenderer from '@/renderer/FormSchemaRenderer.vue'
+import FormRenderer from '@/renderer/FormRenderer.vue'
 import { useOptionalFormBuilderState } from '@/state/create-form-builder-state'
 
 const { t } = useFormBuilderI18n()
@@ -183,7 +183,7 @@ const close = () => {
   isOpen.value = false
 }
 
-// ── 校验：转发到内部 FormSchemaRenderer（n-modal 内容随弹窗挂载，等待其就绪）──
+// ── 校验：转发到内部 FormRenderer（n-modal 内容随弹窗挂载，等待其就绪）──
 type RendererExposed = {
   validate: () => Promise<boolean>
 }

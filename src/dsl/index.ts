@@ -63,12 +63,12 @@ export {
   LOCALE_TIME_ZONES,
 } from './expr-env'
 export { exprToJs, resolveValidation, resolveEvents } from './compile'
+export type { ValidationEntry, ResolvedValidation } from './compile'
 export { evalExpr } from './eval'
 export type { EvalResult } from './eval'
 export {
   parseExprString,
   parseValidation,
-  parseEvents,
   parseOuterClass,
   nodeOuterClass,
 } from './convert-common'

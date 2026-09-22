@@ -679,13 +679,16 @@ const loading = ref(false)
 // ── 提交：优先执行 settings.submit 自定义逻辑（经 dslToSchema 写入表单节点 props），
 //    再对外触发 submit 事件；异步逻辑期间 loading 置位，驱动操作区按钮 loading 态 ──
 const handleSubmit = async (formData: Record<string, unknown>) => {
-  delete formData.slots
+  // FormKit 传出的是它自己节点树的活值对象，直接 delete 会改写 FormKit 的内部状态；
+  // 浅拷贝一份，对外 emit / 传给 runBindCode 的都用这份拷贝，不碰 FormKit 的原对象。
+  const payload = { ...formData }
+  delete payload.slots
   const submitCode = props.definition?.settings?.submit
   if (typeof submitCode === 'string' && submitCode.trim()) {
     await runBindCode(
       submitCode,
       undefined,
-      { form: formData },
+      { form: payload },
       {
         id: props.definition?.id,
         version: props.definition?.version,
@@ -696,7 +699,7 @@ const handleSubmit = async (formData: Record<string, unknown>) => {
     )
     return
   }
-  emit('submit', formData, props.definition?.id, props.definition?.version)
+  emit('submit', payload, props.definition?.id, props.definition?.version)
 }
 
 defineExpose({ submit, reset, validate, loading })
