@@ -9,6 +9,7 @@ import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
 import { pluralize, validationCount } from '@/utils/text'
 import { useGridSpanResize } from '@/builder/composables/use-grid-span-resize'
+import type { SchemaNode } from '@/utils/schema/types'
 
 const props = defineProps<{
   containerRef: Ref<unknown>
@@ -50,15 +51,17 @@ const props = defineProps<{
 const isDragging = ref(false)
 
 const canvasCtx = useCanvasSchemaContext()
-const schemaLibrary = computed(() => canvasCtx?.library as any)
+const schemaLibrary = computed(() => canvasCtx?.library)
 // 画布设计态：这里通常注入不到 FormRenderer 的 previewFormData（画布不在 FormRenderer
 // 树下），退化为只有 helper——设计态本来就没有真实表单数据，行为与此前直接传
 // EXPR_SCHEMA_HELPERS 一致，只是改用统一入口，不再是特例
 const schemaRenderData = useSchemaRenderData()
-const renderSchemaNode = (node: unknown) => {
-  return (
-    canvasCtx?.renderNode ? canvasCtx.renderNode(node) : toCanvasSchemaNode(node as any)
-  ) as any
+// canvasCtx.renderNode 类型是 (node: unknown) => unknown（画布上下文里可插拔的钩子，
+// 不锁定具体节点形态）；toCanvasSchemaNode 需要 FormKitSchemaFormKit，两个分支的输入/
+// 输出都不完全一致，且最终要喂给 FormKitSchema 的 schema prop（FormKit 自己的大联合
+// 类型），这里保留必要的收尾断言
+const renderSchemaNode = (node: FormKitSchemaFormKit) => {
+  return (canvasCtx?.renderNode ? canvasCtx.renderNode(node) : toCanvasSchemaNode(node)) as any
 }
 
 const tailwindSafelist = [
@@ -164,7 +167,8 @@ const dragEnabled = computed(() => props.dragEnabled !== false)
 const dragHandle = computed(() => props.dragHandle === true)
 
 // 步骤向导节点不提供复制按钮（全局唯一，复制无意义）
-const isStepsItem = (child: any): boolean => child?.$cmp === 'steps' || child?.$formkit === 'steps'
+const isStepsItem = (child: SchemaNode): boolean =>
+  child?.$cmp === 'steps' || child?.$formkit === 'steps'
 
 const baseUlClass = computed(() => {
   if (layout.value === 'row') {
@@ -180,7 +184,7 @@ const emptyPlaceholderClass = computed(
   () => 'absolute inset-0 flex items-center justify-center pointer-events-none',
 )
 
-const itemStyle = (child: any) => {
+const itemStyle = (child: FormKitSchemaFormKit) => {
   if (layout.value === 'row') {
     if (props.autoWidth) return { width: 'auto', flex: '0 0 auto' }
     // 纵向按钮组：column 下 flex-basis 控制的是高度，width:0% 会把宽度压扁，
@@ -191,7 +195,7 @@ const itemStyle = (child: any) => {
     if (props.items.value.length === 1) return { width: '100%', flex: '0 0 auto' }
     // 输入组（row 布局）：按 col-span/12 显示宽度（4 → 33%、6 → 50%）。
     // 仅当历史数据总宽 > 12 时按比例缩放兜底，避免元素溢出容器、右侧按钮被裁掉
-    const spans = props.items.value.map((c: any) => Math.max(2, Math.min(12, getColSpan(c))))
+    const spans = props.items.value.map((c) => Math.max(2, Math.min(12, getColSpan(c))))
     const totalSpan = spans.reduce((a, b) => a + b, 0) || 1
     const span = Math.max(2, Math.min(12, getColSpan(child)))
     const pct = totalSpan > 12 ? (span / totalSpan) * 100 : (span / 12) * 100
@@ -242,8 +246,8 @@ const resizeHandleClass = computed(() => {
            - 离开：即时移除（无 leave 动画） -->
       <li
         v-for="(child, idx) in props.items.value"
-        :key="(child as any)?.__key || child.name || `${child.$formkit}-${idx}`"
-        :data-item-key="(child as any)?.__key || child.name || `${child.$formkit}-${idx}`"
+        :key="child?.__key || child.name || `${child.$formkit}-${idx}`"
+        :data-item-key="child?.__key || child.name || `${child.$formkit}-${idx}`"
         data-canvas-item="true"
         :class="[
           'canvas-item-enter',
@@ -251,7 +255,7 @@ const resizeHandleClass = computed(() => {
           'px-2 py-1 pr-4 h-full !z-20 relative border-[1.5px] min-w-0 box-border',
           dragEnabled ? (dragHandle ? '!cursor-default' : '!cursor-grab') : '!cursor-default',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a277ff] focus-visible:ring-offset-2',
-          (child as any)?.__key && (child as any).__key === props.selectedKey
+          child?.__key && child.__key === props.selectedKey
             ? 'border-solid border-[#a277ff] bg-[#a277ff]/[0.05] shadow-[0_0_0_3px_rgba(79,110,247,0.12)] dark:bg-[#a277ff]/[0.08] canvas-item-select-pop'
             : 'border-dashed border-transparent hover:border-[#7c9ef8] hover:bg-[#f0f4ff] dark:hover:bg-[rgba(100,130,255,0.07)]',
         ]"
@@ -289,11 +293,11 @@ const resizeHandleClass = computed(() => {
           :class="[
             'opacity-0 pointer-events-none',
             'group-hover:opacity-100',
-            (child as any)?.__key === props.selectedKey ? '!opacity-100' : '',
+            child?.__key === props.selectedKey ? '!opacity-100' : '',
           ]"
         >
           <span class="truncate text-[11px] text-muted-foreground">
-            {{ (child as any)?.name || (child as any)?.$formkit || (child as any)?.$cmp }}
+            {{ child?.name || child?.$formkit || child?.$cmp }}
           </span>
         </div>
 
@@ -317,7 +321,7 @@ const resizeHandleClass = computed(() => {
                 'absolute -top-[23px] right-[22px] z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-[#7c9ef8]/25 hover:!text-[#4f6ef7] active:!scale-95 active:!bg-[#7c9ef8]/35 active:!text-[#4f6ef7] dark:!border-border/50 dark:hover:!bg-[#7c9ef8]/30 transition-[transform,background-color,color,opacity] duration-150',
                 'opacity-0 pointer-events-none',
                 'group-hover:opacity-100 group-hover:pointer-events-auto',
-                (child as any)?.__key === props.selectedKey
+                child?.__key === props.selectedKey
                   ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
                   : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
               ]"
@@ -342,7 +346,7 @@ const resizeHandleClass = computed(() => {
             'absolute -top-[23px] right-[22px] z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-[#7c9ef8]/25 hover:!text-[#4f6ef7] active:!scale-95 active:!bg-[#7c9ef8]/35 active:!text-[#4f6ef7] dark:!border-border/50 dark:hover:!bg-[#7c9ef8]/30 transition-[transform,background-color,color,opacity] duration-150',
             'opacity-0 pointer-events-none',
             'group-hover:opacity-100 group-hover:pointer-events-auto',
-            (child as any)?.__key === props.selectedKey
+            child?.__key === props.selectedKey
               ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
               : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
           ]"
@@ -366,7 +370,7 @@ const resizeHandleClass = computed(() => {
                 'absolute -top-[23px] right-0 z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-red-100 hover:!text-red-600 active:!scale-95 active:!bg-red-200 active:!text-red-700 dark:!border-border/50 dark:hover:!bg-red-950/50 dark:hover:!text-red-400 transition-[transform,background-color,color,opacity] duration-150',
                 'opacity-0 pointer-events-none',
                 'group-hover:opacity-100 group-hover:pointer-events-auto',
-                (child as any)?.__key === props.selectedKey
+                child?.__key === props.selectedKey
                   ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
                   : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
               ]"
@@ -391,7 +395,7 @@ const resizeHandleClass = computed(() => {
             'absolute -top-[23px] right-0 z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-red-100 hover:!text-red-600 active:!scale-95 active:!bg-red-200 active:!text-red-700 dark:!border-border/50 dark:hover:!bg-red-950/50 dark:hover:!text-red-400 transition-[transform,background-color,color,opacity] duration-150',
             'opacity-0 pointer-events-none',
             'group-hover:opacity-100 group-hover:pointer-events-auto',
-            (child as any)?.__key === props.selectedKey
+            child?.__key === props.selectedKey
               ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
               : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
           ]"
@@ -403,7 +407,7 @@ const resizeHandleClass = computed(() => {
 
         <div class="absolute bottom-2 right-2 flex flex-row z-40">
           <div
-            v-if="(child as any)?.__key && (child as any).__key === props.selectedKey"
+            v-if="child?.__key && child.__key === props.selectedKey"
             class="px-2 mr-1 border-1 border-ring/40 dark:border-ring/20 rounded-md flex items-center justify-center"
           >
             <span class="text-xs">

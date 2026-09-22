@@ -19,6 +19,9 @@ const text = computed(() => {
   return String(context._value ?? '')
 })
 
+// config 是 context.attrs 的响应式镜像（Record<string, unknown>，见 use-schema-attrs.ts），
+// theme/depth 是用户在属性面板配置的动态值，运行时才知道具体取值；naive-ui NText 的
+// type/depth 是更窄的字面量联合，两边类型来源不同，保留断言
 const theme = computed(() => config.theme as any)
 const depth = computed(() => {
   const raw = config.depth as unknown

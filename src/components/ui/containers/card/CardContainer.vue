@@ -73,7 +73,7 @@ const duplicateChild = (index: number) => {
   const source = dnd.items.value[index]
   if (!source) return
   const names = new Set<string>()
-  collectSchemaNames(formSchema.value as any, names)
+  collectSchemaNames(formSchema.value, names)
   const clone = duplicateNode(source, names)
   const next = [...dnd.items.value]
   next.splice(index + 1, 0, clone)
@@ -83,6 +83,8 @@ const duplicateChild = (index: number) => {
 </script>
 
 <template>
+  <!-- size 同 TabsContainerPreview.vue：本组件自己的 size prop 是宽泛 string，
+       naive-ui NCard 的 size 是更窄的字面量联合，两边类型来源不同，保留断言 -->
   <n-card
     class="w-full"
     :bordered="bordered"

@@ -60,6 +60,9 @@ watch(
 
 const updatePanes = (next: StepsPane[]) => {
   const k = props.stepsKey
+  // StepsPane 同 TabsContainer.vue 的 TabsPane：pane 占位对象，不是判别式 schema 节点
+  // （没有 $formkit/$cmp），canvasCtx.updateContainerChildren 收 FormKitSchemaFormKit[]，
+  // 形状不同但语义兼容，保留断言
   if (k && canvasCtx?.updateContainerChildren) canvasCtx.updateContainerChildren(k, next as any)
   else emit('update:modelValue', next)
 }
@@ -166,8 +169,8 @@ const commitEdit = () => {
   editingIndex.value = null
 }
 
-const onSelectChild = (child: any) => {
-  const key = child?.__key as string | undefined
+const onSelectChild = (child: FormKitSchemaFormKit) => {
+  const key = child?.__key
   if (!key) return
   if (canvasCtx?.selectByKey) canvasCtx.selectByKey(key)
 }
@@ -182,7 +185,7 @@ const duplicateChild = (index: number) => {
   const source = paneDnd.items.value[index]
   if (!source) return
   const names = new Set<string>()
-  collectSchemaNames(formSchema.value as any, names)
+  collectSchemaNames(formSchema.value, names)
   const clone = duplicateNode(source, names)
   const next = [...paneDnd.items.value]
   next.splice(index + 1, 0, clone)

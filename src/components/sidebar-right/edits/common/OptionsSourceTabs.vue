@@ -266,7 +266,7 @@ const switchTab = async (name: string) => {
   if (next !== 'dynamicDict' && next !== 'dynamicTreeDict') {
     const src = parseDynamicSource(raw)
     if (src) {
-      let resolved: DictionaryOption[] | TreeDictionaryOption[] = [] as any
+      let resolved: DictionaryOption[] | TreeDictionaryOption[] = []
       if (active.value === 'dynamicDict') {
         resolved = await resolveDictionary(src)
       } else if (active.value === 'dynamicTreeDict') {

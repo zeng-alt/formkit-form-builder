@@ -93,7 +93,10 @@ export function useExprRun(
   const resolveNode = (name: string) => {
     const form = getFormNode()
     if (!form) return undefined
-    return (form as any).find?.(name) ?? (form as any).at?.(name)
+    // find 是 FormKitNode 公开类型声明的方法；at 是运行时存在但公开类型未声明的
+    // 内部查找方法（按路径/index 查找，find 按 selector 查找，语义不同，一个查不到
+    // 时另一个可能查得到），类型缺失只能保留 as any
+    return form.find?.(name) ?? (form as any).at?.(name)
   }
 
   const setup = () => {

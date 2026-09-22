@@ -36,7 +36,7 @@ function buildWrappedSchema(
         labelPosition: settings.labelAlign === 'left' ? 'left' : 'top',
         labelWidth: settings.labelWidth ?? 80,
       },
-      children: children as any,
+      children,
     },
   ]
 }

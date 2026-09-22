@@ -1,4 +1,5 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
+import { schemaChildren, type SchemaNode } from './types'
 
 // Schema 树通用工具：查找 / 路径定位 / 增删改。
 // 路径中的 -1 表示“进入 children 数组”，normalizePath 会将其过滤。
@@ -6,7 +7,7 @@ import type { FormKitSchemaFormKit } from '@formkit/core'
 export type NodePath = number[]
 
 export type FoundNode = {
-  node: FormKitSchemaFormKit
+  node: SchemaNode
   path: NodePath
   /** 节点所在顶层数组的下标 */
   rootIndex: number
@@ -18,7 +19,7 @@ export function normalizePath(path: NodePath): NodePath {
 
 // 按 __key 深度优先查找节点
 export function findNodeByKey(
-  schema: unknown[],
+  schema: SchemaNode[],
   key: string,
   path: NodePath = [],
   rootIndex = -1,
@@ -28,44 +29,44 @@ export function findNodeByKey(
     if (!node || typeof node !== 'object') continue
     const nextPath = [...path, i]
     const nextRootIndex = rootIndex >= 0 ? rootIndex : i
-    if ((node as any).__key === key)
-      return { node: node as FormKitSchemaFormKit, path: nextPath, rootIndex: nextRootIndex }
-    const children = (node as any)?.children
-    if (Array.isArray(children)) {
-      const found = findNodeByKey(children, key, [...nextPath, -1], nextRootIndex)
-      if (found) return found
-    }
+    if (node.__key === key) return { node, path: nextPath, rootIndex: nextRootIndex }
+    const found = findNodeByKey(schemaChildren(node), key, [...nextPath, -1], nextRootIndex)
+    if (found) return found
   }
   return null
 }
 
 // 按路径读取节点
-export function getNodeAtPath(schema: unknown[], path: NodePath): FormKitSchemaFormKit | undefined {
-  let cur: any = schema
+export function getNodeAtPath(schema: SchemaNode[], path: NodePath): SchemaNode | undefined {
+  let cur: SchemaNode[] | SchemaNode | undefined = schema
   for (const idx of normalizePath(path)) {
-    cur = Array.isArray(cur) ? cur[idx] : cur?.children?.[idx]
+    cur = Array.isArray(cur) ? cur[idx] : schemaChildren(cur)[idx]
   }
-  return cur as FormKitSchemaFormKit | undefined
+  return cur as SchemaNode | undefined
 }
 
 // 定位路径所在父级数组
 export function getParentArrayAtPath(
-  schema: unknown[],
+  schema: SchemaNode[],
   path: NodePath,
-): { parentArr: unknown[]; index: number; parentNode: FormKitSchemaFormKit | null } | null {
+): { parentArr: SchemaNode[]; index: number; parentNode: SchemaNode | null } | null {
   const p = normalizePath(path)
   if (p.length === 0) return null
   if (p.length === 1) return { parentArr: schema, index: p[0]!, parentNode: null }
-  let cursor: any = schema[p[0]!]
+  let cursor: SchemaNode | undefined = schema[p[0]!]
   for (let i = 1; i < p.length - 1; i++) {
-    cursor = cursor?.children?.[p[i]!]
+    cursor = schemaChildren(cursor)[p[i]!]
   }
-  const parentArr = Array.isArray(cursor?.children) ? cursor.children : null
-  return parentArr ? { parentArr, index: p[p.length - 1]!, parentNode: cursor } : null
+  const parentArr = cursor ? schemaChildren(cursor) : []
+  return Array.isArray(cursor?.children) ? { parentArr, index: p[p.length - 1]!, parentNode: cursor ?? null } : null
 }
 
 // 原地替换路径上的节点（返回新数组，不改动原 schema）
-export function updateAtPath(schema: unknown[], path: NodePath, nextNode: unknown): unknown[] {
+export function updateAtPath(
+  schema: SchemaNode[],
+  path: NodePath,
+  nextNode: SchemaNode,
+): SchemaNode[] {
   const p = normalizePath(path)
   if (p.length === 0) return schema
   const nextSchema = [...schema]
@@ -74,18 +75,18 @@ export function updateAtPath(schema: unknown[], path: NodePath, nextNode: unknow
     nextSchema[idx0] = nextNode
     return nextSchema
   }
-  const parent = { ...(nextSchema[idx0] as any) }
-  let cursor: any = parent
+  const parent: SchemaNode = { ...nextSchema[idx0]! }
+  let cursor: SchemaNode = parent
   for (let i = 1; i < p.length - 1; i++) {
     const idx = p[i]!
-    const arr = Array.isArray(cursor.children) ? [...cursor.children] : []
-    const child = { ...(arr[idx] as any) }
+    const arr = schemaChildren(cursor)
+    const child: SchemaNode = { ...arr[idx]! }
     arr[idx] = child
     cursor.children = arr
     cursor = child
   }
   const lastIdx = p[p.length - 1]!
-  const lastArr = Array.isArray(cursor.children) ? [...cursor.children] : []
+  const lastArr = schemaChildren(cursor)
   lastArr[lastIdx] = nextNode
   cursor.children = lastArr
   nextSchema[idx0] = parent
@@ -93,33 +94,36 @@ export function updateAtPath(schema: unknown[], path: NodePath, nextNode: unknow
 }
 
 // 删除路径上的节点
-export function removeAtPath(schema: unknown[], path: NodePath): unknown[] {
+export function removeAtPath(schema: SchemaNode[], path: NodePath): SchemaNode[] {
   const info = getParentArrayAtPath(schema, path)
   if (!info) return schema
   const { parentArr, index, parentNode } = info
-  const nextArr = (parentArr as any[]).filter((_, i) => i !== index)
+  const nextArr = parentArr.filter((_, i) => i !== index)
   if (!parentNode) return nextArr
-  const nextParent = { ...(parentNode as any), children: nextArr }
+  const nextParent: SchemaNode = { ...parentNode, children: nextArr }
   return updateAtPath(schema, path.slice(0, -1), nextParent)
 }
 
 // 在路径节点之后插入
-export function insertAfterAtPath(schema: unknown[], path: NodePath, nextNode: unknown): unknown[] {
+export function insertAfterAtPath(
+  schema: SchemaNode[],
+  path: NodePath,
+  nextNode: SchemaNode,
+): SchemaNode[] {
   const info = getParentArrayAtPath(schema, path)
   if (!info) return schema
   const { parentArr, index, parentNode } = info
-  const nextArr = [...(parentArr as any[])]
+  const nextArr = [...parentArr]
   nextArr.splice(index + 1, 0, nextNode)
   if (!parentNode) return nextArr
-  const nextParent = { ...(parentNode as any), children: nextArr }
+  const nextParent: SchemaNode = { ...parentNode, children: nextArr }
   return updateAtPath(schema, path.slice(0, -1), nextParent)
 }
 
 // 深度遍历每个节点
-export function eachNode(schema: FormKitSchemaFormKit[], fn: (node: any) => void): void {
+export function eachNode(schema: FormKitSchemaFormKit[], fn: (node: SchemaNode) => void): void {
   for (const field of schema) {
     fn(field)
-    const children = (field as any)?.children
-    if (Array.isArray(children)) eachNode(children as FormKitSchemaFormKit[], fn)
+    eachNode(schemaChildren(field), fn)
   }
 }

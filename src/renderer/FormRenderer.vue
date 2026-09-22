@@ -27,6 +27,7 @@ import { createSchemaRenderData, PREVIEW_FORM_DATA_KEY } from '@/composables/use
 import axios from 'axios'
 import type { AxiosInstance } from 'axios'
 import { useExprRun } from '@/expression/runtime'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 type ModelValue = Record<string, unknown>
 
@@ -270,8 +271,8 @@ const schemaLibrary = computed<Record<string, Component>>(() => {
   return getPreviewSchemaLibrary()
 })
 
-const formWrapper = computed<any | null>(() => {
-  const only = internalSchema.value.length === 1 ? (internalSchema.value[0] as any) : null
+const formWrapper = computed<SchemaNode | null>(() => {
+  const only = internalSchema.value.length === 1 ? internalSchema.value[0] : null
   if (!only || typeof only !== 'object') return null
   if (only.$formkit !== 'form') return null
   if (!Array.isArray(only.children)) return null
@@ -331,38 +332,37 @@ const resolvedFormClass = computed(() => {
 const formattedSchema = createFormattedSchema(schemaBody)
 const resolvedSchema = formattedSchema
 
-type Found = { node: FormKitSchemaFormKit; path: number[] } | null
+type Found = { node: SchemaNode; path: number[] } | null
 
-const findSchemaNodeByKey = (schema: any[], key: string, path: number[] = []): Found => {
+const findSchemaNodeByKey = (schema: SchemaNode[], key: string, path: number[] = []): Found => {
   for (let i = 0; i < schema.length; i++) {
     const node = schema[i]
     if (!node || typeof node !== 'object') continue
     const nextPath = [...path, i]
-    if ((node as any).__key === key) return { node, path: nextPath }
-    const children = (node as any)?.children
-    if (Array.isArray(children)) {
-      const found = findSchemaNodeByKey(children, key, [...nextPath, -1])
-      if (found) return found
-    }
+    if (node.__key === key) return { node, path: nextPath }
+    const found = findSchemaNodeByKey(schemaChildren(node), key, [...nextPath, -1])
+    if (found) return found
   }
   return null
 }
 
 const normalizePath = (path: number[]) => path.filter((p) => p !== -1)
 
-const getParentArrayAtPath = (schema: any[], path: number[]) => {
+const getParentArrayAtPath = (schema: SchemaNode[], path: number[]) => {
   const p = normalizePath(path)
   if (p.length === 0) return null
-  if (p.length === 1) return { parentArr: schema, index: p[0]!, parentNode: null as any }
-  let cursor: any = schema[p[0]!]
+  if (p.length === 1) return { parentArr: schema, index: p[0]!, parentNode: null as SchemaNode | null }
+  let cursor: SchemaNode | undefined = schema[p[0]!]
   for (let i = 1; i < p.length - 1; i++) {
-    cursor = cursor?.children?.[p[i]!]
+    cursor = schemaChildren(cursor)[p[i]!]
   }
-  const parentArr = Array.isArray(cursor?.children) ? cursor.children : null
-  return parentArr ? { parentArr, index: p[p.length - 1]!, parentNode: cursor } : null
+  const parentArr = cursor ? schemaChildren(cursor) : []
+  return Array.isArray(cursor?.children)
+    ? { parentArr, index: p[p.length - 1]!, parentNode: cursor ?? null }
+    : null
 }
 
-const updateAtPath = (schema: any[], path: number[], nextNode: any): any[] => {
+const updateAtPath = (schema: SchemaNode[], path: number[], nextNode: SchemaNode): SchemaNode[] => {
   const p = normalizePath(path)
   if (p.length === 0) return schema
   const nextSchema = [...schema]
@@ -371,42 +371,42 @@ const updateAtPath = (schema: any[], path: number[], nextNode: any): any[] => {
     nextSchema[idx0] = nextNode
     return nextSchema
   }
-  const parent = { ...(nextSchema[idx0] as any) }
-  let cursor: any = parent
+  const parent: SchemaNode = { ...nextSchema[idx0]! }
+  let cursor: SchemaNode = parent
   for (let i = 1; i < p.length - 1; i++) {
     const idx = p[i]!
-    const arr = Array.isArray(cursor.children) ? [...cursor.children] : []
-    const child = { ...(arr[idx] as any) }
+    const arr = schemaChildren(cursor)
+    const child: SchemaNode = { ...arr[idx]! }
     arr[idx] = child
     cursor.children = arr
     cursor = child
   }
   const lastIdx = p[p.length - 1]!
-  const lastArr = Array.isArray(cursor.children) ? [...cursor.children] : []
+  const lastArr = schemaChildren(cursor)
   lastArr[lastIdx] = nextNode
   cursor.children = lastArr
   nextSchema[idx0] = parent
   return nextSchema
 }
 
-const removeAtPath = (schema: any[], path: number[]) => {
+const removeAtPath = (schema: SchemaNode[], path: number[]) => {
   const info = getParentArrayAtPath(schema, path)
   if (!info) return schema
   const { parentArr, index, parentNode } = info
-  const nextArr = parentArr.filter((_: any, i: number) => i !== index)
+  const nextArr = parentArr.filter((_, i) => i !== index)
   if (!parentNode) return nextArr
-  const nextParent = { ...(parentNode as any), children: nextArr }
+  const nextParent: SchemaNode = { ...parentNode, children: nextArr }
   return updateAtPath(schema, path.slice(0, -1), nextParent)
 }
 
-const insertAfterAtPath = (schema: any[], path: number[], nextNode: any) => {
+const insertAfterAtPath = (schema: SchemaNode[], path: number[], nextNode: SchemaNode) => {
   const info = getParentArrayAtPath(schema, path)
   if (!info) return schema
   const { parentArr, index, parentNode } = info
   const nextArr = [...parentArr]
   nextArr.splice(index + 1, 0, nextNode)
   if (!parentNode) return nextArr
-  const nextParent = { ...(parentNode as any), children: nextArr }
+  const nextParent: SchemaNode = { ...parentNode, children: nextArr }
   return updateAtPath(schema, path.slice(0, -1), nextParent)
 }
 
@@ -416,28 +416,30 @@ const canonicalBaseName = (value: unknown) => {
   return match?.[1] || safe
 }
 
-const isStructureNode = (node: any) => {
+const isStructureNode = (node: SchemaNode) => {
   const kind = getContainerKind(node)
   if (kind) return true
   return ['group'].includes(String(node?.$formkit ?? ''))
 }
 
-const collectLeafBases = (node: any, bases: Set<string>) => {
+const collectLeafBases = (node: SchemaNode, bases: Set<string>) => {
   if (!node || typeof node !== 'object') return
   if (!isStructureNode(node) && node.$formkit !== 'submit') {
     const rawName = node.name || node.$formkit || node.$cmp || 'field'
     const base = canonicalBaseName(rawName)
     if (base) bases.add(base)
   }
-  if (Array.isArray(node.children)) {
-    for (const c of node.children) collectLeafBases(c, bases)
-  }
+  for (const c of schemaChildren(node)) collectLeafBases(c, bases)
 }
 
-const cloneNodeWithFreshIdentity = (node: any, existingNames: Set<string>, listSuffix: number) => {
+const cloneNodeWithFreshIdentity = (
+  node: SchemaNode,
+  existingNames: Set<string>,
+  listSuffix: number,
+): SchemaNode => {
   if (!node || typeof node !== 'object') return node
   const nextKey = generateKey()
-  const next: any = { ...node, __key: nextKey }
+  const next: SchemaNode = { ...node, __key: nextKey }
   const kind = getContainerKind(node)
   if (node.$formkit !== 'submit') {
     if (!isStructureNode(node)) {
@@ -456,7 +458,7 @@ const cloneNodeWithFreshIdentity = (node: any, existingNames: Set<string>, listS
     next.id = `field_${nextKey}`
   }
   if (Array.isArray(node.children)) {
-    next.children = node.children.map((c: any) =>
+    next.children = schemaChildren(node).map((c) =>
       cloneNodeWithFreshIdentity(c, existingNames, listSuffix),
     )
   }
@@ -479,11 +481,10 @@ const cloneNodeWithFreshIdentity = (node: any, existingNames: Set<string>, listS
   return next
 }
 
-const eachField = (schema: FormKitSchemaFormKit[], fn: (field: any) => void) => {
+const eachField = (schema: FormKitSchemaFormKit[], fn: (field: SchemaNode) => void) => {
   for (const field of schema) {
     fn(field)
-    const children = (field as any)?.children
-    if (Array.isArray(children)) eachField(children as FormKitSchemaFormKit[], fn)
+    eachField(schemaChildren(field), fn)
   }
 }
 
@@ -507,12 +508,12 @@ provide('previewListInteractive', props.interactiveContainers)
 
 provide('previewListDuplicate', (key: string) => {
   if (!props.interactiveContainers) return
-  const found = findSchemaNodeByKey(internalSchema.value as any[], key)
+  const found = findSchemaNodeByKey(internalSchema.value, key)
   if (!found) return
   const existingNames = new Set<string>()
-  collectSchemaNamesSafe(internalSchema.value as any, existingNames)
+  collectSchemaNamesSafe(internalSchema.value, existingNames)
   const bases = new Set<string>()
-  collectLeafBases(found.node as any, bases)
+  collectLeafBases(found.node, bases)
   let nextSuffix = (listItemSeq.value[key] ?? 0) + 1
   const isFree = (suffix: number) => {
     for (const base of bases) {
@@ -523,82 +524,79 @@ provide('previewListDuplicate', (key: string) => {
   }
   while (!isFree(nextSuffix)) nextSuffix++
   listItemSeq.value = { ...listItemSeq.value, [key]: nextSuffix }
-  const cloned = cloneNodeWithFreshIdentity(safeClone(found.node as any), existingNames, nextSuffix)
-  internalSchema.value = insertAfterAtPath(internalSchema.value as any[], found.path, cloned) as any
+  const cloned = cloneNodeWithFreshIdentity(safeClone(found.node), existingNames, nextSuffix)
+  internalSchema.value = insertAfterAtPath(internalSchema.value, found.path, cloned)
 })
 
 provide('previewListIsLast', (key: string) => {
   if (!props.interactiveContainers) return true
-  const found = findSchemaNodeByKey(internalSchema.value as any[], key)
+  const found = findSchemaNodeByKey(internalSchema.value, key)
   if (!found) return true
-  const info = getParentArrayAtPath(internalSchema.value as any[], found.path)
+  const info = getParentArrayAtPath(internalSchema.value, found.path)
   if (!info) return true
   const { parentArr } = info
   const last = [...parentArr]
     .reverse()
-    .find((n: any) => getContainerKind(n) === 'list' && (n as any)?.__preview_placeholder !== true)
+    .find((n) => getContainerKind(n) === 'list' && n?.__preview_placeholder !== true)
   if (!last) return true
-  return (last as any).__key === key
+  return last.__key === key
 })
 
 provide('previewListRemove', (key: string) => {
   if (!props.interactiveContainers) return
-  const found = findSchemaNodeByKey(internalSchema.value as any[], key)
+  const found = findSchemaNodeByKey(internalSchema.value, key)
   if (!found) return
   const hasOtherList = (() => {
-    const walk = (nodes: any[]): boolean => {
+    const walk = (nodes: SchemaNode[]): boolean => {
       for (const node of nodes) {
         if (!node || typeof node !== 'object') continue
         if (
           getContainerKind(node) === 'list' &&
           node.__key !== key &&
-          (node as any).__preview_placeholder !== true
+          node.__preview_placeholder !== true
         )
           return true
-        const children = (node as any)?.children
-        if (Array.isArray(children) && walk(children)) return true
+        if (walk(schemaChildren(node))) return true
       }
       return false
     }
-    return walk(internalSchema.value as any[])
+    return walk(internalSchema.value)
   })()
 
   if (!hasOtherList) {
-    const current: any = found.node as any
-    const nextNode: any = { ...current, __preview_placeholder: true }
-    internalSchema.value = updateAtPath(internalSchema.value as any[], found.path, nextNode) as any
+    const nextNode: SchemaNode = { ...found.node, __preview_placeholder: true }
+    internalSchema.value = updateAtPath(internalSchema.value, found.path, nextNode)
     return
   }
 
-  internalSchema.value = removeAtPath(internalSchema.value as any[], found.path) as any
+  internalSchema.value = removeAtPath(internalSchema.value, found.path)
 })
 
 provide('previewListRestore', (key: string) => {
   if (!props.interactiveContainers) return
-  const found = findSchemaNodeByKey(internalSchema.value as any[], key)
+  const found = findSchemaNodeByKey(internalSchema.value, key)
   if (!found) return
-  const current: any = found.node as any
+  const current = found.node
   const { __preview_placeholder, ...rest } = current
-  const nextNode: any = {
+  const nextNode: SchemaNode = {
     ...rest,
     children: Array.isArray(current.children) ? current.children : [],
   }
-  internalSchema.value = updateAtPath(internalSchema.value as any[], found.path, nextNode) as any
+  internalSchema.value = updateAtPath(internalSchema.value, found.path, nextNode)
 })
 
 // ── 操作区：submit / reset 经 FormKit 组件实例（expose 了 node）触发 ──
+// FormKit 组件实例 expose 的是完整 FormKitNode（submit/reset 只是 formNode 用到的子集，
+// 下面的 input 订阅还要用到 value/on/off，按完整类型声明，两处共用同一个 ref）
 type FormKitInstance = {
-  node?: {
-    submit?: () => void
-    reset?: () => void
-  }
+  node?: FormKitNode
 }
 
 const formKitRef = ref<FormKitInstance | null>(null)
 
 // 订阅 FormKit form node 的 input 事件获取实时字段值，含表达式字段
 watch(
-  () => (formKitRef.value as any)?.node,
+  () => formKitRef.value?.node,
   (node, _prev, onCleanup) => {
     if (!node) return
     const sync = () => {
@@ -620,19 +618,20 @@ watch(
       }
       if (changed) data.value = next
     }
-    node.on('input', sync)
-    onCleanup(() => node.off('input', sync))
+    // node.off 只接受 on() 返回的 receipt（运行时实现是 off(node, ctx, receipt) →
+    // _e.off(receipt)，多余参数会被直接丢弃）。此前写成 off('input', sync)，receipt
+    // 匹配不到任何订阅，监听器实际从未被移除——表单节点每次重建都会再挂一个，旧的
+    // 继续跟着老 node 跑。这里改为保存 receipt 再注销。
+    const receipt = node.on('input', sync)
+    onCleanup(() => node.off(receipt))
   },
   { immediate: true },
 )
 
-const formNode = computed(() => {
-  const inst = formKitRef.value as { node?: { submit?: () => void; reset?: () => void } } | null
-  return inst?.node ?? null
-})
+const formNode = computed(() => formKitRef.value?.node ?? null)
 
 // 表达式运行时：扫描 schema 中带 expr 的字段，依赖变化时求值并写入 FormKit node
-useExprRun(data, resolvedSchema, () => formNode.value as any)
+useExprRun(data, resolvedSchema, () => formNode.value)
 
 /** 提交表单（未填必填校验时不触发 submit 事件） */
 const submit = () => formNode.value?.submit?.()
@@ -644,7 +643,7 @@ const reset = () => formNode.value?.reset?.()
  * 对齐 FormKit 提交流程（标记 submitted + 等待 settle / 异步校验），但不触发 submit 事件。
  */
 const validate = async (): Promise<boolean> => {
-  const node = formNode.value as FormKitNode | null
+  const node = formNode.value
   if (!node) return true
   // 标记 submitted，使校验消息对用户可见（FormKit 提交流程同款行为）
   const setSubmitted = (n: FormKitNode) => {

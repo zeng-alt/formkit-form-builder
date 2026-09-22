@@ -19,6 +19,8 @@ const text = computed(() => {
   return String(context._value ?? '')
 })
 
+// 同 NaiveTypographyText.vue：config 是用户动态配置值（Record<string, unknown>），
+// naive-ui NP 的 type/depth 是更窄的字面量联合，保留断言
 const theme = computed(() => config.theme as any)
 const depth = computed(() => {
   const raw = config.depth as unknown

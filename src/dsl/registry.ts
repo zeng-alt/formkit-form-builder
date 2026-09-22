@@ -142,7 +142,7 @@ export function registerLegacyCmpAliases(aliases: Record<string, string>): void 
 
 /** schema 节点的 legacy $cmp 名 → 统一后的 type */
 function legacyCmpTypeOf(s: SchemaNode): string | undefined {
-  const cmp = (s as any)?.$cmp
+  const cmp = s?.$cmp
   if (typeof cmp !== 'string') return undefined
   return LEGACY_CMP_TYPE[cmp]
 }
@@ -187,8 +187,7 @@ export function elementTypeFromSchema(entry: ElementCatalogEntry): ElementTypeDe
     // 兼容 $formkit === type 与 legacy $cmp 名（如 NaiveTextInput → text）
     match:
       schema.match ??
-      ((s) =>
-        matchSchemaKind(s, rt) || (s as any).$formkit === type || legacyCmpTypeOf(s) === type),
+      ((s) => matchSchemaKind(s, rt) || s.$formkit === type || legacyCmpTypeOf(s) === type),
     fromSchema: schema.fromSchema ?? ((s, ctx) => nodeFromSchemaByCategory(s, category, ctx, type)),
   }
 }
@@ -307,7 +306,7 @@ export function containerType(
       children: [],
     }),
     toSchema: (node, ctx) => nodeToSchemaByCategory(node, 'container', rt, ctx),
-    match: (s) => matchSchemaKind(s, rt) || (s as any).$cmp === type,
+    match: (s) => matchSchemaKind(s, rt) || s.$cmp === type,
     fromSchema: (s, ctx) => nodeFromSchemaByCategory(s, 'container', ctx, type),
     ...extra,
   }

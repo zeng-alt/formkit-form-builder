@@ -6,6 +6,7 @@ import { fieldNodeToSchema } from '@/dsl/convert'
 import { normalizeBind } from '@/utils/bind-runtime'
 import { dslToSchema, schemaToDsl, DSL_VERSION } from '@/dsl'
 import type { FieldNode, FormDefinition } from '@/types/dsl'
+import { schemaChildren } from '@/utils/schema/types'
 
 describe('eventsToBind / bindToEvents', () => {
   it('双向转换：events → __bind → events（按 FORM_EVENTS 顺序输出）', () => {
@@ -105,7 +106,7 @@ describe('events → schema（三种 renderAs 落位）', () => {
     }
     const def = buildFormDef(node)
     const schema = dslToSchema(def)
-    const fieldSchema: any = (schema[0] as any).children[0]
+    const fieldSchema = schemaChildren(schema[0])[0]!
     expect(fieldSchema.$cmp).toBe('text')
     expect(fieldSchema.props.__bind).toEqual({ onChange: 'b()' })
     expect(fieldSchema.__bind).toBeUndefined()
@@ -168,7 +169,7 @@ describe('schema → DSL：__bind 落位', () => {
     }
     const def = buildFormDef(node)
     const schema = dslToSchema(def)
-    const fieldSchema: any = (schema[0] as any).children[0]
+    const fieldSchema = schemaChildren(schema[0])[0]!
     expect(fieldSchema.props.__bind).toEqual({ onClick: 'c()' })
     expect(Object.keys(fieldSchema.props)).not.toContain('onBlur')
     expect(Object.keys(fieldSchema.props)).not.toContain('onClick')

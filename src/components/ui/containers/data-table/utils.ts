@@ -3,6 +3,7 @@ import { compileExpr } from '@/expression/evaluator'
 import { evalExpr, schemaNodeToDslNode } from '@/dsl'
 import type { FieldNode } from '@/types/dsl'
 import type { DataTableColumn, DataTableConfig } from './types'
+import type { SchemaNode } from '@/utils/schema/types'
 
 /** 画布缺失时兜底样本列 + 数据，保证拖入即有可看效果 */
 export const CANVAS_SAMPLE_COLUMNS: DataTableColumn[] = [
@@ -18,8 +19,7 @@ export const CANVAS_SAMPLE_DATA = [
 ]
 
 export function toColumns(cfg: DataTableConfig): DataTableColumn[] {
-  const columns = (cfg as any).columns as DataTableColumn[] | undefined
-  return Array.isArray(columns) ? columns : []
+  return Array.isArray(cfg.columns) ? cfg.columns : []
 }
 
 export function toData(cfg: DataTableConfig): Record<string, unknown>[] {
@@ -85,28 +85,23 @@ export function columnKind(render?: string): ColumnCellKind {
 /** 由 schema 字段节点派生 { key, title, element }：搜索区（children）按来源元素渲染原控件。
  *  引擎渲染后传入的 children 是已转换的 FormKit schema 节点（$formkit/$cmp/$el），
  *  经 schemaNodeToDslNode 回转为 DSL FieldNode；本身已是 DSL 节点则直接复用。 */
-export function columnsFromChildren(children: Array<Record<string, unknown>>): DataTableColumn[] {
+export function columnsFromChildren(children: SchemaNode[]): DataTableColumn[] {
   if (!Array.isArray(children)) return []
   return children.map((c) => {
-    const anyC = c as any
-    const key =
-      (anyC.name as string | undefined) ??
-      (anyC.props?.name as string | undefined) ??
-      (anyC.id as string)
-    const title =
-      (anyC.label as string | undefined) ||
-      (anyC.props?.label as string | undefined) ||
-      (key as string)
+    const key = c.name ?? c.props?.name ?? c.id
+    const title = c.label || c.props?.label || key
     let element: FieldNode | undefined
-    if (anyC && typeof anyC === 'object') {
-      if (anyC.category === 'field') {
-        element = anyC as FieldNode
+    if (c && typeof c === 'object') {
+      // category 不在 SchemaNode 的已知键里（那是 DSL FieldNode 的字段，不是 schema
+      // 节点的字段）；两种输入形态在这里合流（见函数头注释），按需要探测一次
+      if ((c as unknown as FieldNode).category === 'field') {
+        element = c as unknown as FieldNode
       } else if (
-        typeof anyC.$formkit === 'string' ||
-        typeof anyC.$cmp === 'string' ||
-        typeof anyC.$el === 'string'
+        typeof c.$formkit === 'string' ||
+        typeof c.$cmp === 'string' ||
+        typeof c.$el === 'string'
       ) {
-        const node = schemaNodeToDslNode(anyC)
+        const node = schemaNodeToDslNode(c)
         if (node && node.category === 'field') element = node as FieldNode
       }
     }

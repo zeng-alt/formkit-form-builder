@@ -62,10 +62,10 @@ export function dslToOutputSchema(form: FormDefinition): FormKitSchemaFormKit[] 
 
 /** 将表单 children 中的容器/布局节点包裹在 $formkit: 'group' 中 */
 function wrapFormChildren(schemaNode: FormKitSchemaFormKit): FormKitSchemaFormKit {
-  const n: any = schemaNode as any
+  const n: SchemaNode = schemaNode
   if (!n || typeof n !== 'object') return schemaNode
   if (Array.isArray(n.children)) {
-    n.children = n.children.map((child: any) => wrapNodeWithGroup(child))
+    n.children = n.children.map((child) => wrapNodeWithGroup(child))
   }
   return schemaNode
 }
@@ -142,13 +142,16 @@ export function schemaToDsl(
 
   // 识别 $formkit: form 包装层
   if (schema.length === 1) {
-    const only = schema[0] as any
+    const only: SchemaNode | undefined = schema[0]
     if (only?.$formkit === 'form' && Array.isArray(only.children)) {
       if (typeof only.name === 'string' && only.name.trim()) name = only.name
       if (typeof only.props?.id === 'string' && only.props.id.trim()) id = only.props.id
       if (Number.isFinite(Number(only.props?.version))) version = Number(only.props.version)
       Object.assign(settings, parseFormSettings(only.props))
-      children = only.children
+      // only.children 已由上面的 Array.isArray 收窄；FormKit 自己的 children 类型是
+      // string | FormKitSchemaNode[] | FormKitSchemaCondition 的并集，narrow 完仍是这套
+      // 宽泛的节点联合，读不到 SchemaNode 的扩展键，按本文件的 SchemaNode 断言
+      children = only.children as SchemaNode[]
     }
   }
 

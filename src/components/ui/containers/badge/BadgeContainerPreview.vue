@@ -87,6 +87,8 @@ const badgeOffset = computed(() =>
       <div v-if="helpText" class="text-xs text-muted-foreground">{{ helpText }}</div>
     </div>
 
+    <!-- type/offset 同 TabsContainerPreview.vue：本组件自己的 prop 类型比 naive-ui
+         NBadge 对应 prop 的字面量联合 / 元组类型更宽，两边类型来源不同，保留断言 -->
     <div ref="badgeWrapRef" class="w-full">
       <n-badge
         v-if="hasChild"

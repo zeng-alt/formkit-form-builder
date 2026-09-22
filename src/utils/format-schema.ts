@@ -1,14 +1,15 @@
 import { computed, type Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { formatContainerPreviewNode, normalizeContainerNode } from '@/elements/canvas'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]> | undefined) {
   return computed(() => {
     if (!fields) return []
-    const formatOne = (field: FormKitSchemaFormKit, index: number): any => {
-      const key = (field as any)?.__key as string | undefined
-      const isPreviewPlaceholder = (field as any)?.__preview_placeholder === true
-      const normalized = normalizeContainerNode(field as any) as any
+    const formatOne = (field: SchemaNode, index: number): FormKitSchemaFormKit => {
+      const key = field?.__key
+      const isPreviewPlaceholder = field?.__preview_placeholder === true
+      const normalized = normalizeContainerNode(field) as SchemaNode
       const formattedContainer = formatContainerPreviewNode(normalized, {
         key,
         isPlaceholder: isPreviewPlaceholder,
@@ -17,16 +18,17 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
       if (formattedContainer) return formattedContainer
 
       // 递归格式化 children（容器/布局子节点），同时保留原始节点的完整结构
-      const anyField: any = field as any
+      const anyField = field
       const hasChildren = Array.isArray(anyField.children)
 
       // $cmp 节点：FormKitSchema 只转发 props，语义键已在 props 内；原样保留结构
       if (typeof anyField.$cmp === 'string') {
         const { bind, if: schemaIf, ...rest } = anyField
+        const modelValue = anyField.props?.modelValue
         const nextChildren = hasChildren
-          ? anyField.children.map((c: any, i: number) => formatOne(c, i))
-          : Array.isArray(anyField.props?.modelValue)
-            ? anyField.props.modelValue.map((c: any, i: number) => formatOne(c, i))
+          ? schemaChildren(anyField).map((c, i) => formatOne(c, i))
+          : Array.isArray(modelValue)
+            ? modelValue.map((c: SchemaNode, i: number) => formatOne(c, i))
             : undefined
         const cleanCmp: any = {
           ...rest,
@@ -43,7 +45,7 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
       // $el 节点（grid/row/column 等布局）：包裹在 group 中提供 JSON object 数据结构
       if (typeof anyField.$el === 'string' && hasChildren) {
         const { bind, if: schemaIf, outerClass, ...rest } = anyField
-        const formattedChildren = anyField.children.map((c: any, i: number) => formatOne(c, i))
+        const formattedChildren = schemaChildren(anyField).map((c, i) => formatOne(c, i))
         const layoutName = anyField.name || anyField.props?.name
         const groupNode: any = {
           $formkit: 'group',
@@ -64,7 +66,7 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
           ...rest,
           name: field.name || (key ? `field_${key}` : `field_${index}`),
           id: field.id || (key ? `preview_field_${key}` : `preview_field_${index}`),
-          children: anyField.children.map((c: any, i: number) => formatOne(c, i)),
+          children: schemaChildren(anyField).map((c, i) => formatOne(c, i)),
         }
         if (typeof bind === 'string' && bind.trim()) cleanNode.bind = bind
         if (typeof schemaIf === 'string' && schemaIf.trim()) cleanNode.if = schemaIf

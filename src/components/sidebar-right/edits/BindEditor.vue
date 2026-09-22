@@ -117,13 +117,13 @@ function setEventEnabled(key: string, enabled: boolean) {
     bindObj.value = next
     return
   }
-  const existing = next[key] as any
+  const existing = next[key]
   if (typeof existing === 'string') {
     bindObj.value = next
     return
   }
-  if (existing && typeof existing === 'object' && typeof existing.__js === 'string') {
-    next[key] = existing.__js
+  if (existing && typeof existing === 'object' && typeof (existing as { __js?: unknown }).__js === 'string') {
+    next[key] = (existing as { __js: string }).__js
     bindObj.value = next
     return
   }
@@ -134,9 +134,10 @@ function setEventEnabled(key: string, enabled: boolean) {
 
 function openEditor(key: string) {
   activeEventKey.value = key
-  const cur = bindObj.value[key] as any
+  const cur = bindObj.value[key]
   if (typeof cur === 'string') draft.value = cur
-  else if (cur && typeof cur === 'object' && typeof cur.__js === 'string') draft.value = cur.__js
+  else if (cur && typeof cur === 'object' && typeof (cur as { __js?: unknown }).__js === 'string')
+    draft.value = (cur as { __js: string }).__js
   else draft.value = ''
   isOpen.value = true
 }

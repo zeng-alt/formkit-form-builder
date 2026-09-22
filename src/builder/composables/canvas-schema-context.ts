@@ -1,8 +1,9 @@
 import { inject, provide } from 'vue'
+import type { Component } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 
 export type CanvasSchemaContext = {
-  library: Record<string, unknown>
+  library: Record<string, Component>
   renderNode: (node: unknown) => unknown
   updateContainerChildren?: (containerKey: string, children: FormKitSchemaFormKit[]) => void
   selectByKey?: (key: string) => void

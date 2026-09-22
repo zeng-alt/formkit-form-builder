@@ -1,5 +1,5 @@
-import type { FormKitSchemaFormKit } from '@formkit/core'
 import { getContainerDefinition, normalizeContainerNode } from '@/elements/canvas'
+import { schemaChildren, type SchemaNode } from './types'
 
 export type ContainerKind =
   | 'list'
@@ -19,18 +19,16 @@ export function getContainerKind(node: unknown): ContainerKind | null {
 }
 
 export function getContainerKey(node: unknown): string | undefined {
-  const n: any = node as any
+  const n = node as SchemaNode | null | undefined
   if (!n || typeof n !== 'object') return undefined
   const raw = n.__key
   return typeof raw === 'string' && raw ? raw : undefined
 }
 
-export function getContainerChildren(node: unknown): FormKitSchemaFormKit[] {
-  const n: any = node as any
-  const children = n?.children
-  return Array.isArray(children) ? (children as FormKitSchemaFormKit[]) : []
+export function getContainerChildren(node: unknown): SchemaNode[] {
+  return schemaChildren(node as SchemaNode | null | undefined)
 }
 
-export function ensureContainerCmpNode(node: any): any {
+export function ensureContainerCmpNode(node: unknown): unknown {
   return normalizeContainerNode(node)
 }

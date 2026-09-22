@@ -30,6 +30,7 @@ import DataTableCellRenderer from './DataTableCellRenderer.vue'
 import DataTableRowCellInput from './DataTableRowCellInput.vue'
 import DataTableSearchField from './DataTableSearchField.vue'
 import type { DataTableColumn } from './types'
+import type { SchemaNode } from '@/utils/schema/types'
 
 // 根节点是 n-message-provider（Fragment 渲染，无法继承属性）；DSL 透传的 id 等
 // 非 props 属性走 attrs 会触发 Vue 警告，这里显式关闭继承（这些 attrs 本无用途）。
@@ -118,7 +119,9 @@ const useRemote = computed(() => props.remote === true && !!getDataCode.value)
 
 // 分区契约（见 types.ts）：搜索区 = children（modelValue），列区 = props.columns。
 // 搜索字段（name/label → key/title）渲染为输入框 + 搜索/重置
-const searchFields = computed(() => columnsFromChildren((props.modelValue as any[]) ?? []))
+const searchFields = computed(() =>
+  columnsFromChildren((props.modelValue as SchemaNode[] | undefined) ?? []),
+)
 const columns = computed<DataTableColumn[]>(() =>
   Array.isArray(props.columns) ? props.columns : [],
 )
@@ -528,6 +531,9 @@ async function deleteRow(row: Record<string, unknown>) {
         </div>
       </div>
 
+      <!-- n-data-table 的 columns/data 是按渲染场景推导的重泛型类型（RowData 与
+           TableColumn<RowData> 互相绑定），我们的列配置来自设计态 JSON（DataTableColumn[]），
+           不是给 naive-ui 走类型推导用的，双方类型体系对不上，保留断言 -->
       <n-data-table
         :columns="tableColumns as any"
         :data="displayRows as any"

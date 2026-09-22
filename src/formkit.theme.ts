@@ -29,7 +29,7 @@ import type { FormKitNode } from '@formkit/core'
 export function rootClasses(sectionName: string, node: FormKitNode): Record<string, boolean> {
   const semanticKey = `formkit-${sectionName}`
   const familyKey = node.props.family ? `family:${node.props.family}__${sectionName}` : ''
-  const type = (node.props as any)?.$formkit || node.props.type
+  const type = node.props.$formkit || node.props.type
   if (node.props.family === 'naive') {
     if (sectionName === 'outer') {
       return { [semanticKey]: true, 'w-full': true }

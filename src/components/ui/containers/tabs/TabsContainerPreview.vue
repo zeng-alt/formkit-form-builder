@@ -6,6 +6,7 @@ import { NEmpty, NTabPane, NTabs } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
 import { useSchemaRenderData } from '@/composables/use-schema-render-data'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[]
@@ -31,7 +32,7 @@ const modelValue = computed(() => {
   return []
 })
 
-const tabLabel = (child: any, idx: number) => {
+const tabLabel = (child: SchemaNode, idx: number) => {
   const label = child?.label ?? child?.props?.label
   if (typeof label === 'string' && label.trim()) return label.trim()
   const name = child?.name
@@ -53,6 +54,10 @@ const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false))
       </div>
     </div>
     <n-empty v-if="modelValue.length === 0" :description="t('builder.listDropHere')" />
+    <!-- type/placement/size 是本组件自己声明的 string prop（画布 / DSL 侧按普通字符串
+         传值，不锁定 naive-ui 的字面量联合），naive-ui 的 NTabs 对应 prop 是更窄的字面量
+         联合类型（如 TabsType = 'line'|'card'|'bar'|'segment'），两边类型来源不同，运行时
+         由 naive-ui 自己校验/兜底，这里保留断言 -->
     <n-tabs
       v-else
       :type="(props.type as any) || 'line'"
@@ -62,8 +67,8 @@ const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false))
     >
       <n-tab-pane
         v-for="(child, idx) in modelValue"
-        :key="(child as any)?.__key || idx"
-        :name="(child as any)?.__key || idx"
+        :key="child?.__key || idx"
+        :name="child?.__key || idx"
         :tab="tabLabel(child, idx)"
         :closable="paneClosable"
         display-directive="show:lazy"
@@ -72,8 +77,8 @@ const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false))
              直接渲染即可，不要再套一层 grid，否则 group 占不到整行、字段 colspan 失效 -->
         <div>
           <FormKitSchema
-            v-if="Array.isArray((child as any)?.children) && (child as any).children.length > 0"
-            :schema="Array.isArray((child as any)?.children) ? (child as any).children : []"
+            v-if="schemaChildren(child).length > 0"
+            :schema="schemaChildren(child)"
             :library="schemaLibrary"
             :data="schemaRenderData"
           />

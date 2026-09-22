@@ -46,7 +46,7 @@ export function useFormDefinition() {
     source.value?.settings?.labelAlign === 'left' ? 'left' : 'top',
   )
   const formLabelWidth = computed(() => source.value?.settings?.labelWidth ?? 80)
-  const formSubmit = computed(() => (source.value?.settings as any)?.submit ?? '')
+  const formSubmit = computed(() => source.value?.settings?.submit ?? '')
   const formLayout = computed(() => source.value?.settings?.layout ?? 'vertical')
   const formColumns = computed(() => source.value?.settings?.columns ?? 12)
   const formFullWidth = computed(() => source.value?.settings?.fullWidth ?? false)

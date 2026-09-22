@@ -19,6 +19,7 @@ import { normalizeContainerNode } from '@/elements/canvas'
 import { provideCanvasSchemaContext } from './canvas-schema-context'
 import { CANVAS_DRAGGING_CLASS, CANVAS_DROP_ZONE_CLASS } from '@/utils/dnd/drag-classes'
 import { schemaContainsSteps } from '@/utils/schema/steps'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 // 画布（根 DropArea）组合函数：负责根级 DnD 列表 + schema 变更/选中逻辑
 export function useCanvasSchema() {
@@ -64,7 +65,7 @@ export function useCanvasSchema() {
     const source = fields.value[index]
     if (!source) return
     const existingNames = new Set<string>()
-    collectSchemaNames(formSchema.value as any, existingNames)
+    collectSchemaNames(formSchema.value, existingNames)
     const clone = duplicateNode(source, existingNames)
     const next = [...fields.value]
     next.splice(index + 1, 0, clone)
@@ -74,24 +75,24 @@ export function useCanvasSchema() {
 
   // ── 更新容器子节点（拖拽进出容器后写回 schema）──────────────────────────────
   const updateContainerChildren = (containerKey: string, children: FormKitSchemaFormKit[]) => {
-    const currentFound = findNodeByKey(formSchema.value as unknown[], containerKey)
+    const currentFound = findNodeByKey(formSchema.value, containerKey)
     if (!currentFound) return
     const existingNames = new Set<string>()
-    collectSchemaNames(formSchema.value as any, existingNames)
+    collectSchemaNames(formSchema.value, existingNames)
 
-    const ensureIdentity = (node: any): any => {
+    const ensureIdentity = (node: SchemaNode): SchemaNode => {
       if (!node || typeof node !== 'object') return node
       if (node.$formkit === 'submit' && Array.isArray(node.children)) {
         delete node.children
       }
       if (typeof node.__key === 'string' && node.__key) {
         if (Array.isArray(node.children))
-          node.children = node.children.map((c: any) => ensureIdentity(c))
+          node.children = schemaChildren(node).map((c) => ensureIdentity(c))
         return node
       }
       const nextKey = generateKey()
       const nextName = node.$formkit === 'submit' ? node.name : generateNextFieldName(existingNames)
-      const next: any =
+      const next: SchemaNode =
         node.$formkit === 'submit'
           ? { ...node, __key: nextKey, outerClass: node.outerClass || 'col-span-12 pt-2' }
           : {
@@ -111,24 +112,23 @@ export function useCanvasSchema() {
               outerClass: node.outerClass || 'col-span-12',
             }
       if (Array.isArray(node.children))
-        next.children = node.children.map((c: any) => ensureIdentity(c))
+        next.children = schemaChildren(node).map((c) => ensureIdentity(c))
       return next
     }
-    const normalizedChildren = children.map((c: any) => ensureIdentity({ ...c }))
+    const normalizedChildren = children.map((c) => ensureIdentity({ ...c }))
 
     const childKeys = new Set<string>()
-    const collectKeys = (nodes: any[]) => {
+    const collectKeys = (nodes: SchemaNode[]) => {
       for (const n of nodes) {
         const k = n?.__key
         if (typeof k === 'string' && k) childKeys.add(k)
-        const c = n?.children
-        if (Array.isArray(c)) collectKeys(c)
+        collectKeys(schemaChildren(n))
       }
     }
-    collectKeys(normalizedChildren as any[])
+    collectKeys(normalizedChildren)
 
     // 从全树剪掉已移动进容器的节点（避免同节点同时出现在容器内外）
-    const prune = (nodes: any[]): any[] => {
+    const prune = (nodes: SchemaNode[]): SchemaNode[] => {
       return nodes
         .filter((node) => {
           const k = node?.__key
@@ -140,26 +140,22 @@ export function useCanvasSchema() {
         })
         .map((node) => {
           if (!node || typeof node !== 'object') return node
-          const c = (node as any).children
+          const c = node.children
           if (!Array.isArray(c)) return node
-          const nextChildren = prune(c)
-          return { ...(node as any), children: nextChildren }
+          const nextChildren = prune(schemaChildren(node))
+          return { ...node, children: nextChildren }
         })
     }
 
-    const prunedSchema = prune(formSchema.value as any[]) as FormKitSchemaFormKit[]
-    const found = findNodeByKey(prunedSchema as unknown[], containerKey)
+    const prunedSchema = prune(formSchema.value)
+    const found = findNodeByKey(prunedSchema, containerKey)
     if (!found) return
-    const merged: any = { ...(found.node as any), children: normalizedChildren }
+    const merged: SchemaNode = { ...found.node, children: normalizedChildren }
     if (merged.$cmp) {
       merged.props = { ...merged.props }
       if (merged.props && typeof merged.props === 'object') delete merged.props.modelValue
     }
-    const nextSchema = updateAtPath(
-      prunedSchema as unknown[],
-      found.path,
-      merged,
-    ) as FormKitSchemaFormKit[]
+    const nextSchema = updateAtPath(prunedSchema, found.path, merged)
     commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], {
       reason: 'container-children',
       merge: true,
@@ -168,7 +164,7 @@ export function useCanvasSchema() {
 
   // ── 选中 ─────────────────────────────────────────────────────────────────────
   const selectByKey = (key: string) => {
-    const found = findNodeByKey(formSchema.value as unknown[], key)
+    const found = findNodeByKey(formSchema.value, key)
     if (!found) return
     selectedTarget.value = 'field'
     selectedIndex.value = found.rootIndex
@@ -179,16 +175,12 @@ export function useCanvasSchema() {
 
   // ── 画布内联编辑写回（静态元素 text 内容等）─────────────────────────────────
   const updateNodePropsByKey = (key: string, props: Record<string, unknown>) => {
-    const found = findNodeByKey(formSchema.value as unknown[], key)
+    const found = findNodeByKey(formSchema.value, key)
     if (!found) return
-    const node: any = { ...(found.node as any) }
+    const node: SchemaNode = { ...found.node }
     node.props = { ...node.props, ...props }
-    const nextSchema = updateAtPath(
-      formSchema.value as unknown[],
-      found.path,
-      node,
-    ) as FormKitSchemaFormKit[]
-    commitSchemaReconcile(nextSchema, { reason: 'inline-edit', merge: true })
+    const nextSchema = updateAtPath(formSchema.value, found.path, node)
+    commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], { reason: 'inline-edit', merge: true })
   }
 
   // ── 根级 DnD ────────────────────────────────────────────────────────────────
@@ -237,8 +229,8 @@ export function useCanvasSchema() {
   )
 
   // ── 根节点交互回调（交给 ContainerChildrenGrid）────────────────────────────
-  const onSelectRoot = (child: FormKitSchemaFormKit, index: number) => {
-    const key = (child as any)?.__key as string | undefined
+  const onSelectRoot = (child: SchemaNode, index: number) => {
+    const key = child?.__key
     selectedTarget.value = 'field'
     state.selectedColumnIndex.value = null
     if (key) selectByKey(key)

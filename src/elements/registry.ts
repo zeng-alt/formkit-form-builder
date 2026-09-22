@@ -111,7 +111,7 @@ export function createDefaultFormElements(t: (key: string) => string): FormKitSc
   for (const def of getElementTypeDefs()) {
     if (!def.template) continue
     const node = defaultDslNodeFromTemplate(def, t)
-    const schema = convert(node) as any
+    const schema = convert(node)
     // 面板展示元数据（副标题 / 便捷项图标）：仅左侧面板使用，标记为不可枚举，
     // 保证拖拽 payload 经 JSON 序列化（JSON.parse(JSON.stringify(...))）时不会带进 DSL。
     // description 若可枚举会泄漏进字段 props.description（DSL 里多出面板文案）。
@@ -127,7 +127,7 @@ export function createDefaultFormElements(t: (key: string) => string): FormKitSc
         configurable: true,
       })
     }
-    out.push(schema as FormKitSchemaFormKit)
+    out.push(schema)
   }
   return out
 }

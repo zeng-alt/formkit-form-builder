@@ -36,8 +36,8 @@ export function layoutNodeToSchema(
     const panes =
       spec.dataShape === 'objectOfObjects'
         ? ch.map((p) => ({
-            ...(p as any),
-            __key: (p as any)?.__key ?? generateKey(),
+            ...p,
+            __key: p?.__key ?? generateKey(),
             __paneType: node.type,
           }))
         : ch
@@ -62,8 +62,8 @@ export function layoutNodeToSchema(
 
   switch (node.type) {
     case 'grid': {
-      const columns = Number((node.props as any)?.columns) || 12
-      const gap = Number((node.props as any)?.gap) || 4
+      const columns = Number(node.props?.columns) || 12
+      const gap = Number(node.props?.gap) || 4
       const schema: any = { $el: 'div', attrs: { class: `grid grid-cols-${columns} gap-${gap}` } }
       if (node.key) schema.__key = node.key
       if (node.visibleIf) schema.if = exprToJs(node.visibleIf)

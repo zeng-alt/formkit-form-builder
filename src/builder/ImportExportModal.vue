@@ -8,6 +8,7 @@ import type { FormDefinition } from '@/types/dsl'
 import { toast } from 'vue-sonner'
 import { useFormBuilderI18n } from '../i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 const props = defineProps<{
   show: boolean
@@ -33,15 +34,15 @@ const exportSchema = (): FormKitSchemaFormKit[] => {
 }
 
 const isDslDefinition = (value: unknown): value is FormDefinition => {
-  const v = value as any
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  // 只是形状探测（收窄 unknown），不是完整 FormDefinition 结构，按需要读到的字段声明一个
+  // 最小形状，比裸 any 更能说明这里到底在检查什么
+  const v = value as { version?: unknown; root?: { children?: unknown } | null }
   return (
-    v !== null &&
-    typeof v === 'object' &&
-    !Array.isArray(v) &&
     typeof v.version === 'number' &&
     v.root !== null &&
     typeof v.root === 'object' &&
-    Array.isArray(v.root.children)
+    Array.isArray(v.root?.children)
   )
 }
 
@@ -78,15 +79,15 @@ const handleSaveAndImport = () => {
       parsed.length === 1 &&
       first &&
       typeof first === 'object' &&
-      (first as any).$formkit === 'form' &&
-      Array.isArray((first as any).children)
+      first.$formkit === 'form' &&
+      Array.isArray(first.children)
     ) {
-      const rawName = (first as any).name
+      const rawName = first.name
       const name = typeof rawName === 'string' && rawName.trim() ? rawName.trim() : 'form'
-      const labelPosition = (first as any)?.props?.labelPosition === 'left' ? 'left' : 'top'
-      const labelWidthRaw = Number((first as any)?.props?.labelWidth)
+      const labelPosition = first.props?.labelPosition === 'left' ? 'left' : 'top'
+      const labelWidthRaw = Number(first.props?.labelWidth)
       const labelWidth = Number.isFinite(labelWidthRaw) ? labelWidthRaw : 120
-      commitSchema((first as any).children as FormKitSchemaFormKit[], {
+      commitSchema(first.children as FormKitSchemaFormKit[], {
         reason: 'import',
         name,
         settings: { layout: 'vertical', labelAlign: labelPosition, labelWidth },
@@ -150,25 +151,25 @@ const cloneSchema = (schema: FormKitSchemaFormKit[]) => {
 }
 
 const exportAsJs = () => {
-  const schema = cloneSchema(exportSchema() as any)
+  const schema = cloneSchema(exportSchema())
   const bindVarMap: Record<string, Record<string, unknown>> = {}
 
-  const visit = (nodes: any[]) => {
+  const visit = (nodes: SchemaNode[]) => {
     for (const node of nodes) {
       if (!node || typeof node !== 'object') continue
       const bind = node.__bind
       if (bind && typeof bind === 'object' && !Array.isArray(bind)) {
         const key = safeVar(node.__key || node.name || node.$formkit || node.$el)
         const varName = `bind_${key}`
-        bindVarMap[varName] = bind as any
+        bindVarMap[varName] = bind as Record<string, unknown>
         node.bind = `$${varName}`
         delete node.__bind
       }
-      if (Array.isArray(node.children)) visit(node.children)
+      visit(schemaChildren(node))
     }
   }
 
-  visit(schema as any[])
+  visit(schema)
 
   const schemaStr = JSON.stringify(schema, null, 2)
 
@@ -177,8 +178,10 @@ const exportAsJs = () => {
     for (const [k, v] of Object.entries(attrs)) {
       if (typeof v === 'string') {
         innerLines.push(`${k}: async (event) => {\n${indent(v, 6)}\n    }`)
-      } else if (v && typeof v === 'object' && typeof (v as any).__js === 'string') {
-        innerLines.push(`${k}: async (event) => {\n${indent(String((v as any).__js), 6)}\n    }`)
+      } else if (v && typeof v === 'object' && typeof (v as { __js?: unknown }).__js === 'string') {
+        innerLines.push(
+          `${k}: async (event) => {\n${indent(String((v as { __js: string }).__js), 6)}\n    }`,
+        )
       } else {
         innerLines.push(`${k}: ${JSON.stringify(v)}`)
       }

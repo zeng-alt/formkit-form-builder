@@ -29,6 +29,8 @@ export interface DataTableColumn {
 
 /** dataTable 元素的配置项（存放在节点 props，DSL / JSON-safe） */
 export interface DataTableConfig {
+  /** 列配置（画布/预览共用；toColumns 读取） */
+  columns?: DataTableColumn[]
   /** 固定数据（前端分页时由 n-data-table 本地分页） */
   data?: Record<string, unknown>[]
   /** 主键字段名，用于选中行 / 行 key */

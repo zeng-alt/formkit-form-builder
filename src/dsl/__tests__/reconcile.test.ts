@@ -12,6 +12,7 @@
 import { describe, it, expect } from 'vitest'
 import { dslToSchema, reconcileDslTree } from '@/dsl'
 import type { FieldNode, FormDefinition } from '@/types/dsl'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 function textField(id: string, key: string, label: string): FieldNode {
   return {
@@ -42,9 +43,9 @@ function buildFormDef(children: FieldNode[]): FormDefinition {
   }
 }
 
-function schemaChildrenOf(def: FormDefinition) {
+function schemaChildrenOf(def: FormDefinition): SchemaNode[] {
   const schema = dslToSchema(def)
-  return (schema[0] as any).children as any[]
+  return schemaChildren(schema[0])
 }
 
 describe('reconcileDslTree', () => {

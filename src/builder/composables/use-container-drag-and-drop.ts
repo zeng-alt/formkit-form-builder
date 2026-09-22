@@ -82,7 +82,7 @@ export function useContainerDragAndDrop<T>(params: {
     if (!el || !data) return
     root.dispatchEvent(
       new CustomEvent('hasNestedParent', {
-        detail: { parent: active ? ({ el, data } as any) : null },
+        detail: { parent: active ? { el, data } : null },
       }),
     )
   }
@@ -96,7 +96,7 @@ export function useContainerDragAndDrop<T>(params: {
       const el = (containerRef.value as unknown as HTMLElement | null) ?? null
       const data = el ? parents.get(el) : undefined
       if (el && data) {
-        setParentValues(el, data, [...next] as any)
+        setParentValues(el, data, [...next])
       } else {
         items.value = [...next]
       }

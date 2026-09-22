@@ -6,6 +6,7 @@ import { generateKey } from '../utils/dnd/schema'
 import { findDslNodeByKey } from '../utils/schema/dsl-tree'
 import { reconcileDslTree } from '@/dsl'
 import type { FormDefinition, FormNode } from '@/types/dsl'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 type DefSnapshot = FormDefinition
 
@@ -32,16 +33,16 @@ function dslRoot(def: DefSnapshot): FormNode[] {
 // 也没有内部生产者，只覆盖极旧的 FormKit 原生 bind 用法）——本库无历史数据兼容负担，
 // 已随之删除，避免在每次 DnD 提交的热路径上做无人消费的搬字段。
 function ensureNodeKeys(schema: FormKitSchemaFormKit[]) {
-  const visit = (nodes: any[]) => {
+  const visit = (nodes: SchemaNode[]) => {
     for (const node of nodes) {
       if (!node || typeof node !== 'object') continue
       if (typeof node.__key !== 'string' || !node.__key) {
         node.__key = generateKey()
       }
-      if (Array.isArray(node.children)) visit(node.children)
+      visit(schemaChildren(node))
     }
   }
-  visit(schema as any[])
+  visit(schema)
 }
 
 /** 写漏斗依赖的实例状态切片。 */

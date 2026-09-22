@@ -7,6 +7,7 @@ import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
 import { getElementTypeDef } from '@/dsl'
 import { useSchemaRenderData } from '@/composables/use-schema-render-data'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 const props = defineProps<{
   nodeKey?: string
@@ -49,10 +50,10 @@ const listItems = computed<FormKitSchemaFormKit[]>(() =>
       : [],
 )
 // 拆箱：跳过外层 $el 包装层（col-span 壳），取出列表项真正的模板节点
-const unwrapElLayers = (node: any): any => {
+const unwrapElLayers = (node: SchemaNode): SchemaNode => {
   let n = node
-  while (n && typeof n.$el === 'string' && Array.isArray(n.children) && n.children.length === 1) {
-    n = n.children[0]
+  while (n && typeof n.$el === 'string' && schemaChildren(n).length === 1) {
+    n = schemaChildren(n)[0]!
   }
   return n
 }
@@ -72,9 +73,10 @@ const recordFields = computed(() => {
   // 列表项模板若为单个顶层 group（list 内拖入 group）：直接渲染 group 内部字段，
   // group 名不再产生嵌套，保证每条记录是扁平 object（[{...}]）
   if (list.length === 1) {
-    const only = unwrapElLayers(list[0] as any)
+    const only = unwrapElLayers(list[0]!)
     if (only && typeof only === 'object' && (only.$formkit === 'group' || only.$cmp === 'group')) {
-      if (Array.isArray(only.children) && only.children.length) return only.children
+      const children = schemaChildren(only)
+      if (children.length) return children
     }
   }
   return list
@@ -97,13 +99,13 @@ const itemTemplate = computed<{
     if (!list.length) return null
     return { type: 'group', attrs: {}, children: list }
   }
-  const only = unwrapElLayers(list[0] as any)
+  const only = unwrapElLayers(list[0]!)
   const kind = only?.$formkit ?? only?.$cmp
   // 列表项最外层 $el 包装的 col-span（容器的占列数，如 card 的 col-span-6）；
   // 解壳后用它回包 $cmp 子节点，保证布局宽度不被丢弃
   const outerElClass =
-    typeof (list[0] as any)?.$el === 'string' && typeof (list[0] as any)?.attrs?.class === 'string'
-      ? ((list[0] as any).attrs.class as string)
+    typeof list[0]?.$el === 'string' && typeof list[0]?.attrs?.class === 'string'
+      ? (list[0].attrs.class as string)
       : ''
   const outerSpanClass = outerElClass.match(/\bcol-span-\d+\b/)?.[0] ?? ''
   // 直接字段：标量项（$formkit / $cmp 化字段均可）。字段由外层 :index 定位，
@@ -127,21 +129,18 @@ const itemTemplate = computed<{
   // 顶层 group：扁平对象项。剥离组名，展开内部字段（解掉内部 grid 壳），
   // 由模板外层统一铺 grid，避免组内再套一层 group / 网格
   if (kind === 'group') {
-    let inner = Array.isArray(only.children) ? (only.children as FormKitSchemaFormKit[]) : []
+    let inner = schemaChildren(only)
     // 组内单一 $el 包装：可能是内部 grid 壳，也可能是容器（card）自身的 col-span 壳；
     // 解壳时记住它的类，回包 $cmp 子节点时优先沿用（否则 colspan 6 会退成 12）
     let innerElClass = ''
     if (
       inner.length === 1 &&
       inner[0] &&
-      typeof (inner[0] as any).$el === 'string' &&
-      Array.isArray((inner[0] as any).children)
+      typeof inner[0].$el === 'string' &&
+      Array.isArray(inner[0].children)
     ) {
-      innerElClass =
-        typeof (inner[0] as any).attrs?.class === 'string'
-          ? ((inner[0] as any).attrs.class as string)
-          : ''
-      inner = (inner[0] as any).children as FormKitSchemaFormKit[]
+      innerElClass = typeof inner[0].attrs?.class === 'string' ? (inner[0].attrs.class as string) : ''
+      inner = schemaChildren(inner[0])
     }
     // 容器/布局子节点（$cmp，如 list 内嵌 card）：组件根不是 formkit-outer，网格里缺 col-span
     // 会退化成 1/12 列宽（xxxx---），按最外层 col-span 回包（缺省 12 = 撑满父容器整行）。
@@ -149,9 +148,7 @@ const itemTemplate = computed<{
     // 套进全宽 div 丢失自身的 col-span 布局。
     const wrapClass = innerElClass.match(/\bcol-span-\d+\b/)?.[0] || outerSpanClass || 'col-span-12'
     inner = inner.map((c) =>
-      c &&
-      typeof (c as any).$cmp === 'string' &&
-      getElementTypeDef((c as any).$cmp)?.category !== 'field'
+      c && typeof c.$cmp === 'string' && getElementTypeDef(c.$cmp)?.category !== 'field'
         ? ({
             $el: 'div',
             attrs: { class: wrapClass },

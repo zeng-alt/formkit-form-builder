@@ -136,7 +136,7 @@ const duplicateChild = (index: number) => {
   const source = dnd.items.value[index]
   if (!source) return
   const names = new Set<string>()
-  collectSchemaNames(formSchema.value as any, names)
+  collectSchemaNames(formSchema.value, names)
   const clone = duplicateNode(source, names)
   const next = [...dnd.items.value]
   next.splice(index + 1, 0, clone)
@@ -153,6 +153,8 @@ const duplicateChild = (index: number) => {
     </div>
 
     <div class="p-2">
+      <!-- type/offset 同 TabsContainerPreview.vue：本组件自己的 prop 类型比 naive-ui
+           NBadge 对应 prop 的字面量联合 / 元组类型更宽，两边类型来源不同，保留断言 -->
       <div ref="badgeWrapRef" class="w-full">
         <n-badge
           :value="badgeValue"

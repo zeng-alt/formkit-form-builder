@@ -15,7 +15,7 @@ export interface FormMeta {
 
 function extractCode(v: unknown): string | undefined {
   if (typeof v === 'string') return v
-  if (v && typeof v === 'object' && typeof (v as any).__js === 'string') return (v as BindJs).__js
+  if (v && typeof v === 'object' && typeof (v as BindJs).__js === 'string') return (v as BindJs).__js
   return undefined
 }
 
@@ -87,7 +87,7 @@ return (async () => {
 ${code}
 })()`,
   )
-  return await (runner as any)(
+  return await runner(
     event,
     form,
     $form,

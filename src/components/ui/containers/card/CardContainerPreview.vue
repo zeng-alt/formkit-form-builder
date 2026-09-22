@@ -44,6 +44,8 @@ const showHeader = computed(() => Boolean(title.value || helpText.value))
 </script>
 
 <template>
+  <!-- size 同 TabsContainerPreview.vue：本组件自己的 size prop 是宽泛 string，
+       naive-ui NCard 的 size 是更窄的字面量联合，两边类型来源不同，保留断言 -->
   <n-card
     class="w-full"
     :bordered="bordered"

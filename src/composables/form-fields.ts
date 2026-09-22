@@ -571,7 +571,7 @@ export function useFormField() {
   })
 
   const formSubmit = computed<string>({
-    get: () => (formDefinition.value?.settings as any)?.submit ?? '',
+    get: () => formDefinition.value?.settings?.submit ?? '',
     set: (value: string) => {
       const def = formDefinition.value
       commitFormDefinition(
