@@ -14,8 +14,6 @@ import {
   setParentValues,
 } from '@formkit/drag-and-drop'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { commitSchemaReconcile } from '@/composables/schema-history'
-import { formSchema } from '@/state/form-schema'
 import { insertState } from './insert-state'
 import { findRootDropAreaEl, type DndContext } from './context'
 import {
@@ -275,10 +273,14 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
 
   const targetParent = resolveTargetParent()
 
-  // 所属画布实例的 DnD 上下文：拖放提交可能来自调色板（无上下文），
-  // 但目标 parent 一定在某个画布内，其 config 上挂着该画布的 formSchema / 提交漏斗。
+  // 所属画布实例的 DnD 上下文：每个画布 drop-zone（根 / 容器）都由 customInsertPlugin
+  // 挂上所属实例的 dndContext（见 plugin.ts）。目标 parent 一定在某个画布内，
+  // 走到 ctx 为空说明有 drop-zone 漏挂了——宁可放弃本次提交并报错，也不能静默写进别的实例。
   const ctx = (targetParent.data.config as any)?.dndContext as DndContext | undefined
-  const schemaForNames = ctx?.formSchema.value ?? formSchema.value
+  if (!ctx) {
+    console.error('[formkit-form-builder][dnd] 目标 drop-zone 缺少 dndContext，本次拖放提交已忽略')
+  }
+  const schemaForNames = ctx?.formSchema.value ?? []
 
   const sourceListKey = getContainerKey(sourceParent.el as any)
   const targetListKey = getContainerKey(targetParent.el as any)
@@ -353,8 +355,12 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
     }
 
     remaining.splice(nextIndex, 0, ...(insertValues as any as FormKitSchemaFormKit[]))
-    setParentValues(sourceParent.el, sourceParent.data, [...remaining] as any)
-    sourceNextValues = remaining as any
+    // ctx 缺失时不写 DnD 内部列表值：commit 已被跳过，写了也不会被最终 DSL 覆盖，
+    // 会让画布视觉状态与真源永久错位（比什么都不做更糟）。
+    if (ctx) {
+      setParentValues(sourceParent.el, sourceParent.data, [...remaining] as any)
+      sourceNextValues = remaining as any
+    }
   } else {
     // ── steps 向导拖入特判 ────────────────────────────────────────────────────
     // 全局唯一：表单中已有 steps 或目标不是根画布时直接阻止，不写任何数据；
@@ -388,8 +394,11 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
           props: { ...stepsNode.props, modelValue: panes },
         },
       ]
-      setParentValues(targetParent.el, targetParent.data, rootNext as any)
-      targetNextValues = rootNext as any
+      // 同上：ctx 缺失时不写 DnD 内部列表值，避免与被跳过的提交永久错位。
+      if (ctx) {
+        setParentValues(targetParent.el, targetParent.data, rootNext as any)
+        targetNextValues = rootNext as any
+      }
     } else {
       if (!isSource) {
         const remaining = sourceValues.filter((v: any) => {
@@ -397,8 +406,10 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
           if (typeof k === 'string' && k) return !draggedKeys.has(k)
           return !draggedValues.some((y) => eq(v, y))
         }) as any as FormKitSchemaFormKit[]
-        setParentValues(sourceParent.el, sourceParent.data, [...remaining] as any)
-        sourceNextValues = remaining as any
+        if (ctx) {
+          setParentValues(sourceParent.el, sourceParent.data, [...remaining] as any)
+          sourceNextValues = remaining as any
+        }
       }
 
       const nextTargetValues = [...targetValues]
@@ -419,8 +430,10 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
       }
 
       nextTargetValues.splice(index, 0, ...(insertValues as any as FormKitSchemaFormKit[]))
-      setParentValues(targetParent.el, targetParent.data, [...nextTargetValues] as any)
-      targetNextValues = nextTargetValues as any
+      if (ctx) {
+        setParentValues(targetParent.el, targetParent.data, [...nextTargetValues] as any)
+        targetNextValues = nextTargetValues as any
+      }
     }
   }
 
@@ -508,9 +521,9 @@ export function handleEnd<T>(state: DragState<T> | SynthDragState<T> | BaseDragS
 
   const nextSchema = rootValues.map((node: any) => applyListMap(node)) as FormKitSchemaFormKit[]
 
-  // 用所属画布实例的提交漏斗写回（未解析到上下文时回落到默认实例，保持既有行为）。
-  const commit = ctx?.commitSchemaReconcile ?? commitSchemaReconcile
-  commit(nextSchema, { reason: 'dnd' })
+  // 用所属画布实例的提交漏斗写回；ctx 缺失时前面已跳过所有 setParentValues 写入，
+  // rootValues 仍是未变更的真实值，这里再跳过提交不会造成状态错位，只是整次拖放被忽略。
+  if (ctx) ctx.commitSchemaReconcile(nextSchema, { reason: 'dnd' })
 
   if (insertPoint) insertPoint.el.style.display = 'none'
 

@@ -66,9 +66,6 @@ export function createMinimalFormBuilderState(definition: FormDefinition): FormB
 
 export const BUILDER_STATE_KEY: InjectionKey<FormBuilderState> = Symbol('formBuilderState')
 
-// 模块级默认实例（兜底）：未通过 provideFormBuilderState 提供时，迁移未完成的消费方仍可用。
-export const defaultFormBuilderState = createFormBuilderState()
-
 /** 为当前组件子树提供 FormBuilder 状态。 */
 export function provideFormBuilderState(
   state: FormBuilderState = createFormBuilderState(),
@@ -77,7 +74,22 @@ export function provideFormBuilderState(
   return state
 }
 
-/** 读取所在 FormBuilder 实例的状态；子树外（如独立使用的 BuilderPreview）回落到默认实例。 */
+/** 读取所在 FormBuilder / FormRenderer 实例的状态；子树外调用直接报错（不再回落全局单例）。
+ *  多实例场景下，静默写进一个谁也看不见的全局实例比报错更难排查——找不到上下文时
+ *  宁可让调用方立刻看到问题，也不要悄悄改错状态。独立使用的组件请改用
+ *  useOptionalFormBuilderState()。 */
 export function useFormBuilderState(): FormBuilderState {
-  return inject(BUILDER_STATE_KEY, defaultFormBuilderState)
+  const state = inject(BUILDER_STATE_KEY, null)
+  if (!state) {
+    throw new Error(
+      '[formkit-form-builder] useFormBuilderState() 必须在 FormBuilder / FormRenderer（或 provideFormBuilderState）子树内调用：未找到实例状态。独立使用的组件请改用 useOptionalFormBuilderState()。',
+    )
+  }
+  return state
+}
+
+/** 可选读取：可脱离 FormBuilder 独立使用的组件（如 BuilderPreview 传 schema prop）用它，
+ *  子树外返回 null，由调用方自行决定回落逻辑。 */
+export function useOptionalFormBuilderState(): FormBuilderState | null {
+  return inject(BUILDER_STATE_KEY, null)
 }

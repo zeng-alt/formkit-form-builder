@@ -1,8 +1,6 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { computed, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import { defaultFormDefinitionState } from '@/state/form-definition'
-import { defaultSelectionState } from '@/state/form-schema'
 import { dslToSchema } from '@/dsl'
 import { generateKey } from '../utils/dnd/schema'
 import { findDslNodeByKey } from '../utils/schema/dsl-tree'
@@ -275,23 +273,3 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
     setFormDefinition,
   }
 }
-
-// 模块级默认实例（向后兼容）：未显式 provide 时走单例状态。
-export const defaultSchemaHistory = createSchemaHistory({
-  formDefinition: defaultFormDefinitionState.formDefinition,
-  formSchema: defaultFormDefinitionState.formSchema,
-  selectedIndex: defaultSelectionState.selectedIndex,
-  selectedKey: defaultSelectionState.selectedKey,
-  commitSchemaChildren: defaultFormDefinitionState.commitSchemaChildren,
-})
-export const {
-  canUndo,
-  canRedo,
-  commitFormDefinition,
-  commitSchema,
-  commitSchemaReconcile,
-  undo,
-  redo,
-  resetHistory,
-  setFormDefinition,
-} = defaultSchemaHistory

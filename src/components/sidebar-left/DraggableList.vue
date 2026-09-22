@@ -35,19 +35,24 @@ const dragConfig = {
     items.value = [...props.elements]
   },
   plugins: [
-    customInsertPlugin({
-      insertPoint: () => {
-        const div = document.createElement('div')
-        Object.assign(div.style, {
-          position: 'absolute',
-          width: '0px',
-          height: '0px',
-          pointerEvents: 'none',
-          opacity: '0',
-        })
-        return div
+    customInsertPlugin(
+      {
+        insertPoint: () => {
+          const div = document.createElement('div')
+          Object.assign(div.style, {
+            position: 'absolute',
+            width: '0px',
+            height: '0px',
+            pointerEvents: 'none',
+            opacity: '0',
+          })
+          return div
+        },
       },
-    }),
+      // 调色板是纯拖拽源（不属于任何画布、从不作为落点），显式传 null：
+      // 提交时 ctx 一律从落点 parent 读取，这里不需要也不应该有上下文。
+      null,
+    ),
   ],
 }
 

@@ -65,6 +65,7 @@ export { BuilderProvider as FormBuilderProvider }
 // 实例状态（多设计器并存 / 高级用法）
 export {
   useFormBuilderState,
+  useOptionalFormBuilderState,
   provideFormBuilderState,
   createFormBuilderState,
 } from './state/create-form-builder-state'

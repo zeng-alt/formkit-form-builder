@@ -19,7 +19,8 @@ export function useContainerDragAndDrop<T>(params: {
   accepts?: (value: T) => boolean
 }) {
   // 所属画布实例状态：多设计器并存时，容器的根 / 提交漏斗绑定到各自实例。
-  // 预览等非 Builder 子树内调用会回落到默认实例，DnD 禁用时不影响。
+  // 容器组件总是渲染在 FormBuilder 或 FormRenderer（含 BuilderPreview 内部转发）子树内，
+  // 二者都会 provide 状态；真走到子树外说明组件被挪用了，useFormBuilderState() 会直接报错。
   const state = useFormBuilderState()
   const rootSelector = computed(
     () => params.rootSelector ?? `[data-testid="drop-area-${state.instanceId}"]`,

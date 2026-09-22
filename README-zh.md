@@ -153,6 +153,7 @@ import {
   provideFormBuilderConfig,
   createFormBuilderState, // 多设计器实例状态
   useFormBuilderState,
+  useOptionalFormBuilderState, // 可选版本：供脱离 FormBuilder/FormRenderer 子树使用的组件调用
   provideFormBuilderState,
   dslToSchema, // DSL → FormKit schema
   dslToOutputSchema, // DSL → 嵌套 group 输出 schema
@@ -160,6 +161,12 @@ import {
   buildFormkitInputs,
 } from "@zeng-alt/formkit-form-builder";
 ```
+
+`useFormBuilderState()` 只能在 `FormBuilder` / `FormRenderer` 子树内调用（含手动
+`provideFormBuilderState()` 的子树）；子树外调用会直接抛错，不再回落到某个全局共享实例。
+需要脱离 `FormBuilder` 独立使用的组件请改用 `useOptionalFormBuilderState()`，子树外它返回
+`null`。特别地，`BuilderPreview` 独立使用（不在 `FormBuilder` 内）时需要传入 `schema` prop，
+否则没有可渲染的表单结构。
 
 ### FormBuilder API
 

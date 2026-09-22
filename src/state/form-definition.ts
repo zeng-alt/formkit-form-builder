@@ -81,7 +81,3 @@ export function createFormDefinitionState(initialDefinition?: FormDefinition): F
 
   return { formDefinition, formSchema, commitSchemaChildren }
 }
-
-// 模块级默认实例（向后兼容）：未使用 createFormBuilderState 提供实例的消费方继续走单例。
-export const defaultFormDefinitionState = createFormDefinitionState()
-export const { formDefinition, formSchema, commitSchemaChildren } = defaultFormDefinitionState

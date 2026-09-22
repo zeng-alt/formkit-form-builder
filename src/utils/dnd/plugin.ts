@@ -348,7 +348,11 @@ function findClosest<T>(enabledNodes: NodeRecord<T>[], state: DragState<T>) {
 
 // 对外暴露：在画布 DnD 里作为插件传入。deps 为所属画布实例的 DnD 上下文，
 // 挂到该 parent 的 config 上，供提交（handleEnd）与插入定位（positionInsertPoint）运行时读取。
-export function customInsertPlugin<T>(insertConfig: InsertConfig<T>, deps?: DndContext) {
+// 参数必传、不允许省略：画布 drop-zone（根 / 容器）必须传真实上下文，省略等于让该 drop-zone
+// 的拖放静默失败（见 commit.ts 的 ctx 缺失分支）；纯拖拽源（左侧调色板，不属于任何画布、
+// 从不作为落点）显式传 null——提交时 ctx 一律从落点 parent 读取，不会用到拖拽源的上下文，
+// 传 null 比造一个 no-op 假上下文更诚实，也不会把"静默什么都不做"重新引回来。
+export function customInsertPlugin<T>(insertConfig: InsertConfig<T>, deps: DndContext | null) {
   return (parent: HTMLElement) => {
     const parentData = parents.get(parent)
     if (!parentData) return
@@ -356,7 +360,7 @@ export function customInsertPlugin<T>(insertConfig: InsertConfig<T>, deps?: DndC
     const insertParentConfig = {
       ...parentData.config,
       insertConfig,
-      dndContext: deps,
+      dndContext: deps ?? undefined,
     }
 
     return {

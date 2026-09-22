@@ -153,6 +153,7 @@ import {
   provideFormBuilderConfig,
   createFormBuilderState, // Multi-designer instance state
   useFormBuilderState,
+  useOptionalFormBuilderState, // Nullable variant for components used outside a FormBuilder/FormRenderer subtree
   provideFormBuilderState,
   dslToSchema, // DSL → FormKit schema
   dslToOutputSchema, // DSL → nested group output schema
@@ -160,6 +161,13 @@ import {
   buildFormkitInputs,
 } from "@zeng-alt/formkit-form-builder";
 ```
+
+`useFormBuilderState()` only works inside a `FormBuilder` / `FormRenderer` subtree (including
+one set up via `provideFormBuilderState()`); calling it outside one throws instead of silently
+falling back to a shared global instance. Components meant to be used standalone should call
+`useOptionalFormBuilderState()` instead, which returns `null` outside such a subtree. In
+particular, `BuilderPreview` used standalone (outside a `FormBuilder`) needs a `schema` prop —
+without it there is no form definition to render.
 
 ---
 
