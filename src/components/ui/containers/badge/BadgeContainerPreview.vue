@@ -5,6 +5,7 @@ import { FormKitSchema } from '@formkit/vue'
 import { NBadge, NEmpty } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
+import { EXPR_SCHEMA_HELPERS } from '@/dsl'
 import { useBadgeSupPosition } from '@/composables/use-badge-sup-position'
 import { useBadgeValue } from '@/composables/use-badge-value'
 
@@ -99,7 +100,7 @@ const badgeOffset = computed(() =>
         :style="badgeStyle"
       >
         <div class="w-full grid grid-cols-12 gap-x-4 gap-y-2">
-          <FormKitSchema :schema="modelValue" :library="schemaLibrary" />
+          <FormKitSchema :schema="modelValue" :library="schemaLibrary" :data="EXPR_SCHEMA_HELPERS" />
         </div>
       </n-badge>
 

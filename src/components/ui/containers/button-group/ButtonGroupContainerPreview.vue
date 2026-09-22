@@ -5,6 +5,7 @@ import { FormKitSchema } from '@formkit/vue'
 import { NButtonGroup, NEmpty } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
+import { EXPR_SCHEMA_HELPERS } from '@/dsl'
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[]
@@ -27,7 +28,7 @@ const modelValue = computed(() => {
 <template>
   <div class="w-full">
     <n-button-group :size="props.size" :vertical="props.vertical" class="w-full">
-      <FormKitSchema v-if="modelValue.length" :schema="modelValue" :library="schemaLibrary" />
+      <FormKitSchema v-if="modelValue.length" :schema="modelValue" :library="schemaLibrary" :data="EXPR_SCHEMA_HELPERS" />
 
       <div v-else class="flex w-full items-center justify-center">
         <n-empty :description="t('builder.listDropHere')" />

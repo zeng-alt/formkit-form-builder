@@ -5,7 +5,7 @@ import { FormKit, FormKitSchema } from '@formkit/vue'
 import { NButton, NTooltip, NEmpty } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
-import { getElementTypeDef } from '@/dsl'
+import { getElementTypeDef, EXPR_SCHEMA_HELPERS } from '@/dsl'
 
 const props = defineProps<{
   nodeKey?: string
@@ -223,6 +223,7 @@ const removeItem = (node: unknown, value: unknown, index: number) => {
               v-if="itemTemplate?.nestedList"
               :schema="nestedItemSchema(itemTemplate.nestedList, index as number)"
               :library="schemaLibrary"
+              :data="EXPR_SCHEMA_HELPERS"
             />
             <FormKit
               v-else-if="itemTemplate"
@@ -232,7 +233,11 @@ const removeItem = (node: unknown, value: unknown, index: number) => {
             >
               <template v-if="itemTemplate.children">
                 <div class="grid grid-cols-12 gap-x-4 gap-y-2">
-                  <FormKitSchema :schema="itemTemplate.children" :library="schemaLibrary" />
+                  <FormKitSchema
+                    :schema="itemTemplate.children"
+                    :library="schemaLibrary"
+                    :data="EXPR_SCHEMA_HELPERS"
+                  />
                 </div>
               </template>
             </FormKit>

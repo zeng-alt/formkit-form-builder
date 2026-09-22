@@ -272,6 +272,7 @@ export default {
     nameRequired: '字段名不能为空',
     nameFormat: '字段名只能包含字母/数字/下划线，且不能以数字开头',
     nameExists: '字段名已存在',
+    nameReserved: '字段名不能以 {prefix} 开头（保留给条件表达式的内置函数使用）',
     button: {
       textPlaceholder: '按钮文本',
     },

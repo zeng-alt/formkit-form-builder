@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { getElementTypeDef } from '@/dsl'
+import { getElementTypeDef, EXPR_HELPER_PREFIX } from '@/dsl'
 import { useFormField } from '@/composables/form-fields'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormBuilderI18n } from '@/i18n/context'
@@ -45,12 +45,17 @@ const isNameTaken = (name: string) => {
   return siblings.some((node) => node !== self && node.name === name)
 }
 
-// 字段：必填 + 格式 + 唯一；容器/布局/tab pane：可选，有值时校验格式与唯一
+// 字段：必填 + 格式 + 保留前缀 + 唯一；容器/布局/tab pane：可选，有值时同样校验
 const nameError = computed(() => {
   if (!isNamedNode.value) return ''
   if (isFieldsCategory.value && !fieldName.value) return t('edits.nameRequired')
   if (!fieldName.value) return ''
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName.value)) return t('edits.nameFormat')
+  // fkb_ 是 visibleIf 编译产物（$fkb_xxx helper 调用）的保留前缀（见
+  // dsl/expr-schema-helpers.ts）：字段名撞上它会被同名 helper 覆盖，导致条件显示
+  // 静默失效，因此在这里挡掉，而不是等运行时排查。
+  if (fieldName.value.startsWith(EXPR_HELPER_PREFIX))
+    return t('edits.nameReserved', { prefix: EXPR_HELPER_PREFIX })
   if (isNameTaken(fieldName.value)) return t('edits.nameExists')
   return ''
 })

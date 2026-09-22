@@ -5,6 +5,7 @@ import { FormKitSchema } from '@formkit/vue'
 import { NButton, NTooltip, NEmpty } from 'naive-ui'
 import { getColSpan, getRowSpan } from '@/utils/dnd/grid'
 import { toCanvasSchemaNode } from '@/utils/canvas-schema'
+import { EXPR_SCHEMA_HELPERS } from '@/dsl'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
 import { pluralize, validationCount } from '@/utils/text'
 import { useGridSpanResize } from '@/builder/composables/use-grid-span-resize'
@@ -272,6 +273,7 @@ const resizeHandleClass = computed(() => {
             <FormKitSchema
               :schema="[renderSchemaNode(child)]"
               :library="schemaLibrary"
+              :data="EXPR_SCHEMA_HELPERS"
               :key="`container-child-${idx}`"
             />
           </div>

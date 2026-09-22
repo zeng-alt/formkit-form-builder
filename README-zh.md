@@ -322,6 +322,20 @@ const backToDsl = schemaToDsl(schema);
 `click` / `change` / `input` / `focus` / `blur`。`dslToSchema` 会把它编译成 schema 侧的
 `__bind: { onClick: handler, ... }`。
 
+节点的 `visibleIf`（可移植表达式 AST，`Expr`：字段引用 / 字面量 / 内置函数调用）是条件
+显示的唯一真源，`dslToSchema` 把它编译成 schema 的 `if` 字符串，交给 FormKit 渲染时
+求值。内置函数（`eq` / `not` / `if` / `coalesce` / `contains` 等，完整清单见
+`getBuiltin`/`isBuiltin`）一律编译为 `$fkb_<fn>(args...)` 形式的 helper 函数调用——
+FormKit v2 schema 的 `if` 由 `@formkit/core` 自带的一个手写迷你表达式解析器执行，只认
+`&& || === !== == != >= <= > < + - * / %` 和 `$token(args)` 调用语法，不支持三元 `?:`、
+`??`、一元 `!`，把每个内置函数拆成"看似等价"的原生算子曾经是真实翻车的来源（`not`
+被解释反、`if`/`coalesce` 返回 `undefined`、`contains` 返回子串而非布尔值）。改成
+helper 调用后，`if` 条件与 `evalExpr`（计算字段 / 设计器实时预览）共用同一份求值
+实现（见 `EXPR_SCHEMA_HELPERS`），因此画布预览、运行时渲染、后端按 `Expr` AST 自行
+求值三者的语义天然保持一致，不再需要为每个函数单独核对两套语义是否等价。`fkb_` 是
+这套 helper 的保留 token 前缀，**字段名不能以 `fkb_` 开头**，否则会被同名 helper 覆盖
+导致条件显示静默失效。
+
 ### 扩展元素
 
 通过 `config.elements` 或 `registerElement(s)` 注册自定义元素（DSL 注册中心 + FormKit input + 画布/预览一次打通）：

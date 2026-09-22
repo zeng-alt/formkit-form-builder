@@ -37,7 +37,11 @@ describe('parseExprString / exprToJs / evalExpr', () => {
         },
       ],
     })
-    expect(exprToJs(ast)).toBe('(($a > 1) && ($b === "x"))')
+    // exprToJs 现在把内置函数一律编译成 $fkb_<fn>(args...) 形式的 helper 调用
+    // （见 dsl/expr-schema-helpers.ts），不再逐个翻译成"语义等价"的 JS 算子——
+    // 这串字符串到底算得对不对，由 expr-schema.test.ts 直接喂给 FormKit 的
+    // compile() 验证，这里只断言编译产物的调用形态。
+    expect(exprToJs(ast)).toBe('$fkb_and($fkb_gt($a, 1), $fkb_eq($b, "x"))')
     const result = evalExpr(ast, { a: 2, b: 'x' })
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.value).toBe(true)
@@ -55,7 +59,7 @@ describe('parseExprString / exprToJs / evalExpr', () => {
         { type: 'literal', value: 2 },
       ],
     })
-    expect(exprToJs(ast)).toBe('($a ? 1 : 2)')
+    expect(exprToJs(ast)).toBe('$fkb_if($a, 1, 2)')
     expect(evalExpr(ast, { a: true })).toMatchObject({ ok: true, value: 1 })
     expect(evalExpr(ast, { a: false })).toMatchObject({ ok: true, value: 2 })
   })
@@ -67,7 +71,7 @@ describe('parseExprString / exprToJs / evalExpr', () => {
       fn: 'not',
       args: [{ type: 'field', name: 'a' }],
     })
-    expect(exprToJs(ast)).toBe('!($a)')
+    expect(exprToJs(ast)).toBe('$fkb_not($a)')
     expect(evalExpr(ast, { a: true })).toMatchObject({ ok: true, value: false })
   })
 
@@ -88,7 +92,7 @@ describe('parseExprString / exprToJs / evalExpr', () => {
         { type: 'literal', value: 1 },
       ],
     })
-    expect(exprToJs(ast)).toBe('(($price * $count) + 1)')
+    expect(exprToJs(ast)).toBe('$fkb_add($fkb_mul($price, $count), 1)')
     const result = evalExpr(ast, { price: 3, count: 4 })
     expect(result).toMatchObject({ ok: true, value: 13 })
   })
@@ -114,7 +118,7 @@ describe('parseExprString / exprToJs / evalExpr', () => {
         },
       ],
     })
-    expect(exprToJs(ast)).toBe('(($a || $b) && !($c))')
+    expect(exprToJs(ast)).toBe('$fkb_and($fkb_or($a, $b), $fkb_not($c))')
     expect(evalExpr(ast, { a: false, b: true, c: false })).toMatchObject({ ok: true, value: true })
   })
 
@@ -185,16 +189,6 @@ describe('today() 时区解析（expr-env）', () => {
     expect(() => formatIsoDate(new Date('2026-01-01T20:00:00Z'), 'Not/AZone')).not.toThrow()
     const value = formatIsoDate(new Date('2026-01-01T20:00:00Z'), 'Not/AZone')
     expect(value).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-  })
-
-  it('today() 的 toJs：zh-CN 时烘入 timeZone 字面量，en 时不含 timeZone', () => {
-    setExprLocale('zh-CN')
-    const zhJs = getBuiltin('today')!.toJs([])
-    expect(zhJs).toContain(`timeZone: "Asia/Shanghai"`)
-
-    setExprLocale('en')
-    const enJs = getBuiltin('today')!.toJs([])
-    expect(enJs).not.toContain('timeZone')
   })
 })
 

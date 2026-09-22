@@ -17,6 +17,7 @@ import type {
 } from '../types/dsl'
 import { generateKey } from '../utils/dnd/schema'
 import { exprToJs, resolveValidation, resolveEvents } from './compile'
+import { EXPR_HELPER_PREFIX } from './expr-schema-helpers'
 import { bindToEvents } from './events'
 import { getContainerSpec, type ContainerSpec } from '../elements/container-spec'
 
@@ -1239,6 +1240,28 @@ export function parseExprString(input: string): Expr {
       const start = pos
       while (!eof() && /[a-zA-Z0-9_]/.test(peek()!)) pos++
       let field = src.slice(start, pos)
+      // $fkb_<fn>(arg1, arg2, ...) —— exprToJs 现在把所有内置函数都编译成这种
+      // helper 调用形式（见 expr-schema-helpers.ts），是本解析器唯一需要认识的
+      // "自家产物"语法；参数递归走 parseConditional，因此嵌套调用
+      // （如 $fkb_not($fkb_eq($a, 5))）能正确还原成嵌套的 call 节点。
+      if (field.startsWith(EXPR_HELPER_PREFIX) && peek() === '(') {
+        const fn = field.slice(EXPR_HELPER_PREFIX.length)
+        pos++
+        skip()
+        const args: Expr[] = []
+        if (peek() !== ')') {
+          args.push(parseConditional())
+          skip()
+          while (peek() === ',') {
+            pos++
+            skip()
+            args.push(parseConditional())
+            skip()
+          }
+        }
+        if (!consume(')')) throw new Error('parse error')
+        return call(fn, args)
+      }
       // $xxx() / $xxx($1) — 空参或模板占位符，将 () 吃掉，让 $get()
       // 变成普通字段引用而非 __raw__('$get()')，避免 FormKit 报
       // "must use the id of an input to access" 警告

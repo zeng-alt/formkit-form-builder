@@ -327,6 +327,24 @@ backend like Java only needs to pass it through untouched. Bindable events are
 `click` / `change` / `input` / `focus` / `blur`. `dslToSchema` compiles it to the schema-side
 `__bind: { onClick: handler, ... }`.
 
+A node's `visibleIf` (a portable expression AST, `Expr`: field reference / literal / builtin
+function call) is the single source of truth for conditional visibility. `dslToSchema`
+compiles it into the schema's `if` string, which FormKit evaluates at render time. Builtin
+functions (`eq` / `not` / `if` / `coalesce` / `contains` / etc. — see `getBuiltin`/`isBuiltin`
+for the full list) are always compiled into `$fkb_<fn>(args...)` helper function calls:
+FormKit v2 schema's `if` is executed by a hand-written mini expression parser bundled with
+`@formkit/core`, which only understands
+`&& || === !== == != >= <= > < + - * / %` and `$token(args)` call syntax — no ternary `?:`,
+no `??`, no unary `!`. Translating each builtin into a "seemingly equivalent" native operator
+used to be a real source of bugs (`not` got its logic inverted, `if`/`coalesce` returned
+`undefined`, `contains` returned the matched substring instead of a boolean). With helper
+calls, the `if` condition and `evalExpr` (computed fields / live designer preview) share the
+exact same evaluation logic (see `EXPR_SCHEMA_HELPERS`), so canvas preview, runtime
+rendering, and a backend evaluating the `Expr` AST on its own all stay semantically
+consistent by construction, instead of by manually cross-checking each function. `fkb_` is
+this helper layer's reserved token prefix — **field names must not start with `fkb_`**, or
+they'll be shadowed by the same-named helper and silently break conditional visibility.
+
 ### Extending Elements
 
 Register custom elements via `config.elements` or `registerElement(s)` (DSL registry + FormKit input + canvas/preview all at once):

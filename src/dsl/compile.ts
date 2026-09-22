@@ -1,12 +1,20 @@
 // ═══ DSL → FormKit 表达式字符串编译 ════════════════════════════════════════════
 
 import type { Expr, EventBinding, ValidationRule } from '../types/dsl'
-import { getBuiltin } from './expr-builtins'
+import { exprHelperCall } from './expr-schema-helpers'
 import { eventsToBind } from './events'
 
 /**
  * 编译表达式 AST 为 JS 表达式字符串。字段引用编译为 `$name`：FormKit v2 schema 表达式
  * 把 `$name` 解析到 FormKitSchema 的 data 上（表单数据），`if` 与计算值都用它。
+ *
+ * 内置函数一律编译为 `$fkb_<fn>(args...)` 形式的 helper 调用（compile() 原生支持
+ * `$token(args)` 调用语法），helper 实现由 expr-schema-helpers.ts 委托给 eval()——
+ * 这样 if 条件与 evalExpr 共用同一份求值逻辑，不再需要为每个函数单独翻译一套
+ * JS 算子并人工核对语义是否等价（那正是过去半数内置函数被 FormKit 算错的原因，
+ * 详见 expr-schema-helpers.ts 顶部说明）。未注册的未知函数同样按 helper 调用形式
+ * 输出：运行时因 helper 不存在会得到 undefined（FormKit 打一条 console.warn），
+ * 比输出一个 FormKit 语法都解析不了的裸调用字符串更可控。
  */
 export function exprToJs(expr: Expr): string {
   switch (expr.type) {
@@ -16,14 +24,12 @@ export function exprToJs(expr: Expr): string {
       return `$${expr.name}`
     case 'call': {
       if (expr.fn === '__raw__') {
+        // raw 字符串不经语义校验，原样透传，由编写者自负正确性
         const raw = expr.args[0]
         if (raw && raw.type === 'literal' && typeof raw.value === 'string') return raw.value
       }
-      const builtin = getBuiltin(expr.fn)
       const argJs = expr.args.map((a) => exprToJs(a))
-      if (builtin) return builtin.toJs(argJs)
-      // 未知函数：以调用形式兜底输出
-      return `${expr.fn}(${argJs.join(', ')})`
+      return exprHelperCall(expr.fn, argJs)
     }
   }
 }

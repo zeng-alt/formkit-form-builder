@@ -313,6 +313,7 @@ export default {
     nameFormat:
       'Field name may only contain letters, numbers and underscores, and cannot start with a digit',
     nameExists: 'Field name already exists',
+    nameReserved: 'Field name cannot start with "{prefix}" (reserved for built-in condition functions)',
     button: {
       textPlaceholder: 'Button text',
     },

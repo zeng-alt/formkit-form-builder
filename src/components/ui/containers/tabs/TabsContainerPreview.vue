@@ -5,6 +5,7 @@ import { FormKitSchema } from '@formkit/vue'
 import { NEmpty, NTabPane, NTabs } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
+import { EXPR_SCHEMA_HELPERS } from '@/dsl'
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[]
@@ -72,6 +73,7 @@ const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false))
             v-if="Array.isArray((child as any)?.children) && (child as any).children.length > 0"
             :schema="Array.isArray((child as any)?.children) ? (child as any).children : []"
             :library="schemaLibrary"
+            :data="EXPR_SCHEMA_HELPERS"
           />
           <n-empty v-else :description="t('builder.listDropHere')" />
         </div>

@@ -5,6 +5,7 @@ import { FormKitSchema } from '@formkit/vue'
 import { NEmpty, NStep, NSteps } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
+import { EXPR_SCHEMA_HELPERS } from '@/dsl'
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[]
@@ -91,6 +92,7 @@ const hasPaneContent = (child: any) =>
             v-if="hasPaneContent(child)"
             :schema="paneChildren(child)"
             :library="schemaLibrary"
+            :data="EXPR_SCHEMA_HELPERS"
           />
           <n-empty v-else :description="t('builder.listDropHere')" />
         </div>

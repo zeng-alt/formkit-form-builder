@@ -64,6 +64,7 @@ export {
 } from './expr-env'
 export { exprToJs, resolveValidation, resolveEvents } from './compile'
 export type { ValidationEntry, ResolvedValidation } from './compile'
+export { EXPR_HELPER_PREFIX, EXPR_SCHEMA_HELPERS, exprHelperCall } from './expr-schema-helpers'
 export { evalExpr } from './eval'
 export type { EvalResult } from './eval'
 export {
