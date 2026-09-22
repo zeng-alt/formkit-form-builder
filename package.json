@@ -46,7 +46,9 @@
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
-    "format": "oxfmt src/"
+    "format": "oxfmt src/",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@formkit/core": "^2.0.0",
@@ -74,6 +76,7 @@
     "@iconify-json/lucide": "^1.2.58",
     "@iconify-json/stash": "^1.2.3",
     "@iconify/utils": "^3.1.0",
+    "@lezer/common": "^1.5.2",
     "@tsconfig/node24": "^24.0.4",
     "@types/node": "^24.12.0",
     "@unocss/eslint-config": "^66.7.0",
@@ -103,6 +106,7 @@
     "vite": "^8.0.3",
     "vite-plugin-dts": "^4.5.4",
     "vite-plugin-vue-devtools": "^8.1.1",
+    "vitest": "^5.0.1",
     "vue": "^3.5.31",
     "vue-tsc": "^3.2.6"
   },

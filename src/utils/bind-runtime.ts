@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance } from 'axios'
 import type { FormKitNode } from '@formkit/core'
+import { BIND_EVENT_KEYS } from '@/dsl/events'
 
 export { BIND_AXIOS_KEY } from '@/composables/use-bind-http'
 
@@ -12,20 +13,19 @@ export interface FormMeta {
   name?: string
 }
 
-const allowedEventKeys = new Set(['onClick', 'onChange', 'onInput', 'onFocus', 'onBlur'])
-
 function extractCode(v: unknown): string | undefined {
   if (typeof v === 'string') return v
   if (v && typeof v === 'object' && typeof (v as any).__js === 'string') return (v as BindJs).__js
   return undefined
 }
 
+// 放行集合单一来源见 dsl/events.ts 的 BIND_EVENT_KEYS（与 DSL FormEvent 一一对应）
 export function normalizeBind(bind: unknown): Record<string, string> | undefined {
   if (!bind || typeof bind !== 'object') return undefined
   const obj = bind as Record<string, unknown>
   const out: Record<string, string> = {}
   for (const key of Object.keys(obj)) {
-    if (!allowedEventKeys.has(key)) continue
+    if (!BIND_EVENT_KEYS.has(key)) continue
     const code = extractCode(obj[key])
     if (typeof code === 'string' && code.trim()) out[key] = code
   }

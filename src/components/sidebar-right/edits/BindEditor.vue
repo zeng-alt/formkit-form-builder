@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 import { NButton, NCard, NDivider, NModal, NTag } from 'naive-ui'
 import { useFormField } from '../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../i18n/context'
+import { FORM_EVENTS } from '../../../types/dsl'
+import { bindKeyOf } from '../../../dsl/events'
 import SwitchInput from './common/SwitchInput.vue'
 import JsCodeEditor from './common/JsCodeEditor.vue'
 
@@ -12,10 +14,10 @@ type EventDef = {
   placeholder: string
 }
 
-// 可绑定事件全集（与 bind-runtime.ts 的 allowedEventKeys 对齐）
-const allEvents: EventDef[] = [
-  {
-    key: 'onClick',
+// 事件 key 全集由 FORM_EVENTS 派生（单一来源，见 types/dsl.ts / dsl/events.ts），
+// 与 bind-runtime.ts 的 BIND_EVENT_KEYS 天然对齐；本表只维护标题 / 占位符文案。
+const EVENT_META: Record<string, Omit<EventDef, 'key'>> = {
+  onClick: {
     title: 'Click',
     placeholder: `// 可用参数：event 事件对象 · form 表单数据 · $form 表单元信息{id,version,name} · $value 当前值 · $node 节点 · $name 字段名 · $get(name) 取字段值 · $slots 插槽 · attrs 节点配置 · ctx 全量合并 · axios
 console.log('event', event)
@@ -30,27 +32,28 @@ console.log('attrs', attrs)
 console.log('ctx', ctx)
 await axios.get('/api/ping')`,
   },
-  {
-    key: 'onChange',
+  onChange: {
     title: 'Change',
     placeholder: `console.log('change', event, form, $form)`,
   },
-  {
-    key: 'onInput',
+  onInput: {
     title: 'Input',
     placeholder: `console.log('input', event, form, $form)`,
   },
-  {
-    key: 'onFocus',
+  onFocus: {
     title: 'Focus',
     placeholder: `console.log('focus', event, form, $form)`,
   },
-  {
-    key: 'onBlur',
+  onBlur: {
     title: 'Blur',
     placeholder: `console.log('blur', event, form, $form)`,
   },
-]
+}
+
+const allEvents: EventDef[] = FORM_EVENTS.map((event) => {
+  const key = bindKeyOf(event)
+  return { key, ...EVENT_META[key]! }
+})
 
 // 事件编辑器快捷插入的变量（对应 runBindCode 注入的全局参数）
 const BIND_QUICK_VARS = [

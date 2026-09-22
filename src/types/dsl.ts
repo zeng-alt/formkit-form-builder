@@ -67,25 +67,18 @@ export interface DynamicOptionSource {
   label?: string
 }
 
-
-
 // ─── 事件绑定（handler 为不透明函数体字符串，前端运行时执行，Java 透传）──────────
-export type FormKitEvent = 'change' | 'input' | 'blur' | 'focus'
-export type ElEvent =
-  | 'click'
-  | 'dblclick'
-  | 'mouseenter'
-  | 'mouseleave'
-  | 'keydown'
-  | 'keyup'
-  | 'keypress'
-  | 'submit'
-export type FormEvent = FormKitEvent | ElEvent
+// 单一来源：与运行时 runBindCode 的放行集合（bind-runtime.ts）、编辑器 BindEditor
+// 的开关一一对应，三者不再各自维护一份事件清单。
+export const FORM_EVENTS = ['click', 'change', 'input', 'focus', 'blur'] as const
+export type FormEvent = (typeof FORM_EVENTS)[number]
 
 export interface EventBinding {
   event: FormEvent
   handler: string
 }
+// schema 侧表示统一为 __bind: { onClick: handler, ... }（formkit 节点在顶层，
+// cmp 节点在 props，el 节点在 attrs）；handler 字符串原样透传，Java 侧不解析。
 
 // ─── 节点基类 ────────────────────────────────────────────────────────────────────
 export interface BaseNode {

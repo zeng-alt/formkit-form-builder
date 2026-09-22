@@ -4,6 +4,7 @@
 // $formkit / $cmp / $el 节点；任何分类都能使用任意一种渲染原语。
 
 import type { FormKitSchemaFormKit } from '@formkit/core'
+import { FORM_EVENTS } from '../types/dsl'
 import type {
   FieldNode,
   ContainerNode,
@@ -13,11 +14,13 @@ import type {
   Expr,
   ValidationRule,
   EventBinding,
+  FormEvent,
   LayoutType,
   RenderKind,
 } from '../types/dsl'
 import { generateKey } from '../utils/dnd/schema'
 import { exprToJs, resolveValidation, resolveEvents } from './compile'
+import { collectNodeEvents, bindToEvents, eventOfBindKey } from './events'
 import { getContainerSpec, type ContainerSpec } from '../elements/container-spec'
 
 export type SchemaNode = FormKitSchemaFormKit & Record<string, unknown>
@@ -110,7 +113,8 @@ function buildNodeHead(node: FormNode, kind: RenderKind, target?: string): any {
         : { $formkit: node.type }
   if (node.key) base.__key = node.key
   if (node.visibleIf) base.if = exprToJs(node.visibleIf, 'var')
-  const events = resolveEvents(node.events)
+  // events 唯一真源：连同遗留 props.__bind 一并收敛为 schema 侧的 __bind（见 dsl/events.ts）
+  const events = resolveEvents(collectNodeEvents(node))
   if (events && Object.keys(events).length) applyByKind(base, events, kind)
   if (node.label) putByKind(base, 'label', node.label, kind)
   if (node.id) putByKind(base, 'id', node.id, kind)
@@ -141,9 +145,11 @@ const FIELD_KNOWN_KEYS = new Set([
   'bind',
   'props',
   'attrs',
+  '__bind',
 ])
 
 // FormKit 语义键放顶层，其余组件配置放 props 嵌套（与 legacy 画布约定一致）
+// 注：'__bind' 不在此列——它已由 events 统一产出（见 buildNodeHead），不再从 node.props 透传
 const FIELD_TOP_PROPS = new Set([
   'min',
   'max',
@@ -157,7 +163,6 @@ const FIELD_TOP_PROPS = new Set([
   'description',
   'options',
   'value',
-  '__bind',
   'buttonText',
 ])
 
@@ -187,6 +192,9 @@ export function fieldNodeToSchema(node: FieldNode, rt?: RenderTarget): SchemaNod
   if (node.props) {
     const nested: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(node.props)) {
+      // __bind 已由 events 统一产出（见上），遗留 props.__bind 只参与 collectNodeEvents 合并，
+      // 不再原样透传，避免与 events 产出的 __bind 重复/冲突
+      if (key === '__bind') continue
       if (kind === 'formkit' && FIELD_TOP_PROPS.has(key)) base[key] = value
       else nested[key] = value
     }
@@ -275,31 +283,40 @@ export function fieldNodeFromSchema(s: SchemaNode, fallbackType = 'text'): Field
   if (typeof anyS.if === 'string' && anyS.if) node.visibleIf = parseExprString(anyS.if)
   else if (typeof anyS.if === 'boolean') node.visibleIf = { type: 'literal', value: anyS.if }
 
-  const events = parseEvents(P)
+  // events 唯一真源：P.__bind（真源位置）优先，兼容 top（anyS）遗留 __bind / 旧版 onXxx 字符串键
+  const events = parseEvents(P, anyS)
   if (events?.length) node.events = events
 
   parseOuterClass(anyS.outerClass, node)
 
   const props: Record<string, unknown> = {}
-  const collect = (obj: Record<string, unknown>) => {
+  // 事件键（onClick 等）已由 parseEvents 消费，不再作为普通配置回流 props（与静态节点一致）。
+  // nested：从嵌套 props / attrs 收集时，children 是组件的普通配置（如 range 的
+  // '$slots.default' slot 转发），只有节点顶层的 children 才是 schema 结构键——
+  // 不区分会让往返丢掉这个属性。
+  const collect = (obj: Record<string, unknown>, nested = false) => {
     for (const [key, value] of Object.entries(obj)) {
-      if (FIELD_KNOWN_KEYS.has(key)) continue
+      const structural =
+        nested && key === 'children' ? Array.isArray(value) : FIELD_KNOWN_KEYS.has(key)
+      if (structural || /^on[A-Z]/.test(key)) continue
       if (value === undefined) continue
       props[key] = value
     }
   }
   if (isCmp) {
-    collect(anyS.props ?? {})
-    // 顶层遗留未知键（__bind / placeholder 等）回流 props，与 legacy 行为一致
+    collect(anyS.props ?? {}, true)
+    // 顶层遗留未知键（placeholder 等）回流 props，与 legacy 行为一致
     for (const [key, value] of Object.entries(anyS)) {
-      if (key === 'props' || key === '$cmp' || FIELD_KNOWN_KEYS.has(key)) continue
+      if (key === 'props' || key === '$cmp' || FIELD_KNOWN_KEYS.has(key) || /^on[A-Z]/.test(key))
+        continue
       if (value === undefined || props[key] !== undefined) continue
       props[key] = value
     }
   } else if (isEl) {
-    collect(anyS.attrs ?? {})
+    collect(anyS.attrs ?? {}, true)
     for (const [key, value] of Object.entries(anyS)) {
-      if (key === 'attrs' || key === '$el' || FIELD_KNOWN_KEYS.has(key)) continue
+      if (key === 'attrs' || key === '$el' || FIELD_KNOWN_KEYS.has(key) || /^on[A-Z]/.test(key))
+        continue
       if (value === undefined) continue
       props[key] = value
     }
@@ -307,9 +324,9 @@ export function fieldNodeFromSchema(s: SchemaNode, fallbackType = 'text'): Field
     collect(anyS)
     // formkit 字段：非语义配置（disabled/clearable/maxlength/size 等）由 toSchema 放入
     // props 嵌套，需回流避免 schema→DSL 往返丢属性（数据表格搜索区重建元素依赖此处）
-    collect(anyS.props ?? {})
+    collect(anyS.props ?? {}, true)
     for (const [key, value] of Object.entries(anyS)) {
-      if (key === 'props' || FIELD_KNOWN_KEYS.has(key)) continue
+      if (key === 'props' || FIELD_KNOWN_KEYS.has(key) || /^on[A-Z]/.test(key)) continue
       if (value === undefined || props[key] !== undefined) continue
       props[key] = value
     }
@@ -690,6 +707,8 @@ export function tabsPaneFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx): Layo
 // ─── 静态节点 ──────────────────────────────────────────────────────────────────
 
 // FormKit 语义键放顶层（$formkit 渲染），其余组件配置放 props / attrs 嵌套
+// 注：'__bind' 不在此列——它已由 events 统一产出（见 buildNodeHead/staticNodeToSchema），
+// 不再从 node.props 透传
 const STATIC_TOP_PROPS = new Set([
   'options',
   'value',
@@ -699,7 +718,6 @@ const STATIC_TOP_PROPS = new Set([
   'multiple',
   'accept',
   'placeholder',
-  '__bind',
   'buttonText',
 ])
 
@@ -717,6 +735,7 @@ const STATIC_CONSUMED_KEYS = new Set([
   'attrs',
   'outerClass',
   'props',
+  '__bind',
   '__key',
   '__preview_placeholder',
 ])
@@ -773,6 +792,8 @@ export function staticNodeToSchema(node: StaticNode, rt?: RenderTarget): SchemaN
       if (node.id) set('id', node.id)
       if (node.label) set('label', node.label)
       for (const [key, value] of Object.entries(anyProps)) {
+        // __bind 已由 events 统一产出（见下），遗留 props.__bind 只参与 collectNodeEvents 合并
+        if (key === '__bind') continue
         if (kind === 'formkit' && STATIC_TOP_PROPS.has(key)) base[key] = value
         else putByKind(base, key, value, kind)
       }
@@ -782,7 +803,7 @@ export function staticNodeToSchema(node: StaticNode, rt?: RenderTarget): SchemaN
 
   if (node.key) base.__key = node.key
   if (node.visibleIf) base.if = exprToJs(node.visibleIf, 'var')
-  const events = resolveEvents(node.events)
+  const events = resolveEvents(collectNodeEvents(node))
   if (events && Object.keys(events).length) applyByKind(base, events, kind)
   if (kind === 'cmp') {
     if (Object.keys(base.props ?? {}).length === 0) delete base.props
@@ -841,7 +862,8 @@ export function staticNodeFromSchema(s: SchemaNode, hintType?: string): StaticNo
     else if (typeof anyS.children === 'number') node.text = String(anyS.children)
   }
 
-  const events = parseEvents(P)
+  // events 唯一真源：P.__bind（真源位置）优先，兼容 top（anyS）遗留 __bind / 旧版 onXxx 字符串键
+  const events = parseEvents(P, anyS)
   if (events?.length) node.events = events
 
   parseOuterClass(anyS.outerClass, node)
@@ -865,16 +887,23 @@ export function staticNodeFromSchema(s: SchemaNode, hintType?: string): StaticNo
       if (value === undefined) continue
       props[key] = value
     }
-    // 顶层遗留未知键回流 props，与 legacy 行为一致
+    // 顶层遗留未知键回流 props，与 legacy 行为一致；事件键（onXxx）已由 parseEvents 消费
     for (const [key, value] of Object.entries(anyS)) {
-      if (key === 'props' || key === '$cmp' || STATIC_CONSUMED_KEYS.has(key)) continue
+      if (
+        key === 'props' ||
+        key === '$cmp' ||
+        STATIC_CONSUMED_KEYS.has(key) ||
+        /^on[A-Z]/.test(key)
+      )
+        continue
       if (value === undefined || props[key] !== undefined) continue
       props[key] = value
     }
   } else if (isEl) {
     collect(anyS.attrs ?? {})
     for (const [key, value] of Object.entries(anyS)) {
-      if (key === 'attrs' || key === '$el' || STATIC_CONSUMED_KEYS.has(key)) continue
+      if (key === 'attrs' || key === '$el' || STATIC_CONSUMED_KEYS.has(key) || /^on[A-Z]/.test(key))
+        continue
       if (value === undefined) continue
       props[key] = value
     }
@@ -987,19 +1016,38 @@ export function parseValidation(
 }
 
 // ─── 事件 ↔ schema ─────────────────────────────────────────────────────────────
+// __bind 是 events 唯一真源在 schema 侧的表示；旧版 onXxx: "($event) => {...}" 字符串键
+// 仅作 best-effort 兼容（存量数据 / 外部导入），二者合并去重，同一 event 先到先得：
+// P.__bind（真源位置） > top.__bind（cmp/el 节点 __bind 遗留在顶层） > 旧版 onXxx 字符串键。
 
-export function parseEvents(s: Record<string, unknown>): EventBinding[] | undefined {
-  const out: EventBinding[] = []
-  for (const [key, value] of Object.entries(s)) {
-    if (!/^on[A-Z]/.test(key)) continue
-    if (typeof value !== 'string') continue
-    const event = key.charAt(2).toLowerCase() + key.slice(3)
-    let handler = value
-    const wrapper = handler.match(/^\(\$event\)\s*=>\s*\{\s*([\s\S]*?)\s*\}$/)
-    if (wrapper && wrapper[1] !== undefined) handler = wrapper[1]
-    out.push({ event: event as EventBinding['event'], handler })
+export function parseEvents(
+  P: Record<string, unknown>,
+  top?: Record<string, unknown>,
+): EventBinding[] | undefined {
+  const map = new Map<FormEvent, string>()
+  const addAll = (list: EventBinding[] | undefined) => {
+    for (const e of list ?? []) if (!map.has(e.event)) map.set(e.event, e.handler)
   }
-  return out.length ? out : undefined
+  addAll(bindToEvents(P.__bind))
+  addAll(bindToEvents(top?.__bind))
+
+  const addLegacyOnKeys = (obj: Record<string, unknown> | undefined) => {
+    if (!obj) return
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value !== 'string') continue
+      const event = eventOfBindKey(key)
+      if (!event || map.has(event)) continue
+      let handler = value
+      const wrapper = handler.match(/^\(\$event\)\s*=>\s*\{\s*([\s\S]*?)\s*\}$/)
+      if (wrapper && wrapper[1] !== undefined) handler = wrapper[1]
+      map.set(event, handler)
+    }
+  }
+  addLegacyOnKeys(P)
+  if (top && top !== P) addLegacyOnKeys(top)
+
+  if (!map.size) return undefined
+  return FORM_EVENTS.filter((e) => map.has(e)).map((event) => ({ event, handler: map.get(event)! }))
 }
 
 // ─── 旧表达式字符串 → AST（best-effort，失败则 __raw__ 无损兜底）───────────────

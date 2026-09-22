@@ -311,6 +311,14 @@ const outputSchema = dslToOutputSchema(definition); // Containers as group nesti
 const backToDsl = schemaToDsl(schema);
 ```
 
+A node's `events: [{ event: "click", handler: "..." }]` is the single source of truth for
+event bindings: `handler` is an opaque function-body string executed by the frontend runtime
+(with injected params such as `event` / `form` / `$form` / `$value` / `$node` / `$get`); a
+backend like Java only needs to pass it through untouched. Bindable events are
+`click` / `change` / `input` / `focus` / `blur`. `dslToSchema` compiles it to the schema-side
+`__bind: { onClick: handler, ... }`; legacy `props.__bind` from older DSL is migrated to
+`events` automatically on load/edit, no manual handling needed.
+
 ### Extending Elements
 
 Register custom elements via `config.elements` or `registerElement(s)` (DSL registry + FormKit input + canvas/preview all at once):
@@ -344,6 +352,21 @@ const config = {
     },
   },
 };
+```
+
+The DSL expression function `today()` resolves its time zone from the currently active
+runtime language (`zh-CN` → `Asia/Shanghai`, `ja` → `Asia/Tokyo`, etc.; `en` has no fixed
+mapping and falls back to the browser's local time zone) instead of a fixed UTC offset,
+avoiding an off-by-one-day result in the evening for users east of UTC. It syncs
+automatically on language switch; hosts can also extend the mapping via
+`LOCALE_TIME_ZONES`, or set the evaluation language manually with `setExprLocale` (useful
+when using the DSL conversion utilities standalone, outside `FormBuilder` / `FormRenderer`).
+
+```ts
+import { setExprLocale, LOCALE_TIME_ZONES } from "@zeng-alt/formkit-form-builder";
+
+LOCALE_TIME_ZONES["fr"] = "Europe/Paris"; // extend the mapping
+setExprLocale("zh-CN"); // manual override (synced automatically inside FormBuilder/FormRenderer)
 ```
 
 ## Examples

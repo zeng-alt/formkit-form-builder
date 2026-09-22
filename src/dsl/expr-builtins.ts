@@ -4,6 +4,8 @@
 //   - toJs: 编译参数 JS 字符串 → 最终 JS 表达式（用于 FormKit schema 的 if）
 //   - eval: 对已求值的参数做运行时求值（无 new Function，安全）
 
+import { formatIsoDate, getExprTimeZone } from './expr-env'
+
 export interface BuiltinFn {
   name: string
   /** 参数数量范围 [min, max]，max 为 Infinity 表示可变 */
@@ -251,13 +253,20 @@ export const builtins: Record<string, BuiltinFn> = {
     toJs: (args) => `(${args.join(' + ')})`,
     eval: (args) => args.reduce<number>((acc, v) => acc + toNum(v), 0),
   },
-  // today() → ISO 日期字符串（yyyy-MM-dd）
+  // today() → ISO 日期字符串（yyyy-MM-dd），时区按当前设置的语言（见 expr-env）解析，
+  // 而非固定 UTC——否则中国用户晚上 8 点后（UTC 已跨天）会取到昨天的日期。
   today: {
     name: 'today',
     arity: [0, 0],
     returns: 'string',
-    toJs: () => `new Date().toISOString().slice(0, 10)`,
-    eval: () => new Date().toISOString().slice(0, 10),
+    // 编译期把当前时区字面量烘进生成的 JS：schema 渲染时不再依赖运行时环境状态，
+    // 与 exprToJs 的"一次编译多处执行"语义一致；en-CA 的 format 输出即 yyyy-MM-dd。
+    toJs: () => {
+      const tz = getExprTimeZone()
+      const opts = `{ year: 'numeric', month: '2-digit', day: '2-digit'${tz ? `, timeZone: ${JSON.stringify(tz)}` : ''} }`
+      return `new Intl.DateTimeFormat('en-CA', ${opts}).format(new Date())`
+    },
+    eval: () => formatIsoDate(new Date(), getExprTimeZone()),
   },
   // uuid() → 伪 UUID v4
   uuid: {

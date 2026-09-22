@@ -2,6 +2,7 @@ import type { WritableComputedRef } from 'vue'
 import { computed } from 'vue'
 import { findDslNodeByKey, updateDslNodeAtKey } from '@/utils/schema/dsl-tree'
 import { exprToJs, resolveValidation, parseExprString, parseValidation } from '@/dsl'
+import { eventsToBind, bindToEvents, collectNodeEvents } from '@/dsl/events'
 import { getColSpan } from '@/utils/dnd/grid'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { DSL_VERSION } from '@/types/dsl'
@@ -634,7 +635,8 @@ export function useFormField() {
 
   const rowSpan = computed<number>({
     get: () => {
-      const classes = typeof selectedField.value?.outerClass === 'string' ? selectedField.value.outerClass : ''
+      const classes =
+        typeof selectedField.value?.outerClass === 'string' ? selectedField.value.outerClass : ''
       const match = classes.match(/\brow-span-(\d+)\b/)
       const parsed = match ? parseInt(match[1]!, 10) : 1
       return Number.isFinite(parsed) && parsed > 1 ? parsed : 1
@@ -688,15 +690,25 @@ export function useFormField() {
     },
   })
 
+  // 事件绑定写路径：真源是 DSL events（编辑器仍以 schema 侧 __bind 形态读写，
+  // 见 BindEditor.vue），落盘时收敛到 node.events，不再写 props.__bind（单一来源）。
   const bindEvents = computed<Record<string, unknown>>({
     get: () => {
-      const value = selectedField.value?.props?.__bind
-      if (value && typeof value === 'object') return value as Record<string, unknown>
-      return {}
+      const node = selectedField.value
+      return node ? (eventsToBind(collectNodeEvents(node)) ?? {}) : {}
     },
     set: (value: Record<string, unknown>) => {
-      const hasAny = value && typeof value === 'object' && Object.keys(value).length > 0
-      setPropsProp('__bind', hasAny ? value : undefined)
+      patchSelected((node) => {
+        const events = bindToEvents(value)
+        if (events?.length) node.events = events
+        else delete node.events
+        // 遗留 props.__bind 迁移到 events 后清掉，避免双轨残留
+        if (node.props && '__bind' in node.props) {
+          const { __bind: _legacyBind, ...rest } = node.props
+          node.props = Object.keys(rest).length ? rest : undefined
+        }
+        return node
+      })
     },
   })
 

@@ -2,6 +2,7 @@
 
 import type { Expr, EventBinding, ValidationRule } from '../types/dsl'
 import { getBuiltin } from './expr-builtins'
+import { eventsToBind } from './events'
 
 export type FieldRefMode = 'formData' | 'var'
 
@@ -76,17 +77,11 @@ export function resolveValidation(rules: ValidationRule[] | undefined): Resolved
 }
 
 // ─── 事件 ──────────────────────────────────────────────────────────────────────
+// events 唯一真源 → schema 侧统一收敛为 __bind: { onClick: handler }（见 dsl/events.ts）；
+// 不再产出 onClick: "($event) => {...}" 字符串——那条路没有运行时消费者，会被 FormKit
+// 当表达式解析后静默失败。运行时（use-schema-attrs / use-bind-events）读的正是这里的 __bind。
 
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
-export function resolveEvents(events: EventBinding[] | undefined): Record<string, string> {
-  if (!events?.length) return {}
-
-  return events.reduce<Record<string, string>>((acc, binding) => {
-    const key = `on${capitalize(binding.event)}`
-    acc[key] = `($event) => { ${binding.handler} }`
-    return acc
-  }, {})
+export function resolveEvents(events: EventBinding[] | undefined): Record<string, unknown> {
+  const bind = eventsToBind(events)
+  return bind ? { __bind: bind } : {}
 }

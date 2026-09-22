@@ -54,6 +54,14 @@ export type {
 export { registerBuiltinElementTypes } from './definitions'
 export { getBuiltin, isBuiltin } from './expr-builtins'
 export type { BuiltinFn } from './expr-builtins'
+export {
+  setExprLocale,
+  getExprLocale,
+  getExprTimeZone,
+  resolveTimeZoneForLocale,
+  formatIsoDate,
+  LOCALE_TIME_ZONES,
+} from './expr-env'
 export { exprToJs, resolveValidation, resolveEvents } from './compile'
 export { evalExpr } from './eval'
 export type { EvalResult } from './eval'

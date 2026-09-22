@@ -309,6 +309,13 @@ const outputSchema = dslToOutputSchema(definition); // 容器转 group 嵌套（
 const backToDsl = schemaToDsl(schema);
 ```
 
+节点的 `events: [{ event: "click", handler: "..." }]` 是事件绑定的唯一真源：`handler`
+为不透明的函数体字符串，由前端运行时执行（可访问 `event` / `form` / `$form` / `$value` /
+`$node` / `$get` 等注入参数），Java 等后端只需原样透传。可绑定事件为
+`click` / `change` / `input` / `focus` / `blur`。`dslToSchema` 会把它编译成 schema 侧的
+`__bind: { onClick: handler, ... }`；旧版 DSL 里的 `props.__bind` 在加载 / 编辑时会自动
+迁移到 `events`，无需手动处理。
+
 ### 扩展元素
 
 通过 `config.elements` 或 `registerElement(s)` 注册自定义元素（DSL 注册中心 + FormKit input + 画布/预览一次打通）：
@@ -344,6 +351,19 @@ const config = {
     },
   },
 };
+```
+
+DSL 表达式函数 `today()` 按当前运行语言解析时区（`zh-CN` → `Asia/Shanghai`、`ja` →
+`Asia/Tokyo` 等，`en` 无固定映射，回落浏览器本地时区），而非固定 UTC，避免夜间取到
+昨天的日期。语言切换会自动同步；宿主也可用 `LOCALE_TIME_ZONES` 扩展映射表，或用
+`setExprLocale` 手动设置求值语言（脱离 `FormBuilder` / `FormRenderer` 单独使用 DSL 转换
+工具时适用）。
+
+```ts
+import { setExprLocale, LOCALE_TIME_ZONES } from "@zeng-alt/formkit-form-builder";
+
+LOCALE_TIME_ZONES["fr"] = "Europe/Paris"; // 扩展映射
+setExprLocale("zh-CN"); // 手动设置（FormBuilder/FormRenderer 内会随 locale 自动同步）
 ```
 
 ## 示例
