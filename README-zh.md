@@ -12,11 +12,19 @@
 pnpm i @zeng-alt/formkit-form-builder
 ```
 
-本库依赖以下 peer 依赖（需要你在项目里自行安装）：
+本库依赖以下 peer 依赖（需要你在项目里自行安装）。以下为**必装**依赖：
 
 ```bash
-pnpm i vue naive-ui @vueuse/core
+pnpm i vue naive-ui @vueuse/core @formkit/core @formkit/vue @formkit/i18n
 ```
+
+以下依赖仅在使用设计器的表达式 / JS 绑定编辑器时才需要（用于驱动基于 CodeMirror 的代码编辑面板）：
+
+```bash
+pnpm i @codemirror/autocomplete @codemirror/commands @codemirror/lang-javascript @codemirror/language @codemirror/lint @codemirror/state @codemirror/theme-one-dark @codemirror/view
+```
+
+> 为什么这些包是 `peerDependencies` 而不是直接打进产物？是为了让本库与你的项目**共用同一份实例**。FormKit 在每份模块实例内部维护全局的节点 / 插件 / input 类型 / i18n locale 注册表，两份 `@formkit/core`（你项目里一份 + 本库内打包一份）互相不认识对方注册的内容，字段可能悄悄渲染不出来或校验失效；CodeMirror 则会主动检测同一页面内是否存在多份 `@codemirror/state` 实例，一旦发现就直接抛错，代码编辑器会直接不可用。把这些包作为 peer 依赖装在你的项目里，能保证全局只加载一份。
 
 ## 样式引入
 

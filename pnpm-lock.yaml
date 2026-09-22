@@ -8,18 +8,9 @@ importers:
 
   .:
     dependencies:
-      '@formkit/core':
-        specifier: ^2.0.0
-        version: 2.0.0
       '@formkit/drag-and-drop':
         specifier: ^0.5.3
         version: 0.5.3
-      '@formkit/i18n':
-        specifier: ^2.0.0
-        version: 2.0.0
-      '@formkit/vue':
-        specifier: ^2.0.0
-        version: 2.0.0(vue@3.5.32(typescript@6.0.2))
       '@internationalized/date':
         specifier: ^3.12.0
         version: 3.12.0
@@ -60,6 +51,15 @@ importers:
       '@codemirror/view':
         specifier: ^6.38.2
         version: 6.41.1
+      '@formkit/core':
+        specifier: ^2.0.0
+        version: 2.0.0
+      '@formkit/i18n':
+        specifier: ^2.0.0
+        version: 2.0.0
+      '@formkit/vue':
+        specifier: ^2.0.0
+        version: 2.0.0(vue@3.5.32(typescript@6.0.2))
       '@iconify-json/lucide':
         specifier: ^1.2.58
         version: 1.2.103

@@ -4,15 +4,16 @@ import type { FormKitFrameworkContext } from '@formkit/core'
 import { NAvatar } from 'naive-ui'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import { useBindEvents } from '@/composables/use-bind-events'
-import { omit } from 'naive-ui/es/_utils'
 
 // 纯配置驱动、无需值绑定；context 仅作为配置来源传入 useSchemaAttrs
 const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-// avatarSize 是本库配置键（映射到 NAvatar 的 size）；fallbackText 是插槽内容
-const { config, props, bind } = useSchemaAttrs(context, omit(['fallbackText']))
+// avatarSize 是本库配置键（映射到 NAvatar 的 size）；fallbackText 是插槽内容，
+// 需从透传给 NAvatar 的 props 里排除（useSchemaAttrs 的 opts.omit 就是键名数组，
+// 不需要借助 naive-ui 内部私有子路径 naive-ui/es/_utils 的 omit 函数）
+const { config, props, bind } = useSchemaAttrs(context, { omit: ['fallbackText'] })
 const { runEvent } = useBindEvents(context, bind)
 const fallbackText = computed(() => (config.fallbackText as string | undefined) ?? '')
 

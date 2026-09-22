@@ -12,11 +12,19 @@ Core concept: The designer outputs a **versioned DSL (`FormDefinition`)** rather
 pnpm i @zeng-alt/formkit-form-builder
 ```
 
-This library depends on the following peer dependencies (you need to install them in your project):
+This library depends on the following peer dependencies (you need to install them in your project). They are **required**:
 
 ```bash
-pnpm i vue naive-ui @vueuse/core
+pnpm i vue naive-ui @vueuse/core @formkit/core @formkit/vue @formkit/i18n
 ```
+
+The following are only needed if you use the designer's expression / JS binding editors (they power the CodeMirror-based code editor panels):
+
+```bash
+pnpm i @codemirror/autocomplete @codemirror/commands @codemirror/lang-javascript @codemirror/language @codemirror/lint @codemirror/state @codemirror/theme-one-dark @codemirror/view
+```
+
+> Why are these `peerDependencies` instead of being bundled? So this library shares **the same instances** of FormKit / CodeMirror with your project. FormKit keeps a global node/plugin/input-type/i18n-locale registry per module instance — two copies of `@formkit/core` (yours + one bundled inside this library) would not recognize each other's registrations, and fields could silently fail to render or validate. CodeMirror actively detects multiple `@codemirror/state` instances in the same page and throws — the code editor would simply break. Installing these as regular dependencies of your app (as peers) guarantees there's only ever one copy loaded.
 
 ## Style Import
 
