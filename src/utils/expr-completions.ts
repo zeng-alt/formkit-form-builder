@@ -6,11 +6,10 @@ export interface ExprFieldInfo {
   label?: string
 }
 
-let _fields: ExprFieldInfo[] = []
-
-export function setExprFieldNames(fields: ExprFieldInfo[]) {
-  _fields = [...fields]
-}
+// ─── 字段清单：由调用方以取值函数传入 ──────────────────────────────────────────
+// 不用模块级全局，是因为两个 FormBuilder 实例可能同时存在；也不接受快照数组，
+// 是因为字段清单会随用户编辑实时变化——取值函数才能保证每次补全/悬停都读到最新值。
+export type GetExprFields = () => ExprFieldInfo[]
 
 const TOOLTIP_STYLE = `
   font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
@@ -141,75 +140,77 @@ function buildGetMethodInfo(name: string, detail: string, desc: string): HTMLEle
   return root
 }
 
-export const exprCompletionsSource: CompletionSource = (context) => {
-  // $get(xxx). 点成员补全
-  const afterGetDot = context.matchBefore(/\$get\(.*?\)\.\s*\w*$/)
-  if (afterGetDot) {
-    const text = afterGetDot.text
-    const dotIdx = text.lastIndexOf('.')
-    const afterDot = text.slice(dotIdx + 1).trim()
+export function createExprCompletionSource(getFields: GetExprFields): CompletionSource {
+  return (context) => {
+    // $get(xxx). 点成员补全
+    const afterGetDot = context.matchBefore(/\$get\(.*?\)\.\s*\w*$/)
+    if (afterGetDot) {
+      const text = afterGetDot.text
+      const dotIdx = text.lastIndexOf('.')
+      const afterDot = text.slice(dotIdx + 1).trim()
+      const options: Completion[] = []
+      for (const m of GET_DOT_METHODS) {
+        if (!m.name.startsWith(afterDot)) continue
+        options.push({
+          label: m.name,
+          type: 'property',
+          detail: m.detail,
+          info: () => buildGetMethodInfo(m.name, m.detail, m.info),
+          apply: m.apply,
+        })
+      }
+      if (options.length) return { from: afterGetDot.to, options, validFor: /^\w*$/ }
+      return null
+    }
+
+    // $xxx 补全 — 手动扫描光标前最近的 $ 符号
+    const pos = context.pos
+    const doc = context.state.doc
+
+    let from = pos - 1
+    while (from >= 0) {
+      const c = doc.sliceString(from, from + 1)
+      if (c === '$') break
+      if (!/[\w:.]/.test(c)) return null
+      from--
+    }
+    if (from < 0) return null
+
+    const prefix = doc.sliceString(from + 1, pos)
     const options: Completion[] = []
-    for (const m of GET_DOT_METHODS) {
-      if (!m.name.startsWith(afterDot)) continue
+
+    // 内置变量 / 函数
+    for (const [key, def] of Object.entries(BUILTINS)) {
+      if (!key.startsWith(prefix) && !ctxNameEq(key, prefix)) continue
       options.push({
-        label: m.name,
-        type: 'property',
-        detail: m.detail,
-        info: () => buildGetMethodInfo(m.name, m.detail, m.info),
-        apply: m.apply,
+        label: key,
+        type: key === 'get' ? 'function' : 'keyword',
+        detail: def.detail,
+        info: () => buildBuiltinTooltip(`$${key === ':' ? ':' : key}`, def.detail, def.info),
+        apply: def.apply,
+        boost: def.boost,
       })
     }
-    if (options.length) return { from: afterGetDot.to, options, validFor: /^\w*$/ }
-    return null
-  }
 
-  // $xxx 补全 — 手动扫描光标前最近的 $ 符号
-  const pos = context.pos
-  const doc = context.state.doc
+    // 表单字段
+    for (const f of getFields()) {
+      if (!f.name.toLowerCase().startsWith(prefix.toLowerCase())) continue
+      options.push({
+        label: f.name,
+        type: 'variable',
+        detail: f.label ? `${f.label}` : '字段',
+        info: () => buildFieldInfo(f.name, f.label),
+        apply: `$${f.name}`,
+      })
+    }
 
-  let from = pos - 1
-  while (from >= 0) {
-    const c = doc.sliceString(from, from + 1)
-    if (c === '$') break
-    if (!/[\w:.]/.test(c)) return null
-    from--
-  }
-  if (from < 0) return null
-
-  const prefix = doc.sliceString(from + 1, pos)
-  const options: Completion[] = []
-
-  // 内置变量 / 函数
-  for (const [key, def] of Object.entries(BUILTINS)) {
-    if (!key.startsWith(prefix) && !ctxNameEq(key, prefix)) continue
-    options.push({
-      label: key,
-      type: key === 'get' ? 'function' : 'keyword',
-      detail: def.detail,
-      info: () => buildBuiltinTooltip(`$${key === ':' ? ':' : key}`, def.detail, def.info),
-      apply: def.apply,
-      boost: def.boost,
-    })
-  }
-
-  // 表单字段
-  for (const f of _fields) {
-    if (!f.name.toLowerCase().startsWith(prefix.toLowerCase())) continue
-    options.push({
-      label: f.name,
-      type: 'variable',
-      detail: f.label ? `${f.label}` : '字段',
-      info: () => buildFieldInfo(f.name, f.label),
-      apply: `$${f.name}`,
-    })
-  }
-
-  if (options.length === 0) return null
-  return {
-    from,
-    to: pos,
-    options,
-    validFor: /^[\w:.]*$/,
+    if (options.length === 0) return null
+    return {
+      from,
+      to: pos,
+      options,
+      validFor: /^[\w:.]*$/,
+    }
   }
 }
 
@@ -222,70 +223,74 @@ function ctxNameEq(key: string, prefix: string): boolean {
 
 const BUILTIN_HOVER_DOC = new Map(Object.entries(BUILTINS).map(([k, v]) => [k, v]))
 
-export function exprHoverTooltipSource(
+export type ExprHoverTooltipSource = (
   view: EditorView,
   pos: number,
-): {
+) => {
   pos: number
   end: number
   above?: boolean
   create(view: EditorView): { dom: HTMLElement }
-} | null {
-  const doc = view.state.doc
-  const line = doc.lineAt(pos)
-  const lineText = line.text
-  const offset = pos - line.from
+} | null
 
-  // $get(xxx).member 悬停
-  const getDotRe = /\$get\(.*?\)\.(\w+)/g
-  let m: RegExpExecArray | null
-  while ((m = getDotRe.exec(lineText)) !== null) {
-    const start = m.index
-    const end = start + m[0].length
-    const memberName = m[1]!
-    if (offset >= start && offset <= end) {
-      const method = GET_DOT_METHODS.find((x) => x.name === memberName)
-      if (!method) return null
-      return {
-        pos: line.from + start,
-        end: line.from + end,
-        above: true,
-        create: () => ({ dom: buildGetMethodInfo(memberName, method.detail, method.info) }),
-      }
-    }
-  }
+export function createExprHoverTooltipSource(getFields: GetExprFields): ExprHoverTooltipSource {
+  return (view, pos) => {
+    const doc = view.state.doc
+    const line = doc.lineAt(pos)
+    const lineText = line.text
+    const offset = pos - line.from
 
-  // $word 悬停
-  const varRe = /\$\w+/g
-  while ((m = varRe.exec(lineText)) !== null) {
-    const start = m.index
-    const end = start + m[0].length
-    if (offset >= start && offset <= end) {
-      const word = m[0].slice(1)
-      // 内置
-      const builtin = BUILTIN_HOVER_DOC.get(word)
-      if (builtin) {
+    // $get(xxx).member 悬停
+    const getDotRe = /\$get\(.*?\)\.(\w+)/g
+    let m: RegExpExecArray | null
+    while ((m = getDotRe.exec(lineText)) !== null) {
+      const start = m.index
+      const end = start + m[0].length
+      const memberName = m[1]!
+      if (offset >= start && offset <= end) {
+        const method = GET_DOT_METHODS.find((x) => x.name === memberName)
+        if (!method) return null
         return {
           pos: line.from + start,
           end: line.from + end,
           above: true,
-          create: () => ({
-            dom: buildBuiltinTooltip(`$${word}`, builtin.detail, builtin.info),
-          }),
-        }
-      }
-      // 字段
-      const field = _fields.find((f) => f.name === word)
-      if (field) {
-        return {
-          pos: line.from + start,
-          end: line.from + end,
-          above: true,
-          create: () => ({ dom: buildFieldInfo(field.name, field.label) }),
+          create: () => ({ dom: buildGetMethodInfo(memberName, method.detail, method.info) }),
         }
       }
     }
-  }
 
-  return null
+    // $word 悬停
+    const varRe = /\$\w+/g
+    while ((m = varRe.exec(lineText)) !== null) {
+      const start = m.index
+      const end = start + m[0].length
+      if (offset >= start && offset <= end) {
+        const word = m[0].slice(1)
+        // 内置
+        const builtin = BUILTIN_HOVER_DOC.get(word)
+        if (builtin) {
+          return {
+            pos: line.from + start,
+            end: line.from + end,
+            above: true,
+            create: () => ({
+              dom: buildBuiltinTooltip(`$${word}`, builtin.detail, builtin.info),
+            }),
+          }
+        }
+        // 字段
+        const field = getFields().find((f) => f.name === word)
+        if (field) {
+          return {
+            pos: line.from + start,
+            end: line.from + end,
+            above: true,
+            create: () => ({ dom: buildFieldInfo(field.name, field.label) }),
+          }
+        }
+      }
+    }
+
+    return null
+  }
 }

@@ -14,12 +14,8 @@ import { javascript } from '@codemirror/lang-javascript'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { linter } from '@codemirror/lint'
 import { useColorMode, usePreferredDark } from '@vueuse/core'
-import {
-  exprHoverTooltipSource,
-  setExprFieldNames,
-  type ExprFieldInfo,
-} from '@/utils/expr-completions'
-import { exprLintSource, setExprLintFieldNames } from '@/utils/expr-lint'
+import { createExprHoverTooltipSource, type ExprFieldInfo } from '@/utils/expr-completions'
+import { createExprLintSource } from '@/utils/expr-lint'
 import { useFormBuilderI18n } from '@/i18n/context'
 
 interface CompletionOption {
@@ -209,8 +205,10 @@ function buildExtensions() {
     history(),
     keymap.of([...defaultKeymap, ...historyKeymap]),
     javascript({ typescript: false, jsx: false }),
-    hoverTooltip(exprHoverTooltipSource),
-    linter(exprLintSource),
+    // 取值函数直接读 props.fieldNames（响应式）：字段清单变化时补全/校验自动跟上，
+    // 不需要再靠模块级全局 + watch 同步（该全局在多实例场景下会互相覆盖）
+    hoverTooltip(createExprHoverTooltipSource(() => props.fieldNames ?? [])),
+    linter(createExprLintSource(() => (props.fieldNames ?? []).map((f) => f.name))),
     ...(isDark.value ? [oneDark] : []),
     EditorView.updateListener.of((u) => {
       if (!u.docChanged) return
@@ -285,16 +283,6 @@ watch(
       destroyEditor()
     }
   },
-)
-
-watch(
-  () => props.fieldNames,
-  (names) => {
-    const n = names ?? []
-    setExprFieldNames(n)
-    setExprLintFieldNames(n)
-  },
-  { immediate: true },
 )
 
 onBeforeUnmount(() => {

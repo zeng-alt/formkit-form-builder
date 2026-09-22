@@ -1,37 +1,39 @@
 import type { Diagnostic } from '@codemirror/lint'
 import type { EditorView } from '@codemirror/view'
 
-let _fieldNames: string[] = []
-
-export function setExprLintFieldNames(fields: { name: string }[]) {
-  _fieldNames = fields.map((f) => f.name)
-}
+// 字段名清单由调用方以取值函数传入（原因同 expr-completions.ts）：模块级全局
+// 在两个 FormBuilder 实例并存时会互相覆盖，取值函数则始终读到调用时刻的最新清单。
+export type GetExprLintFieldNames = () => string[]
 
 const VAR_RE = /\$([a-zA-Z_]\w*)/g
 
 const BUILTIN_REFS = new Set(['get', 'slots'])
 
-export function exprLintSource(view: EditorView): Diagnostic[] {
-  const diagnostics: Diagnostic[] = []
-  const doc = view.state.doc
-  const text = doc.toString()
+export function createExprLintSource(
+  getFieldNames: GetExprLintFieldNames,
+): (view: EditorView) => Diagnostic[] {
+  return (view) => {
+    const diagnostics: Diagnostic[] = []
+    const doc = view.state.doc
+    const text = doc.toString()
 
-  const expr = text.trim()
-  if (expr) {
-    const syntaxResult = checkExprSyntax(expr)
-    if (!syntaxResult.ok) {
-      diagnostics.push({
-        from: 0,
-        to: doc.length,
-        severity: 'error',
-        message: syntaxResult.error,
-      })
+    const expr = text.trim()
+    if (expr) {
+      const syntaxResult = checkExprSyntax(expr)
+      if (!syntaxResult.ok) {
+        diagnostics.push({
+          from: 0,
+          to: doc.length,
+          severity: 'error',
+          message: syntaxResult.error,
+        })
+      }
     }
+
+    checkUndefinedVars(text, getFieldNames(), diagnostics)
+
+    return diagnostics
   }
-
-  checkUndefinedVars(text, diagnostics)
-
-  return diagnostics
 }
 
 function checkExprSyntax(expr: string): { ok: boolean; error: string } {
@@ -88,11 +90,11 @@ function checkExprSyntax(expr: string): { ok: boolean; error: string } {
   return { ok: true, error: '' }
 }
 
-function checkUndefinedVars(text: string, diagnostics: Diagnostic[]) {
+function checkUndefinedVars(text: string, fieldNames: string[], diagnostics: Diagnostic[]) {
   const matches = text.matchAll(VAR_RE)
   for (const match of matches) {
     const fieldName = match[1]!
-    if (_fieldNames.includes(fieldName)) continue
+    if (fieldNames.includes(fieldName)) continue
     if (BUILTIN_REFS.has(fieldName)) continue
     diagnostics.push({
       from: match.index,

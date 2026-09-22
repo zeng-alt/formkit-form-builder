@@ -37,6 +37,9 @@ components.d.ts
 
 .eslintcache
 .package-lock.json
+# 仓库统一用 pnpm，这两个锁文件不该被提交（避免和 pnpm-lock.yaml 打架）
+package-lock.json
+yarn.lock
 # Cypress
 /cypress/videos/
 /cypress/screenshots/
@@ -51,9 +54,6 @@ scripts/
 CLAUDE.md
 CODE_WIKI.md
 AGENTS.md
-
-# Test files
-test*.ts
 
 # pnpm store
 .pnpm-store/

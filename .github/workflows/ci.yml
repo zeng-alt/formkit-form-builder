@@ -1,0 +1,51 @@
+name: CI
+
+# 任意分支的 push 以及所有 PR 都跑一遍完整检查，尽早暴露问题
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      # 版本对齐 package.json 的 packageManager 字段（pnpm@10.33.0），
+      # 避免 CI 用的 pnpm 版本和本地/lockfile 产出不一致
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      # Node 22，对齐 package.json engines（^20.19.0 || >=22.12.0）里较新的档位；
+      # cache: pnpm 复用 pnpm store，加速依赖安装
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      # --frozen-lockfile：CI 环境不允许静默改动 lockfile，
+      # lockfile 与 package.json 不一致时直接失败，而不是悄悄重新解析
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      # vue-tsc 类型检查：捕获 .vue / .ts 之间的类型不一致
+      - name: 类型检查
+        run: pnpm type-check
+
+      # 只读版 lint（不带 --fix / --cache）：CI 里要的是"报错"而不是"悄悄改文件"，
+      # 用 lint:oxlint / lint:eslint 的 --fix 版本会掩盖问题而不是暴露它们
+      - name: Lint 检查
+        run: pnpm lint:ci
+
+      # 单元测试（vitest run）
+      - name: 运行测试
+        run: pnpm test
+
+      # 只跑构建（不含 type-check，因为上面已经单独跑过），验证产物能正常打包
+      - name: 构建产物
+        run: pnpm build-only

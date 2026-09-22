@@ -181,12 +181,9 @@ const bindRuntimeVariables: Record<string, VarInfo> = {
 const bindRuntimeNames = new Set(Object.keys(bindRuntimeVariables))
 
 // ---- 表单字段名（动态注入，供 form.xxx 补全） ----
-
-let _formFieldNames: string[] = []
-
-export function setFormFieldNames(names: string[]) {
-  _formFieldNames = [...names]
-}
+// 由调用方以取值函数传入而非模块级全局：两个 FormBuilder 实例可能同时存在，
+// 且字段清单会随编辑实时变化，取值函数保证每次补全/悬停都读到最新清单。
+export type GetFormFieldNames = () => string[]
 
 // ---- 工具函数 ----
 
@@ -373,190 +370,200 @@ function buildInfoDom(info: VarInfo): HTMLElement {
 
 // ---- CompletionSource ----
 
-export const bindRuntimeCompletionsSource: CompletionSource = (context) => {
-  // 优先检测点成员补全（支持 $ 前缀变量，如 $node. / axios. / event. / form.）
-  const beforeDot = context.matchBefore(/(\$?\w+)\.\s*/)
-  if (beforeDot) {
-    const raw = beforeDot.text
-    const dotIdx = raw.lastIndexOf('.')
-    const objectName = raw.slice(0, dotIdx)
-    const afterDot = raw.slice(dotIdx + 1).trim()
+export function createBindRuntimeCompletionsSource(
+  getFieldNames: GetFormFieldNames,
+): CompletionSource {
+  return (context) => {
+    // 优先检测点成员补全（支持 $ 前缀变量，如 $node. / axios. / event. / form.）
+    const beforeDot = context.matchBefore(/(\$?\w+)\.\s*/)
+    if (beforeDot) {
+      const raw = beforeDot.text
+      const dotIdx = raw.lastIndexOf('.')
+      const objectName = raw.slice(0, dotIdx)
+      const afterDot = raw.slice(dotIdx + 1).trim()
 
-    // form.xxx —— 动态字段名补全
-    if (objectName === 'form' && _formFieldNames.length > 0) {
-      const options: Completion[] = []
-      const lowerAfter = afterDot.toLowerCase()
-      for (const name of _formFieldNames) {
-        if (!name.toLowerCase().startsWith(lowerAfter)) continue
-        options.push({
-          label: name,
-          type: 'property',
-          detail: 'unknown',
-          info: () => {
-            const div = document.createElement('div')
-            div.setAttribute('style', `${TOOLTIP_STYLE}min-width:200px;`)
-            const sig = document.createElement('div')
-            sig.setAttribute(
-              'style',
-              'display:flex;align-items:baseline;gap:2px;margin-bottom:6px;',
-            )
-            const obj = document.createElement('span')
-            obj.setAttribute('style', 'font-weight:400;font-size:13px;color:#9cdcfe;')
-            obj.textContent = 'form.'
-            const n = document.createElement('span')
-            n.setAttribute('style', 'font-weight:700;font-size:13px;color:#9cdcfe;')
-            n.textContent = name
-            sig.append(obj, n)
-            div.append(sig)
-            const desc = document.createElement('div')
-            desc.setAttribute('style', `${TOOLTIP_DESC}font-size:11px;opacity:0.75;`)
-            desc.textContent = `表单字段「${name}」的当前值`
-            div.append(desc)
-            return div
-          },
-        })
+      // form.xxx —— 动态字段名补全
+      if (objectName === 'form' && getFieldNames().length > 0) {
+        const options: Completion[] = []
+        const lowerAfter = afterDot.toLowerCase()
+        for (const name of getFieldNames()) {
+          if (!name.toLowerCase().startsWith(lowerAfter)) continue
+          options.push({
+            label: name,
+            type: 'property',
+            detail: 'unknown',
+            info: () => {
+              const div = document.createElement('div')
+              div.setAttribute('style', `${TOOLTIP_STYLE}min-width:200px;`)
+              const sig = document.createElement('div')
+              sig.setAttribute(
+                'style',
+                'display:flex;align-items:baseline;gap:2px;margin-bottom:6px;',
+              )
+              const obj = document.createElement('span')
+              obj.setAttribute('style', 'font-weight:400;font-size:13px;color:#9cdcfe;')
+              obj.textContent = 'form.'
+              const n = document.createElement('span')
+              n.setAttribute('style', 'font-weight:700;font-size:13px;color:#9cdcfe;')
+              n.textContent = name
+              sig.append(obj, n)
+              div.append(sig)
+              const desc = document.createElement('div')
+              desc.setAttribute('style', `${TOOLTIP_DESC}font-size:11px;opacity:0.75;`)
+              desc.textContent = `表单字段「${name}」的当前值`
+              div.append(desc)
+              return div
+            },
+          })
+        }
+        if (options.length > 0) {
+          return { from: beforeDot.to, options, validFor: /^\w*$/ }
+        }
+        return null
       }
-      if (options.length > 0) {
-        return { from: beforeDot.to, options, validFor: /^\w*$/ }
+
+      const info = bindRuntimeVariables[objectName]
+      if (info?.members?.length) {
+        const options: Completion[] = []
+        for (const m of info.members) {
+          if (!m.name.startsWith(afterDot)) continue
+          options.push({
+            label: m.name,
+            type: m.type ?? 'property',
+            detail: m.detail,
+            info: () => buildMemberInfoDom(objectName, m),
+            apply: m.type === 'method' ? methodSnippet(m.name, m.detail) : undefined,
+          })
+        }
+        if (options.length > 0) {
+          return { from: beforeDot.to, options, validFor: /^\w*$/ }
+        }
       }
+      // 即使没有匹配成员，也消费这个 dot 上下文避免 Fallback 到全局补全
       return null
     }
 
-    const info = bindRuntimeVariables[objectName]
-    if (info?.members?.length) {
-      const options: Completion[] = []
-      for (const m of info.members) {
-        if (!m.name.startsWith(afterDot)) continue
-        options.push({
-          label: m.name,
-          type: m.type ?? 'property',
-          detail: m.detail,
-          info: () => buildMemberInfoDom(objectName, m),
-          apply: m.type === 'method' ? methodSnippet(m.name, m.detail) : undefined,
-        })
-      }
-      if (options.length > 0) {
-        return { from: beforeDot.to, options, validFor: /^\w*$/ }
-      }
+    // 全局变量补全
+    const word = context.matchBefore(/\$?\w*/)
+    if (!word || (word.from === word.to && !context.explicit)) return null
+
+    const options: Completion[] = []
+
+    for (const [name, info] of Object.entries(bindRuntimeVariables)) {
+      if (!name.startsWith(word.text)) continue
+      options.push({
+        label: name,
+        type: info.members?.length ? 'class' : info.apply ? 'function' : 'variable',
+        detail: info.type,
+        info: () => renderInfoPanel(name, info),
+        apply: info.apply,
+      })
     }
-    // 即使没有匹配成员，也消费这个 dot 上下文避免 Fallback 到全局补全
-    return null
+
+    if (options.length === 0) return null
+    return { from: word.from, options, validFor: /^\$?\w*$/ }
   }
-
-  // 全局变量补全
-  const word = context.matchBefore(/\$?\w*/)
-  if (!word || (word.from === word.to && !context.explicit)) return null
-
-  const options: Completion[] = []
-
-  for (const [name, info] of Object.entries(bindRuntimeVariables)) {
-    if (!name.startsWith(word.text)) continue
-    options.push({
-      label: name,
-      type: info.members?.length ? 'class' : info.apply ? 'function' : 'variable',
-      detail: info.type,
-      info: () => renderInfoPanel(name, info),
-      apply: info.apply,
-    })
-  }
-
-  if (options.length === 0) return null
-  return { from: word.from, options, validFor: /^\$?\w*$/ }
 }
 
 // ---- hoverTooltip 源 ----
 
-export function bindRuntimeHoverTooltipSource(
+export type BindRuntimeHoverTooltipSource = (
   view: EditorView,
   pos: number,
-): {
+) => {
   pos: number
   end: number
   above?: boolean
   create(view: EditorView): { dom: HTMLElement }
-} | null {
-  const tree = syntaxTree(view.state)
-  const node = tree.resolveInner(pos, -1)
-  if (!node) return null
-  const doc = view.state.doc.sliceString(0)
+} | null
 
-  // 属性访问：obj.prop
-  const parent = node.parent
-  if (parent?.name === 'MemberExpression' && node.name === 'PropertyName') {
-    const obj = parent.firstChild
-    const objName = obj && doc.slice(obj.from, obj.to)
-    const propName = doc.slice(node.from, node.to)
-    if (!objName || !propName) return null
+export function createBindRuntimeHoverTooltipSource(
+  getFieldNames: GetFormFieldNames,
+): BindRuntimeHoverTooltipSource {
+  return (view, pos) => {
+    const tree = syntaxTree(view.state)
+    const node = tree.resolveInner(pos, -1)
+    if (!node) return null
+    const doc = view.state.doc.sliceString(0)
 
-    // form.xxx 动态字段悬停
-    if (objName === 'form' && _formFieldNames.includes(propName)) {
-      return {
-        pos: parent.from,
-        end: parent.to,
-        above: true,
-        create: () => ({
-          dom: (() => {
-            const div = document.createElement('div')
-            div.setAttribute('style', `${TOOLTIP_STYLE}min-width:200px;`)
-            const sig = document.createElement('div')
-            sig.setAttribute(
-              'style',
-              'display:flex;align-items:baseline;gap:2px;margin-bottom:6px;',
-            )
-            const o = document.createElement('span')
-            o.setAttribute('style', 'font-weight:400;font-size:13px;color:#9cdcfe;')
-            o.textContent = 'form.'
-            const n = document.createElement('span')
-            n.setAttribute('style', 'font-weight:700;font-size:13px;color:#9cdcfe;')
-            n.textContent = propName
-            sig.append(o, n)
-            const t = document.createElement('span')
-            t.setAttribute('style', 'font-size:11px;opacity:0.55;margin-left:4px;')
-            t.textContent = ': unknown'
-            sig.append(t)
-            div.append(sig)
-            const desc = document.createElement('div')
-            desc.setAttribute('style', `${TOOLTIP_DESC}font-size:11px;opacity:0.75;`)
-            desc.textContent = `表单字段「${propName}」的当前值`
-            div.append(desc)
-            return div
-          })(),
-        }),
-      }
-    }
+    // 属性访问：obj.prop
+    const parent = node.parent
+    if (parent?.name === 'MemberExpression' && node.name === 'PropertyName') {
+      const obj = parent.firstChild
+      const objName = obj && doc.slice(obj.from, obj.to)
+      const propName = doc.slice(node.from, node.to)
+      if (!objName || !propName) return null
 
-    if (objName && bindRuntimeNames.has(objName)) {
-      const varInfo = bindRuntimeVariables[objName]
-      const member = varInfo?.members?.find((m) => m.name === propName)
-      if (member) {
+      // form.xxx 动态字段悬停
+      if (objName === 'form' && getFieldNames().includes(propName)) {
         return {
           pos: parent.from,
           end: parent.to,
           above: true,
           create: () => ({
-            dom: buildMemberTooltip(objName, member),
+            dom: (() => {
+              const div = document.createElement('div')
+              div.setAttribute('style', `${TOOLTIP_STYLE}min-width:200px;`)
+              const sig = document.createElement('div')
+              sig.setAttribute(
+                'style',
+                'display:flex;align-items:baseline;gap:2px;margin-bottom:6px;',
+              )
+              const o = document.createElement('span')
+              o.setAttribute('style', 'font-weight:400;font-size:13px;color:#9cdcfe;')
+              o.textContent = 'form.'
+              const n = document.createElement('span')
+              n.setAttribute('style', 'font-weight:700;font-size:13px;color:#9cdcfe;')
+              n.textContent = propName
+              sig.append(o, n)
+              const t = document.createElement('span')
+              t.setAttribute('style', 'font-size:11px;opacity:0.55;margin-left:4px;')
+              t.textContent = ': unknown'
+              sig.append(t)
+              div.append(sig)
+              const desc = document.createElement('div')
+              desc.setAttribute('style', `${TOOLTIP_DESC}font-size:11px;opacity:0.75;`)
+              desc.textContent = `表单字段「${propName}」的当前值`
+              div.append(desc)
+              return div
+            })(),
           }),
         }
       }
+
+      if (objName && bindRuntimeNames.has(objName)) {
+        const varInfo = bindRuntimeVariables[objName]
+        const member = varInfo?.members?.find((m) => m.name === propName)
+        if (member) {
+          return {
+            pos: parent.from,
+            end: parent.to,
+            above: true,
+            create: () => ({
+              dom: buildMemberTooltip(objName, member),
+            }),
+          }
+        }
+      }
+      return null
     }
+
+    // 顶层变量名
+    if (node.name === 'VariableName' || node.name === 'VariableDefinition') {
+      const name = doc.slice(node.from, node.to)
+      if (!bindRuntimeNames.has(name)) return null
+      const info = bindRuntimeVariables[name]
+      if (!info) return null
+      return {
+        pos: node.from,
+        end: node.to,
+        above: true,
+        create: () => ({ dom: buildInfoDom(info) }),
+      }
+    }
+
     return null
   }
-
-  // 顶层变量名
-  if (node.name === 'VariableName' || node.name === 'VariableDefinition') {
-    const name = doc.slice(node.from, node.to)
-    if (!bindRuntimeNames.has(name)) return null
-    const info = bindRuntimeVariables[name]
-    if (!info) return null
-    return {
-      pos: node.from,
-      end: node.to,
-      above: true,
-      create: () => ({ dom: buildInfoDom(info) }),
-    }
-  }
-
-  return null
 }
 
 function buildMemberTooltip(objName: string, member: MemberDef): HTMLElement {

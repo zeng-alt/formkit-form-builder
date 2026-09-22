@@ -15,9 +15,8 @@ import { autocompletion } from '@codemirror/autocomplete'
 import { linter } from '@codemirror/lint'
 import { useColorMode, usePreferredDark } from '@vueuse/core'
 import {
-  bindRuntimeCompletionsSource,
-  bindRuntimeHoverTooltipSource,
-  setFormFieldNames,
+  createBindRuntimeCompletionsSource,
+  createBindRuntimeHoverTooltipSource,
 } from '@/utils/bind-runtime-completions'
 import { jsLintSource } from '@/utils/bind-runtime-lint'
 import { useFormBuilderI18n } from '@/i18n/context'
@@ -67,8 +66,12 @@ const extensions = computed(() => [
   keymap.of([...defaultKeymap, ...historyKeymap]),
   javascript({ typescript: false, jsx: false }),
   autocompletion(),
-  javascriptLanguage.data.of({ autocomplete: bindRuntimeCompletionsSource }),
-  hoverTooltip(bindRuntimeHoverTooltipSource),
+  // 取值函数直接读 props.fieldNames（响应式），字段清单变化时自动生效，
+  // 不再需要模块级全局 + watch 同步（多实例场景下全局会互相覆盖）
+  javascriptLanguage.data.of({
+    autocomplete: createBindRuntimeCompletionsSource(() => props.fieldNames ?? []),
+  }),
+  hoverTooltip(createBindRuntimeHoverTooltipSource(() => props.fieldNames ?? [])),
   linter(jsLintSource),
   // 深色模式用 oneDark；浅色模式用 CodeMirror 默认浅色语法高亮
   ...(isDark.value ? [oneDark] : []),
@@ -114,13 +117,6 @@ onMounted(() => {
   const h = Math.max(160, Math.min(720, Math.round(props.height ?? 280)))
   view.dom.style.height = `${h}px`
 })
-
-// 同步表单字段名到补全引擎
-watch(
-  () => props.fieldNames,
-  (names) => setFormFieldNames(names ?? []),
-  { immediate: true },
-)
 
 // 主题切换时重配扩展（oneDark 是否启用 / 边框背景随 CSS 变量自动适配）
 watch(isDark, () => {

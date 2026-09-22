@@ -20,6 +20,7 @@
     "dist"
   ],
   "type": "module",
+  "packageManager": "pnpm@10.33.0",
   "sideEffects": [
     "**/*.css"
   ],
@@ -43,16 +44,19 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
-    "lint": "run-s lint:*",
+    "lint": "run-s lint:oxlint lint:eslint",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
+    "lint:ci": "run-s lint:ci:*",
+    "lint:ci:oxlint": "oxlint .",
+    "lint:ci:eslint": "eslint .",
     "format": "oxfmt src/",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
     "@formkit/core": "^2.0.0",
-    "@formkit/drag-and-drop": "^0.5.0",
+    "@formkit/drag-and-drop": "^0.5.3",
     "@formkit/i18n": "^2.0.0",
     "@formkit/vue": "^2.0.0",
     "@internationalized/date": "^3.12.0",
@@ -70,9 +74,6 @@
     "@codemirror/state": "^6.5.2",
     "@codemirror/theme-one-dark": "^6.1.3",
     "@codemirror/view": "^6.38.2",
-    "@formkit/core": "^2.0.0",
-    "@formkit/drag-and-drop": "^0.5.3",
-    "@formkit/vue": "^2.0.0",
     "@iconify-json/lucide": "^1.2.58",
     "@iconify-json/stash": "^1.2.3",
     "@iconify/utils": "^3.1.0",
