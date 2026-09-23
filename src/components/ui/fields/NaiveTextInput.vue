@@ -13,6 +13,13 @@ const { context } = defineProps<{
 const { config, props, bind } = useSchemaAttrs(context, { omit: ['prefix', 'suffix'] })
 const { runEvent } = useBindEvents(context, bind)
 
+// disabled 是 FormKit 保留属性名，会被拦截进 context.disabled（节点自身配置 /
+// 表单级联二合一），永远不会流入 context.attrs / props 这个透传包——因此这里必须
+// 单独读出来显式转发给 NInput，否则编辑面板的"禁用"开关、以及 FormRenderer 的整
+// 表单禁用都对输入框没有任何效果（与 CustomButton.vue 的 disabled 处理同一模式）。
+// 仍兜底读一次 config.disabled，覆盖用户经"自定义属性"面板绕开保留名拦截的情形。
+const disabled = computed<boolean>(() => Boolean(config.disabled) || Boolean(context.disabled))
+
 const inputType = computed(() => {
   const type = context.type
   if (type === 'password') return 'password'
@@ -65,6 +72,7 @@ const handleBlur = async (e: FocusEvent) => {
     :input-props="{ id: context.id }"
     :pair="pair"
     :separator="separator"
+    :disabled="disabled"
     @update:value="handleUpdateValue"
     @focus="handleFocus"
     @blur="handleBlur"
