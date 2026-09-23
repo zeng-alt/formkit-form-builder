@@ -57,6 +57,8 @@ const dnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
     if (k && canvasCtx?.updateContainerChildren) canvasCtx.updateContainerChildren(k, next)
     else emit('update:modelValue', next)
   },
+  containerLabel: () => t('elements.buttonGroup.name'),
+  describeRejection: () => t('dnd.reason.buttonGroupOnly'),
 })
 
 const emitUpdateNormalized = () => {

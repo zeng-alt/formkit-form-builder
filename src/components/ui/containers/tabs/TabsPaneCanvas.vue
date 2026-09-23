@@ -30,6 +30,7 @@ const dnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
   onUpdateModelValue: (value) => {
     if (canvasCtx?.updateContainerChildren) canvasCtx.updateContainerChildren(props.paneKey, value)
   },
+  containerLabel: () => t('elements.tabs.name'),
 })
 
 const onSelect = (child: FormKitSchemaFormKit) => {

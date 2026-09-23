@@ -95,3 +95,52 @@ export function computeGridInsert(
   next.splice(insertPos, 0, ...resizedInserted)
   return next
 }
+
+// ═══ L1：插入线旁的宽度徽标 ═══════════════════════════════════════════════════
+// 文案要与真正放下后的结果完全一致，所以不另起一套并行算法：拿一个打了标记的
+// 占位对象跑一遍 computeGridInsert 本身，再从结果里量出目标/新元素的最终宽度。
+export type GridInsertBadgeInfo =
+  // 普通插入（含"拆不开、与目标同宽换行"的兜底情况）：新元素占 width/12
+  | { kind: 'side'; direction: GridInsertDirection; width: number }
+  // 行已满，目标被拆成两半（目标 targetWidth + 新元素 insertedWidth）
+  | { kind: 'split'; targetWidth: number; insertedWidth: number }
+  // 目标原宽 12，横向插入后两者各占一半
+  | { kind: 'halve'; width: number }
+
+// 占位对象的标记键：computeGridInsert 内部用 setColSpan（对象浅拷贝）产出最终节点，
+// 标记必须是能被 {...obj} 浅拷贝带过去的普通可枚举属性，不能用引用相等来找它
+const PREVIEW_MARK = '__gridInsertPreviewMark__'
+
+export function computeGridInsertBadgeInfo(
+  siblings: any[],
+  targetIndex: number,
+  direction: GridInsertDirection,
+): GridInsertBadgeInfo | null {
+  if (!Array.isArray(siblings) || targetIndex < 0 || targetIndex >= siblings.length) return null
+
+  const targetWidthBefore = getColSpan(siblings[targetIndex])
+  const placeholder = { [PREVIEW_MARK]: true, outerClass: 'col-span-12' }
+  const next = computeGridInsert(siblings, targetIndex, direction, [placeholder])
+  if (next === siblings) return null
+
+  const insertedIdx = next.findIndex((n) => n && (n as any)[PREVIEW_MARK])
+  if (insertedIdx < 0) return null
+  const insertedWidth = getColSpan(next[insertedIdx])
+
+  if (direction === 'top' || direction === 'bottom') {
+    return { kind: 'side', direction, width: insertedWidth }
+  }
+
+  // 横向：只插入了 1 个占位元素——right 时插入点在 targetIndex 之后，目标下标不变；
+  // left 时插入点在 targetIndex 处，目标被顶到 targetIndex + 1
+  const targetIdxAfter = direction === 'left' ? targetIndex + 1 : targetIndex
+  const targetWidthAfter = getColSpan(next[targetIdxAfter])
+
+  if (targetWidthBefore === 12) {
+    return { kind: 'halve', width: insertedWidth }
+  }
+  if (targetWidthAfter !== targetWidthBefore) {
+    return { kind: 'split', targetWidth: targetWidthAfter, insertedWidth }
+  }
+  return { kind: 'side', direction, width: insertedWidth }
+}

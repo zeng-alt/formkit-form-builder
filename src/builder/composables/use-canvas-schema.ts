@@ -200,6 +200,14 @@ export function useCanvasSchema() {
     notifyStepsConsolidate: () => {
       notification.info({ title: t('builder.stepsConsolidateNotice'), duration: 4000 })
     },
+    t,
+    // L6：面板拖入的新元素提交后自动选中
+    selectByKey,
+    // L3：根画布唯一的拒绝场景——已有步骤条时独占拖放区，非 steps 元素与第二个
+    // steps 都会被 accepts（见下方 useDragAndDrop 的 accepts）拒绝，原因统一为这条
+    describeRejection: () =>
+      schemaContainsSteps(formSchema.value) ? t('dnd.reason.stepsExclusive') : undefined,
+    // 根画布落点已经很明确（就是整个画布），不需要"放入：xxx"标签
   }
   // 拷贝初始值：formSchema.value 是 dslToSchema 的缓存投影，直接交给 DnD 库、库内部
   // 原地改写数组会污染缓存（数组本身不缓存，但传引用等于把它当成可写数组用了）

@@ -82,6 +82,27 @@ export default {
     dataTableDeleteSuccess: '删除成功',
     dataTableDeleteError: '删除失败',
   },
+  // L：拖动元素到画布时的交互反馈（插入线宽度徽标 / 容器悬停标签 / 不可放置反馈）
+  dnd: {
+    insertBadge: {
+      right: '放在右侧 · {width}/12',
+      left: '放在左侧 · {width}/12',
+      bottom: '放在下方 · {width}/12',
+      top: '放在上方 · {width}/12',
+      split: '拆分为 {a} + {b}',
+      halve: '平分 {a} + {b}',
+    },
+    dropInto: '放入：{name}',
+    reject: {
+      notAllowed: '不能放在这里',
+    },
+    reason: {
+      buttonGroupOnly: '按钮组只能放按钮',
+      stepsExclusive: '已有步骤条，请拖入步骤内',
+      noNestedSteps: '步骤内不能再放步骤向导',
+      singleChildOnly: '该容器只能容纳一个元素',
+    },
+  },
   importExport: {
     title: '导入 / 导出 Schema',
     tabDsl: 'DSL',

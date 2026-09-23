@@ -47,6 +47,9 @@ const props = defineProps<{
   /** 撞限一次性抖动的触发计数：变化即重放一次抖动动画，见 use-grid-span-resize.ts */
   limitPulse?: number
   hasCopy: boolean
+  /** L6：放下后的高亮闪烁计数——变化即重放一次，与 selected 状态无关（移动一个
+   *  未选中、或选中态本身没变化的已选中元素，都要能重新触发这次反馈） */
+  dropFlash?: number
   schemaLibrary?: Record<string, Component>
   schemaRenderData: Record<string, unknown>
   renderSchema: (node: FormKitSchemaFormKit) => unknown[]
@@ -132,6 +135,15 @@ function onFocusin(e: FocusEvent) {
     @keydown.space.stop.prevent="props.onSelect(child, index)"
     @focusin="onFocusin"
   >
+    <!-- L6：放下后的高亮闪烁——纯装饰覆盖层，独立于 selected 状态之外重放一次
+         canvas-item-select-pop 动画；:key 用计数强制重新挂载，复用 pop 放在 li
+         自身会和"选中态常驻这个 class"互相打架，这里用一个覆盖层规避 -->
+    <span
+      v-if="dropFlash"
+      :key="`drop-flash-${dropFlash}`"
+      aria-hidden="true"
+      class="absolute inset-0 z-30 rounded-xl pointer-events-none canvas-item-select-pop"
+    ></span>
     <button
       v-if="dragEnabled && dragHandle"
       type="button"

@@ -15,6 +15,9 @@ import {
 } from '@formkit/drag-and-drop'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { insertState } from './insert-state'
+import { hideInsertBadge } from './insert-point'
+import { triggerDropFlash } from './drop-flash'
+import { resolveDropSelectionKey } from './drop-select'
 import { findRootDropAreaEl, type DndParentConfig } from './context'
 import {
   getVisualRows,
@@ -32,6 +35,11 @@ import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 // toSchema 用 id 兜底生成 name（UUID 形态）：视为无有效名，拖入时重新生成唯一名
 const UUID_NAME_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// L6：错开选中的定时器，见 handleEnd 尾部的说明。同一时间只留最后一次拖放的
+// 待选中——连续快速拖入多个元素时，只有最后一个会被自动选中，不会有多个
+// pending 的 selectByKey 叠着触发、互相撞车。
+let pendingSelectTimer: ReturnType<typeof setTimeout> | null = null
 
 function normalizeInputGroupChildren(children: FormKitSchemaFormKit[]) {
   // 防御性拷贝：不确定调用方数组是否会被其它地方保留引用，setColSpan/rebalanceRowSpans
@@ -74,6 +82,7 @@ function isRootDropArea(el: HTMLElement | null | undefined): boolean {
 /** 阻止一次拖放：清掉插入点与 dropZone 高亮后直接返回，不写任何数据 */
 function abortDrop<T>(state: DragState<T> | SynthDragState<T> | BaseDragState<T>) {
   if (insertState.insertPoint) insertState.insertPoint.el.style.display = 'none'
+  hideInsertBadge()
   if (isDragState(state)) {
     const dropZoneClass = isSynthDragState(state)
       ? state.initialParent.data.config.synthDropZoneClass
@@ -259,6 +268,12 @@ export function handleEnd(
 ) {
   if (!isDragState(state) && !isSynthDragState(state)) return
 
+  // L6：拖入步骤条会把根画布已有内容整体挪进第一个 step（结构变化比普通插入大得多，
+  // 涉及的节点换了一整条祖先链），这种情况下不自动选中新的 steps 容器——已经有
+  // notifyStepsConsolidate 的提示说明"内容移入第 1 步"，选中态变化反而容易和这次
+  // 大改动的重渲染叠在一起触发 handleEnd 尾部说明的那个 Vue 调度器报错。
+  let skipAutoSelect = false
+
   const insertPoint = insertState.insertPoint
   const sourceParent = state.initialParent
   const resolveTargetParent = (): ParentRecord<SchemaNode> => {
@@ -430,6 +445,7 @@ export function handleEnd(
         abortDrop(state)
         return
       }
+      skipAutoSelect = true
       const stepsNode = insertValues[0]!
       const panes = schemaChildren(stepsNode).length
         ? schemaChildren(stepsNode)
@@ -611,9 +627,31 @@ export function handleEnd(
 
   // 用所属画布实例的提交漏斗写回；ctx 缺失时前面已跳过所有 setParentValues 写入，
   // rootValues 仍是未变更的真实值，这里再跳过提交不会造成状态错位，只是整次拖放被忽略。
-  if (ctx) ctx.commitSchemaReconcile(nextSchema, { reason: 'dnd' })
+  if (ctx) {
+    ctx.commitSchemaReconcile(nextSchema, { reason: 'dnd' })
+    // L6：新放入/移动的元素放一次高亮闪烁；从面板拖入的新元素额外自动选中，
+    // 右侧属性面板随之显示它。commitSchemaReconcile 是同步写入（formSchema 是计算属性，
+    // 下一次读取即已是新值），这里立刻 selectByKey 能读到刚提交的节点。
+    triggerDropFlash(insertValues.map((v) => (v as SchemaNode | undefined)?.__key))
+    const selectionKey = skipAutoSelect
+      ? undefined
+      : resolveDropSelectionKey(isSource, insertValues as SchemaNode[])
+    // 选中放到当前这次渲染 flush 之后（setTimeout 0）：提交会让画布与属性面板都发生
+    // 结构性更新，选中再触发属性面板从占位态切到编辑器，错开到下一个宏任务更稳妥。
+    // 连续快速拖放时让新的一次取消前一次尚未执行的选中，只选中最后放入的元素。
+    if (pendingSelectTimer !== null) clearTimeout(pendingSelectTimer)
+    if (selectionKey) {
+      pendingSelectTimer = setTimeout(() => {
+        pendingSelectTimer = null
+        ctx.selectByKey?.(selectionKey)
+      }, 0)
+    } else {
+      pendingSelectTimer = null
+    }
+  }
 
   if (insertPoint) insertPoint.el.style.display = 'none'
+  hideInsertBadge()
 
   const dropZoneClass = isSynthDragState(state)
     ? state.initialParent.data.config.synthDropZoneClass

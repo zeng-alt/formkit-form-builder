@@ -35,6 +35,10 @@ const initial = computed(() => (Array.isArray(props.modelValue) ? props.modelVal
 
 const canvasCtx = useCanvasSchemaContext()
 
+const title = computed(() =>
+  typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
+)
+
 const dnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
   modelValue: initial,
   onUpdateModelValue: (value) => {
@@ -42,11 +46,9 @@ const dnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
     if (k && canvasCtx?.updateContainerChildren) canvasCtx.updateContainerChildren(k, value)
     else emit('update:modelValue', value)
   },
+  // L2：卡片自己有标题时用标题（更具体），否则退回类型名
+  containerLabel: () => title.value || t('elements.card.name'),
 })
-
-const title = computed(() =>
-  typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
-)
 const helpText = computed(() =>
   typeof props.help === 'string' && props.help.trim() ? props.help.trim() : '',
 )

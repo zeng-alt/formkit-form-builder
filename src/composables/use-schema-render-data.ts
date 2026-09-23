@@ -37,7 +37,15 @@ export function createSchemaRenderData(
 ): ComputedRef<Record<string, unknown>> {
   return computed<Record<string, unknown>>(() => {
     const base = source?.value as Record<string, unknown> | undefined
-    if (!base || typeof base !== 'object') return { ...EXPR_SCHEMA_HELPERS }
+    // 没有表单数据（画布设计态）时同样要挡住 slots：这个 computed 的结果被同一画布上
+    // 所有条目的 FormKitSchema 共用，每个 FormKitSchema 挂载时往 data 写入自己的 slots、
+    // 卸载时置为 null（@formkit/vue 的 cleanUp）——共用的普通对象会被一个条目的挂载/卸载
+    // 改写，其它条目的 schema 一旦引用 $slots 就会读到别人的（或 null 的）slots
+    if (!base || typeof base !== 'object')
+      return new Proxy({ ...EXPR_SCHEMA_HELPERS } as Record<string, unknown>, {
+        set: (target, key, value) => key === 'slots' || Reflect.set(target, key, value),
+        deleteProperty: (target, key) => key === 'slots' || Reflect.deleteProperty(target, key),
+      })
     return new Proxy(base, {
       get(target, key, receiver) {
         if (typeof key === 'string' && Object.hasOwn(EXPR_SCHEMA_HELPERS, key)) {

@@ -84,6 +84,7 @@ function commitSearch(value: FormKitSchemaFormKit[]) {
 const dndSearch = useContainerDragAndDrop<FormKitSchemaFormKit>({
   modelValue: searchItems,
   onUpdateModelValue: commitSearch,
+  containerLabel: () => t('elements.dataTable.name'),
 })
 
 // ─── 内容区（props.columns）───────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch, type Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { NEmpty } from 'naive-ui'
 import { getColSpan, getRowSpan } from '@/utils/dnd/grid'
+import { dropFlashState } from '@/utils/dnd/drop-flash'
 import { toCanvasSchemaNode, getCanvasSchemaArray } from '@/utils/canvas-schema'
 import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
@@ -341,6 +342,7 @@ const itemKey = (child: FormKitSchemaFormKit, idx: number): string =>
         :resize-max="maxSpanForIndex(idx)"
         :limit-hit="resizingIndex === idx ? limitState : null"
         :limit-pulse="resizingIndex === idx ? limitPulse : 0"
+        :drop-flash="dropFlashState[itemKey(child, idx)] ?? 0"
         :has-copy="!!props.onCopy"
         :schema-library="schemaLibrary"
         :schema-render-data="schemaRenderData"

@@ -192,3 +192,24 @@ body {
 .naive-image--fill {
   flex: 1 1 auto;
 }
+
+/* L8：画布字段的预览控件几乎铺满条目，在原生 <input>/<textarea> 上按下鼠标会被浏览器
+   当成"框内选文字"处理，原生 dragstart 传不到祖先 <li data-canvas-item>（拖拽的注册对象），
+   导致只能从条目边缘的空白处拖动。画布是设计态，预览控件本就不需要真实交互——让
+   .formkit-inner（FormKit 约定的"最内层输入容器"，原生 input/select 与 naive-ui 控件的
+   可交互层都在这一层）不接收指针事件，点击/按下都落空到上一层，冒泡到 <li> 触发选中/拖拽。
+   标签、校验提示、帮助文本都在 .formkit-inner 之外，不受影响。
+   嵌套容器（如卡片内的字段）：卡片本身是 group 时会有自己的 .formkit-outer/.formkit-inner
+   包住整个卡片内容，第二条规则把 pointer-events 在每个嵌套 [data-canvas-item] 上重新
+   打开——它的祖先链再往上遇到下一层 .formkit-inner 会再次被第一条规则收紧，逐层生效，
+   保证嵌套条目仍能各自被点选/拖动。data-canvas-edit 标记的画布内真实编辑框（标签页
+   改名、静态文本内联编辑、数据表格）从不出现在 .formkit-inner 内部，但这里仍显式放行，
+   防止未来嵌进去时被误伤。 */
+[data-canvas-item] .formkit-outer .formkit-inner {
+  pointer-events: none;
+}
+[data-canvas-item] .formkit-outer .formkit-inner [data-canvas-item],
+[data-canvas-item] .formkit-outer .formkit-inner [data-canvas-edit],
+[data-canvas-item] .formkit-outer .formkit-inner [data-canvas-edit] * {
+  pointer-events: auto;
+}
