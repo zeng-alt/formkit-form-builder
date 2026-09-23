@@ -97,10 +97,10 @@ export const containerElements: ElementDefinition[] = [
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.buttonGroup.name',
+      // disabled 不显式写 false：理由同 fields.ts 的 commonProps 注释——会锁死级联禁用
       props: {
         size: 'medium',
         vertical: false,
-        disabled: false,
       },
       descriptionKey: 'elements.buttonGroup.description',
     },

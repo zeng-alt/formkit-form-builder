@@ -134,6 +134,20 @@ export function useFormField() {
     })
   }
 
+  // ─── disabled 专用写路径：关闭开关时删键而非写 false ─────────────────────────
+  // disabled 是 FormKit 保留的级联属性名：节点一旦显式写入 false，就会锁死不再
+  // 响应表单/分组级联禁用（FormKit 只在节点自身完全没有这个 prop 时才会回退到
+  // 父级 config.disabled）。编辑面板的"禁用"开关如果先打开再关闭，用普通
+  // createPropsProp 关闭时会写入 disabled:false，字段从此对整表单禁用免疫——
+  // 这里关闭时改走 setPropsProp(key, undefined) 删键（等价于从未打开过），
+  // 打开时仍正常写 true。
+  const createDisabledProp = (): WritableComputedRef<boolean, boolean> => {
+    return computed({
+      get: () => Boolean(selectedField.value?.props?.disabled),
+      set: (value: boolean) => setPropsProp('disabled', value ? true : undefined),
+    })
+  }
+
   // ─── 数据表格列编辑写路径：改所属表格节点的 props.columns[idx] ────────────────
   const setColumnProp = (key: string, value: unknown) => {
     patchTreeTarget((node) => {
@@ -740,6 +754,7 @@ export function useFormField() {
     isValidationChecked,
     createButtonProp,
     createPropsProp,
+    createDisabledProp,
     rowSpan,
     colSpan,
     bindEvents,

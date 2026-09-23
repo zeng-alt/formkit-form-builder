@@ -13,7 +13,7 @@ const { context } = defineProps<{
 
 // filterable 是单开关配置（同时控制源/目标侧过滤）；NTransfer 的 filterable prop 已废弃，
 // 因此从透传 props 中剔除，改由 source-filterable/target-filterable 显式绑定。
-const { config, props, bind } = useSchemaAttrs(context, { omit: ['filterable'] })
+const { config, props, bind, disabled } = useSchemaAttrs(context, { omit: ['filterable'] })
 const { runEvent } = useBindEvents(context, bind)
 
 type OptionValue = string | number
@@ -65,6 +65,7 @@ async function handleUpdateValue(next: OptionValue[]) {
     :options="options"
     :source-filterable="filterable"
     :target-filterable="filterable"
+    :disabled="disabled"
     @update:value="handleUpdateValue"
   />
 </template>

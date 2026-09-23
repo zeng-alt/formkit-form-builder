@@ -9,7 +9,7 @@ const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { config, props, bind } = useSchemaAttrs(context)
+const { config, props, bind, disabled } = useSchemaAttrs(context)
 const { runEvent } = useBindEvents(context, bind)
 
 const min = computed(() => (config.min as number | undefined) ?? 0)
@@ -29,5 +29,5 @@ async function handleUpdateValue(next: number) {
 </script>
 
 <template>
-  <NSlider v-bind="props" :value="value" @update:value="handleUpdateValue" />
+  <NSlider v-bind="props" :value="value" :disabled="disabled" @update:value="handleUpdateValue" />
 </template>

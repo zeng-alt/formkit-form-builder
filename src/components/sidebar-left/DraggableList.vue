@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { NPopover } from 'naive-ui'
 import { computed, inject, ref, watch, type Ref } from 'vue'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
 import { createFieldProps } from '@/elements'

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FormKitFrameworkContext } from '@formkit/core'
 import type { UploadCustomRequestOptions, UploadFileInfo } from 'naive-ui'
-import { NUpload } from 'naive-ui'
+import { NP, NText, NUpload, NUploadDragger } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { useSchemaAttrs } from '../formkit/use-schema-attrs'
 import { useBindEvents } from '@/composables/use-bind-events'
@@ -11,7 +11,7 @@ const { context } = defineProps<{
 }>()
 
 // size 只用于拖拽区字号 class，不作为 NUpload 属性传入
-const { config, props, bind } = useSchemaAttrs(context, { omit: ['size'] })
+const { config, props, bind, disabled } = useSchemaAttrs(context, { omit: ['size'] })
 const { runEvent } = useBindEvents(context, bind)
 
 const size = computed(() => (config.size as string | undefined) ?? 'medium')
@@ -81,6 +81,7 @@ function customRequest(options: UploadCustomRequestOptions) {
     :custom-request="customRequest"
     :show-download-button="false"
     :show-preview-button="false"
+    :disabled="disabled"
     :class="size === 'small' ? 'text-xs' : ''"
     @update:file-list="handleUpdateFileList"
   >

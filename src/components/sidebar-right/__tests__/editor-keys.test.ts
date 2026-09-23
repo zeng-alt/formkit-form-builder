@@ -27,6 +27,31 @@ const resolveAlias = (spec: string) => spec.replace(/^@\//, 'src/')
 // prop"，而不是凭记忆猜）
 const naive = require('naive-ui') as Record<string, { props?: Record<string, unknown> }>
 
+// ─── FormKit pseudoProps：会被拦截、绝不会流入 context.attrs / props 透传包的键 ──
+// 来源：@formkit/vue useInput.ts（当前安装版本见下方健全性断言里读取的 package.json）。
+// 命中这张表的键，即使渲染组件里的 naive-ui 组件声明了同名 prop 也收不到值——因为
+// v-bind="props" 透传的是 useSchemaAttrs 镜像的 context.attrs，而这些键从一开始就没
+// 进 context.attrs（被 FormKit 在 useInput 里 only(nodeProps(context.attrs), pseudoProps)
+// 摘走了，改落进 context.<key> 或 context.node.props.<key>）。渲染组件必须显式读取
+// 这个位置并自己转发，不能指望"naive-ui 组件声明了这个 prop"就万事大吉。
+const pseudoProps: Array<string | RegExp> = [
+  // Boolean props
+  'ignore',
+  'disabled',
+  'preserve',
+  // String props
+  'help',
+  'label',
+  /^preserve(-e|E)rrors/,
+  /^[a-z]+(?:-visibility|Visibility|-behavior|Behavior)$/,
+  /^[a-zA-Z-]+(?:-class|Class)$/,
+  'prefixIcon',
+  'suffixIcon',
+  /^[a-zA-Z-]+(?:-icon|Icon)$/,
+]
+const isPseudoProp = (key: string) =>
+  pseudoProps.some((p) => (typeof p === 'string' ? p === key : p.test(key)))
+
 // ─── 类型 → 渲染组件：解析 src/elements/formkit.ts 的绑定表 ─────────────────────
 // 依赖约定：`import Xxx from '<path>.vue'` + `type: { component: Xxx, ... }`
 // （对象字面量整行，形如 `  color: { component: NaiveColorPicker, ... },`）
@@ -69,6 +94,9 @@ function parseTypeEditor(): Record<string, string> {
 //   同名写入路径，见 composables/form-fields.ts：两者都是 setPropsProp 的薄包装，
 //   只是换了个语义化的名字）——人工审计脚本漏掉了 createButtonProp，导致
 //   naiveButton/submit/reset 这三个类型此前被静默跳过（0 个键，从未真正被审计过）。
+// - createDisabledProp()（无参数）是 disabled 键专用的写路径（关闭开关时删键而非
+//   写 false，见 form-fields.ts 注释），键名固定是 'disabled'，不经字符串字面量传参，
+//   下面 WRITE_RE 匹配不到普通模式，单独把它计成写入了 'disabled'。
 // - 子区块里被 `v-if="props.K"` 守着的开关，只有父编辑器在 <Child :K="true" ...>
 //   上传了 K，才算这个类型真的写入了该键（比如 NaiveBasicSection 的 clearable
 //   开关，只有 FileEditor 传了 :clearable="true" 才算 file 类型写入了 clearable）。
@@ -83,9 +111,14 @@ function editorKeys(file: string, seen = new Set<string>(), passedFlags: Set<str
     if (passedFlags && gated.has(key) && !passedFlags.has(key)) continue
     keys.add(key)
   }
+  if (/createDisabledProp\(\)/.test(src)) {
+    if (!(passedFlags && gated.has('disabled') && !passedFlags.has('disabled'))) keys.add('disabled')
+  }
   for (const m of src.matchAll(/import (\w+) from '(\.{1,2}\/[^']+\.vue)'/g)) {
     const child = path.join(path.dirname(file), m[2])
-    const seenKey = `${child}|${file}`
+    // 去重键必须带上本地名：同一父文件可能以不同名字导入同一个子组件，每个名字在模板里
+    // 传的开关参数不同，只按「子文件 + 父文件」去重会让第二个名字的参数被静默跳过
+    const seenKey = `${child}|${file}|${m[1]}`
     if (seen.has(seenKey)) continue
     seen.add(seenKey)
     // 父模板里 <Child ...> 标签上出现的属性名（kebab-case 转 camelCase），
@@ -104,18 +137,30 @@ function editorKeys(file: string, seen = new Set<string>(), passedFlags: Set<str
 // ─── 渲染组件实际消费的键 ────────────────────────────────────────────────────────
 // 依赖约定：
 // - `<N大写开头组件>` 标签视为渲染了对应的 naive-ui 组件，该组件运行时声明的每个
-//   prop 都算"被消费"（组件用 v-bind="props" 之类整体透传，不会逐个具名接住）
+//   prop 都算"被消费"（组件用 v-bind="props" 之类整体透传，不会逐个具名接住）——
+//   但这一条对命中 pseudoProps 的键不成立：这些键根本不在透传的 props 里，naive-ui
+//   组件声明了同名 prop 也白搭，必须显式读取才算数（见下方 declared / read 的拆分）
 // - 组件自己按名读取配置也算数：config.xxx / props.xxx / attrs.xxx / context.xxx，
-//   以及 config['xxx'] 这种括号写法
-function consumedKeys(file: string): Set<string> {
+//   以及 config['xxx'] 这种括号写法——这条对 pseudoProps 键同样成立且是唯一途径
+function consumedKeys(file: string): { declared: Set<string>; read: Set<string> } {
   const src = read(file)
-  const used = new Set<string>()
+  const declared = new Set<string>()
+  const readKeys = new Set<string>()
   for (const m of src.matchAll(/<(N[A-Z][A-Za-z0-9]*)\b/g)) {
-    for (const key of Object.keys(naive[m[1]]?.props ?? {})) used.add(key)
+    for (const key of Object.keys(naive[m[1]]?.props ?? {})) declared.add(key)
   }
-  for (const m of src.matchAll(/(?:config|props|attrs|context)\??\.([a-zA-Z_]\w*)/g)) used.add(m[1])
-  for (const m of src.matchAll(/config\[['"](\w+)['"]\]/g)) used.add(m[1])
-  return used
+  for (const m of src.matchAll(/(?:config|props|attrs|context)\??\.([a-zA-Z_]\w*)/g)) readKeys.add(m[1])
+  for (const m of src.matchAll(/config\[['"](\w+)['"]\]/g)) readKeys.add(m[1])
+  // useSchemaAttrs() 统一算出的 disabled 等值：解构出的变量名与它代表的配置键同名
+  // （约定见 use-schema-attrs.ts），把它当作显式读取——否则组件复用这个composable
+  // 转发 disabled（而不是每处重复写 context.disabled 字面量）时会被误判成"没人消费"。
+  for (const m of src.matchAll(/const \{([^}]*)\} = useSchemaAttrs\(/g)) {
+    for (const ident of m[1].split(',')) {
+      const name = ident.trim()
+      if (name) readKeys.add(name)
+    }
+  }
+  return { declared, read: readKeys }
 }
 
 // FormKit 外壳 / DSL 层直接消费的语义键，不经 naive-ui 组件之手
@@ -195,6 +240,22 @@ describe('编辑面板开关 → 渲染组件：每个写入的配置键都必�
     }
   })
 
+  // 健全性：pseudoProps 表必须还是我们复制的这份——FormKit 升级后如果这张表变了
+  // （新增/删除条目），上面这份手抄副本可能已经不准确，得先手动同步再让测试继续信它
+  it('健全性：@formkit/vue 安装版本里的 pseudoProps 仍包含我们抄的这些字面量', () => {
+    const pkgPath = require.resolve('@formkit/vue/package.json')
+    const pkg = require('@formkit/vue/package.json') as { version: string }
+    const distPath = path.join(path.dirname(pkgPath), 'dist/index.mjs')
+    const src = read(distPath)
+
+    expect(src, `@formkit/vue 版本 ${pkg.version} 的 dist 文件里`).toContain('var pseudoProps = [')
+    for (const literal of ['"ignore"', '"disabled"', '"preserve"', '"help"', '"label"']) {
+      expect(src, `pseudoProps 里应仍有 ${literal}（@formkit/vue ${pkg.version}）`).toContain(literal)
+    }
+    // icon 正则的关键片段（-icon|Icon）：这是 showIcon 之类键被拦截的直接依据
+    expect(src, `pseudoProps 的 icon 正则片段（@formkit/vue ${pkg.version}）`).toContain('-icon|Icon')
+  })
+
   const types = Object.keys(typeComp).sort()
   it.each(types)('%s：编辑器写入的每个键都被渲染组件消费', (type) => {
     const editorFile = typeEditor[type]
@@ -204,13 +265,17 @@ describe('编辑面板开关 → 渲染组件：每个写入的配置键都必�
     if (!editorFile || !compFile) return
 
     const keys = editorKeys(editorFile)
-    const used = consumedKeys(compFile)
+    const { declared, read } = consumedKeys(compFile)
     const compBasename = path.basename(compFile)
     const passthrough = new Set(HTML_PASSTHROUGH[compBasename] ?? [])
 
+    // pseudoProp 命中的键只认"组件显式读取"，naive-ui 组件声明了同名 prop 不算数
+    // （见 consumedKeys 顶部注释、pseudoProps 顶部注释）
+    const isConsumed = (key: string) => read.has(key) || (!isPseudoProp(key) && declared.has(key))
+
     const bad = [...keys].filter(
       (key) =>
-        !used.has(key) &&
+        !isConsumed(key) &&
         !SHELL_KEYS.has(key) &&
         !passthrough.has(key) &&
         !exemptionSet.has(`${type}\u0000${key}`),
@@ -219,11 +284,15 @@ describe('编辑面板开关 → 渲染组件：每个写入的配置键都必�
     expect(
       bad,
       bad
-        .map(
-          (key) =>
-            `「${type}」的编辑器 ${path.basename(editorFile)} 写入了 ${key}，但它渲染的 ` +
-            `${compBasename} 里没有任何组件消费它（检查该组件模板里的 naive-ui 组件是否声明了 ` +
-            `${key} 这个 prop，或组件自己是否该读一下 config.${key}）`,
+        .map((key) =>
+          isPseudoProp(key)
+            ? `「${type}」的编辑器 ${path.basename(editorFile)} 写入了 ${key}，这个键命中 FormKit ` +
+              `pseudoProps 规则会被拦截（见文件顶部 pseudoProps 表），不会流入 ${compBasename} ` +
+              `透传的 props，必须显式读取 context.${key}（或 FormKit 实际存放它的位置）并转发给 ` +
+              `底层 naive-ui 组件`
+            : `「${type}」的编辑器 ${path.basename(editorFile)} 写入了 ${key}，但它渲染的 ` +
+              `${compBasename} 里没有任何组件消费它（检查该组件模板里的 naive-ui 组件是否声明了 ` +
+              `${key} 这个 prop，或组件自己是否该读一下 config.${key}）`,
         )
         .join('\n'),
     ).toEqual([])

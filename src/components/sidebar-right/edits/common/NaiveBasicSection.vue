@@ -30,11 +30,13 @@ const props = withDefaults(
   },
 )
 
-const { createPropsProp } = useFormField()
+const { createPropsProp, createDisabledProp } = useFormField()
 const { t } = useFormBuilderI18n()
 
 const naiveSize = createPropsProp<string>('size', 'medium')
-const naiveDisabled = createPropsProp<boolean>('disabled', false)
+// disabled 关闭时必须删键而非写 false，否则该字段会锁死、不再响应整表单/分组级联
+// 禁用——见 form-fields.ts 的 createDisabledProp 注释
+const naiveDisabled = createDisabledProp()
 const naiveClearable = createPropsProp<boolean>('clearable', true)
 const naiveBordered = createPropsProp<boolean>('bordered', true)
 const naiveReadonly = createPropsProp<boolean>('readonly', false)

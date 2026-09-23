@@ -316,9 +316,10 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.naiveTransfer.name',
       labelKey: 'elements.naiveTransfer.label',
+      // disabled 不显式写 false：理由同 commonProps 顶部注释——显式 false 会锁死
+      // 该节点，不再响应表单/分组级联禁用
       props: {
         size: 'medium',
-        disabled: false,
         filterable: false,
         options: [
           { label: 'Option 1', value: '1' },
@@ -340,7 +341,8 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.naiveMention.name',
       labelKey: 'elements.naiveMention.label',
-      props: { size: 'medium', disabled: false },
+      // disabled 不显式写 false：理由同 commonProps 顶部注释
+      props: { size: 'medium' },
       placeholderKey: 'elements.naiveMention.placeholder',
       options: ['alice', 'bob'],
       descriptionKey: 'elements.naiveMention.description',
@@ -372,7 +374,8 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.naiveSwitch.name',
       labelKey: 'elements.naiveSwitch.label',
-      props: { size: 'medium', disabled: false },
+      // disabled 不显式写 false：理由同 commonProps 顶部注释
+      props: { size: 'medium' },
       value: false,
       descriptionKey: 'elements.naiveSwitch.description',
     },

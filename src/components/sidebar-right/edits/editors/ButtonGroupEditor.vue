@@ -7,12 +7,13 @@ import SwitchInput from '../common/SwitchInput.vue'
 import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 // 按钮组容器：无 label/help（纯展示容器），仅提供企业常用配置。
-const { createPropsProp } = useFormField()
+const { createPropsProp, createDisabledProp } = useFormField()
 const { t } = useFormBuilderI18n()
 
 const groupSize = createPropsProp<string>('size', 'medium')
 const groupVertical = createPropsProp<boolean>('vertical', false)
-const groupDisabled = createPropsProp<boolean>('disabled', false)
+// disabled 关闭时必须删键而非写 false，理由同 NaiveBasicSection.vue
+const groupDisabled = createDisabledProp()
 </script>
 
 <template>

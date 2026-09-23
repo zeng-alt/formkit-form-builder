@@ -7,9 +7,6 @@ import vueJsx from "@vitejs/plugin-vue-jsx";
 import vueDevTools from "vite-plugin-vue-devtools";
 import UnoCSS from "unocss/vite";
 import dts from "vite-plugin-dts";
-import AutoImport from "unplugin-auto-import/vite";
-import Components from "unplugin-vue-components/vite";
-import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
 
 // 传统单文件产物：builder.es.js + builder.umd.js + index.d.ts + builder.css。
 // 单次构建（vite build）同时产出 ES + UMD，仅外部化 peerDependencies，
@@ -70,13 +67,10 @@ export default defineConfig(({ command }): UserConfig => {
   return {
     root: command === "serve" ? src("playground") : undefined,
     publicDir: command === "serve" ? src("public") : false,
+    // 不使用 unplugin-vue-components / unplugin-auto-import：naive-ui 组件一律在
+    // <script setup> 里显式导入。自动解析只在构建期生效，测试环境（vitest.config.ts）
+    // 不走它，依赖它的组件在测试里会渲染成未知元素——测到的就不是真实行为。
     plugins: [
-      AutoImport({}),
-      Components({
-        dirs: [],
-        dts: false,
-        resolvers: [NaiveUiResolver()],
-      }),
       UnoCSS(),
       vue(),
       vueJsx(),

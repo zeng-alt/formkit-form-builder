@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { NButton, NInput } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useFormBuilderI18n } from '@/i18n/context'

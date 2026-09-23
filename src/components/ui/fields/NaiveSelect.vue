@@ -11,7 +11,7 @@ const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { config, props, bind } = useSchemaAttrs(context)
+const { config, props, bind, disabled } = useSchemaAttrs(context)
 const { runEvent } = useBindEvents(context, bind)
 
 const multiple = computed<boolean>(() => (config.multiple as boolean | undefined) ?? false)
@@ -82,6 +82,7 @@ const handleBlur = async (e: FocusEvent) => {
     :value="value"
     :options="options"
     :input-props="{ id: context.id }"
+    :disabled="disabled"
     @update:value="handleUpdateValue"
     @focus="handleFocus"
     @blur="handleBlur"

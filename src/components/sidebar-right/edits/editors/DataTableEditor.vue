@@ -12,7 +12,7 @@ import NumberInput from '../common/NumberInput.vue'
 import JsonTextarea from '../common/JsonTextarea.vue'
 import JsCodeEditor from '../common/JsCodeEditor.vue'
 import type { DataTableColumn } from '@/components/ui/containers/data-table/types'
-import { NButton, NModal } from 'naive-ui'
+import { NButton, NModal, NSwitch } from 'naive-ui'
 import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { t } = useFormBuilderI18n()
