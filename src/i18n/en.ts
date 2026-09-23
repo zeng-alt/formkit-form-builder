@@ -95,6 +95,8 @@ export default {
   formSettings: {
     title: 'Form settings',
     name: 'Form name',
+    id: 'Form ID',
+    version: 'Version',
     labelPosition: 'Label position',
     labelWidth: 'Label width',
     positionTop: 'Top',
