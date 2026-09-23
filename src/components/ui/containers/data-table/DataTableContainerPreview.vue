@@ -533,7 +533,10 @@ async function deleteRow(row: Record<string, unknown>) {
 
       <!-- n-data-table 的 columns/data 是按渲染场景推导的重泛型类型（RowData 与
            TableColumn<RowData> 互相绑定），我们的列配置来自设计态 JSON（DataTableColumn[]），
-           不是给 naive-ui 走类型推导用的，双方类型体系对不上，保留断言 -->
+           不是给 naive-ui 走类型推导用的，双方类型体系对不上；size 同 TabsContainerPreview.vue，
+           也曾尝试标注为 DataTableProps['size']。这三处都因 naive-ui 的类型经
+           ExtractPublicPropTypes 包装、Vue 的类型解析器无法解析（会静默退化成不做运行时
+           校验的 `type: null`）而保留断言 -->
       <n-data-table
         :columns="tableColumns as any"
         :data="displayRows as any"

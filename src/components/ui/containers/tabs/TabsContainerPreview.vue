@@ -56,8 +56,11 @@ const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false))
     <n-empty v-if="modelValue.length === 0" :description="t('builder.listDropHere')" />
     <!-- type/placement/size 是本组件自己声明的 string prop（画布 / DSL 侧按普通字符串
          传值，不锁定 naive-ui 的字面量联合），naive-ui 的 NTabs 对应 prop 是更窄的字面量
-         联合类型（如 TabsType = 'line'|'card'|'bar'|'segment'），两边类型来源不同，运行时
-         由 naive-ui 自己校验/兜底，这里保留断言 -->
+         联合类型（如 TabsType = 'line'|'card'|'bar'|'segment'）。曾尝试把这几个 prop 直接
+         标注为 TabsProps['type'] 等 naive-ui 导出类型以去掉断言，但 Vue 基于类型的
+         defineProps 无法解析 naive-ui 这几个类型（经 naive-ui 的 ExtractPublicPropTypes
+         包装，属于 Vue 编译期类型解析器不支持的复杂映射类型组合），会静默退化成不做运行时
+         校验的 `type: null`——比现状（naive-ui 自己校验/兜底）更差，因此保留类型断言 -->
     <n-tabs
       v-else
       :type="(props.type as any) || 'line'"

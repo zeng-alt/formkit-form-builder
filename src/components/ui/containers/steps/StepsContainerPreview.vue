@@ -65,7 +65,9 @@ const hasPaneContent = (child: SchemaNode) =>
     <n-empty v-if="modelValue.length === 0" :description="t('builder.listDropHere')" />
     <template v-else>
       <!-- status/size 同 TabsContainerPreview.vue：本组件自己的 string prop 比 naive-ui
-           对应 prop 的字面量联合更宽，两边类型来源不同，保留断言 -->
+           对应 prop 的字面量联合更宽，两边类型来源不同。曾尝试标注为 StepsProps['status'] /
+           StepsProps['size']，但 Vue 的类型解析器无法解析 naive-ui 经 ExtractPublicPropTypes
+           包装的类型，会静默退化成不做运行时校验的 `type: null`，故保留断言 -->
       <n-steps
         :current="current + 1"
         :status="(props.status as any) || 'process'"
