@@ -102,12 +102,68 @@ const tailwindSafelist = [
 ]
 void tailwindSafelist
 
-const { resizingIndex, startResize } = useGridSpanResize({
+const {
+  resizingIndex,
+  pointerPosition,
+  limitState,
+  limitPulse,
+  startResize,
+  adjustSpanByKeyboard,
+  resetSpanToFull,
+  maxSpanForIndex,
+} = useGridSpanResize({
   items: props.items,
   containerRef: props.containerRef,
   onResizeEnd: props.onResizeEnd,
   maxSpanFor: props.maxSpanFor,
 })
+
+// ═══ K1.2/K1.3：拖动期间的 12 列辅助格 + 吸附线 + 跟随鼠标的数值气泡 ═══════════════
+// 辅助格/高亮/吸附线直接测量正在调宽的条目在 DOM 里的真实矩形（相对 ul 内容区），
+// 而不是重新实现一遍网格自动布局算法——浏览器已经按 grid-column/grid-row（或输入组
+// 的百分比宽度）把条目排好了，量它比算它准，两种布局（grid/row）也不用分别写一套。
+// 每次 items 引用变化（拖动中每次移动都会替换 items.value）或 resizingIndex 变化后，
+// 等 DOM 按新 span 更新完（nextTick）再量一次。
+const resizeRect = ref<{ top: number; left: number; width: number; height: number } | null>(null)
+const measureResizeRect = () => {
+  const idx = resizingIndex.value
+  const ul = props.containerRef?.value as HTMLElement | null
+  if (idx === null || !ul) {
+    resizeRect.value = null
+    return
+  }
+  const li = ul.children[idx] as HTMLElement | undefined
+  if (!li) {
+    resizeRect.value = null
+    return
+  }
+  const ulRect = ul.getBoundingClientRect()
+  const liRect = li.getBoundingClientRect()
+  resizeRect.value = {
+    top: liRect.top - ulRect.top,
+    left: liRect.left - ulRect.left,
+    width: liRect.width,
+    height: liRect.height,
+  }
+}
+watch(
+  [resizingIndex, () => props.items.value],
+  () => {
+    nextTick(measureResizeRect)
+  },
+  { flush: 'post' },
+)
+
+// 气泡文案「N / 12 · 百分比」：分母固定 12（画布始终是 12 列栅格），即便输入组内
+// 单项的实际上限比 12 小（maxSpanFor 钳制），气泡仍按整行 12 列换算百分比，
+// 与用户在栅格辅助格里看到的比例一致
+const resizeSpan = computed(() => {
+  const idx = resizingIndex.value
+  if (idx === null) return 0
+  return getColSpan(props.items.value[idx])
+})
+const resizePercent = computed(() => Math.round((resizeSpan.value / 12) * 100))
+const bubbleText = computed(() => `${resizeSpan.value} / 12 · ${resizePercent.value}%`)
 
 // ── 手动 FLIP 动画：排序/重排（items 数量不变但顺序变化）时让元素平滑滑动到新位置。
 // 不用 <TransitionGroup> 的 move 类（其 leave 动画会触发 DnD 库的 DOM 数量警告），
@@ -282,6 +338,9 @@ const itemKey = (child: FormKitSchemaFormKit, idx: number): string =>
         :copy-aria-label="props.copyAriaLabel"
         :copy-tooltip-text="props.copyTooltipText"
         :resize-aria-label="props.resizeAriaLabel"
+        :resize-max="maxSpanForIndex(idx)"
+        :limit-hit="resizingIndex === idx ? limitState : null"
+        :limit-pulse="resizingIndex === idx ? limitPulse : 0"
         :has-copy="!!props.onCopy"
         :schema-library="schemaLibrary"
         :schema-render-data="schemaRenderData"
@@ -290,8 +349,54 @@ const itemKey = (child: FormKitSchemaFormKit, idx: number): string =>
         :on-delete="props.onDelete"
         :on-copy="props.onCopy"
         :on-start-resize="startResize"
+        :on-keyboard-resize="adjustSpanByKeyboard"
+        :on-reset-span="resetSpanToFull"
       />
     </ul>
+
+    <!-- K1.2/K1.3：拖动期间的 12 列辅助格 + 吸附线 + 跟随鼠标的数值气泡。
+         pointer-events: none，不参与布局与 DnD；只在拖动期间显示。 -->
+    <div
+      v-if="resizingIndex !== null && resizeRect"
+      class="absolute z-30 pointer-events-none"
+      :style="{ top: `${resizeRect.top}px`, height: `${resizeRect.height}px`, left: 0, right: 0 }"
+    >
+      <div :class="['grid grid-cols-12 gap-x-4 h-full', layout === 'grid' ? 'px-2' : '']">
+        <span
+          v-for="n in 12"
+          :key="n"
+          class="rounded-md bg-[#a277ff]/[0.05] outline outline-1 outline-dashed outline-[#a277ff]/25"
+        ></span>
+      </div>
+      <div
+        class="absolute inset-y-0 rounded-md"
+        :class="limitState ? 'bg-red-500/[0.16]' : 'bg-[#a277ff]/[0.14]'"
+        :style="{ left: `${resizeRect.left}px`, width: `${resizeRect.width}px` }"
+      >
+        <span
+          class="absolute inset-y-0 right-0 w-[2px] rounded-full"
+          :class="limitState ? 'bg-red-500' : 'bg-[#a277ff]'"
+        ></span>
+      </div>
+    </div>
+
+    <div
+      v-if="resizingIndex !== null && pointerPosition"
+      class="fixed z-[999] pointer-events-none select-none"
+      :style="{ left: `${pointerPosition.x + 14}px`, top: `${pointerPosition.y - 36}px` }"
+    >
+      <span
+        :key="`resize-bubble-shake-${limitPulse}`"
+        :class="[
+          'inline-block rounded-lg px-2.5 py-1 text-xs font-medium tracking-wide text-white shadow-lg whitespace-nowrap',
+          limitState ? 'bg-red-500 resize-bubble-shake' : 'bg-[#a277ff]',
+        ]"
+      >
+        <span :key="`resize-bubble-pop-${resizeSpan}`" class="inline-block resize-bubble-pop">{{
+          bubbleText
+        }}</span>
+      </span>
+    </div>
 
     <div v-if="props.items.value.length === 0" :class="emptyPlaceholderClass">
       <slot name="empty">
@@ -305,3 +410,52 @@ const itemKey = (child: FormKitSchemaFormKit, idx: number): string =>
 
 <!-- 画布条目进入动画 / 选中提示的 keyframes 已随 <li> 一起迁到 CanvasGridItem.vue
      （scoped 样式绑定在拥有对应 class 的组件上，这里不再重复定义）。 -->
+
+<style scoped>
+/* K1.3：气泡列数变化时的轻微缩放弹跳。用 span 的值当 key（见模板）强制重新挂载，
+   每次列数变化正好重播一次；:key 不变时 Vue 不会重新创建节点，动画也就不会重放。 */
+@keyframes resize-bubble-pop {
+  0% {
+    transform: scale(0.85);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.resize-bubble-pop {
+  animation: resize-bubble-pop 120ms ease-out;
+}
+/* 撞限抖动：与 CanvasGridItem.vue 的胶囊抖动同一套 keyframes 命名习惯，
+   同样只在 limitPulse 变化（重新挂载）时播放一次 */
+@keyframes resize-bubble-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-2px);
+  }
+  40% {
+    transform: translateX(2px);
+  }
+  60% {
+    transform: translateX(-1px);
+  }
+  80% {
+    transform: translateX(1px);
+  }
+}
+.resize-bubble-shake {
+  animation: resize-bubble-shake 220ms ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resize-bubble-pop,
+  .resize-bubble-shake {
+    animation: none;
+  }
+}
+</style>

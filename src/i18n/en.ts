@@ -289,6 +289,16 @@ export default {
       horizontal: 'Horizontal',
     },
     image: {
+      sizeModeLabel: 'Size mode',
+      sizeModeRatio: 'Ratio',
+      sizeModeFill: 'Fill row',
+      sizeModeFixed: 'Fixed size',
+      aspectRatioLabel: 'Aspect ratio',
+      aspectRatioOriginal: 'Original',
+      minHeightLabel: 'Min height (px)',
+      minHeightPlaceholder: '120',
+      fillRowSpanHint:
+        'Height is stretched by "Row span" below; falls back to min height when the row has no taller field',
       srcLabel: 'Image src',
       srcPlaceholder: 'https://...',
       altLabel: 'Alt text',

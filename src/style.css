@@ -173,3 +173,22 @@ body {
     animation: none;
   }
 }
+
+/* 图片「填满所占行」模式的高度链（画布与 FormRenderer 共用）：FormKit 在图片组件外包了
+   outer / wrapper / inner / 输入容器几层，每层都要把高度往里传，图片才能撑满它所跨的行。
+   用 :has() 只作用于装着 fill 模式图片（.naive-image--fill）的那个字段，不影响其它字段。
+   运行时的 .formkit-outer 本身就是网格项，stretch 对齐给出行高；画布里由画布条目传入。 */
+.formkit-outer:has(.naive-image--fill) {
+  display: flex;
+  flex-direction: column;
+}
+.formkit-outer:has(.naive-image--fill) :is(.formkit-wrapper, .formkit-inner),
+.formkit-inner:has(.naive-image--fill) > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.naive-image--fill {
+  flex: 1 1 auto;
+}
