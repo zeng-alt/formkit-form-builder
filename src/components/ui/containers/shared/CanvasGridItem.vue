@@ -6,7 +6,7 @@
 // 整个条目（含内部 FormKitSchema）就会跳过重渲染，不需要在这里手写 v-memo 的
 // 依赖列表——那份列表要跟随模板逐行核对，漏一项就是陈旧 UI bug，而组件边界的
 // props 浅比较由 Vue 保证，风险小得多（见规格 B5 的选型说明）。
-import type { Component } from 'vue'
+import { computed, type Component } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { FormKitSchema } from '@formkit/vue'
 import { NButton, NTooltip } from 'naive-ui'
@@ -53,6 +53,8 @@ const props = defineProps<{
 // 步骤向导节点不提供复制按钮（全局唯一，复制无意义）
 const isStepsItem = (child: SchemaNode): boolean =>
   child?.$cmp === 'steps' || child?.$formkit === 'steps'
+
+const ruleCount = computed(() => validationCount(props.child))
 
 const itemStyle = () => {
   if (props.layout === 'row') return { width: props.rowWidth, flex: props.rowFlex }
@@ -104,7 +106,7 @@ const itemStyle = () => {
 
     <!-- 左上角显示元素名称（左对齐，浮在顶边框上方）：悬停（虚线框）或选中（实线框）时显示 -->
     <div
-      class="absolute -top-[23px] left-0 z-30 flex h-[22px] max-w-[160px] items-center rounded-[7px] border border-border/70 bg-card px-2 shadow-[0_1px_4px_rgba(0,0,0,0.12)] transition-[opacity] duration-150 dark:border-border/50 dark:bg-neutral-900"
+      class="absolute -top-[23px] left-0 z-30 flex h-[22px] max-w-[220px] items-center rounded-[7px] border border-border/70 bg-card px-2 shadow-[0_1px_4px_rgba(0,0,0,0.12)] transition-[opacity] duration-150 dark:border-border/50 dark:bg-neutral-900"
       :class="[
         'opacity-0 pointer-events-none',
         'group-hover:opacity-100',
@@ -113,6 +115,11 @@ const itemStyle = () => {
     >
       <span class="truncate text-[11px] text-muted-foreground">
         {{ child?.name || child?.$formkit || child?.$cmp }}
+      </span>
+      <!-- 校验规则数放在浮于边框外的名称标签里：原先压在条目右下角，左侧标签布局或
+           多行输入时会盖住输入框；0 条规则时不显示 -->
+      <span v-if="ruleCount > 0" class="ml-1.5 shrink-0 text-[11px] text-[#a277ff]">
+        · {{ ruleCount }} {{ pluralize(ruleCount, 'rule') }}
       </span>
     </div>
 
@@ -216,17 +223,6 @@ const itemStyle = () => {
         ><span aria-hidden="true" class="i-lucide-trash-2 !h-[12px] !w-[12px]"></span
       ></template>
     </n-button>
-
-    <div class="absolute bottom-2 right-2 flex flex-row z-40">
-      <div
-        v-if="selected"
-        class="px-2 mr-1 border-1 border-ring/40 dark:border-ring/20 rounded-md flex items-center justify-center"
-      >
-        <span class="text-xs">
-          {{ validationCount(child) }} {{ pluralize(validationCount(child), 'rule') }}
-        </span>
-      </div>
-    </div>
 
     <n-button
       v-if="!autoWidth && !equalWidth"
