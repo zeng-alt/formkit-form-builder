@@ -63,13 +63,21 @@ describe('shareStructure：共享性', () => {
         ],
       },
     }
+    // prev.root.children 里两个元素结构不同（叶子 vs 带 children 的组），TS 据此推出
+    // 的数组元素类型是两者的联合，且互相把对方独有字段标成 `?: undefined`——group 项的
+    // children 因此仍是「可能 undefined」，这里先取值再判空，而不是靠越来越长的 `!` 链
+    const prevGroup = prev.root.children[1]
+    if (!prevGroup) throw new Error('prev.root.children[1] 应存在')
+    const prevGroupChildren = prevGroup.children
+    if (!prevGroupChildren?.[1]) throw new Error('prev.root.children[1].children[1] 应存在')
+
     const next = {
       root: {
         children: [
           prev.root.children[0],
           {
             id: 'group',
-            children: [{ id: 'n1', label: 'N1-changed' }, prev.root.children[1]!.children[1]],
+            children: [{ id: 'n1', label: 'N1-changed' }, prevGroupChildren[1]],
           },
         ],
       },
@@ -80,11 +88,11 @@ describe('shareStructure：共享性', () => {
     // 未改动的兄弟：字段 a、group 内未改的 n2
     expect(shared.root.children[0]).toBe(prev.root.children[0])
     const sharedGroup = shared.root.children[1] as any
-    expect(sharedGroup.children[1]).toBe(prev.root.children[1]!.children[1])
+    expect(sharedGroup.children[1]).toBe(prevGroupChildren[1])
 
     // 改动路径上的对象：新对象
-    expect(sharedGroup).not.toBe(prev.root.children[1])
-    expect(sharedGroup.children[0]).not.toBe(prev.root.children[1]!.children[0])
+    expect(sharedGroup).not.toBe(prevGroup)
+    expect(sharedGroup.children[0]).not.toBe(prevGroupChildren[0])
     expect(sharedGroup.children[0].label).toBe('N1-changed')
     expect(shared).not.toBe(prev)
     expect(shared.root).not.toBe(prev.root)

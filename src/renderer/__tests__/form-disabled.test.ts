@@ -14,7 +14,7 @@
 // 独有的类名就是该组件的禁用标记。评分（naiveRate）没有 disabled prop，只有 readonly，
 // 按 readonly:true / readonly:false 单独推导（见 RATE_BASELINE）。
 import { describe, it, expect } from 'vitest'
-import { h, nextTick } from 'vue'
+import { h, nextTick, type Component } from 'vue'
 import { mount } from '@vue/test-utils'
 import { plugin as formkitPlugin } from '@formkit/vue'
 import {
@@ -53,7 +53,7 @@ const settle = async () => {
 // 选项子组件、file 要带 dragger 子插槽），否则禁用态没有落点、diff 会是空集——这不是
 // "推导失败"，是基准本身没搭对，所以这里如实还原真实用法，而不是随便糊一个空壳。
 type Probe = {
-  component: unknown
+  component: Component
   propKey: 'disabled' | 'readonly'
   props?: Record<string, unknown>
   slots?: Record<string, unknown>
@@ -106,11 +106,11 @@ function collectClasses(root: Element): Set<string> {
 // 推导某个 probe 的禁用/只读标记 class 集合。空集合直接抛错（让调用它的用例失败并
 // 说明原因），不是静默跳过——按任务要求，推导不出差集就是测试本身要报的问题。
 function deriveMarkerClasses(name: string, probe: Probe): Set<string> {
-  const onWrapper = mount(probe.component as never, {
+  const onWrapper = mount(probe.component, {
     props: { ...probe.props, [probe.propKey]: true },
     slots: probe.slots,
   })
-  const offWrapper = mount(probe.component as never, {
+  const offWrapper = mount(probe.component, {
     props: { ...probe.props, [probe.propKey]: false },
     slots: probe.slots,
   })

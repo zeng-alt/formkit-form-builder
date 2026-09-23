@@ -11,6 +11,7 @@ import {
   resolveTimeZoneForLocale,
   formatIsoDate,
 } from '@/dsl'
+import type { Expr } from '@/types/dsl'
 
 describe('parseExprString / exprToJs / evalExpr', () => {
   it("$a > 1 && $b == 'x'", () => {
@@ -163,7 +164,7 @@ describe('today() 时区解析（expr-env）', () => {
   // 因此直接经 getBuiltin('today') 求值，与 evalExpr 对 call 节点的求值路径等价。
   it('zh-CN：UTC 20:00 已跨入上海时区次日', () => {
     setExprLocale('zh-CN')
-    const ast = { type: 'call', fn: 'today', args: [] } as const
+    const ast: Expr = { type: 'call', fn: 'today', args: [] }
     const result = evalExpr(ast, {})
     expect(result).toMatchObject({ ok: true, value: '2026-01-02' })
     expect(getBuiltin('today')!.eval([])).toBe('2026-01-02')
@@ -172,7 +173,7 @@ describe('today() 时区解析（expr-env）', () => {
   it('en：无映射，回落浏览器本地时区（不硬编码，CI 时区未知）', () => {
     setExprLocale('en')
     const expected = formatIsoDate(new Date(), undefined)
-    const ast = { type: 'call', fn: 'today', args: [] } as const
+    const ast: Expr = { type: 'call', fn: 'today', args: [] }
     const result = evalExpr(ast, {})
     expect(result).toMatchObject({ ok: true, value: expected })
   })

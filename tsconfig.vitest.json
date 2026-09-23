@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.app.json",
+  "include": ["env.d.ts", "src/**/__tests__/*"],
+  "exclude": [],
+  "compilerOptions": {
+    // 测试跑在 Node 里，源码扫描类测试用到 fs / path，需要 Node 类型；
+    // 测试用例文件里的 vitest API 一律显式 import，不依赖全局类型。
+    "types": ["node"],
+
+    // 独立于 tsconfig.app.json 的构建信息文件，避免两份 project 互相覆盖。
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo"
+  }
+}

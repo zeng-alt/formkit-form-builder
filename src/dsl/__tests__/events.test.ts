@@ -108,10 +108,12 @@ describe('events → schema（三种 renderAs 落位）', () => {
     const schema = dslToSchema(def)
     const fieldSchema = schemaChildren(schema[0])[0]!
     expect(fieldSchema.$cmp).toBe('text')
-    expect(fieldSchema.props.__bind).toEqual({ onChange: 'b()' })
+    const props = fieldSchema.props
+    if (!props) throw new Error('cmp 字段转换后应带 props')
+    expect(props.__bind).toEqual({ onChange: 'b()' })
     expect(fieldSchema.__bind).toBeUndefined()
     // onChange 只应出现在 props.__bind 内部，props 上不应再有一份平铺的 onChange
-    expect(fieldSchema.props.onChange).toBeUndefined()
+    expect(props.onChange).toBeUndefined()
     expect(fieldSchema.onChange).toBeUndefined()
   })
 
@@ -170,8 +172,10 @@ describe('schema → DSL：__bind 落位', () => {
     const def = buildFormDef(node)
     const schema = dslToSchema(def)
     const fieldSchema = schemaChildren(schema[0])[0]!
-    expect(fieldSchema.props.__bind).toEqual({ onClick: 'c()' })
-    expect(Object.keys(fieldSchema.props)).not.toContain('onBlur')
-    expect(Object.keys(fieldSchema.props)).not.toContain('onClick')
+    const props = fieldSchema.props
+    if (!props) throw new Error('cmp 字段转换后应带 props')
+    expect(props.__bind).toEqual({ onClick: 'c()' })
+    expect(Object.keys(props)).not.toContain('onBlur')
+    expect(Object.keys(props)).not.toContain('onClick')
   })
 })

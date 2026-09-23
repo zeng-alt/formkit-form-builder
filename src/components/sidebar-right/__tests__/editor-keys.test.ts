@@ -59,11 +59,16 @@ function parseTypeComponent(): Record<string, string> {
   const src = read(abs('src/elements/formkit.ts'))
   const importOf: Record<string, string> = {}
   for (const m of src.matchAll(/import (\w+) from '([^']+\.vue)'/g)) {
-    importOf[m[1]] = resolveAlias(m[2])
+    const [, localName, filePath] = m
+    if (!localName || !filePath) continue
+    importOf[localName] = resolveAlias(filePath)
   }
   const typeComp: Record<string, string> = {}
   for (const m of src.matchAll(/^\s*(\w+): \{ component: (\w+),/gm)) {
-    if (importOf[m[2]]) typeComp[m[1]] = importOf[m[2]]
+    const [, type, comp] = m
+    if (!type || !comp) continue
+    const file = importOf[comp]
+    if (file) typeComp[type] = file
   }
   return typeComp
 }
@@ -81,7 +86,9 @@ function parseTypeEditor(): Record<string, string> {
     if (!f.endsWith('.ts')) continue
     const src = read(path.join(dir, f))
     for (const m of src.matchAll(/type: '(\w+)',[\s\S]*?editor: \(\) => import\('([^']+)'\)/g)) {
-      typeEditor[m[1]] ??= resolveAlias(m[2])
+      const [, type, filePath] = m
+      if (!type || !filePath) continue
+      typeEditor[type] ??= resolveAlias(filePath)
     }
   }
   return typeEditor
@@ -100,7 +107,11 @@ function parseTypeEditor(): Record<string, string> {
 // - 子区块里被 `v-if="props.K"` 守着的开关，只有父编辑器在 <Child :K="true" ...>
 //   上传了 K，才算这个类型真的写入了该键（比如 NaiveBasicSection 的 clearable
 //   开关，只有 FileEditor 传了 :clearable="true" 才算 file 类型写入了 clearable）。
-function editorKeys(file: string, seen = new Set<string>(), passedFlags: Set<string> | null = null): Set<string> {
+function editorKeys(
+  file: string,
+  seen = new Set<string>(),
+  passedFlags: Set<string> | null = null,
+): Set<string> {
   if (!fs.existsSync(file)) return new Set()
   const src = read(file)
   const keys = new Set<string>()
@@ -108,25 +119,33 @@ function editorKeys(file: string, seen = new Set<string>(), passedFlags: Set<str
   const WRITE_RE = /(?:createPropsProp|setPropsProp|createButtonProp)(?:<[^>]*>)?\(\s*'([^']+)'/g
   for (const m of src.matchAll(WRITE_RE)) {
     const key = m[1]
+    if (!key) continue
     if (passedFlags && gated.has(key) && !passedFlags.has(key)) continue
     keys.add(key)
   }
   if (/createDisabledProp\(\)/.test(src)) {
-    if (!(passedFlags && gated.has('disabled') && !passedFlags.has('disabled'))) keys.add('disabled')
+    if (!(passedFlags && gated.has('disabled') && !passedFlags.has('disabled')))
+      keys.add('disabled')
   }
   for (const m of src.matchAll(/import (\w+) from '(\.{1,2}\/[^']+\.vue)'/g)) {
-    const child = path.join(path.dirname(file), m[2])
+    const [, localName, relPath] = m
+    if (!localName || !relPath) continue
+    const child = path.join(path.dirname(file), relPath)
     // 去重键必须带上本地名：同一父文件可能以不同名字导入同一个子组件，每个名字在模板里
     // 传的开关参数不同，只按「子文件 + 父文件」去重会让第二个名字的参数被静默跳过
-    const seenKey = `${child}|${file}|${m[1]}`
+    const seenKey = `${child}|${file}|${localName}`
     if (seen.has(seenKey)) continue
     seen.add(seenKey)
     // 父模板里 <Child ...> 标签上出现的属性名（kebab-case 转 camelCase），
     // 用来判断子区块里被 v-if="props.K" 守着的开关这次有没有被传入
     const flags = new Set<string>()
-    for (const tag of src.matchAll(new RegExp(`<${m[1]}\\b([^>]*)>`, 'g'))) {
-      for (const attr of tag[1].matchAll(/(?:^|\s)[:@]?([a-zA-Z][\w-]*)/g)) {
-        flags.add(attr[1].replace(/-([a-z])/g, (_, c: string) => c.toUpperCase()))
+    for (const tag of src.matchAll(new RegExp(`<${localName}\\b([^>]*)>`, 'g'))) {
+      const attrsText = tag[1]
+      if (!attrsText) continue
+      for (const attr of attrsText.matchAll(/(?:^|\s)[:@]?([a-zA-Z][\w-]*)/g)) {
+        const name = attr[1]
+        if (!name) continue
+        flags.add(name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase()))
       }
     }
     for (const key of editorKeys(child, seen, flags)) keys.add(key)
@@ -147,15 +166,23 @@ function consumedKeys(file: string): { declared: Set<string>; read: Set<string> 
   const declared = new Set<string>()
   const readKeys = new Set<string>()
   for (const m of src.matchAll(/<(N[A-Z][A-Za-z0-9]*)\b/g)) {
-    for (const key of Object.keys(naive[m[1]]?.props ?? {})) declared.add(key)
+    const compName = m[1]
+    if (!compName) continue
+    for (const key of Object.keys(naive[compName]?.props ?? {})) declared.add(key)
   }
-  for (const m of src.matchAll(/(?:config|props|attrs|context)\??\.([a-zA-Z_]\w*)/g)) readKeys.add(m[1])
-  for (const m of src.matchAll(/config\[['"](\w+)['"]\]/g)) readKeys.add(m[1])
+  for (const m of src.matchAll(/(?:config|props|attrs|context)\??\.([a-zA-Z_]\w*)/g)) {
+    if (m[1]) readKeys.add(m[1])
+  }
+  for (const m of src.matchAll(/config\[['"](\w+)['"]\]/g)) {
+    if (m[1]) readKeys.add(m[1])
+  }
   // useSchemaAttrs() 统一算出的 disabled 等值：解构出的变量名与它代表的配置键同名
   // （约定见 use-schema-attrs.ts），把它当作显式读取——否则组件复用这个composable
   // 转发 disabled（而不是每处重复写 context.disabled 字面量）时会被误判成"没人消费"。
   for (const m of src.matchAll(/const \{([^}]*)\} = useSchemaAttrs\(/g)) {
-    for (const ident of m[1].split(',')) {
+    const group = m[1]
+    if (!group) continue
+    for (const ident of group.split(',')) {
       const name = ident.trim()
       if (name) readKeys.add(name)
     }
@@ -187,7 +214,8 @@ const EXEMPTIONS: Exemption[] = [
   {
     type: 'naiveA',
     key: 'href',
-    reason: 'NaiveTypographyA.vue 根元素就是原生 <a>，href 直接透传到 $attrs 生效，不经任何 naive-ui 组件',
+    reason:
+      'NaiveTypographyA.vue 根元素就是原生 <a>，href 直接透传到 $attrs 生效，不经任何 naive-ui 组件',
   },
   {
     type: 'naiveA',
@@ -235,8 +263,12 @@ describe('编辑面板开关 → 渲染组件：每个写入的配置键都必�
     for (const [type, min] of Object.entries(CANARY_MIN_KEYS)) {
       const ed = typeEditor[type]
       expect(ed, `类型 ${type} 应能解析出编辑器路径`).toBeTruthy()
-      const keys = editorKeys(ed)
-      expect(keys.size, `类型 ${type} 解析出的编辑器键数 (${[...keys].join(',')})`).toBeGreaterThanOrEqual(min)
+      // 上一行已断言 ed 非空，这里是运行时已验证过的非空场景
+      const keys = editorKeys(ed!)
+      expect(
+        keys.size,
+        `类型 ${type} 解析出的编辑器键数 (${[...keys].join(',')})`,
+      ).toBeGreaterThanOrEqual(min)
     }
   })
 
@@ -250,10 +282,14 @@ describe('编辑面板开关 → 渲染组件：每个写入的配置键都必�
 
     expect(src, `@formkit/vue 版本 ${pkg.version} 的 dist 文件里`).toContain('var pseudoProps = [')
     for (const literal of ['"ignore"', '"disabled"', '"preserve"', '"help"', '"label"']) {
-      expect(src, `pseudoProps 里应仍有 ${literal}（@formkit/vue ${pkg.version}）`).toContain(literal)
+      expect(src, `pseudoProps 里应仍有 ${literal}（@formkit/vue ${pkg.version}）`).toContain(
+        literal,
+      )
     }
     // icon 正则的关键片段（-icon|Icon）：这是 showIcon 之类键被拦截的直接依据
-    expect(src, `pseudoProps 的 icon 正则片段（@formkit/vue ${pkg.version}）`).toContain('-icon|Icon')
+    expect(src, `pseudoProps 的 icon 正则片段（@formkit/vue ${pkg.version}）`).toContain(
+      '-icon|Icon',
+    )
   })
 
   const types = Object.keys(typeComp).sort()

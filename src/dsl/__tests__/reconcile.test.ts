@@ -54,7 +54,9 @@ describe('reconcileDslTree', () => {
     const b = textField('b', 'kb', 'B')
     const currentDsl = [a, b]
     const currentSchema = schemaChildrenOf(buildFormDef(currentDsl))
-    const nextSchema = [currentSchema[1], currentSchema[0]] // 交换顺序，内容不变
+    const [schemaA, schemaB] = currentSchema
+    if (!schemaA || !schemaB) throw new Error('schemaChildrenOf 应产出两个节点')
+    const nextSchema = [schemaB, schemaA] // 交换顺序，内容不变
 
     const result = reconcileDslTree(currentDsl, currentSchema, nextSchema)
 
@@ -68,7 +70,9 @@ describe('reconcileDslTree', () => {
     const b = textField('b', 'kb', 'B')
     const currentDsl = [a, b]
     const currentSchema = schemaChildrenOf(buildFormDef(currentDsl))
-    const nextSchema = [currentSchema[0]] // 删掉 b
+    const [schemaA] = currentSchema
+    if (!schemaA) throw new Error('schemaChildrenOf 应至少产出一个节点')
+    const nextSchema = [schemaA] // 删掉 b
 
     const result = reconcileDslTree(currentDsl, currentSchema, nextSchema)
 
@@ -80,18 +84,23 @@ describe('reconcileDslTree', () => {
     const a = textField('a', 'ka', 'A')
     const currentDsl = [a]
     const currentSchema = schemaChildrenOf(buildFormDef(currentDsl))
-    const newNodeSchema = schemaChildrenOf(buildFormDef([textField('c', 'kc', 'C')]))[0]
-    const nextSchema = [currentSchema[0], newNodeSchema]
+    const [schemaA] = currentSchema
+    if (!schemaA) throw new Error('schemaChildrenOf 应至少产出一个节点')
+    const [newNodeSchema] = schemaChildrenOf(buildFormDef([textField('c', 'kc', 'C')]))
+    if (!newNodeSchema) throw new Error('schemaChildrenOf 应至少产出一个节点')
+    const nextSchema = [schemaA, newNodeSchema]
 
     const result = reconcileDslTree(currentDsl, currentSchema, nextSchema)
 
     expect(result).toHaveLength(2)
-    expect(result[0]).toBe(a)
-    expect(result[1]).not.toBe(a)
-    expect(result[1].category).toBe('field')
-    expect(result[1].type).toBe('text')
-    expect(result[1].key).toBe('kc')
-    expect(result[1].label).toBe('C')
+    const [first, second] = result
+    if (!second) throw new Error('reconcileDslTree 应产出两个节点')
+    expect(first).toBe(a)
+    expect(second).not.toBe(a)
+    expect(second.category).toBe('field')
+    expect(second.type).toBe('text')
+    expect(second.key).toBe('kc')
+    expect(second.label).toBe('C')
   })
 
   it('修改某节点的 label：该节点被重新转换，兄弟节点引用不变', () => {
@@ -99,18 +108,22 @@ describe('reconcileDslTree', () => {
     const b = textField('b', 'kb', 'B')
     const currentDsl = [a, b]
     const currentSchema = schemaChildrenOf(buildFormDef(currentDsl))
-    const changedA = { ...currentSchema[0], props: { ...currentSchema[0].props, label: 'A2' } }
-    const nextSchema = [changedA, currentSchema[1]]
+    const [schemaA, schemaB] = currentSchema
+    if (!schemaA || !schemaB) throw new Error('schemaChildrenOf 应产出两个节点')
+    const changedA = { ...schemaA, props: { ...schemaA.props, label: 'A2' } }
+    const nextSchema = [changedA, schemaB]
 
     const result = reconcileDslTree(currentDsl, currentSchema, nextSchema)
 
     expect(result).toHaveLength(2)
+    const [first, second] = result
+    if (!first) throw new Error('reconcileDslTree 应产出两个节点')
     // 内容变化：重新转换，不再是原对象引用，但 id/key 保留
-    expect(result[0]).not.toBe(a)
-    expect(result[0].id).toBe('a')
-    expect(result[0].key).toBe('ka')
-    expect(result[0].label).toBe('A2')
+    expect(first).not.toBe(a)
+    expect(first.id).toBe('a')
+    expect(first.key).toBe('ka')
+    expect(first.label).toBe('A2')
     // 未变兄弟节点：同一对象引用
-    expect(result[1]).toBe(b)
+    expect(second).toBe(b)
   })
 })
