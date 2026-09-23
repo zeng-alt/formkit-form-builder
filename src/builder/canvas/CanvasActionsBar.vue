@@ -12,7 +12,8 @@ const showImportExportModal = ref(false)
 
 <template>
   <div class="w-16 shrink-0 flex flex-col items-center">
-    <div class="sticky top-20 flex flex-col gap-2">
+    <!-- 贴顶由外层（BuilderCanvas.vue）负责，这里不再 sticky -->
+    <div class="flex flex-col gap-2">
       <n-button-group vertical class="bg-card shadow-sm rounded-lg border border-border/50">
         <n-tooltip placement="left">
           <template #trigger>
