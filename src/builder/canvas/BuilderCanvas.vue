@@ -40,9 +40,13 @@ defineSlots<{
       </template>
     </CanvasBoard>
 
-    <div class="flex flex-col gap-16px">
-      <CanvasActionsBar />
-      <slot name="toolbar" />
+    <!-- 外层随画布行拉伸到整行高度，内层才能 sticky 贴顶：sticky 元素不能超出父元素，
+         父元素只有按钮组那么高时它会跟着内容滚走，滚到顶栏下面与撤销/重做重叠 -->
+    <div class="shrink-0">
+      <div class="sticky top-20 flex flex-col gap-16px">
+        <CanvasActionsBar />
+        <slot name="toolbar" />
+      </div>
     </div>
   </div>
 </template>
