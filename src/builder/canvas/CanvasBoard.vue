@@ -67,6 +67,7 @@ defineSlots<{
         :empty-text="t('builder.listDropHere')"
         :delete-aria-label="t('builder.deleteField')"
         :copy-aria-label="t('builder.duplicateField')"
+        :resize-aria-label="t('builder.resizeFieldWidth')"
         :data-attrs="rootDropAreaAttrs"
         :ul-class="ulClass"
         :empty-min-height="'400px'"

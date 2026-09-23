@@ -19,6 +19,19 @@ export interface DndContext {
    *  容易以为内容丢了，commit.ts 在真的发生这次收纳时调用它弹一条提示。
    *  可选：commit.ts 内部工具函数测试等场景不需要提供。 */
   notifyStepsConsolidate?: () => void
+  /** L：翻译函数——plugin.ts / commit.ts 等运行在 Vue 组件之外的低层 DnD 逻辑，
+   *  借这里透传出去的 t() 格式化插入徽标 / 容器标签 / 拒绝原因文案，不用在
+   *  utils/dnd 里重新实现一遍 i18n 查找（也不必关心多设计器实例各自的语言）。
+   *  可选：commit.ts 内部工具函数测试等场景不需要提供，缺省时相关文案退化为不显示。 */
+  t?: (key: string, params?: Record<string, string | number>) => string
+  /** L6：面板拖入的新元素提交后自动选中，右侧属性面板随之显示它 */
+  selectByKey?: (key: string) => void
+  /** L2：拖拽悬停在本容器上时，左上角标签显示的名称（容器自身标题或类型名）；
+   *  不提供则不显示标签（根画布就是这种情况——落点已经很明确，不需要额外提示）。 */
+  containerLabel?: () => string
+  /** L3：本容器的 accepts 已经拒绝了当前被拖节点时，给出具体原因一句话；
+   *  不提供或返回空则只显示通用的「不能放在这里」，不附带原因行。 */
+  describeRejection?: () => string | undefined
 }
 
 /** customInsertPlugin 在 parent.config 上额外挂的字段：@formkit/drag-and-drop 自己的

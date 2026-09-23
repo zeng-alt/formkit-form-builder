@@ -7,6 +7,7 @@ import { getElementTypeBySchema } from '@/elements'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useFormBuilderI18n } from '../../i18n/context'
 import { customInsertPlugin } from '../../utils/custom-insert-plugin'
+import { createPaletteDragImage } from '../../utils/dnd/drag-image'
 
 const props = defineProps<{
   elements: FormKitSchemaFormKit[]
@@ -18,6 +19,10 @@ const collapsed = inject('sidebarCollapsed', ref(false))
 
 type PointerupData = { targetData: { node: { el: HTMLElement } } }
 type DynamicValuesData = { draggedNodes: Array<{ data: { value: FormKitSchemaFormKit } }> }
+type DragImageData = {
+  e: DragEvent
+  targetData: { node: { data: { value: FormKitSchemaFormKit } } }
+}
 
 const dragConfig = {
   group: 'form-builder',
@@ -26,6 +31,16 @@ const dragConfig = {
   draggable: () => true,
   handleNodePointerup(data: PointerupData) {
     data.targetData.node.el.setAttribute('draggable', 'true')
+  },
+  // L5：从面板拖出时用紧凑的胶囊（图标 + 名称）当拖拽影像，而不是整个面板条目的截图。
+  // @formkit/drag-and-drop 只负责把这里返回的元素交给 dataTransfer.setDragImage
+  // 之前的收尾（挂到 body、drag 结束后自动移除），实际调用 setDragImage 在
+  // createPaletteDragImage 里——库本身的 dragImage 钩子并不会替调用方调这一步。
+  dragImage(data: DragImageData) {
+    const value = data.targetData.node.data.value
+    const el = createPaletteDragImage(iconOf(value), String(value?.name ?? ''))
+    data.e.dataTransfer?.setDragImage(el, 16, 16)
+    return el
   },
   insertConfig: {
     dynamicValues: (data: DynamicValuesData) => {

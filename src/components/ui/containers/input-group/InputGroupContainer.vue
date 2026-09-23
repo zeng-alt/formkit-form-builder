@@ -71,6 +71,7 @@ const dnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
     if (k && canvasCtx?.updateContainerChildren) canvasCtx.updateContainerChildren(k, next)
     else emit('update:modelValue', next)
   },
+  containerLabel: () => t('elements.inputGroup.name'),
 })
 
 const emitUpdateNormalized = () => {

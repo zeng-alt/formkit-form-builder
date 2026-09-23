@@ -52,7 +52,6 @@ export default {
     addTab: 'Add tab',
     stepsConsolidateNotice: 'Existing content has been moved into step 1',
     paneNameDuplicate: 'The name "{name}" is already in use, please choose another',
-    deletedNotice: 'Deleted',
     prevStep: 'Previous',
     nextStep: 'Next',
     finish: 'Finish',
@@ -83,6 +82,28 @@ export default {
     dataTableSaveError: 'Save failed',
     dataTableDeleteSuccess: 'Deleted successfully',
     dataTableDeleteError: 'Delete failed',
+  },
+  // L: drag feedback when moving elements onto the canvas (insert badge / container
+  // hover label / not-allowed feedback)
+  dnd: {
+    insertBadge: {
+      right: 'Place right · {width}/12',
+      left: 'Place left · {width}/12',
+      bottom: 'Place below · {width}/12',
+      top: 'Place above · {width}/12',
+      split: 'Split {a} + {b}',
+      halve: 'Split evenly {a} + {b}',
+    },
+    dropInto: 'Drop into: {name}',
+    reject: {
+      notAllowed: "Can't drop here",
+    },
+    reason: {
+      buttonGroupOnly: 'Button groups only accept buttons',
+      stepsExclusive: 'A step wizard already exists — drop inside a step instead',
+      noNestedSteps: "Steps can't be nested inside another step",
+      singleChildOnly: 'This container only holds a single element',
+    },
   },
   importExport: {
     title: 'Import / Export Schema',
@@ -290,6 +311,16 @@ export default {
       horizontal: 'Horizontal',
     },
     image: {
+      sizeModeLabel: 'Size mode',
+      sizeModeRatio: 'Ratio',
+      sizeModeFill: 'Fill row',
+      sizeModeFixed: 'Fixed size',
+      aspectRatioLabel: 'Aspect ratio',
+      aspectRatioOriginal: 'Original',
+      minHeightLabel: 'Min height (px)',
+      minHeightPlaceholder: '120',
+      fillRowSpanHint:
+        'Height is stretched by "Row span" below; falls back to min height when the row has no taller field',
       srcLabel: 'Image src',
       srcPlaceholder: 'https://...',
       altLabel: 'Alt text',

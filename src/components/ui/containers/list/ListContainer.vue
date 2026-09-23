@@ -61,6 +61,9 @@ const dnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
     if (k && canvasCtx?.updateContainerChildren) canvasCtx.updateContainerChildren(k, next)
     else emit('update:modelValue', next)
   },
+  containerLabel: () => t('elements.list.name'),
+  // L3：列表只能容纳一个子元素（列表项模板），已有内容时再拖别的进来会被拒绝
+  describeRejection: () => t('dnd.reason.singleChildOnly'),
 })
 
 const emitUpdateNormalized = () => {

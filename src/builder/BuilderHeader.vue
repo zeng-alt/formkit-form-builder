@@ -29,10 +29,7 @@ defineSlots<{
 </script>
 
 <template>
-  <!-- 悬浮顶栏滚动时会盖在画布内容上：半透明底 + 毛玻璃，避免按钮与下方表单内容视觉上叠在一起 -->
-  <header
-    class="sticky top-0 md:top-5 flex h-14 shrink-0 items-center rounded-2xl z-[1000] px-4 bg-card/75 backdrop-blur-md border border-border/50 shadow-sm"
-  >
+  <header class="sticky top-0 md:top-5 flex h-14 shrink-0 items-center rounded-2xl z-[1000] px-4">
     <div class="w-full grid grid-cols-3 items-center gap-3">
       <div class="flex items-center gap-2 justify-start">
         <slot name="left">

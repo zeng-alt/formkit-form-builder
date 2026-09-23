@@ -51,7 +51,6 @@ export default {
     addTab: '新增标签',
     stepsConsolidateNotice: '已有内容已移入第 1 步',
     paneNameDuplicate: '名称「{name}」已被占用，请换一个',
-    deletedNotice: '已删除',
     prevStep: '上一步',
     nextStep: '下一步',
     finish: '完成',
@@ -82,6 +81,27 @@ export default {
     dataTableSaveError: '保存失败',
     dataTableDeleteSuccess: '删除成功',
     dataTableDeleteError: '删除失败',
+  },
+  // L：拖动元素到画布时的交互反馈（插入线宽度徽标 / 容器悬停标签 / 不可放置反馈）
+  dnd: {
+    insertBadge: {
+      right: '放在右侧 · {width}/12',
+      left: '放在左侧 · {width}/12',
+      bottom: '放在下方 · {width}/12',
+      top: '放在上方 · {width}/12',
+      split: '拆分为 {a} + {b}',
+      halve: '平分 {a} + {b}',
+    },
+    dropInto: '放入：{name}',
+    reject: {
+      notAllowed: '不能放在这里',
+    },
+    reason: {
+      buttonGroupOnly: '按钮组只能放按钮',
+      stepsExclusive: '已有步骤条，请拖入步骤内',
+      noNestedSteps: '步骤内不能再放步骤向导',
+      singleChildOnly: '该容器只能容纳一个元素',
+    },
   },
   importExport: {
     title: '导入 / 导出 Schema',
@@ -248,6 +268,15 @@ export default {
       horizontal: '水平排列',
     },
     image: {
+      sizeModeLabel: '尺寸模式',
+      sizeModeRatio: '按比例',
+      sizeModeFill: '填满所占行',
+      sizeModeFixed: '固定尺寸',
+      aspectRatioLabel: '比例（aspect-ratio）',
+      aspectRatioOriginal: '原图比例',
+      minHeightLabel: '最小高度（px）',
+      minHeightPlaceholder: '120',
+      fillRowSpanHint: '高度由下方「占用行数」撑开，同行没有更高的字段时用最小高度兜底',
       srcLabel: '图片地址（src）',
       srcPlaceholder: 'https://...',
       altLabel: '替代文本（alt）',

@@ -425,8 +425,11 @@ export const fieldElements: ElementDefinition[] = [
       props: {
         src: '',
         alt: '',
-        width: 240,
-        height: 160,
+        // K2：新拖入的图片默认"按比例"自适应所在列宽（16:9），不再带固定 240×160——
+        // 画布 grid 行高是 auto，固定像素宽高与所占列数无关，占 12 列时图片缩在一角，
+        // 占 3 列又会溢出格子。旧数据不做兼容（仓库还没有生产使用）。
+        sizeMode: 'ratio',
+        aspectRatio: '16/9',
         objectFit: 'cover',
         previewDisabled: false,
         lazy: false,

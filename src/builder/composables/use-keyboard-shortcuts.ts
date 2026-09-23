@@ -10,33 +10,12 @@
 // （findNodeByKey/removeAtPath/insertAfterAtPath）——这些工具本来就支持任意嵌套
 // 深度（容器内部的字段与根级字段用的是同一套 schema 树表示），不需要为"根级"和
 // "容器内"分别写一套逻辑。
-import { inject, provide, ref, type InjectionKey, type Ref } from 'vue'
 import { findNodeByKey, insertAfterAtPath, removeAtPath } from '@/utils/schema/tree'
 import { collectSchemaNames, duplicateNode } from '@/utils/dnd/schema'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 import { useFormBuilderI18n } from '@/i18n/context'
 import type { FormBuilderState } from '@/state/create-form-builder-state'
-import { useDeleteUndoNotice } from './use-delete-undo-notice'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-
-// 快捷键的实际处理函数需要 useNotification()（H7 的撤销提示）——它按注入链往上找
-// n-notification-provider，而 n-notification-provider 是 BuilderThemeScope 的子组件，
-// BuilderMain.vue 自己是 BuilderThemeScope 的上级（渲染者），不是它的子孙，在
-// BuilderMain 的 setup 里直接调用 useNotification() 找不到 provider 会直接抛错。
-// 键盘监听又必须挂在 BuilderMain 的最外层根元素上（bubbling 才能覆盖全部子孙）。
-// 拆成两半解决：BuilderMain 只 provide 一个可写的 handler 槽位，真正的处理逻辑
-// 在 BuilderCanvas.vue（BuilderThemeScope 的子孙，useNotification() 用得了）里
-// 构建后填进这个槽位。
-const KEYDOWN_HANDLER_KEY: InjectionKey<Ref<((e: KeyboardEvent) => void) | null>> = Symbol(
-  'keyboard-shortcuts-handler',
-)
-
-/** BuilderMain.vue 调用：创建槽位并 provide 下去，返回值直接绑在根元素的 @keydown 上。 */
-export function provideKeyboardShortcutSlot(): (e: KeyboardEvent) => void {
-  const handlerRef = ref<((e: KeyboardEvent) => void) | null>(null)
-  provide(KEYDOWN_HANDLER_KEY, handlerRef)
-  return (e: KeyboardEvent) => handlerRef.value?.(e)
-}
 
 // 焦点落在这些元素 / 弹窗里时不响应快捷键，避免打字（改名、输入内容、JS 绑定
 // 代码编辑器等）时被误删/误撤销
@@ -78,12 +57,10 @@ function resolveParentArray(
 }
 
 // BuilderCanvas.vue 调用（BuilderThemeScope 子孙，useNotification() 能正常注入）：
-// 构建真正的快捷键处理逻辑，注册进 provideKeyboardShortcutSlot() 创建的槽位。
 // state 由调用方传入而不是这里自己 useFormBuilderState()——同一份状态，避免
 // 再走一次注入。
 export function useKeyboardShortcuts(state: FormBuilderState) {
   const { t } = useFormBuilderI18n()
-  const deleteUndoNotice = useDeleteUndoNotice(state)
 
   // 删除当前选中元素（根级或容器内嵌套均可）：删除后选中态回落到同位置的相邻
   // 元素，没有相邻元素时回落到表单设置
@@ -105,7 +82,6 @@ export function useKeyboardShortcuts(state: FormBuilderState) {
 
     const nextSchema = removeAtPath(schema, found.path)
     state.commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], { reason: 'delete' })
-    deleteUndoNotice.notify(state.formDefinition.value)
 
     if (fallbackKey) {
       const stillThere = findNodeByKey(state.formSchema.value as SchemaNode[], fallbackKey)
@@ -150,12 +126,13 @@ export function useKeyboardShortcuts(state: FormBuilderState) {
   const onKeydown = (e: KeyboardEvent) => {
     const mod = e.ctrlKey || e.metaKey
     if (isEditableTarget(e.target)) {
-      // 画布上的字段是预览控件，在里面打字不会保存到定义里——而点选字段（尤其点它的标签）
-      // 时焦点恰恰会落进这些控件。这种情况下仍按设计器快捷键处理 Delete 与 Ctrl/Cmd 组合键，
-      // 只把 Backspace 留给控件本身；标了 data-canvas-edit 的画布内编辑框（静态文本内联编辑、
-      // 标签页/步骤改名）是真实的文本编辑，照常排除
+      // 画布上的字段是预览控件，在里面打字不会保存到定义里——正常情况下点选字段时
+      // CanvasGridItem.vue 的 focusin 兜底会把焦点收回条目自己身上，不会停留在这些
+      // 控件里；这里的 Backspace/Delete 同等处理只是双重兜底（焦点因为某些边缘场景
+      // 仍留在控件里时也能删掉）。标了 data-canvas-edit 的画布内编辑框（静态文本内联
+      // 编辑、标签页/步骤改名）是真实的文本编辑，照常排除，Ctrl/Cmd 组合键正常放行。
       if (!isCanvasPreviewControl(e.target)) return
-      if (!mod && e.key !== 'Delete') return
+      if (!mod && e.key !== 'Delete' && e.key !== 'Backspace') return
     }
 
     if (!mod && (e.key === 'Delete' || e.key === 'Backspace')) {
@@ -181,9 +158,6 @@ export function useKeyboardShortcuts(state: FormBuilderState) {
       return
     }
   }
-
-  const handlerRef = inject(KEYDOWN_HANDLER_KEY, null)
-  if (handlerRef) handlerRef.value = onKeydown
 
   return { onKeydown }
 }

@@ -14,7 +14,7 @@ import type { FormBuilderConfig } from '../types/env'
 import { provideFormBuilderI18n } from '../i18n/context'
 import { provideRuntimeLocale } from '../i18n/runtime-locale'
 import { provideFormBuilderState } from '@/state/create-form-builder-state'
-import { provideKeyboardShortcutSlot } from './composables/use-keyboard-shortcuts'
+import { useKeyboardShortcuts } from './composables/use-keyboard-shortcuts'
 import { provideFormDefinition } from '@/composables/use-form-definition'
 import { provideBinderHttp } from '@/composables/use-bind-http'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
@@ -58,9 +58,8 @@ const { formDefinition, setFormDefinition } = state
 provideFormDefinition(formDefinition)
 
 // H5：键盘快捷键——监听挂在设计器根元素上（模板里的 @keydown），不挂 window，
-// 保证多个设计器实例互不干扰。真正的处理逻辑在 BuilderCanvas.vue 里注册（见
-// use-keyboard-shortcuts.ts 顶部注释：那里才能正常用 useNotification()）。
-const onKeydown = provideKeyboardShortcutSlot()
+// 保证多个设计器实例互不干扰（keydown 会从任意子孙元素冒泡到这个根节点）。
+const { onKeydown } = useKeyboardShortcuts(state)
 
 // ── 配置：prop 优先，否则回落注入（BuilderProvider 提供）──
 const injectedCfg = useFormBuilderConfig()

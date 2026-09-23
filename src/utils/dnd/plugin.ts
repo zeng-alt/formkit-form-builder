@@ -22,11 +22,19 @@ import {
 import { watch } from 'vue'
 import { handleEnd } from './commit'
 import { insertState } from './insert-state'
-import { positionInsertPoint, createInsertPoint } from './insert-point'
-import { isRootDropArea, type DndContext } from './context'
+import { positionInsertPoint, createInsertPoint, hideInsertBadge } from './insert-point'
+import { isRootDropArea, type DndContext, type DndParentConfig } from './context'
 import { defineRanges, type InsertRange, type InsertRangeData } from './range'
 import { eventCoordinates, pd } from '../utils'
 import type { SchemaNode } from '@/utils/schema/types'
+import {
+  clearHoverFeedback,
+  hideContainerHighlight,
+  hideRejectBadge,
+  showContainerHighlight,
+  showRejectBadge,
+} from './hover-feedback'
+import { stopEdgeAutoScroll, updateEdgeAutoScroll } from './auto-scroll'
 
 let documentController: AbortController | undefined
 
@@ -44,7 +52,10 @@ const throttle = (fn: (...args: any[]) => void) => {
   }
 }
 
-// 找到第一个可滚动父容器，用于滚动时重算命中范围
+// 找到第一个可滚动父容器，用于滚动时重算命中范围；L4 的边缘自动滚动（本文件内的
+// checkPosition）也复用它找“当前指针下的元素往上第一个可滚动容器”，不用另起一套
+// 判断逻辑——传给 updateEdgeAutoScroll 而不是让 auto-scroll.ts 反过来 import 这里，
+// 避免两个模块相互引用。
 function findFirstOverflowingParent(element: HTMLElement): HTMLElement | null {
   let parent = element.parentElement
   while (parent) {
@@ -60,13 +71,19 @@ function findFirstOverflowingParent(element: HTMLElement): HTMLElement | null {
   return null
 }
 
-// 当鼠标移出所有注册的 drop-zone 时隐藏插入提示线
+// 当鼠标移出所有注册的 drop-zone 时隐藏插入提示线；L4 边缘自动滚动挂在这里统一驱动——
+// 这是唯一一个不管指针在不在已注册的 drop-zone 上都会持续收到 dragover/pointermove
+// 的地方（document 级监听，不要求任何祖先 preventDefault），覆盖靠近边缘但暂时悬停在
+// 非放置区域（如画布留白）上的情况。
 function checkPosition(e: DragEvent | PointerEvent) {
   if (!isDragState(state)) return
+
+  updateEdgeAutoScroll(e.clientX, e.clientY, findFirstOverflowingParent)
 
   const el = document.elementFromPoint(e.clientX, e.clientY)
   if (!(el instanceof HTMLElement) || el === insertState.insertPoint?.el) {
     if (insertState.insertPoint) insertState.insertPoint.el.style.display = 'none'
+    hideInsertBadge()
     return
   }
 
@@ -83,6 +100,7 @@ function checkPosition(e: DragEvent | PointerEvent) {
 
   if (!isWithinAParent) {
     if (insertState.insertPoint) insertState.insertPoint.el.style.display = 'none'
+    hideInsertBadge()
     if (insertState.draggedOverParent) {
       removeClass(
         [insertState.draggedOverParent.el],
@@ -92,6 +110,9 @@ function checkPosition(e: DragEvent | PointerEvent) {
     insertState.draggedOverNodes = []
     insertState.draggedOverParent = null
     state.currentParent = state.initialParent
+    // L2/L3：离开所有已注册的放置区（比如悬停到侧边栏、顶栏留白）时，容器高亮标签
+    // 与拒绝反馈徽标也一并收起，不留在屏幕上无意义地跟着指针漂移
+    clearHoverFeedback()
   }
 }
 
@@ -102,6 +123,61 @@ function handleNodeDragover<T>(data: NodeDragEventData<T>) {
 }
 
 const throttledMoveBetween = throttle(moveBetween)
+
+type AcceptsFn<T> = (
+  target: ParentRecord<T>,
+  initial: ParentRecord<T>,
+  current: ParentRecord<T>,
+  state: DragState<T>,
+) => boolean
+
+// L2/L3：容器高亮标签 + 不可放置反馈。每次命中一个 parent（不管是不是最终会
+// moveBetween/moveOutside 决定的落点）都刷新一遍——与那两个函数各自的排序/跨容器
+// 提交逻辑分开维护：这里只管悬停时的视觉反馈，用同一份 accepts 结果各自独立消费，
+// 不会互相影响对方已经稳定跑通的落点计算。
+function updateHoverFeedback<T>(
+  e: DragEvent | PointerEvent,
+  target: ParentRecord<T>,
+  dragState: DragState<T>,
+) {
+  const config = target.data.config as DndParentConfig<T>
+  const acceptsFn = config.accepts as AcceptsFn<T> | undefined
+
+  let accepted = true
+  if (typeof acceptsFn === 'function') {
+    try {
+      accepted = acceptsFn(target, dragState.initialParent, dragState.currentParent, dragState)
+    } catch {
+      // 校验异常时放行，保持与 moveBetween 一致的兜底行为
+      accepted = true
+    }
+  }
+
+  // 原生拖拽的光标图标由 dropEffect 驱动（CSS cursor 在原生 DnD 期间不生效）：
+  // 拒绝时设为 'none'，浏览器自动画出 not-allowed 的圆斜杠光标
+  if (e instanceof DragEvent && e.dataTransfer) {
+    e.dataTransfer.dropEffect = accepted ? config.dragDropEffect : 'none'
+  }
+
+  const ctx = config.dndContext
+
+  if (!accepted) {
+    hideContainerHighlight()
+    // moveBetween/moveOutside 在 accepts 为 false 时提前 return，不会再帮忙更新/
+    // 隐藏插入线——留着上一次成功命中时的插入线和宽度徽标会显得"还能插进去"，
+    // 这里主动收起，和红色徽标、not-allowed 光标保持一致
+    if (insertState.insertPoint) insertState.insertPoint.el.style.display = 'none'
+    hideInsertBadge()
+    const title = ctx?.t?.('dnd.reject.notAllowed') ?? '不能放在这里'
+    showRejectBadge(e.clientX, e.clientY, title, ctx?.describeRejection?.())
+    return
+  }
+
+  hideRejectBadge()
+  const name = ctx?.containerLabel?.()
+  if (name && ctx?.t) showContainerHighlight(target.el, ctx.t('dnd.dropInto', { name }))
+  else hideContainerHighlight()
+}
 
 function processParentDragEvent<T>(
   e: DragEvent | PointerEvent,
@@ -128,6 +204,8 @@ function processParentDragEvent<T>(
     if (state.coordinates.y > rect.top && state.coordinates.y < rect.bottom)
       realTargetParent = nestedParent
   }
+
+  updateHoverFeedback(e, realTargetParent, state)
 
   defineRanges(realTargetParent.el)
 
@@ -350,6 +428,7 @@ function findClosest<T>(enabledNodes: NodeRecord<T>[], state: DragState<T>) {
 
   if (insertState.insertPoint && state.initialParent?.el !== state.currentParent?.el) {
     insertState.insertPoint.el.style.display = 'none'
+    hideInsertBadge()
   }
 
   return foundRange
@@ -402,6 +481,12 @@ export function customInsertPlugin<T>(insertConfig: InsertConfig<T>, deps: DndCo
 
         parentData.on('dragEnded', () => {
           documentController?.abort()
+          // L1/L2/L3/L4：拖动结束或取消（Esc / 拖出窗口后释放）时统一清理浮层与自动滚动，
+          // 与已有的 insertPoint/dropZoneClass 清理（commit.ts 的 abortDrop/handleEnd）
+          // 是同一次 'dragEnded' 广播触发的，不需要再额外挂一次监听
+          hideInsertBadge()
+          clearHoverFeedback()
+          stopEdgeAutoScroll()
         })
 
         parentData.config = insertParentConfig

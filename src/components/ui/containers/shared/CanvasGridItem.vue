@@ -6,7 +6,7 @@
 // 整个条目（含内部 FormKitSchema）就会跳过重渲染，不需要在这里手写 v-memo 的
 // 依赖列表——那份列表要跟随模板逐行核对，漏一项就是陈旧 UI bug，而组件边界的
 // props 浅比较由 Vue 保证，风险小得多（见规格 B5 的选型说明）。
-import { computed, type Component } from 'vue'
+import { computed, ref, type Component } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { FormKitSchema } from '@formkit/vue'
 import { NButton, NTooltip } from 'naive-ui'
@@ -40,7 +40,16 @@ const props = defineProps<{
   copyAriaLabel?: string
   copyTooltipText?: string
   resizeAriaLabel?: string
+  /** 本项调宽的上限（aria-valuemax）：普通字段 12，输入组内按 maxSpanFor 逐项计算 */
+  resizeMax?: number
+  /** 本项是否正撞在上/下限（拖动或键盘调整时）：驱动把手/气泡的警示色 */
+  limitHit?: 'min' | 'max' | null
+  /** 撞限一次性抖动的触发计数：变化即重放一次抖动动画，见 use-grid-span-resize.ts */
+  limitPulse?: number
   hasCopy: boolean
+  /** L6：放下后的高亮闪烁计数——变化即重放一次，与 selected 状态无关（移动一个
+   *  未选中、或选中态本身没变化的已选中元素，都要能重新触发这次反馈） */
+  dropFlash?: number
   schemaLibrary?: Record<string, Component>
   schemaRenderData: Record<string, unknown>
   renderSchema: (node: FormKitSchemaFormKit) => unknown[]
@@ -48,6 +57,10 @@ const props = defineProps<{
   onDelete: (index: number) => void
   onCopy?: (index: number) => void
   onStartResize: (e: PointerEvent, index: number) => void
+  /** 键盘调宽：焦点在把手上时 ← / → 各 -1 / +1 列 */
+  onKeyboardResize?: (index: number, delta: number) => void
+  /** 双击把手：恢复整行（或输入组 maxSpanFor 允许的最大值） */
+  onResetSpan?: (index: number) => void
 }>()
 
 // 步骤向导节点不提供复制按钮（全局唯一，复制无意义）
@@ -56,14 +69,52 @@ const isStepsItem = (child: SchemaNode): boolean =>
 
 const ruleCount = computed(() => validationCount(props.child))
 
+// ═══ K2：图片 fill 模式撑满所占行 ═══════════════════════════════════════════════
+// li 本身作为 grid 项，默认 align-self:stretch 已经拿到了整段 row-span 的真实高度
+// （CSS Grid 的这条对齐规则会给它一个"确定的"used height，供后代 height:100% 逐层
+// 解析），但要让这个高度一路传到 NaiveImage.vue 自己的容器，中间经过的每一层
+// （这里两个包装 div + FormKit 生成的 outer/wrapper/inner）都必须显式声明
+// height:100%/flex:1——只要有一层还是默认的 height:auto，链条就断在那一层。
+// 只在图片是 fill 模式时才切这条链路（下面 scoped 样式用 .canvas-item--fill-image
+// 限定），不影响其余字段类型或 ratio/fixed 两种模式（它们本就不依赖行高）。
+const isFillImage = computed(() => {
+  const child = props.child as SchemaNode
+  const isImage = child?.$formkit === 'naiveImage' || child?.$cmp === 'naiveImage'
+  return isImage && (child?.props as { sizeMode?: string } | undefined)?.sizeMode === 'fill'
+})
+
 const itemStyle = () => {
   if (props.layout === 'row') return { width: props.rowWidth, flex: props.rowFlex }
   return { gridColumn: props.gridColumn, gridRow: props.gridRow }
+}
+
+// ═══ J1：Mac 上 delete 键删不掉元素 ═════════════════════════════════════════════
+// 画布里的字段是"预览控件"（FormKit 渲染出来的真实 <input>/<select>/... ），点它的
+// 标签或输入框选中字段时，浏览器会把焦点交给这些控件——但预览控件里打字根本不会
+// 保存进表单定义，让焦点停留在里面没有意义，还会导致快捷键处理器把 Backspace 让给
+// 控件本身（Mac 的 delete 键发出的正是 Backspace），选中字段后按 delete 没反应。
+// 这里在条目自己的 focusin 上兜底：只要焦点落进了本条目内的 FormKit 预览控件（且不是
+// data-canvas-edit 标记的画布内真实编辑框，比如标签页改名、静态文本内联编辑），
+// 就把焦点收回条目自己身上（tabindex="0"）——快捷键处理器据此正常响应 Backspace/Delete。
+// 嵌套容器（比如 card 里的字段）时，focusin 会从内到外冒泡到每一层 <li data-canvas-item>；
+// 只有目标离得最近的那个条目（closest 命中的就是自己）才处理，外层条目原样放行，
+// 不会抢走本该属于最内层被选中条目的焦点。
+const liRef = ref<HTMLLIElement | null>(null)
+function onFocusin(e: FocusEvent) {
+  const target = e.target
+  const li = liRef.value
+  if (!li || !(target instanceof HTMLElement)) return
+  if (target === li) return
+  if (target.closest('[data-canvas-item]') !== li) return
+  if (target.closest('[data-canvas-edit]')) return
+  if (!target.closest('.formkit-outer')) return
+  li.focus({ preventScroll: true })
 }
 </script>
 
 <template>
   <li
+    ref="liRef"
     :data-item-key="itemKey"
     data-canvas-item="true"
     :class="[
@@ -75,13 +126,24 @@ const itemStyle = () => {
       selected
         ? 'border-solid border-[#a277ff] bg-[#a277ff]/[0.05] shadow-[0_0_0_3px_rgba(79,110,247,0.12)] dark:bg-[#a277ff]/[0.08] canvas-item-select-pop'
         : 'border-dashed border-transparent hover:border-[#7c9ef8] hover:bg-[#f0f4ff] dark:hover:bg-[rgba(100,130,255,0.07)]',
+      isFillImage ? 'canvas-item--fill-image' : '',
     ]"
     :style="itemStyle()"
     tabindex="0"
     @pointerdown.stop="props.onSelect(child, index)"
     @keydown.enter.stop.prevent="props.onSelect(child, index)"
     @keydown.space.stop.prevent="props.onSelect(child, index)"
+    @focusin="onFocusin"
   >
+    <!-- L6：放下后的高亮闪烁——纯装饰覆盖层，独立于 selected 状态之外重放一次
+         canvas-item-select-pop 动画；:key 用计数强制重新挂载，复用 pop 放在 li
+         自身会和"选中态常驻这个 class"互相打架，这里用一个覆盖层规避 -->
+    <span
+      v-if="dropFlash"
+      :key="`drop-flash-${dropFlash}`"
+      aria-hidden="true"
+      class="absolute inset-0 z-30 rounded-xl pointer-events-none canvas-item-select-pop"
+    ></span>
     <button
       v-if="dragEnabled && dragHandle"
       type="button"
@@ -93,7 +155,7 @@ const itemStyle = () => {
     >
       <span aria-hidden="true" class="i-lucide-grip-vertical h-4 w-4"></span>
     </button>
-    <div class="flex gap-1.5 p-1 w-full pb-2">
+    <div :class="['flex gap-1.5 p-1 w-full pb-2', isFillImage ? 'flex-col h-full' : '']">
       <div class="flex-1 w-full min-w-0">
         <FormKitSchema
           :schema="renderSchema(child) as unknown as FormKitSchemaFormKit[]"
@@ -224,35 +286,66 @@ const itemStyle = () => {
       ></template>
     </n-button>
 
-    <n-button
+    <!-- 调宽把手（方案 B 胶囊）：可点击区域比可见胶囊左右各宽 4px（resize-pill-hit
+         的内边距），光标 ew-resize；可聚焦，← / → 键盘调宽，双击恢复整行。悬停条目时
+         淡入，悬停/聚焦到胶囊本身时变主题紫、竖纹变白、阴影加深（见下方 scoped 样式）。
+         不再用 n-button + ⋮ 图标，也不再在条目中央盖数字 overlay（改为跟随鼠标的气泡，
+         由 ContainerChildrenGrid 统一渲染，见该文件）。 -->
+    <div
       v-if="!autoWidth && !equalWidth"
-      text
-      size="small"
+      role="slider"
+      tabindex="0"
+      :aria-valuemin="2"
+      :aria-valuemax="resizeMax ?? 12"
+      :aria-valuenow="colSpan"
       :aria-label="resizeAriaLabel ?? 'Resize'"
       :class="[
         resizeHandleClass,
+        'resize-pill-hit group flex items-center justify-center !w-[22px] !h-[30px] !cursor-ew-resize',
         'opacity-0 pointer-events-none',
         'group-hover:opacity-100 group-hover:pointer-events-auto',
-        'transition-[transform,opacity] duration-150',
-        '!cursor-ew-resize',
-        resizing ? '!opacity-100 scale-110' : dragging ? '!opacity-0 !pointer-events-none' : '',
+        'focus-visible:opacity-100 focus-visible:pointer-events-auto focus-visible:outline-none',
+        'transition-opacity duration-150',
+        resizing ? '!opacity-100' : dragging ? '!opacity-0 !pointer-events-none' : '',
       ]"
-      content-class="!cursor-ew-resize"
       @pointerdown.stop.prevent="onStartResize($event, index)"
+      @keydown.left.stop.prevent="onKeyboardResize?.(index, -1)"
+      @keydown.right.stop.prevent="onKeyboardResize?.(index, 1)"
+      @dblclick.stop.prevent="onResetSpan?.(index)"
     >
-      <template #icon>
-        <span aria-hidden="true" class="i-lucide-more-vertical h-5 w-5"></span>
-      </template>
-    </n-button>
-
-    <div
-      v-if="resizing"
-      class="absolute inset-0 z-40 bg-[#a277ff]/[0.06] flex items-center justify-center rounded-xl border-[1.5px] border-[#a277ff]/50"
-    >
+      <!-- 抖动只加在这个纯装饰的内层 span 上、用 limitPulse 当 key 强制重挂载重播一次：
+           外层承载焦点/role/tabindex，remount 会丢焦点，绝不能被这个 key 影响到 -->
       <span
-        class="bg-[#a277ff] text-white text-xs font-medium px-2.5 py-1 rounded-lg tracking-wide"
+        :key="`resize-pill-${limitPulse ?? 0}`"
+        :class="[
+          'flex items-center justify-center gap-0.5 w-3.5 h-[30px] rounded-[7px] border',
+          'bg-white border-black/10 shadow-[0_1px_4px_rgba(0,0,0,0.12)]',
+          'dark:bg-neutral-900 dark:border-white/10',
+          'transition-[background-color,border-color,box-shadow] duration-150',
+          'group-hover:!bg-[#a277ff] group-hover:!border-[#a277ff] group-hover:shadow-[0_4px_12px_rgba(162,119,255,0.35)]',
+          'group-focus-visible:!bg-[#a277ff] group-focus-visible:!border-[#a277ff] group-focus-visible:shadow-[0_4px_12px_rgba(162,119,255,0.35)]',
+          resizing
+            ? '!bg-[#a277ff] !border-[#a277ff] shadow-[0_4px_12px_rgba(162,119,255,0.35)]'
+            : '',
+          limitHit
+            ? '!bg-red-500 !border-red-500 shadow-[0_4px_12px_rgba(239,68,68,0.35)] resize-pill-shake'
+            : '',
+        ]"
       >
-        {{ colSpan }}
+        <i
+          :class="[
+            'block w-0.5 h-2.5 rounded-full bg-black/35 dark:bg-white/40 transition-colors duration-150',
+            'group-hover:!bg-white group-focus-visible:!bg-white',
+            resizing || limitHit ? '!bg-white' : '',
+          ]"
+        ></i>
+        <i
+          :class="[
+            'block w-0.5 h-2.5 rounded-full bg-black/35 dark:bg-white/40 transition-colors duration-150',
+            'group-hover:!bg-white group-focus-visible:!bg-white',
+            resizing || limitHit ? '!bg-white' : '',
+          ]"
+        ></i>
       </span>
     </div>
   </li>
@@ -284,12 +377,50 @@ const itemStyle = () => {
   animation: canvas-item-select-pop 300ms ease-out;
 }
 
+/* ═══ K1：调宽把手（方案 B 胶囊）═══════════════════════════════════════════════
+   外观本身走 UnoCSS 工具类（见上方模板，与文件里其它按钮的写法一致），这里只放
+   CSS 动画做不到用工具类表达的部分：撞限抖动。每次撞限只播放一次——调用方
+   （ContainerChildrenGrid）把 limitPulse 计数当 key 扣在纯装饰的内层 span 上，
+   计数变化才会重新挂载、重放这个动画；持续停在同一个限位上不会连续抖。 */
+@keyframes resize-pill-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-2px);
+  }
+  40% {
+    transform: translateX(2px);
+  }
+  60% {
+    transform: translateX(-1px);
+  }
+  80% {
+    transform: translateX(1px);
+  }
+}
+.resize-pill-shake {
+  animation: resize-pill-shake 220ms ease-in-out;
+}
+
+/* K2：图片 fill 模式撑满所占行——画布条目自身这一段：li 的高度（CSS Grid 的 stretch
+   对齐给出）经内容包装层（上方 isFillImage 时的 flex-col h-full）传到 FormKitSchema
+   渲染出的 .formkit-outer；从 .formkit-outer 往里的高度链是画布与运行时共用的全局规则，
+   见 src/style.css 的 .naive-image--fill。 */
+.canvas-item--fill-image :deep(.formkit-outer) {
+  height: 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .canvas-item-enter {
     animation: none;
   }
   .canvas-item-select-pop {
     animation: none !important;
+  }
+  .resize-pill-shake {
+    animation: none;
   }
 }
 </style>

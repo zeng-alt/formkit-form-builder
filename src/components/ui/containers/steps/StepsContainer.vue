@@ -131,6 +131,8 @@ const paneDnd = useContainerDragAndDrop<FormKitSchemaFormKit>({
     if (!k) return
     if (canvasCtx?.updateContainerChildren) canvasCtx.updateContainerChildren(k, value)
   },
+  containerLabel: () => t('elements.steps.name'),
+  describeRejection: () => t('dnd.reason.noNestedSteps'),
 })
 
 const currentStatus = computed(() => props.status ?? 'process')
