@@ -183,7 +183,7 @@ const bindRuntimeNames = new Set(Object.keys(bindRuntimeVariables))
 // ---- 表单字段名（动态注入，供 form.xxx 补全） ----
 // 由调用方以取值函数传入而非模块级全局：两个 FormBuilder 实例可能同时存在，
 // 且字段清单会随编辑实时变化，取值函数保证每次补全/悬停都读到最新清单。
-export type GetFormFieldNames = () => string[]
+type GetFormFieldNames = () => string[]
 
 // ---- 工具函数 ----
 
@@ -467,7 +467,7 @@ export function createBindRuntimeCompletionsSource(
 
 // ---- hoverTooltip 源 ----
 
-export type BindRuntimeHoverTooltipSource = (
+type BindRuntimeHoverTooltipSource = (
   view: EditorView,
   pos: number,
 ) => {

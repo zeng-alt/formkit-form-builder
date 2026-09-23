@@ -1,6 +1,6 @@
 // ═══ 事件绑定：DSL events ⇄ schema __bind ══════════════════════════════════════
 // DSL 的 events 是唯一真源；schema 侧的表示统一收敛为 __bind: { onClick: handler }。
-// bindKeyOf / eventOfBindKey 是两者之间的唯一映射，避免各处各自拼 'on' + capitalize。
+// bindKeyOf 是这一方向（DSL → schema）拼 key 的唯一来源，避免各处各自拼 'on' + capitalize。
 
 import { FORM_EVENTS, type EventBinding, type FormEvent } from '../types/dsl'
 
@@ -11,16 +11,6 @@ function capitalize(s: string): string {
 /** 'click' → 'onClick' */
 export function bindKeyOf(event: FormEvent): string {
   return `on${capitalize(event)}`
-}
-
-/** 'onClick' → 'click'；不在 FORM_EVENTS 内（如 'onDblclick'）返回 undefined */
-export function eventOfBindKey(key: string): FormEvent | undefined {
-  const m = /^on([A-Z]\w*)$/.exec(key)
-  if (!m) return undefined
-  const candidate = m[1]!.charAt(0).toLowerCase() + m[1]!.slice(1)
-  return (FORM_EVENTS as readonly string[]).includes(candidate)
-    ? (candidate as FormEvent)
-    : undefined
 }
 
 /** 可绑定事件对应的 schema __bind key 全集（单一来源，供 bind-runtime / BindEditor 消费） */

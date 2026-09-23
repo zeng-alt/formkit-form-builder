@@ -55,7 +55,7 @@ export type SchemaNode = FormKitSchemaFormKit & {
 
 /** $cmp / 容器节点的 props：身份键（keyProp，如 __listKey）、modelValue 等按容器规格
  *  动态挂载，键名不固定，仍需兜底索引签名；这里把代码里常读写的几个键显式列出来。 */
-export interface SchemaNodeProps {
+interface SchemaNodeProps {
   name?: string
   id?: string
   outerClass?: string

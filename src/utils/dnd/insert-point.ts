@@ -29,7 +29,7 @@ export function createInsertPoint<T>(parent: ParentRecord<T>, insertState: Inser
   })
 }
 
-export function removeInsertPoint<T>(insertState: InsertStateEx<T>) {
+function removeInsertPoint<T>(insertState: InsertStateEx<T>) {
   if (insertState.insertPoint?.el) insertState.insertPoint.el.remove()
   insertState.insertPoint = null
 }

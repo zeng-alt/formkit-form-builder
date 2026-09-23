@@ -123,7 +123,7 @@ function wrapNodeWithGroup(node: any): any {
   return group
 }
 
-export interface SchemaToDslOptions {
+interface SchemaToDslOptions {
   id?: string
   name?: string
 }

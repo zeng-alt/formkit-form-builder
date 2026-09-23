@@ -1,6 +1,6 @@
 import type { ContainerNode, FormNode, LayoutNode } from '@/types/dsl'
 
-export interface DslPathNode {
+interface DslPathNode {
   node: FormNode
   parent: FormNode | null
   /** 所在根级子树的根下标（画布选中回退用） */
@@ -8,7 +8,7 @@ export interface DslPathNode {
   index: number
 }
 
-export type DslDropPosition = 'before' | 'after' | 'inside'
+type DslDropPosition = 'before' | 'after' | 'inside'
 
 export function dslChildrenOf(node: FormNode): FormNode[] {
   if (node.category === 'container' || node.category === 'layout') {

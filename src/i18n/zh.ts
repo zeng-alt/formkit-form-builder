@@ -118,7 +118,6 @@ export default {
     promptPlaceholder: '让 AI 生成表单',
     emptyPrompt: '提示为空！',
     emptyPromptDescription: '请输入提示词以生成表单。',
-    close: '关闭',
     defaultInstructions: '根据用户描述生成 FormKit schema',
     requestFailed: 'AI 请求失败',
     parseFailed: '无法解析 AI 返回的表单 Schema，请重试或调整描述',

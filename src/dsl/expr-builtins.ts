@@ -7,7 +7,7 @@
 
 import { formatIsoDate, getExprTimeZone } from './expr-env'
 
-export interface BuiltinFn {
+interface BuiltinFn {
   name: string
   /** 参数数量范围 [min, max]，max 为 Infinity 表示可变 */
   arity: [number, number]
@@ -278,8 +278,4 @@ export const builtins: Record<string, BuiltinFn> = {
 
 export function getBuiltin(name: string): BuiltinFn | undefined {
   return builtins[name]
-}
-
-export function isBuiltin(name: string): boolean {
-  return name in builtins
 }

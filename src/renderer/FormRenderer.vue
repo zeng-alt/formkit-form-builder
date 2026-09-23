@@ -53,7 +53,7 @@ type FormKitTypedProps = {
 const FormKitTyped = FormKit as DefineComponent<FormKitTypedProps>
 
 /** #actions 槽作用域：可由外部自定义操作区按钮，复用表单提交/重置 */
-export type FormActionsScope = {
+type FormActionsScope = {
   submit: () => void
   reset: () => void
   loading: boolean

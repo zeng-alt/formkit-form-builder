@@ -1,4 +1,3 @@
-import type { Completion, CompletionSource } from '@codemirror/autocomplete'
 import type { EditorView } from '@codemirror/view'
 
 export interface ExprFieldInfo {
@@ -9,7 +8,7 @@ export interface ExprFieldInfo {
 // ─── 字段清单：由调用方以取值函数传入 ──────────────────────────────────────────
 // 不用模块级全局，是因为两个 FormBuilder 实例可能同时存在；也不接受快照数组，
 // 是因为字段清单会随用户编辑实时变化——取值函数才能保证每次补全/悬停都读到最新值。
-export type GetExprFields = () => ExprFieldInfo[]
+type GetExprFields = () => ExprFieldInfo[]
 
 const TOOLTIP_STYLE = `
   font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
@@ -140,90 +139,11 @@ function buildGetMethodInfo(name: string, detail: string, desc: string): HTMLEle
   return root
 }
 
-export function createExprCompletionSource(getFields: GetExprFields): CompletionSource {
-  return (context) => {
-    // $get(xxx). 点成员补全
-    const afterGetDot = context.matchBefore(/\$get\(.*?\)\.\s*\w*$/)
-    if (afterGetDot) {
-      const text = afterGetDot.text
-      const dotIdx = text.lastIndexOf('.')
-      const afterDot = text.slice(dotIdx + 1).trim()
-      const options: Completion[] = []
-      for (const m of GET_DOT_METHODS) {
-        if (!m.name.startsWith(afterDot)) continue
-        options.push({
-          label: m.name,
-          type: 'property',
-          detail: m.detail,
-          info: () => buildGetMethodInfo(m.name, m.detail, m.info),
-          apply: m.apply,
-        })
-      }
-      if (options.length) return { from: afterGetDot.to, options, validFor: /^\w*$/ }
-      return null
-    }
-
-    // $xxx 补全 — 手动扫描光标前最近的 $ 符号
-    const pos = context.pos
-    const doc = context.state.doc
-
-    let from = pos - 1
-    while (from >= 0) {
-      const c = doc.sliceString(from, from + 1)
-      if (c === '$') break
-      if (!/[\w:.]/.test(c)) return null
-      from--
-    }
-    if (from < 0) return null
-
-    const prefix = doc.sliceString(from + 1, pos)
-    const options: Completion[] = []
-
-    // 内置变量 / 函数
-    for (const [key, def] of Object.entries(BUILTINS)) {
-      if (!key.startsWith(prefix) && !ctxNameEq(key, prefix)) continue
-      options.push({
-        label: key,
-        type: key === 'get' ? 'function' : 'keyword',
-        detail: def.detail,
-        info: () => buildBuiltinTooltip(`$${key === ':' ? ':' : key}`, def.detail, def.info),
-        apply: def.apply,
-        boost: def.boost,
-      })
-    }
-
-    // 表单字段
-    for (const f of getFields()) {
-      if (!f.name.toLowerCase().startsWith(prefix.toLowerCase())) continue
-      options.push({
-        label: f.name,
-        type: 'variable',
-        detail: f.label ? `${f.label}` : '字段',
-        info: () => buildFieldInfo(f.name, f.label),
-        apply: `$${f.name}`,
-      })
-    }
-
-    if (options.length === 0) return null
-    return {
-      from,
-      to: pos,
-      options,
-      validFor: /^[\w:.]*$/,
-    }
-  }
-}
-
-/** 宽松匹配：prefix 为 "g" 时也能匹配 "get" */
-function ctxNameEq(key: string, prefix: string): boolean {
-  return key.toLowerCase() === prefix.toLowerCase()
-}
-
 // ─── hover ──────────────────────────────────────────────────────────────────────
 
 const BUILTIN_HOVER_DOC = new Map(Object.entries(BUILTINS).map(([k, v]) => [k, v]))
 
-export type ExprHoverTooltipSource = (
+type ExprHoverTooltipSource = (
   view: EditorView,
   pos: number,
 ) => {

@@ -11,7 +11,7 @@ import {
 import { dateEnUS, dateZhCN, enUS, zhCN, type NDateLocale, type NLocale } from 'naive-ui'
 import { setExprLocale } from '../dsl/expr-env'
 
-export type RuntimeLocale = string
+type RuntimeLocale = string
 
 const naiveLocaleMap: Record<string, NLocale> = {
   'zh-CN': zhCN,

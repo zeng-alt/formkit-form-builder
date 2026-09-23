@@ -95,7 +95,7 @@ function checkPosition(e: DragEvent | PointerEvent) {
   }
 }
 
-export function handleNodeDragover<T>(data: NodeDragEventData<T>) {
+function handleNodeDragover<T>(data: NodeDragEventData<T>) {
   const config = data.targetData.parent.data.config
   if (!config.nativeDrag) return
   data.e.preventDefault()
@@ -140,11 +140,11 @@ function processParentDragEvent<T>(
   state.currentParent = realTargetParent
 }
 
-export function handleParentDragover<T>(data: ParentEventData<T>, state: DragState<T>) {
+function handleParentDragover<T>(data: ParentEventData<T>, state: DragState<T>) {
   processParentDragEvent(data.e as DragEvent, data.targetData, state, true)
 }
 
-export function handleParentPointerover<T>(data: PointeroverParentEvent<T>) {
+function handleParentPointerover<T>(data: PointeroverParentEvent<T>) {
   const { detail } = data
   const { state, targetData } = detail
   if (state.scrolling) return
@@ -176,7 +176,7 @@ function handleInsertBasedOnRange<T>(
 }
 
 // 在一个 parent 内移动（排序）
-export function moveBetween<T>(data: ParentRecord<T>, state: DragState<T>) {
+function moveBetween<T>(data: ParentRecord<T>, state: DragState<T>) {
   if (data.data.config.sortable === false) return
 
   // 单元素容器（list / badge 等）：容器已满时 accepts 会拒绝新元素，但拖入瞬间

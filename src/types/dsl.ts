@@ -14,18 +14,18 @@ export type NodeCategory = 'field' | 'container' | 'layout' | 'static'
 export type RenderKind = 'formkit' | 'cmp' | 'el'
 
 // ─── 可移植表达式 AST（JSON-safe，Java 可解析/生成/校验）────────────────────────
-export type StaticValue = any
+type StaticValue = any
 
-export interface ExprLiteral {
+interface ExprLiteral {
   type: 'literal'
   value: StaticValue
 }
-export interface ExprField {
+interface ExprField {
   type: 'field'
   /** 引用表单数据里的字段名（提交给后端的数据 key） */
   name: string
 }
-export interface ExprCall {
+interface ExprCall {
   type: 'call'
   /** 内置函数名，见 src/dsl/expr-builtins.ts；前后端共用同一份清单 */
   fn: string
@@ -35,7 +35,7 @@ export interface ExprCall {
 export type Expr = ExprLiteral | ExprField | ExprCall
 
 /** 字段值：静态值 */
-export type FieldValue = StaticValue
+type FieldValue = StaticValue
 
 // ─── 校验规则（结构化，JSON-safe）───────────────────────────────────────────────
 export interface ValidationRule {
@@ -58,7 +58,7 @@ export interface OptionItem {
 }
 
 /** 动态字典来源：options 为对象 { dynamic, code, label? }，运行时用 config.fetchDictionary 拉取 */
-export interface DynamicOptionSource {
+interface DynamicOptionSource {
   /** 标记为动态字典来源（区别于静态 OptionItem[]） */
   dynamic: true
   /** 字典编码 */
@@ -81,7 +81,7 @@ export interface EventBinding {
 // cmp 节点在 props，el 节点在 attrs）；handler 字符串原样透传，Java 侧不解析。
 
 // ─── 节点基类 ────────────────────────────────────────────────────────────────────
-export interface BaseNode {
+interface BaseNode {
   /** 稳定唯一 id（前端生成，用于树操作 / 选中 / 绑定） */
   id: string
   /** 画布 DnD 身份（映射 legacy schema 的 __key；非画布场景可省略）。

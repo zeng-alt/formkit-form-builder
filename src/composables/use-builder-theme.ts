@@ -3,7 +3,7 @@ import { darkTheme, lightTheme, type GlobalTheme } from 'naive-ui'
 import { useColorMode, usePreferredDark } from '@vueuse/core'
 import type { BuilderTheme } from '@/types/theme'
 
-export interface BuilderThemeContext {
+interface BuilderThemeContext {
   /** 当前生效的 naive-ui 主题（随 colorMode / 系统偏好） */
   activeTheme: ComputedRef<GlobalTheme>
   /** 强制切换主题（'light' | 'dark'），与 ThemeSwitcher / theme prop 共用同一 colorMode */

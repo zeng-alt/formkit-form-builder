@@ -3,7 +3,7 @@ import type { EditorView } from '@codemirror/view'
 
 // 字段名清单由调用方以取值函数传入（原因同 expr-completions.ts）：模块级全局
 // 在两个 FormBuilder 实例并存时会互相覆盖，取值函数则始终读到调用时刻的最新清单。
-export type GetExprLintFieldNames = () => string[]
+type GetExprLintFieldNames = () => string[]
 
 const VAR_RE = /\$([a-zA-Z_]\w*)/g
 

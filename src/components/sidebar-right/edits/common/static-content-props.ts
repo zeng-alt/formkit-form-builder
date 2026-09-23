@@ -2,7 +2,7 @@
 // 内容存储在各元素自己的 props 上（text / title / content / value），
 // 由 StaticContentSection 用 createPropsProp 读写；对应编辑器不再重复渲染内容输入。
 
-export interface StaticContentField {
+interface StaticContentField {
   /** 写入 node.props 的 key */
   key: string
   /** 输入框 label 的 i18n key */

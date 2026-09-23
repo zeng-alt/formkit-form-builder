@@ -11,7 +11,7 @@ import type { SchemaNode } from '../dsl/convert'
 import type { FormNode } from '../types/dsl'
 import type { ElementDefinition, ElementPaletteProp } from './types'
 
-// 确保内置 DSL 元素类型已在 fieldProps 创建前注册
+// 确保内置 DSL 元素类型已在 createFieldProps() 等读取注册表之前注册
 registerBuiltinElementTypes()
 
 export function getElementDefinition(type: string | null | undefined): ElementDefinition | null {
@@ -67,9 +67,6 @@ export function createFieldProps(t: (key: string) => string): ElementPaletteProp
       category: d.category,
     }))
 }
-
-// 未翻译版本（用于按 name 查找分类/图标）
-export const fieldProps: ElementPaletteProp[] = createFieldProps((v) => v)
 
 // ─── 画布默认元素（DSL 模板 → 翻译 → toSchema）─────────────────────────────────
 
@@ -142,5 +139,3 @@ export function getElementTypeBySchema(node: unknown): string | undefined {
   }
   return undefined
 }
-
-export type { ElementCategory, ElementDefinition, ElementPaletteProp, ElementEditor } from './types'

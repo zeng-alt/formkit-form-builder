@@ -353,7 +353,7 @@ backend like Java only needs to pass it through untouched. Bindable events are
 A node's `visibleIf` (a portable expression AST, `Expr`: field reference / literal / builtin
 function call) is the single source of truth for conditional visibility. `dslToSchema`
 compiles it into the schema's `if` string, which FormKit evaluates at render time. Builtin
-functions (`eq` / `not` / `if` / `coalesce` / `contains` / etc. — see `getBuiltin`/`isBuiltin`
+functions (`eq` / `not` / `if` / `coalesce` / `contains` / etc. — see `getBuiltin`
 for the full list) are always compiled into `$fkb_<fn>(args...)` helper function calls:
 FormKit v2 schema's `if` is executed by a hand-written mini expression parser bundled with
 `@formkit/core`, which only understands

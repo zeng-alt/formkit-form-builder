@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { NModal, NInput, NButton, NSpace, NTabs, NTabPane } from 'naive-ui'
+import { NModal, NInput, NButton, NSpace, NTabs, NTabPane, useNotification } from 'naive-ui'
 import { dslToSchema } from '@/dsl'
 import { generateKey } from '@/utils/dnd/schema'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { FormDefinition } from '@/types/dsl'
-import { toast } from 'vue-sonner'
 import { useFormBuilderI18n } from '../i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
@@ -19,6 +18,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useFormBuilderI18n()
+const notification = useNotification()
 
 const { formDefinition, commitFormDefinition, commitSchema } = useFormBuilderState()
 
@@ -67,7 +67,7 @@ const handleSaveAndImport = () => {
     if (isDslDefinition(parsed)) {
       const nextDef: FormDefinition = parsed.id ? parsed : { ...parsed, id: generateKey() }
       commitFormDefinition(nextDef, { reason: 'import' })
-      toast.success(t('importExport.importSuccess'))
+      notification.success({ title: t('importExport.importSuccess'), duration: 3000 })
       handleClose()
       return
     }
@@ -95,11 +95,11 @@ const handleSaveAndImport = () => {
     } else {
       commitSchema(parsed as FormKitSchemaFormKit[], { reason: 'import' })
     }
-    toast.success(t('importExport.importSuccess'))
+    notification.success({ title: t('importExport.importSuccess'), duration: 3000 })
     handleClose()
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : t('importExport.unknownError')
-    toast.error(t('importExport.failedParseJson', { message }))
+    notification.error({ title: t('importExport.failedParseJson', { message }) })
   }
 }
 
@@ -121,9 +121,9 @@ const handleDownload = () => {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    toast.success(t('importExport.downloadedSuccess'))
+    notification.success({ title: t('importExport.downloadedSuccess'), duration: 3000 })
   } catch {
-    toast.error(t('importExport.failedGenerateDownload'))
+    notification.error({ title: t('importExport.failedGenerateDownload') })
   }
 }
 
@@ -213,10 +213,10 @@ const handleDownloadJs = () => {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    toast.success(t('importExport.downloadedSuccess'))
+    notification.success({ title: t('importExport.downloadedSuccess'), duration: 3000 })
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : t('importExport.unknownError')
-    toast.error(t('importExport.failedParseJson', { message }))
+    notification.error({ title: t('importExport.failedParseJson', { message }) })
   }
 }
 </script>

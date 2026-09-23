@@ -11,7 +11,7 @@ import type { ComputedRef, InjectionKey, Ref } from 'vue'
 import { DSL_VERSION } from '@/types/dsl'
 import type { FormDefinition } from '@/types/dsl'
 
-export const FORM_DEFINITION_KEY: InjectionKey<
+const FORM_DEFINITION_KEY: InjectionKey<
   Ref<FormDefinition> | ComputedRef<FormDefinition>
 > = Symbol('formDefinition')
 

@@ -35,7 +35,7 @@ registerBuiltinElementTypes()
 
 export type { SchemaNode }
 
-export type ContainerFormatCtx = {
+type ContainerFormatCtx = {
   key?: string
   isPlaceholder: boolean
   format: (node: FormKitSchemaFormKit, index: number) => FormKitSchemaFormKit
@@ -51,7 +51,7 @@ export type ContainerDefinition = {
 }
 
 /** 子节点装饰 hook（inputGroup 宽度 / buttonGroup 宽度+禁用），由容器定义按需提供 */
-export type TransformChildren = (
+type TransformChildren = (
   children: FormKitSchemaFormKit[],
   normalized: SchemaNode,
 ) => FormKitSchemaFormKit[]

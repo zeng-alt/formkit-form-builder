@@ -4,7 +4,7 @@
 // dnd/commit / FormRenderer / registry）统一读取这里的规格。
 // 本模块是叶子模块（不 import 业务代码），供 dsl 与 elements 双向引用而不产生环。
 
-export type ContainerDataShape = 'object' | 'array' | 'arrayOfObjects' | 'objectOfObjects' | 'none'
+type ContainerDataShape = 'object' | 'array' | 'arrayOfObjects' | 'objectOfObjects' | 'none'
 
 export interface ContainerSpec {
   /** 数据结构（用户记法 → 语义名）：
@@ -22,7 +22,7 @@ export interface ContainerSpec {
   primitive: 'group' | 'cmp'
 }
 
-export const containerSpecs: Record<string, ContainerSpec> = {
+const containerSpecs: Record<string, ContainerSpec> = {
   group: { dataShape: 'object', keyProp: 'groupKey', primitive: 'group' },
   list: { dataShape: 'array', keyProp: 'listKey', primitive: 'cmp' },
   card: { dataShape: 'object', keyProp: 'cardKey', primitive: 'cmp' },

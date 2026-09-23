@@ -6,8 +6,6 @@
 
 import {
   registerElementType,
-  fieldType,
-  containerType,
   layoutType,
   staticType,
   tabsPaneType,
@@ -43,5 +41,3 @@ export function registerBuiltinElementTypes(): void {
   registerElementType(staticType('heading', { match: (s) => /^h[1-6]$/.test(String(s.$el)) }))
   registerElementType(staticType('divider', { match: (s) => s.$el === 'hr' }))
 }
-
-export { fieldType, containerType, layoutType, staticType, tabsPaneType, stepsPaneType }

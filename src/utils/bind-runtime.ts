@@ -2,12 +2,10 @@ import axios, { type AxiosInstance } from 'axios'
 import type { FormKitNode } from '@formkit/core'
 import { BIND_EVENT_KEYS } from '@/dsl/events'
 
-export { BIND_AXIOS_KEY } from '@/composables/use-bind-http'
-
 type BindJs = { __js: string }
 
 /** 表单定义元信息：绑定代码经 $form / id / version / name 读取（来源为 DSL 顶层字段） */
-export interface FormMeta {
+interface FormMeta {
   id?: string
   version?: number
   name?: string

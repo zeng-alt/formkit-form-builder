@@ -4,7 +4,7 @@
 import type { Expr } from '../types/dsl'
 import { getBuiltin } from './expr-builtins'
 
-export type EvalResult =
+type EvalResult =
   | { ok: true; value: unknown; deps: string[] }
   | { ok: false; error: string; deps: string[] }
 

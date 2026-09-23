@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import instructions from './Instructions.txt?raw'
 import { ref } from 'vue'
-import { toast } from 'vue-sonner'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { cn } from '../../utils/utils'
-import { NButton, NInput, NPopover, NTooltip } from 'naive-ui'
+import { NButton, NInput, NPopover, NTooltip, useNotification } from 'naive-ui'
 import { useFormBuilderConfig } from '../../composables/use-config'
 import { useFormBuilderI18n } from '../../i18n/context'
 import { useMediaQuery } from '@vueuse/core'
@@ -17,6 +16,7 @@ const isMobile = useMediaQuery('(max-width: 768px)')
 
 const config = useFormBuilderConfig()
 const { t } = useFormBuilderI18n()
+const notification = useNotification()
 const inputRef = ref('')
 const isFocusedVal = ref(false)
 const isOpen = ref(false)
@@ -43,11 +43,11 @@ const extractJson = (text: string): string => {
 
 const handleClick = async () => {
   if (inputRef.value === '') {
-    toast(t('ai.emptyPrompt'), {
-      description: t('ai.emptyPromptDescription'),
-      action: {
-        label: t('ai.close'),
-      },
+    // 空输入：提醒用户先填提示词，不是错误，用 warning
+    notification.warning({
+      title: t('ai.emptyPrompt'),
+      content: t('ai.emptyPromptDescription'),
+      duration: 4500,
     })
     return
   }
@@ -92,8 +92,11 @@ const handleClick = async () => {
     inputRef.value = ''
   } catch (err: any) {
     console.error('AI generate schema failed:', err)
-    toast(t('ai.requestFailed'), {
-      description: err?.message || String(err),
+    // 请求/解析失败：真正的错误，用 error；不设 duration（不自动关闭），
+    // 因为 content 里可能带接口返回的详细错误信息，需要用户看完自行关闭
+    notification.error({
+      title: t('ai.requestFailed'),
+      content: err?.message || String(err),
     })
   } finally {
     isLoading.value = false

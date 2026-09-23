@@ -44,18 +44,6 @@ export const collectSchemaNames = (schema: SchemaNode[], names: Set<string>) => 
   }
 }
 
-// 生成唯一 name（如 name, name_1, name_2...）
-export const ensureUniqueName = (base: string, existing: Set<string>) => {
-  let name = base
-  let i = 1
-  while (existing.has(name)) {
-    name = `${base}_${i}`
-    i++
-  }
-  existing.add(name)
-  return name
-}
-
 // 生成字段 name（作为提交后端的数据字段名）：field_1、field_2 ...
 // 扫描现有 field_<n> 取最大序列号 +1，保证唯一且连续递增。
 export const generateNextFieldName = (existing: Set<string>) => {

@@ -13,6 +13,12 @@ export interface DictionaryDefinition {
   label: string
 }
 
+/**
+ * @public
+ * 分页字典查询参数：FormBuilderConfig.fetchDictionaryPage 的入参形状，是公共 API
+ * 的一部分（宿主实现该回调时对齐这个结构），仓库内部没有代码按名字导入它，
+ * knip 会误判为死代码——用 @public 标记精确豁免，而不是整体放宽规则。
+ */
 export interface DictionaryPageQuery {
   /** 按 code 模糊过滤 */
   code?: string
@@ -22,6 +28,7 @@ export interface DictionaryPageQuery {
   pageSize: number
 }
 
+/** @public 分页字典查询结果：FormBuilderConfig.fetchDictionaryPage 的返回形状，理由同 DictionaryPageQuery */
 export interface DictionaryPageResult {
   pageNum: number
   pageSize: number
@@ -43,6 +50,7 @@ export interface TreeDictionaryDefinition {
   label: string
 }
 
+/** @public 分页树型字典查询参数：FormBuilderConfig.fetchTreeDictionaryPage 的入参形状，理由同 DictionaryPageQuery */
 export interface TreeDictionaryPageQuery {
   /** 按 code 模糊过滤 */
   value?: string
@@ -52,6 +60,7 @@ export interface TreeDictionaryPageQuery {
   pageSize: number
 }
 
+/** @public 分页树型字典查询结果：FormBuilderConfig.fetchTreeDictionaryPage 的返回形状，理由同 DictionaryPageQuery */
 export interface TreeDictionaryPageResult {
   pageNum: number
   pageSize: number

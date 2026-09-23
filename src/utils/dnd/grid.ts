@@ -101,7 +101,7 @@ export function rebalanceRowSpans(values: any[], maxSpan = MAX_COL_SPAN): void {
   values.forEach((v, i) => setColSpan(v, next[i]!))
 }
 
-export type Placement = {
+type Placement = {
   index: number
   row: number
   col: number

@@ -21,7 +21,7 @@ export interface ExprBinding {
 
 // ─── 表达式依赖环检测（静态，setup 时跑一次，运行时零开销）─────────────────────
 
-export interface ExprCycleResult {
+interface ExprCycleResult {
   /** 处在某条环上的字段名（含自环） */
   cyclicNames: Set<string>
   /** 每条环的完整路径，如 ['a', 'b', 'a'] */

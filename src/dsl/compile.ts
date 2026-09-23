@@ -50,9 +50,9 @@ function resolveModifiers(m: ValidationRule | undefined): string {
  *  透传给规则函数（见 @formkit/validation 的 parseRules：数组输入直接 clone 后逐条
  *  取 args.shift() 当规则名，其余就是参数），不再需要把参数拼成逗号/竖线分隔的字符串——
  *  规则参数本身含逗号或竖线（如 matches 的正则 `/^a,b$/`）也不会破坏整条校验的解析。 */
-export type ValidationEntry = [string, ...unknown[]]
+type ValidationEntry = [string, ...unknown[]]
 
-export interface ResolvedValidation {
+interface ResolvedValidation {
   validation: ValidationEntry[]
   'validation-messages'?: Record<string, string>
 }

@@ -42,6 +42,13 @@ jobs:
       - name: Lint 检查
         run: pnpm lint:ci
 
+      # 死代码防回归：未使用的文件 / 导出 / 依赖很容易在清理后又悄悄长回来，
+      # knip 在这一步统一检测；配置见 knip.json（entry 覆盖库的唯一公共入口
+      # src/index.ts、playground 脚本与测试文件）。此步放在构建之前，避免
+      # dist/ 产物（package.json 的 main/module/types 指向它）被一并扫描进去。
+      - name: 未使用代码检查（knip）
+        run: pnpm knip
+
       # 单元测试（vitest run）
       - name: 运行测试
         run: pnpm test
