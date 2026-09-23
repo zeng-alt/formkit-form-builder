@@ -321,7 +321,8 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
 </script>
 
 <template>
-  <div class="w-full rounded-xl border border-border/50">
+  <!-- data-canvas-edit：表格内的数据/列编辑是真实的文本编辑，设计器快捷键不拦截这里的按键 -->
+  <div class="w-full rounded-xl border border-border/50" data-canvas-edit>
     <div class="flex items-center justify-between px-3 py-2 border-b border-border/50">
       <div class="flex items-center gap-2 min-w-0">
         <span v-if="title" class="text-12px font-bold truncate">{{ title }}</span>

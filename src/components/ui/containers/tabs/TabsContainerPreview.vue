@@ -41,6 +41,17 @@ const tabLabel = (child: SchemaNode, idx: number) => {
 }
 
 const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false))
+
+// H1：pane 内容的实际数据键来自 formatContainer 包出的 group 节点（schemaChildren(child)[0]）
+// 的 name。FormKit 的分组节点在挂载后不会响应 name 变化（name 只在创建节点时读取一次），
+// 单靠 v-if 之类的条件切换不会重新创建节点——这里把这个 key 直接绑到 Vue 的 :key 上，
+// key 变化时 Vue 会整个销毁重建这块 DOM/组件树，FormKit 才会用新 name 重新挂载分组节点，
+// 旧 key 的数据立刻从表单数据里消失、新 key 立刻出现（不用等整页刷新）。
+const paneDataKey = (child: SchemaNode, idx: number): string => {
+  const group = schemaChildren(child)[0]
+  const name = group?.name
+  return typeof name === 'string' && name ? name : `__pane_${idx}`
+}
 </script>
 
 <template>
@@ -77,8 +88,10 @@ const paneClosable = computed<boolean>(() => Boolean(props.closable ?? false))
         display-directive="show:lazy"
       >
         <!-- pane 内容由 formatContainer（规格 dataShape:objectOfObjects）包装为单个 group（内含 grid grid-cols-12），
-             直接渲染即可，不要再套一层 grid，否则 group 占不到整行、字段 colspan 失效 -->
-        <div>
+             直接渲染即可，不要再套一层 grid，否则 group 占不到整行、字段 colspan 失效。
+             :key 见上面 paneDataKey 的注释：数据键变化时强制重新挂载，避免 FormKit 分组
+             节点沿用旧 name（H1）。 -->
+        <div :key="paneDataKey(child, idx)">
           <FormKitSchema
             v-if="schemaChildren(child).length > 0"
             :schema="schemaChildren(child)"

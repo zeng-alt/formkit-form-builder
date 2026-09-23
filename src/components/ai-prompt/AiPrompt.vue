@@ -12,7 +12,12 @@ import { useFormBuilderState } from '@/state/create-form-builder-state'
 // 所属 FormBuilder 实例状态：AI 生成写回各自实例的 schema / 加载态。
 const { isLoading, commitSchema } = useFormBuilderState()
 
-const isMobile = useMediaQuery('(max-width: 768px)')
+// H4：顶部工具栏在窄宽度下会挤压这个输入框（1024×768 时只剩 "AI" 两个字可见，
+// 1280×800 正常）。这里复用原本只给手机布局用的"收起为图标按钮，点击展开气泡"
+// 方案，把断点从 768px 提到 1100px——工具栏是三栏等分布局，中间栏在 1024px
+// 视口宽度下实际可用空间不够放下完整输入框，但仍比手机宽，继续叫 isMobile
+// 不准确，改名 isCompact。
+const isCompact = useMediaQuery('(max-width: 1100px)')
 
 const config = useFormBuilderConfig()
 const { t } = useFormBuilderI18n()
@@ -110,7 +115,7 @@ const isFocused = () => {
 
 <template>
   <div
-    v-if="!isMobile"
+    v-if="!isCompact"
     :class="
       cn(
         'flex w-full min-w-0 rounded-lg card relative items-center justify-center',
@@ -149,7 +154,7 @@ const isFocused = () => {
   </div>
 
   <n-popover
-    v-if="isMobile"
+    v-if="isCompact"
     v-model:show="isOpen"
     trigger="click"
     :show-arrow="false"

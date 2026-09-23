@@ -9,7 +9,7 @@
 // 不硬编码 naive-ui 内部标记 class（type/placement 对应的 class 名随版本可能变化）：
 // 参照 form-disabled.test.ts 的做法，同一属性分别取两个取值裸挂载 NTabs，对比渲染出的
 // class 差集，取"目标值独有"的那部分作为标记，再断言画布真的渲染出了它。
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { plugin as formkitPlugin } from '@formkit/vue'
@@ -219,6 +219,35 @@ describe('设计器画布：tabs 容器所见即所得', () => {
     wrapper.unmount()
   })
 
+  // H3：改名输入框曾在同一个 <n-input> 上挂 @keydown.enter.stop.prevent +
+  // @keydown.esc.stop.prevent 两个处理器，Vue 把它们合并成数组传给 NInput 的
+  // onKeydown prop（类型声明为 Function），每次触发都会报
+  // `Invalid prop: type check failed for prop "onKeydown". Expected Function, got Array`。
+  it('双击改名、回车提交：不应触发 NInput onKeydown 的 prop 类型警告', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { wrapper } = mountBuilder({})
+    await settle()
+
+    const firstTabLabel = wrapper.find(`${CANVAS_TABS} .tabs-tab-label`)
+    await firstTabLabel.trigger('dblclick')
+    await settle()
+
+    const input = wrapper.find(`${CANVAS_TABS} .n-tabs-tab__label input`)
+    await input.setValue('改名后的标签')
+    await input.trigger('keydown', { key: 'Enter' })
+    await settle()
+
+    const badWarning = warnSpy.mock.calls.some((args) =>
+      args.some(
+        (a) => typeof a === 'string' && a.includes('onKeydown') && a.includes('Expected Function'),
+      ),
+    )
+    expect(badWarning, 'NInput 不应收到数组形态的 onKeydown').toBe(false)
+
+    warnSpy.mockRestore()
+    wrapper.unmount()
+  })
+
   // 关闭按钮直接用 NTabPane 的 closable：naive-ui 只在 type=card 时渲染，画布与运行时
   // 表现一致（不给其它 type 额外造一个运行时没有的按钮）
   const closeButtons = (wrapper: ReturnType<typeof mount>) =>
@@ -272,10 +301,10 @@ describe('设计器画布：tabs 容器所见即所得', () => {
     await copyBtn.trigger('click')
     await settle()
 
-    const labelCount = wrapper
-      .findAll(`${CANVAS_TABS} label`)
-      .filter((l) => l.text() === '字段1').length
-    expect(labelCount, '复制后 pane 内应出现两个「字段1」').toBe(2)
+    // H6：复制出的副本 label 追加「 副本」后缀，不再是与原字段完全相同的「字段1」
+    const labels = wrapper.findAll(`${CANVAS_TABS} label`).map((l) => l.text())
+    expect(labels.filter((t) => t === '字段1')).toHaveLength(1)
+    expect(labels.filter((t) => t === '字段1 副本')).toHaveLength(1)
 
     wrapper.unmount()
   })

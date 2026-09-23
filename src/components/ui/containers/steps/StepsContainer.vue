@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { NButton, NInput, NStep, NSteps, NTooltip } from 'naive-ui'
+import { NButton, NInput, NStep, NSteps, NTooltip, useNotification } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useContainerDragAndDrop } from '@/builder/composables/use-container-drag-and-drop'
@@ -39,6 +39,7 @@ const emit = defineEmits<{
 
 const { t } = useFormBuilderI18n()
 const canvasCtx = useCanvasSchemaContext()
+const notification = useNotification()
 
 const panes = computed<StepsPane[]>(() => (Array.isArray(props.modelValue) ? props.modelValue : []))
 
@@ -46,6 +47,20 @@ const stepTitle = (pane: StepsPane | undefined, idx: number) => {
   const label = pane?.label
   if (typeof label === 'string' && label.trim()) return label.trim()
   return `Step ${idx + 1}`
+}
+
+// 新建 step 的默认标题避开当前容器内已使用的标题（同 TabsContainer.vue 的 nextDefaultLabel）
+const nextDefaultTitle = (prefix: string): string => {
+  const used = new Set(
+    panes.value.map((p) => (typeof p.label === 'string' ? p.label.trim() : '')).filter(Boolean),
+  )
+  let n = panes.value.length + 1
+  let title = `${prefix} ${n}`
+  while (used.has(title)) {
+    n++
+    title = `${prefix} ${n}`
+  }
+  return title
 }
 
 const activeIndex = ref(0)
@@ -92,7 +107,7 @@ watch(
       return
     }
     bootstrapped.value = true
-    updatePanes([createStep(stepTitle(undefined, 0))])
+    updatePanes([createStep(nextDefaultTitle('Step'))])
   },
   { immediate: true },
 )
@@ -132,7 +147,7 @@ const prevStep = () => selectStep(activeIndex.value - 1)
 const nextStep = () => selectStep(activeIndex.value + 1)
 
 const addStep = () => {
-  const next = [...panes.value, createStep(stepTitle(undefined, panes.value.length))]
+  const next = [...panes.value, createStep(nextDefaultTitle('Step'))]
   updatePanes(next)
   activeIndex.value = next.length - 1
 }
@@ -158,10 +173,21 @@ const startEdit = (idx: number) => {
   editingDescription.value = typeof pane?.description === 'string' ? pane.description : ''
 }
 
+// H1：改名唯一性——同 TabsContainer.vue：标题在同一个 steps 容器内重复时拒绝这次改名，
+// 保留旧标题并提示原因。每个 pane 的运行时数据键（name）创建时已固定、与标题解耦，
+// 这里拦住重复标题只是为了避免画布上出现两个分不清的同名步骤
+const isDuplicateTitle = (title: string, selfIdx: number) =>
+  panes.value.some((p, i) => i !== selfIdx && stepTitle(p, i) === title)
+
 const commitEdit = () => {
   const idx = editingIndex.value
   if (idx === null) return
   const nextTitle = editingTitle.value.trim() || stepTitle(panes.value[idx], idx)
+  if (isDuplicateTitle(nextTitle, idx)) {
+    notification.warning({ title: t('builder.paneNameDuplicate', { name: nextTitle }) })
+    editingIndex.value = null
+    return
+  }
   const next = panes.value.map((p, i) =>
     i === idx ? { ...p, label: nextTitle, description: editingDescription.value.trim() } : p,
   )
@@ -186,11 +212,13 @@ const duplicateChild = (index: number) => {
   if (!source) return
   const names = new Set<string>()
   collectSchemaNames(formSchema.value, names)
-  const clone = duplicateNode(source, names)
+  const clone = duplicateNode(source, names, { labelSuffix: t('common.copySuffix') })
   const next = [...paneDnd.items.value]
   next.splice(index + 1, 0, clone)
   paneDnd.items.value = next
   paneDnd.emitUpdate()
+  // H6：复制完成后选中新副本
+  if (canvasCtx?.selectByKey && clone.__key) canvasCtx.selectByKey(clone.__key)
 }
 </script>
 
@@ -255,6 +283,7 @@ const duplicateChild = (index: number) => {
           t('edits.content.title')
         }}</label>
         <n-input
+          data-canvas-edit
           size="small"
           :value="editingTitle"
           @update:value="(v: string) => (editingTitle = v)"
@@ -266,6 +295,7 @@ const duplicateChild = (index: number) => {
           t('edits.content.description')
         }}</label>
         <n-input
+          data-canvas-edit
           size="small"
           :value="editingDescription"
           @update:value="(v: string) => (editingDescription = v)"

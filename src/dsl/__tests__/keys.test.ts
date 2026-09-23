@@ -85,4 +85,32 @@ describe('ensureDslKeys', () => {
     const group = state.formSchema.value[1] as { children: { __key?: string }[] }
     expect(group.children.map((c) => c.__key)).toEqual(['b', 'c'])
   })
+
+  // H2：外部手写/生成的定义可能整个漏掉 settings（类型上必填，运行时不保证）；
+  // schema-adapter 的 buildSchema 直接读 settings.labelAlign，缺失时会抛错。
+  it('settings 缺失时补齐默认值', () => {
+    const def = buildDef()
+    // 模拟外部生成/手写的非法定义：整个漏掉 settings 字段
+    const withoutSettings = { ...def } as Partial<FormDefinition> as FormDefinition
+    delete (withoutSettings as { settings?: unknown }).settings
+    const filled = ensureDslKeys(withoutSettings)
+    expect(filled.settings).toEqual({ labelWidth: 80, labelAlign: 'top' })
+    // 不改动输入
+    expect((withoutSettings as { settings?: unknown }).settings).toBeUndefined()
+  })
+
+  it('settings 已存在时原样保留，不做任何改写', () => {
+    const def = buildDef()
+    def.settings = { labelWidth: 120, labelAlign: 'left' }
+    const filled = ensureDslKeys(def)
+    expect(filled.settings).toEqual({ labelWidth: 120, labelAlign: 'left' })
+  })
+
+  it('缺 settings 的定义在设计器里也能正常投影出 schema（不抛错、不白屏）', () => {
+    const def = buildDef()
+    delete (def as { settings?: unknown }).settings
+    const state = createFormBuilderState()
+    expect(() => state.setFormDefinition(def, { resetHistory: true })).not.toThrow()
+    expect(state.formSchema.value.length).toBeGreaterThan(0)
+  })
 })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { NLayout, type ConfigProviderProps } from 'naive-ui'
 import type { BuilderTheme } from '@/types/theme'
 import { changeLocale } from '@formkit/vue'
@@ -14,6 +14,7 @@ import type { FormBuilderConfig } from '../types/env'
 import { provideFormBuilderI18n } from '../i18n/context'
 import { provideRuntimeLocale } from '../i18n/runtime-locale'
 import { provideFormBuilderState } from '@/state/create-form-builder-state'
+import { provideKeyboardShortcutSlot } from './composables/use-keyboard-shortcuts'
 import { provideFormDefinition } from '@/composables/use-form-definition'
 import { provideBinderHttp } from '@/composables/use-bind-http'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
@@ -55,6 +56,11 @@ const { formDefinition, setFormDefinition } = state
 // 窄只读上下文：画布内的字段事件绑定 / 数据表格预览等只读消费方，走这条与
 // FormRenderer 共用的接口，不需要拿到完整 FormBuilderState（undo/redo/选中态）。
 provideFormDefinition(formDefinition)
+
+// H5：键盘快捷键——监听挂在设计器根元素上（模板里的 @keydown），不挂 window，
+// 保证多个设计器实例互不干扰。真正的处理逻辑在 BuilderCanvas.vue 里注册（见
+// use-keyboard-shortcuts.ts 顶部注释：那里才能正常用 useNotification()）。
+const onKeydown = provideKeyboardShortcutSlot()
 
 // ── 配置：prop 优先，否则回落注入（BuilderProvider 提供）──
 const injectedCfg = useFormBuilderConfig()
@@ -163,6 +169,13 @@ watch(
   { deep: false },
 )
 
+// H5 键盘快捷键的根元素：keydown 事件从任意子孙元素冒泡上来即可命中，不需要它本身
+// 获得焦点——但"点击空白画布区域"这类落在非可聚焦元素上的点击会让浏览器焦点退回
+// document.body（这个根元素是 body 的后代，事件不会从 body"下沉"进来），
+// 导致点完空白区域后 Ctrl+Z 等快捷键失效。给它一个 tabindex 让它能被 JS 聚焦，
+// 在原有的"点击空白区域"处理里顺带聚焦过去，保证后续快捷键仍能命中。
+const shortcutRootEl = ref<HTMLElement | null>(null)
+
 const onBuilderBlankPointerDown = (e: PointerEvent) => {
   const el = e.target as HTMLElement | null
   if (!el) return
@@ -179,6 +192,7 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
   state.selectedTarget.value = 'form'
   state.selectedKey.value = null
   state.selectedColumnIndex.value = null
+  shortcutRootEl.value?.focus({ preventScroll: true })
 }
 </script>
 
@@ -193,41 +207,45 @@ const onBuilderBlankPointerDown = (e: PointerEvent) => {
     :inline-theme-disabled="inlineThemeDisabled"
     :preflight-style-disabled="preflightStyleDisabled"
   >
-    <n-layout has-sider class="h-screen w-full">
-      <SidebarLeft />
-      <n-layout has-sider sider-placement="right" class="flex-1 mb-4">
-        <n-layout
-          class="relative h-full"
-          :native-scrollbar="false"
-          @pointerdown.capture="onBuilderBlankPointerDown"
-        >
-          <div class="p-16px flex flex-1 min-h-0 flex-col">
-            <slot name="header">
-              <BuilderHeader>
-                <template v-if="$slots['header-left']" #left>
-                  <slot name="header-left" />
-                </template>
-                <template v-if="$slots['header-center']" #center>
-                  <slot name="header-center" />
-                </template>
-                <template v-if="$slots['header-right']" #right>
-                  <slot name="header-right" />
-                </template>
-              </BuilderHeader>
-            </slot>
+    <!-- 快捷键的事件挂载层：让 keydown 冒泡有处可接、点击空白区域后能把焦点收回来。
+         必须是真实的块级元素——display:contents 的元素没有盒子，浏览器不会让它获得焦点 -->
+    <div ref="shortcutRootEl" class="outline-none" tabindex="-1" @keydown="onKeydown">
+      <n-layout has-sider class="h-screen w-full">
+        <SidebarLeft />
+        <n-layout has-sider sider-placement="right" class="flex-1 mb-4">
+          <n-layout
+            class="relative h-full"
+            :native-scrollbar="false"
+            @pointerdown.capture="onBuilderBlankPointerDown"
+          >
+            <div class="p-16px flex flex-1 min-h-0 flex-col">
+              <slot name="header">
+                <BuilderHeader>
+                  <template v-if="$slots['header-left']" #left>
+                    <slot name="header-left" />
+                  </template>
+                  <template v-if="$slots['header-center']" #center>
+                    <slot name="header-center" />
+                  </template>
+                  <template v-if="$slots['header-right']" #right>
+                    <slot name="header-right" />
+                  </template>
+                </BuilderHeader>
+              </slot>
 
-            <BuilderCanvas class="flex-1 min-h-0">
-              <template v-if="$slots['toolbar']" #toolbar>
-                <slot name="toolbar" />
-              </template>
-              <template v-if="$slots['empty']" #empty>
-                <slot name="empty" />
-              </template>
-            </BuilderCanvas>
-          </div>
+              <BuilderCanvas class="flex-1 min-h-0">
+                <template v-if="$slots['toolbar']" #toolbar>
+                  <slot name="toolbar" />
+                </template>
+                <template v-if="$slots['empty']" #empty>
+                  <slot name="empty" />
+                </template>
+              </BuilderCanvas>
+            </div>
+          </n-layout>
+          <SidebarRight />
         </n-layout>
-        <SidebarRight />
       </n-layout>
-    </n-layout>
+    </div>
   </BuilderThemeScope>
 </template>

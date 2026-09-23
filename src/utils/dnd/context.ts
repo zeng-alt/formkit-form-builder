@@ -15,6 +15,10 @@ export interface DndContext {
     nextSchema: FormKitSchemaFormKit[],
     opts?: { reason?: string; merge?: boolean },
   ) => void
+  /** H8：拖入步骤条时把根画布已有内容整体收纳进第一步——这是有意设计，但用户
+   *  容易以为内容丢了，commit.ts 在真的发生这次收纳时调用它弹一条提示。
+   *  可选：commit.ts 内部工具函数测试等场景不需要提供。 */
+  notifyStepsConsolidate?: () => void
 }
 
 /** customInsertPlugin 在 parent.config 上额外挂的字段：@formkit/drag-and-drop 自己的

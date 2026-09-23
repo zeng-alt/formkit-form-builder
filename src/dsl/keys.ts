@@ -13,6 +13,7 @@
 
 import type { ContainerNode, FormDefinition, FormNode, LayoutNode } from '../types/dsl'
 import { generateKey } from '../utils/dnd/schema'
+import { DEFAULT_FORM_SETTINGS } from '../utils/form-layout'
 
 function childrenOf(node: FormNode): FormNode[] | undefined {
   if (node.category === 'container' || node.category === 'layout') {
@@ -53,13 +54,22 @@ function fillNodes(nodes: FormNode[], used: Set<string>): FormNode[] {
   return changed ? next : nodes
 }
 
-/** 为定义里所有缺少 key 的节点补上 key；无缺失时返回传入的同一对象。不改动输入。 */
+/** 为定义里所有缺少 key 的节点补上 key，并补齐缺失的表单级 settings；
+ *  两者都无需改动时返回传入的同一对象。不改动输入。
+ *  这是定义进入设计器 / 渲染器的统一规范化入口——settings 在类型上必填，但外部
+ *  手写/生成的定义可能整个漏掉，schema-adapter 直接读 settings.labelAlign 会抛错，
+ *  在这里兜底而不是让读取处到处 `?.`（见 H2）。 */
 export function ensureDslKeys(def: FormDefinition): FormDefinition {
-  const children = def?.root?.children
-  if (!Array.isArray(children)) return def
+  const withSettings: FormDefinition =
+    def && typeof def.settings === 'object' && def.settings !== null
+      ? def
+      : { ...def, settings: { ...DEFAULT_FORM_SETTINGS } }
+
+  const children = withSettings?.root?.children
+  if (!Array.isArray(children)) return withSettings
   const used = new Set<string>()
   collectKeys(children, used)
   const nextChildren = fillNodes(children, used)
-  if (nextChildren === children) return def
-  return { ...def, root: { ...def.root, children: nextChildren } }
+  if (nextChildren === children) return withSettings
+  return { ...withSettings, root: { ...withSettings.root, children: nextChildren } }
 }

@@ -9,7 +9,7 @@
 // 通知 provider 渲染点），点击发送按钮（提示词为空），断言提示文案真的出现在
 // document.body 里——naive-ui 的 notification 通过 teleport 挂到 body，不在
 // wrapper 的挂载节点下，所以要查 body 而不是 wrapper.text()。
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import AiPrompt from '@/components/ai-prompt/AiPrompt.vue'
@@ -23,7 +23,16 @@ const settle = async () => {
 }
 
 describe('AiPrompt：提示词为空时点击发送', () => {
+  // AiPrompt 在窄宽度下收起为图标按钮 + 点击展开的气泡（H4，断点 1100px），
+  // happy-dom 默认 innerWidth 恰好是 1024（比断点还窄），这两条用例只关心空提示词
+  // 的通知反馈，与响应式布局无关——固定成桌面宽度，保证「只有一个可点击的发送
+  // 按钮」这个前提稳定成立，不受默认视口宽度影响。
+  const originalInnerWidth = window.innerWidth
+  beforeEach(() => {
+    window.innerWidth = 1440
+  })
   afterEach(() => {
+    window.innerWidth = originalInnerWidth
     // naive-ui notification 是 teleport 到 body 的独立节点，组件 unmount 不会
     // 自动清空 body，手动清掉避免污染下一条用例。
     document.body.innerHTML = ''
