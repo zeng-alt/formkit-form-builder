@@ -5,6 +5,7 @@ import { dslToSchema } from '@/dsl'
 import { generateKey } from '../utils/dnd/schema'
 import { findDslNodeByKey } from '../utils/schema/dsl-tree'
 import { reconcileDslTree } from '@/dsl'
+import { ensureDslKeys } from '@/dsl/keys'
 import type { FormDefinition, FormNode } from '@/types/dsl'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
@@ -110,7 +111,10 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
     }
   }
 
-  function applyDefinition(def: DefSnapshot) {
+  // 所有写真源的路径（提交 / undo / redo / 外部替换）都经过这里：统一补齐画布 key，
+  // 无 key 的外部定义（如 toPortableDefinition 的产物）载入后容器子节点也能选中
+  function applyDefinition(nextDef: DefSnapshot) {
+    const def = ensureDslKeys(nextDef)
     const prevKey = selectedKey.value
     formDefinition.value = def
     if (prevKey) {

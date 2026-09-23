@@ -3,6 +3,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { FormDefinition, FormSettings } from '../types/dsl'
 import { dslToSchema, schemaToDsl } from '../dsl'
+import { ensureDslKeys } from '../dsl/keys'
 
 // 默认画布初始节点（带稳定 __key，保证投影 / 选中一致）。不在这里写死 label：
 // 这里没有 i18n（t 函数）可用，硬编码的英文 'Submit' 在中文界面下就是错的；
@@ -54,13 +55,14 @@ export interface FormDefinitionState {
 export function createFormDefinitionState(initialDefinition?: FormDefinition): FormDefinitionState {
   // 规范表单定义：唯一真源。画布 / DnD 的 schema（formSchema）是其只读投影。
   const formDefinition = ref<FormDefinition>(
-    initialDefinition ??
-      schemaToDsl(
-        buildWrappedSchema(DEFAULT_CHILDREN, {
-          name: DEFAULT_FORM_NAME,
-          settings: DEFAULT_SETTINGS,
-        }),
-      ),
+    initialDefinition
+      ? ensureDslKeys(initialDefinition)
+      : schemaToDsl(
+          buildWrappedSchema(DEFAULT_CHILDREN, {
+            name: DEFAULT_FORM_NAME,
+            settings: DEFAULT_SETTINGS,
+          }),
+        ),
   )
 
   // schema 投影（只读）：渲染 / DnD / 画布使用，由 DSL 派生
