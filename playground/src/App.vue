@@ -387,7 +387,7 @@ const definitionJson = computed(() => JSON.stringify(definition.value ?? {}, nul
         />
 
         <div class="mt-2 p-3 bg-muted/40 rounded-lg border border-border/50">
-          <h4 class="text-[11px] font-medium mb-2 text-foreground/80">提交数据</h4>
+          <h4 class="text-[11px] font-medium mb-2 text-foreground/80">实时表单数据</h4>
           <pre class="text-[11px] text-muted-foreground">{{
             JSON.stringify(renderData, null, 2)
           }}</pre>

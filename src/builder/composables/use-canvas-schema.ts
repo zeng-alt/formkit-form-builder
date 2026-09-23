@@ -2,8 +2,10 @@ import { computed, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
+import { useNotification } from 'naive-ui'
 import { customInsertPlugin } from '@/utils/custom-insert-plugin'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
+import { useFormBuilderI18n } from '@/i18n/context'
 import type { DndContext } from '@/utils/dnd/context'
 import { findNodeByKey, updateAtPath } from '@/utils/schema/tree'
 import { canvasSchemaLibrary } from '@/builder/containers'
@@ -40,6 +42,9 @@ export function useCanvasSchema() {
     commitSchemaReconcile,
   } = state
 
+  const { t } = useFormBuilderI18n()
+  const notification = useNotification()
+
   // ── 画布表单样式：与 FormRenderer 运行时共用同一套标签布局类（见 utils/form-layout） ──
   const canvasFormClass = computed(() =>
     formLabelLayoutClass(formDefinition.value?.settings?.labelAlign),
@@ -58,11 +63,14 @@ export function useCanvasSchema() {
     if (!source) return
     const existingNames = new Set<string>()
     collectSchemaNames(formSchema.value, existingNames)
-    const clone = duplicateNode(source, existingNames)
+    const clone = duplicateNode(source, existingNames, { labelSuffix: t('common.copySuffix') })
     const next = [...fields.value]
     next.splice(index + 1, 0, clone)
     fields.value = next
     commitSchemaReconcile(next as FormKitSchemaFormKit[], { reason: 'duplicate' })
+    // H6：复制完成后选中新副本（selectByKey 定义在下方，运行时调用时已可用）
+    const cloneKey = (clone as { __key?: string }).__key
+    if (cloneKey) selectByKey(cloneKey)
   }
 
   // ── 更新容器子节点（拖拽进出容器后写回 schema）──────────────────────────────
@@ -187,6 +195,11 @@ export function useCanvasSchema() {
   const dndContext: DndContext = {
     formSchema: state.formSchema,
     commitSchemaReconcile: state.commitSchemaReconcile,
+    // H8：拖入步骤条时把根画布已有内容整体收纳进第一步是有意设计，但用户容易
+    // 以为内容丢了——commit.ts 在真的发生这次收纳时调用这里弹一条提示
+    notifyStepsConsolidate: () => {
+      notification.info({ title: t('builder.stepsConsolidateNotice'), duration: 4000 })
+    },
   }
   // 拷贝初始值：formSchema.value 是 dslToSchema 的缓存投影，直接交给 DnD 库、库内部
   // 原地改写数组会污染缓存（数组本身不缓存，但传引用等于把它当成可写数组用了）

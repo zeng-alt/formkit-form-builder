@@ -7,6 +7,14 @@
 /** 表单级标签宽度默认值（settings.labelWidth 缺省/非法时的兜底） */
 export const DEFAULT_LABEL_WIDTH = 80
 
+/** 表单级设置的默认值：外部手写/生成的定义可能整个漏掉 settings（类型上必填，
+ *  运行时不保证），schema-adapter 直接读 settings.labelAlign 会抛错——定义进入
+ *  设计器 / 渲染器的入口（dsl/keys.ts 的 ensureDslKeys）统一以此兜底，不再到处 `?.`。 */
+export const DEFAULT_FORM_SETTINGS: Readonly<{ labelWidth: number; labelAlign: 'top' | 'left' }> = {
+  labelWidth: DEFAULT_LABEL_WIDTH,
+  labelAlign: 'top',
+}
+
 /**
  * 按标签位置返回表单根元素上要挂的标签布局类：
  * - top（默认）：仅通用的标签字号/字重类；

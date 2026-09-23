@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { NButton, NInput, NTabPane, NTabs, NTooltip, type InputInst } from 'naive-ui'
+import {
+  NButton,
+  NInput,
+  NTabPane,
+  NTabs,
+  NTooltip,
+  useNotification,
+  type InputInst,
+} from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
 import { generateKey } from '@/utils/dnd/schema'
@@ -15,6 +23,9 @@ import TabsPaneCanvas from './TabsPaneCanvas.vue'
 
 type TabsPane = {
   __key: string
+  /** H1：运行时分组数据键，创建时即固定生成，独立于 label（标题）——避免双击改名
+   *  时数据 key 跟着标题变，刷新前后表单数据不一致、同名 pane 还会互相覆盖 */
+  name?: string
   label?: string
   children?: FormKitSchemaFormKit[]
   outerClass?: string
@@ -39,6 +50,7 @@ const emit = defineEmits<{
 
 const { t } = useFormBuilderI18n()
 const canvasCtx = useCanvasSchemaContext()
+const notification = useNotification()
 
 const panes = computed<TabsPane[]>(() => (Array.isArray(props.modelValue) ? props.modelValue : []))
 
@@ -54,7 +66,24 @@ const updatePanes = (next: TabsPane[]) => {
 
 const createPane = (label: string): TabsPane => {
   const key = generateKey()
-  return { __key: key, label, outerClass: 'col-span-12', children: [] }
+  // 稳定的运行时数据键，与 label 解耦（同 StepsContainer.vue 的 createStep）：
+  // 双击改名只改 label，不影响这个 name，表单数据 key 不会因为改标题而丢失/漂移
+  const name = `tab_${Math.random().toString(36).slice(2, 8)}`
+  return { __key: key, name, label, outerClass: 'col-span-12', children: [] }
+}
+
+// 新建 pane 的默认标题避开当前容器内已使用的标题（Tab N，N 从当前数量+1 起递增探测）
+const nextDefaultLabel = (prefix: string): string => {
+  const used = new Set(
+    panes.value.map((p) => (typeof p.label === 'string' ? p.label.trim() : '')).filter(Boolean),
+  )
+  let n = panes.value.length + 1
+  let label = `${prefix} ${n}`
+  while (used.has(label)) {
+    n++
+    label = `${prefix} ${n}`
+  }
+  return label
 }
 
 // 首次拖入且无 pane 时预置一个默认 pane
@@ -66,7 +95,7 @@ watch(
     if (!props.tabsKey) return
     if (!canvasCtx?.updateContainerChildren) return
     bootstrapped.value = true
-    if (len === 0) updatePanes([createPane('Tab 1')])
+    if (len === 0) updatePanes([createPane(nextDefaultLabel('Tab'))])
   },
   { immediate: true },
 )
@@ -104,7 +133,7 @@ const onUpdateActive = (key: string | number) => {
 }
 
 const addTab = () => {
-  const pane = createPane(`Tab ${panes.value.length + 1}`)
+  const pane = createPane(nextDefaultLabel('Tab'))
   updatePanes([...panes.value, pane])
   activeKey.value = pane.__key
   selectPane(pane.__key)
@@ -144,13 +173,40 @@ const startEdit = (idx: number) => {
   })
 }
 
+// H1：改名唯一性——标题在同一个 tabs 容器内重复时拒绝这次改名，保留旧标题并提示原因。
+// 每个 pane 的运行时数据键（name）创建时已固定、与标题解耦，重复标题本身不会导致
+// 数据互相覆盖，这里仍然拦住是为了避免画布上出现两个分不清的同名标签
+const isDuplicateLabel = (label: string, selfIdx: number) =>
+  panes.value.some((p, i) => i !== selfIdx && tabLabel(p, i) === label)
+
 const commitEdit = () => {
   const idx = editingIndex.value
   if (idx === null) return
   const nextLabel = editingValue.value.trim() || tabLabel(panes.value[idx], idx)
+  if (isDuplicateLabel(nextLabel, idx)) {
+    notification.warning({ title: t('builder.paneNameDuplicate', { name: nextLabel }) })
+    editingIndex.value = null
+    return
+  }
   const next = panes.value.map((p, i) => (i === idx ? { ...p, label: nextLabel } : p))
   updatePanes(next)
   editingIndex.value = null
+}
+
+// 改名输入框的键盘处理：合并为单个 @keydown 按 e.key 分支，而不是在同一个 <n-input>
+// 上挂两个 @keydown.xxx 修饰符——Vue 会把同名事件的多个处理器合并成数组传给
+// NInput 的 onKeydown prop（类型声明为 Function），导致每次触发都报
+// `Invalid prop: type check failed for prop "onKeydown". Expected Function, got Array`。
+const onEditKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    e.stopPropagation()
+    e.preventDefault()
+    commitEdit()
+  } else if (e.key === 'Escape') {
+    e.stopPropagation()
+    e.preventDefault()
+    editingIndex.value = null
+  }
 }
 </script>
 
@@ -204,6 +260,7 @@ const commitEdit = () => {
       >
         <template #tab>
           <n-input
+            data-canvas-edit
             v-if="editingIndex === idx"
             :ref="setEditInput"
             size="small"
@@ -213,8 +270,7 @@ const commitEdit = () => {
             @click.stop
             @dblclick.stop
             @blur="commitEdit"
-            @keydown.enter.stop.prevent="commitEdit"
-            @keydown.esc.stop.prevent="editingIndex = null"
+            @keydown="onEditKeydown"
           />
           <span v-else class="tabs-tab-label select-none" @dblclick.stop="startEdit(idx)">
             {{ tabLabel(pane, idx) }}

@@ -93,7 +93,7 @@ defineSlots<{
                   ></template>
                 </n-button>
               </template>
-              {{ t('builder.undo') }}
+              {{ t('builder.undoTooltip') }}
             </n-tooltip>
             <n-tooltip placement="bottom">
               <template #trigger>
@@ -109,7 +109,7 @@ defineSlots<{
                   ></template>
                 </n-button>
               </template>
-              {{ t('builder.redo') }}
+              {{ t('builder.redoTooltip') }}
             </n-tooltip>
           </n-button-group>
           <ThemeSwitcher />

@@ -9,6 +9,7 @@ import { NButton, type ConfigProviderProps } from 'naive-ui'
 import createFormattedSchema from '@/utils/format-schema'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
 import { createSchemaProjector } from '@/dsl'
+import { ensureDslKeys } from '@/dsl/keys'
 import { snapshotDeep, shareStructure } from '@/utils/structural-share'
 import { getSingleNodeSchemaArray } from '@/utils/canvas-schema'
 import type { FormDefinition } from '@/types/dsl'
@@ -133,7 +134,10 @@ const renderDefinition = ref<FormDefinition>(
 watch(
   () => props.definition,
   (def) => {
-    if (def) renderDefinition.value = def
+    // 外部（设计器之外）直接喂给 FormRenderer 的定义可能没经过设计器的 ensureDslKeys
+    // 规范化，缺 settings 时 buildSchema 读 settings.labelAlign 会抛错——这里统一兜底，
+    // 与设计器共用同一份默认值（见 H2：定义进入设计器/渲染器的入口统一补默认设置）。
+    if (def) renderDefinition.value = ensureDslKeys(def)
   },
   { immediate: true },
 )
@@ -215,7 +219,10 @@ const schemaProjector = createSchemaProjector()
 // 输入，不需要响应式。
 let prevDefinitionSnapshot: FormDefinition | undefined
 const definitionSnapshot = computed<FormDefinition | undefined>(() => {
-  const next = snapshotDeep(props.definition)
+  const snapshot = snapshotDeep(props.definition)
+  // 外部定义可能缺 settings（类型必填，运行时不保证）：与设计器共用同一份兜底
+  // （见 H2），避免 buildSchema 读 settings.labelAlign 时抛错
+  const next = snapshot ? ensureDslKeys(snapshot) : snapshot
   const shared = shareStructure(prevDefinitionSnapshot, next)
   prevDefinitionSnapshot = shared
   return shared

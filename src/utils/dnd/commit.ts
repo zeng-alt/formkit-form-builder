@@ -404,6 +404,8 @@ export function handleEnd(
         : [createStepsPane()]
       const firstPane = panes[0]!
       firstPane.children = targetValues.map((v) => ({ ...v }))
+      // H8：只在真的有内容被收纳时提示——空画布拖入步骤条不会移动任何东西，不用打扰
+      if (targetValues.length > 0) ctx?.notifyStepsConsolidate?.()
       const rootNext: SchemaNode[] = [
         {
           ...stepsNode,

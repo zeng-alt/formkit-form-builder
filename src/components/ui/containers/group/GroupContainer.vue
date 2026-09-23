@@ -58,11 +58,13 @@ const duplicateChild = (index: number) => {
   if (!source) return
   const names = new Set<string>()
   collectSchemaNames(formSchema.value, names)
-  const clone = duplicateNode(source, names)
+  const clone = duplicateNode(source, names, { labelSuffix: t('common.copySuffix') })
   const next = [...dnd.items.value]
   next.splice(index + 1, 0, clone)
   dnd.items.value = next
   dnd.emitUpdate()
+  // H6：复制完成后选中新副本
+  if (canvasCtx?.selectByKey && clone.__key) canvasCtx.selectByKey(clone.__key)
 }
 </script>
 

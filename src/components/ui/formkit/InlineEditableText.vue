@@ -60,20 +60,34 @@ function commit() {
     canvasCtx.updateNodePropsByKey(editKey.value, { [props.propKey]: text })
   }
 }
+
+// 合并为单个 @keydown 按 e.key 分支：同一个 <NInput> 上挂多个 @keydown.xxx 修饰符会被
+// Vue 合并成数组传给它的 onKeydown prop（类型声明为 Function），触发
+// `Invalid prop: type check failed for prop "onKeydown". Expected Function, got Array`
+// 警告（同 TabsContainer.vue 的改名输入框）。
+function onKeydown(e: KeyboardEvent) {
+  e.stopPropagation()
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    commit()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    cancel()
+  }
+}
 </script>
 
 <template>
   <NInput
     v-if="canEdit && editing"
     ref="inputRef"
+    data-canvas-edit
     size="tiny"
     :value="draft"
     :placeholder="value"
     @update:value="(v: string) => (draft = v)"
     @blur="commit"
-    @keydown.enter.prevent="commit"
-    @keydown.esc.prevent="cancel"
-    @keydown.stop
+    @keydown="onKeydown"
     @pointerdown.stop
   />
   <span

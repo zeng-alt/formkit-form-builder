@@ -54,6 +54,14 @@ const paneChildren = (child: SchemaNode) => schemaChildren(child)
 
 const hasPaneContent = (child: SchemaNode) =>
   paneChildren(child).some((node) => schemaChildren(node).length > 0)
+
+// H1：同 TabsContainerPreview.vue——FormKit 分组节点挂载后不响应 name 变化，
+// 这里把 pane 内容实际的数据键（group 节点的 name）绑到 :key 上，变化时强制重新挂载
+const paneDataKey = (child: SchemaNode, idx: number): string => {
+  const group = paneChildren(child)[0]
+  const name = group?.name
+  return typeof name === 'string' && name ? name : `__pane_${idx}`
+}
 </script>
 
 <template>
@@ -90,13 +98,17 @@ const hasPaneContent = (child: SchemaNode) =>
           :key="child?.__key || idx"
           :style="{ display: idx === current ? '' : 'none' }"
         >
-          <FormKitSchema
-            v-if="hasPaneContent(child)"
-            :schema="paneChildren(child)"
-            :library="schemaLibrary"
-            :data="schemaRenderData"
-          />
-          <n-empty v-else :description="t('builder.listDropHere')" />
+          <!-- 内层再包一层、以 paneDataKey 为 key：数据键变化时强制重新挂载
+               FormKitSchema，避免 FormKit 分组节点沿用旧 name（H1，同 tabs） -->
+          <div :key="paneDataKey(child, idx)">
+            <FormKitSchema
+              v-if="hasPaneContent(child)"
+              :schema="paneChildren(child)"
+              :library="schemaLibrary"
+              :data="schemaRenderData"
+            />
+            <n-empty v-else :description="t('builder.listDropHere')" />
+          </div>
         </div>
       </div>
     </template>

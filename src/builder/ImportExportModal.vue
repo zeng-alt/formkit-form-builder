@@ -9,6 +9,7 @@ import { useFormBuilderI18n } from '../i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 import { DEFAULT_LABEL_WIDTH } from '@/utils/form-layout'
+import { describeJsonParseError } from './json-parse-error'
 
 const props = defineProps<{
   show: boolean
@@ -62,8 +63,28 @@ const handleClose = () => {
 }
 
 const handleSaveAndImport = () => {
+  // JSON.parse 本身的失败单独捕获：不同浏览器的报错格式不同（有的只给字符偏移
+  // position，有的给 line/column），拼成「JSON 格式有误」+「第 X 行第 Y 列附近」
+  // 的易懂提示，原始错误信息作为次要描述附上（见 json-parse-error.ts）。
+  // 之后的 schema 校验失败走下面单独的 try/catch，不套用这份"JSON 格式"文案。
+  let parsed: unknown
   try {
-    const parsed = JSON.parse(jsonContent.value)
+    parsed = JSON.parse(jsonContent.value)
+  } catch (error) {
+    const info = describeJsonParseError(error, jsonContent.value)
+    notification.error({
+      title: t('importExport.jsonInvalid'),
+      content: info.location
+        ? t('importExport.jsonErrorLocation', {
+            line: info.location.line,
+            column: info.location.column,
+          })
+        : undefined,
+      meta: info.message,
+    })
+    return
+  }
+  try {
     // 规范 DSL 导入：FormDefinition 整体提交（name / settings 一并并入状态）
     if (isDslDefinition(parsed)) {
       const nextDef: FormDefinition = parsed.id ? parsed : { ...parsed, id: generateKey() }
