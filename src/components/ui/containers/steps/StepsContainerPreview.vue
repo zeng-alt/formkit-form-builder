@@ -5,6 +5,8 @@ import { FormKitSchema } from '@formkit/vue'
 import { NEmpty, NStep, NSteps } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
+import { useSchemaRenderData } from '@/composables/use-schema-render-data'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[]
@@ -19,6 +21,8 @@ const props = defineProps<{
 const { t } = useFormBuilderI18n()
 
 const schemaLibrary = getPreviewSchemaLibrary()
+// 表单数据 + 表达式 helper：容器内嵌套 FormKitSchema 需要表单数据才能正确求值 visibleIf
+const schemaRenderData = useSchemaRenderData()
 
 const modelValue = computed(() => {
   if (Array.isArray(props.modelValue)) return props.modelValue
@@ -36,7 +40,7 @@ watch(
   { immediate: true },
 )
 
-const stepTitle = (child: any, idx: number) => {
+const stepTitle = (child: SchemaNode, idx: number) => {
   const label = child?.label ?? child?.props?.label
   if (typeof label === 'string' && label.trim()) return label.trim()
   const name = child?.name
@@ -46,15 +50,10 @@ const stepTitle = (child: any, idx: number) => {
 
 // step 内容由 formatContainer（规格 dataShape:objectOfObjects）包装为单个 group，
 // 空 step 的 group 无子节点，据此判断是否有真实内容
-const paneChildren = (child: any) => {
-  const c = child?.children
-  return Array.isArray(c) ? c : []
-}
+const paneChildren = (child: SchemaNode) => schemaChildren(child)
 
-const hasPaneContent = (child: any) =>
-  paneChildren(child).some(
-    (node: any) => Array.isArray(node?.children) && node.children.length > 0,
-  )
+const hasPaneContent = (child: SchemaNode) =>
+  paneChildren(child).some((node) => schemaChildren(node).length > 0)
 </script>
 
 <template>
@@ -65,6 +64,10 @@ const hasPaneContent = (child: any) =>
     </div>
     <n-empty v-if="modelValue.length === 0" :description="t('builder.listDropHere')" />
     <template v-else>
+      <!-- status/size 同 TabsContainerPreview.vue：本组件自己的 string prop 比 naive-ui
+           对应 prop 的字面量联合更宽，两边类型来源不同。曾尝试标注为 StepsProps['status'] /
+           StepsProps['size']，但 Vue 的类型解析器无法解析 naive-ui 经 ExtractPublicPropTypes
+           包装的类型，会静默退化成不做运行时校验的 `type: null`，故保留断言 -->
       <n-steps
         :current="current + 1"
         :status="(props.status as any) || 'process'"
@@ -74,9 +77,9 @@ const hasPaneContent = (child: any) =>
       >
         <n-step
           v-for="(child, idx) in modelValue"
-          :key="(child as any)?.__key || idx"
+          :key="child?.__key || idx"
           :title="stepTitle(child, idx)"
-          :description="(child as any)?.description"
+          :description="child?.description"
         />
       </n-steps>
 
@@ -84,13 +87,14 @@ const hasPaneContent = (child: any) =>
       <div class="mt-4">
         <div
           v-for="(child, idx) in modelValue"
-          :key="(child as any)?.__key || idx"
+          :key="child?.__key || idx"
           :style="{ display: idx === current ? '' : 'none' }"
         >
           <FormKitSchema
             v-if="hasPaneContent(child)"
             :schema="paneChildren(child)"
             :library="schemaLibrary"
+            :data="schemaRenderData"
           />
           <n-empty v-else :description="t('builder.listDropHere')" />
         </div>

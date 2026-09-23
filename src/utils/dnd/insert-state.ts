@@ -21,4 +21,4 @@ export const insertState: InsertStateEx<unknown> = {
   ascending: false,
   insertPoint: null,
   dragging: false,
-} as any
+}

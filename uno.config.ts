@@ -1,22 +1,8 @@
 import { defineConfig, presetAttributify, presetWind3, presetIcons } from 'unocss'
 import presetRemToPx from '@unocss/preset-rem-to-px'
-// import { getIconData, iconToHTML, iconToSVG, replaceIDs, type IconifyJSON } from "@iconify/utils";
-// import lucide from "@iconify-json/lucide/icons.json";
-// import stash from "@iconify-json/stash/icons.json";
-
-// 直接以 icons.json 作为 presetIcons 的 custom collection 时，@iconify/utils 的
-// getCustomIcon 只认「扁平 iconName → svg 字符串」的映射；而默认的 node loader 在
-// VS Code 终端（VSCODE_CWD 被设置）下会被 @unocss/preset-icons 跳过，导致全部图标加载失败。
-// 因此这里把每个图标集转成一个惰性 loader 函数，返回可直接使用的 SVG 字符串，
-// 在任何环境（含 VS Code 终端）都能稳定加载。
-// function createIconLoader(iconSet: IconifyJSON) {
-//   return (icon: string): string | undefined => {
-//     const data = getIconData(iconSet, icon);
-//     if (!data) return undefined;
-//     const { body, attributes } = iconToSVG(data, {});
-//     return iconToHTML(replaceIDs(body), attributes);
-//   };
-// }
+// 图标集显式声明为 collections、以动态 import 惰性加载 icons.json，而不是依赖
+// @unocss/preset-icons 的默认 node loader：后者在 VS Code 终端（设置了 VSCODE_CWD）
+// 下会被跳过，导致全部图标加载失败。显式声明在任何环境下都能稳定加载。
 
 export default defineConfig({
   presets: [
@@ -24,8 +10,6 @@ export default defineConfig({
     presetWind3(),
     presetIcons({
       collections: {
-        // lucide: createIconLoader(lucide),
-        // stash: createIconLoader(stash),
         lucide: () => import('@iconify-json/lucide/icons.json').then((m) => m.default),
         stash: () => import('@iconify-json/stash/icons.json').then((m) => m.default),
       },
@@ -141,6 +125,23 @@ export default defineConfig({
     'col-span-10',
     'col-span-11',
     'col-span-12',
+    // 表单级标签布局类（src/utils/form-layout.ts）：字符串拼在一个独立的纯 .ts
+    // 模块里，UnoCSS 的 content.pipeline 扫描对这类被抽成公共模块、不直接出现在
+    // .vue 模板里的类名不够可靠（同类问题见上面 !w-[NN%] 的注释），显式加入
+    // safelist 保证一定生成
+    'fk-label-left',
+    '[&_.formkit-label]:text-xs',
+    '[&_.formkit-label]:font-bold',
+    '[&_.formkit-wrapper]:flex',
+    '[&_.formkit-wrapper]:flex-row',
+    '[&_.formkit-wrapper]:items-start',
+    '[&_.formkit-wrapper]:gap-3',
+    '[&_.formkit-label]:mb-0',
+    '[&_.formkit-label]:w-[var(--fk-label-width)]',
+    '[&_.formkit-label]:shrink-0',
+    '[&_.formkit-label]:pt-1',
+    '[&_.formkit-inner]:flex-1',
+    '[&_.formkit-inner]:min-w-0',
   ],
   theme: {
     colors: {

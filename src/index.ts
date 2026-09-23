@@ -4,7 +4,7 @@ import FormBuilder from './builder/BuilderMain.vue'
 import BuilderPreview from './builder/BuilderPreview.vue'
 import FormDefinitionPreview from './builder/FormDefinitionPreview.vue'
 import BuilderProvider from './builder/BuilderProvider.vue'
-import FormSchemaRenderer from './renderer/FormSchemaRenderer.vue'
+import FormRenderer from './renderer/FormRenderer.vue'
 import CanvasActionsBar from './builder/canvas/CanvasActionsBar.vue'
 
 export {
@@ -35,14 +35,6 @@ export type {
   DslToSchemaCtx,
 } from './dsl/registry'
 export type { ElementDefinition, ElementCategory, ElementPaletteProp } from './elements'
-export type {
-  RendererEngine as IRendererEngine,
-  RendererPlugin,
-  RenderContext,
-  FieldRenderer,
-  ContainerRenderer,
-  StaticRenderer,
-} from './types/renderer'
 
 // 元素扩展（配置式）：registerElement / config.elements + FormKit 插件装配
 export { registerElement, registerElements } from './plugin/register-element'
@@ -56,15 +48,15 @@ export { BuilderPreview }
 export { FormDefinitionPreview }
 // 画布右侧操作列默认内容（导入导出 / 切换语言），可在 #toolbar 插槽中复用以在默认按钮之外追加
 export { CanvasActionsBar }
-// 表单操作器：FormRenderer 为主名，FormSchemaRenderer 保留为废弃别名。
-// @deprecated 使用 FormRenderer
-export { FormSchemaRenderer as FormRenderer, FormSchemaRenderer }
+// 表单操作器：接收 DSL FormDefinition，渲染为可填写、可提交的 FormKit 表单
+export { FormRenderer }
 export { FormBuilder as FormKitFormBuilder }
 export { BuilderProvider as FormBuilderProvider }
 
 // 实例状态（多设计器并存 / 高级用法）
 export {
   useFormBuilderState,
+  useOptionalFormBuilderState,
   provideFormBuilderState,
   createFormBuilderState,
 } from './state/create-form-builder-state'
@@ -76,3 +68,7 @@ export type { FormBuilderPluginOptions } from './plugin/form-builder-plugin'
 
 // DSL 转换工具（含 group 包裹的结构化输出）
 export { dslToSchema, dslToOutputSchema, schemaToDsl } from './dsl'
+// 后端持久化前剥离前端专用字段（key / meta.rawSchema），见 src/dsl/portable.ts
+export { toPortableDefinition } from './dsl'
+// today() 表达式的语言 → 时区映射：宿主可扩展映射表，或手动设置求值语言
+export { setExprLocale, resolveTimeZoneForLocale, LOCALE_TIME_ZONES } from './dsl'

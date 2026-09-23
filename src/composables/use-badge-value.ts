@@ -1,11 +1,12 @@
 import { computed, inject, type ComputedRef, type Ref } from 'vue'
 import { compileExpr } from '@/expression/evaluator'
+import { PREVIEW_FORM_DATA_KEY } from '@/composables/use-schema-render-data'
 
 // 徽标值解析：支持字面量（文本 / 数字）与表达式。
 // 表达式为含 $ 的字符串（如 "$count" / "$count + 1"），运行时用注入的表单数据求值
-//（FormSchemaRenderer 提供 previewFormData）；未注入（画布态）或求值失败时回退原文。
+//（FormRenderer 提供 previewFormData）；未注入（画布态）或求值失败时回退原文。
 export function useBadgeValue(rawValue: ComputedRef<string | number | undefined>) {
-  const previewFormData = inject<Ref<Record<string, unknown>> | null>('previewFormData', null)
+  const previewFormData = inject<Ref<Record<string, unknown>> | null>(PREVIEW_FORM_DATA_KEY, null)
 
   const badgeValue = computed<string | number>(() => {
     const v = rawValue.value

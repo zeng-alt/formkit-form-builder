@@ -2,7 +2,7 @@ import type { ComputedRef } from 'vue'
 import type { FormKitFrameworkContext } from '@formkit/core'
 import { runBindCode } from '@/utils/bind-runtime'
 import { useBinderHttp } from '@/composables/use-bind-http'
-import { useFormDefinition } from '@/composables/form-fields'
+import { useFormDefinition } from '@/composables/use-form-definition'
 
 /**
  * 字段事件绑定（onClick / onChange / onInput / onFocus / onBlur）。

@@ -9,7 +9,7 @@ const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { props, bind } = useSchemaAttrs(context)
+const { props, bind, disabled } = useSchemaAttrs(context)
 const { runEvent } = useBindEvents(context, bind)
 
 const formattedValue = computed<string | null>({
@@ -40,6 +40,7 @@ const handleBlur = async (e: FocusEvent) => {
     v-bind="props"
     v-model:formatted-value="formattedValue"
     :input-props="{ id: context.id }"
+    :disabled="disabled"
     @focus="handleFocus"
     @blur="handleBlur"
   />

@@ -65,7 +65,7 @@ const elementType = computed(() => {
 })
 const elementDef = computed(() => getElementDefinition(elementType.value))
 const elementInfoLabel = computed(() => {
-  const el = columnElement.value as any
+  const el = columnElement.value
   if (typeof el?.label === 'string' && el.label.trim()) return el.label
   return elementDef.value?.tooltipKey ? t(elementDef.value.tooltipKey) : elementType.value || ''
 })

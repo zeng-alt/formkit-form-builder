@@ -14,6 +14,7 @@ import type { FormBuilderConfig } from '../types/env'
 import { provideFormBuilderI18n } from '../i18n/context'
 import { provideRuntimeLocale } from '../i18n/runtime-locale'
 import { provideFormBuilderState } from '@/state/create-form-builder-state'
+import { provideFormDefinition } from '@/composables/use-form-definition'
 import { provideBinderHttp } from '@/composables/use-bind-http'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 import type { FormDefinition } from '@/types/dsl'
@@ -51,6 +52,9 @@ const emit = defineEmits<{
 // ── 实例状态：每个 FormBuilder 独立的 formDefinition / 历史 / 选中 / 画布 ──
 const state = provideFormBuilderState()
 const { formDefinition, setFormDefinition } = state
+// 窄只读上下文：画布内的字段事件绑定 / 数据表格预览等只读消费方，走这条与
+// FormRenderer 共用的接口，不需要拿到完整 FormBuilderState（undo/redo/选中态）。
+provideFormDefinition(formDefinition)
 
 // ── 配置：prop 优先，否则回落注入（BuilderProvider 提供）──
 const injectedCfg = useFormBuilderConfig()
@@ -81,11 +85,35 @@ watch(
   { immediate: true },
 )
 
-provideFormBuilderI18n({
+const { t } = provideFormBuilderI18n({
   locale: computed(() => runtimeLocale.locale.value),
   localeFallback: computed(() => runtimeLocale.localeFallback.value),
   messages: computed(() => cfg?.messages as Record<string, any> | undefined),
 })
+
+// 全新画布（未传 modelValue）时，用当前语言补齐默认提交按钮的文案：state 创建时
+// （上面 provideFormBuilderState()）i18n 上下文还没就绪，画布初始定义里的提交按钮
+// 没法带 label，只能留空；这里语言一就绪就立刻补一次，避免用户看到空文案或
+// 写死的英文——不推历史（这是初始化补全，不是一次用户编辑）。
+if (!props.modelValue) {
+  const initialDef = formDefinition.value
+  const children = initialDef.root.children
+  const submitNode = children.find((n) => n.category === 'static' && n.type === 'submit')
+  if (submitNode && !submitNode.label) {
+    setFormDefinition(
+      {
+        ...initialDef,
+        root: {
+          ...initialDef.root,
+          children: children.map((n) =>
+            n === submitNode ? { ...n, label: t('elements.submit.label') } : n,
+          ),
+        },
+      },
+      { resetHistory: false },
+    )
+  }
+}
 
 // ── v-model 双向同步 ────────────────────────────────────────────────────────
 // syncingFromProps：外部 modelValue 变更（预载 / 父级替换）正在落到内部状态，不回吐。
@@ -93,6 +121,7 @@ provideFormBuilderI18n({
 let syncingFromProps = false
 let syncingToProps = false
 
+// 外部传入的对象我们不能假设不被外部代码原地修改，预载前深拷贝隔离
 const safeClone = <T>(value: T): T => {
   try {
     return structuredClone(value)
@@ -118,12 +147,15 @@ watch(
 )
 
 // 内部 → 外部：任何编辑 / 拖拽 / undo / redo 后吐出当前表单定义。
+// 直接 emit def 本身，不再深拷贝：def 是不可变更新产出的定义（开发态已深度冻结），
+// 吐给外部的这份视为只读快照——调用方不应原地修改它（改了也改不动 DSL 真源，
+// 冻结下会直接抛错），需要另存一份改动请自行拷贝。v-model 使用方式见 README。
 watch(
   formDefinition,
   (def) => {
     if (syncingFromProps) return
     syncingToProps = true
-    emit('update:modelValue', safeClone(def))
+    emit('update:modelValue', def)
     nextTick(() => {
       syncingToProps = false
     })

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { NModal, NInput, NButton, NSpace, NTabs, NTabPane } from 'naive-ui'
+import { NModal, NInput, NButton, NSpace, NTabs, NTabPane, useNotification } from 'naive-ui'
 import { dslToSchema } from '@/dsl'
 import { generateKey } from '@/utils/dnd/schema'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { FormDefinition } from '@/types/dsl'
-import { toast } from 'vue-sonner'
 import { useFormBuilderI18n } from '../i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
+import { DEFAULT_LABEL_WIDTH } from '@/utils/form-layout'
 
 const props = defineProps<{
   show: boolean
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useFormBuilderI18n()
+const notification = useNotification()
 
 const { formDefinition, commitFormDefinition, commitSchema } = useFormBuilderState()
 
@@ -33,15 +35,15 @@ const exportSchema = (): FormKitSchemaFormKit[] => {
 }
 
 const isDslDefinition = (value: unknown): value is FormDefinition => {
-  const v = value as any
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  // 只是形状探测（收窄 unknown），不是完整 FormDefinition 结构，按需要读到的字段声明一个
+  // 最小形状，比裸 any 更能说明这里到底在检查什么
+  const v = value as { version?: unknown; root?: { children?: unknown } | null }
   return (
-    v !== null &&
-    typeof v === 'object' &&
-    !Array.isArray(v) &&
     typeof v.version === 'number' &&
     v.root !== null &&
     typeof v.root === 'object' &&
-    Array.isArray(v.root.children)
+    Array.isArray(v.root?.children)
   )
 }
 
@@ -66,7 +68,7 @@ const handleSaveAndImport = () => {
     if (isDslDefinition(parsed)) {
       const nextDef: FormDefinition = parsed.id ? parsed : { ...parsed, id: generateKey() }
       commitFormDefinition(nextDef, { reason: 'import' })
-      toast.success(t('importExport.importSuccess'))
+      notification.success({ title: t('importExport.importSuccess'), duration: 3000 })
       handleClose()
       return
     }
@@ -78,27 +80,27 @@ const handleSaveAndImport = () => {
       parsed.length === 1 &&
       first &&
       typeof first === 'object' &&
-      (first as any).$formkit === 'form' &&
-      Array.isArray((first as any).children)
+      first.$formkit === 'form' &&
+      Array.isArray(first.children)
     ) {
-      const rawName = (first as any).name
+      const rawName = first.name
       const name = typeof rawName === 'string' && rawName.trim() ? rawName.trim() : 'form'
-      const labelPosition = (first as any)?.props?.labelPosition === 'left' ? 'left' : 'top'
-      const labelWidthRaw = Number((first as any)?.props?.labelWidth)
-      const labelWidth = Number.isFinite(labelWidthRaw) ? labelWidthRaw : 120
-      commitSchema((first as any).children as FormKitSchemaFormKit[], {
+      const labelPosition = first.props?.labelPosition === 'left' ? 'left' : 'top'
+      const labelWidthRaw = Number(first.props?.labelWidth)
+      const labelWidth = Number.isFinite(labelWidthRaw) ? labelWidthRaw : DEFAULT_LABEL_WIDTH
+      commitSchema(first.children as FormKitSchemaFormKit[], {
         reason: 'import',
         name,
-        settings: { layout: 'vertical', labelAlign: labelPosition, labelWidth },
+        settings: { labelAlign: labelPosition, labelWidth },
       })
     } else {
       commitSchema(parsed as FormKitSchemaFormKit[], { reason: 'import' })
     }
-    toast.success(t('importExport.importSuccess'))
+    notification.success({ title: t('importExport.importSuccess'), duration: 3000 })
     handleClose()
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : t('importExport.unknownError')
-    toast.error(t('importExport.failedParseJson', { message }))
+    notification.error({ title: t('importExport.failedParseJson', { message }) })
   }
 }
 
@@ -120,9 +122,9 @@ const handleDownload = () => {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    toast.success(t('importExport.downloadedSuccess'))
+    notification.success({ title: t('importExport.downloadedSuccess'), duration: 3000 })
   } catch {
-    toast.error(t('importExport.failedGenerateDownload'))
+    notification.error({ title: t('importExport.failedGenerateDownload') })
   }
 }
 
@@ -150,25 +152,25 @@ const cloneSchema = (schema: FormKitSchemaFormKit[]) => {
 }
 
 const exportAsJs = () => {
-  const schema = cloneSchema(exportSchema() as any)
+  const schema = cloneSchema(exportSchema())
   const bindVarMap: Record<string, Record<string, unknown>> = {}
 
-  const visit = (nodes: any[]) => {
+  const visit = (nodes: SchemaNode[]) => {
     for (const node of nodes) {
       if (!node || typeof node !== 'object') continue
       const bind = node.__bind
       if (bind && typeof bind === 'object' && !Array.isArray(bind)) {
         const key = safeVar(node.__key || node.name || node.$formkit || node.$el)
         const varName = `bind_${key}`
-        bindVarMap[varName] = bind as any
+        bindVarMap[varName] = bind as Record<string, unknown>
         node.bind = `$${varName}`
         delete node.__bind
       }
-      if (Array.isArray(node.children)) visit(node.children)
+      visit(schemaChildren(node))
     }
   }
 
-  visit(schema as any[])
+  visit(schema)
 
   const schemaStr = JSON.stringify(schema, null, 2)
 
@@ -177,8 +179,10 @@ const exportAsJs = () => {
     for (const [k, v] of Object.entries(attrs)) {
       if (typeof v === 'string') {
         innerLines.push(`${k}: async (event) => {\n${indent(v, 6)}\n    }`)
-      } else if (v && typeof v === 'object' && typeof (v as any).__js === 'string') {
-        innerLines.push(`${k}: async (event) => {\n${indent(String((v as any).__js), 6)}\n    }`)
+      } else if (v && typeof v === 'object' && typeof (v as { __js?: unknown }).__js === 'string') {
+        innerLines.push(
+          `${k}: async (event) => {\n${indent(String((v as { __js: string }).__js), 6)}\n    }`,
+        )
       } else {
         innerLines.push(`${k}: ${JSON.stringify(v)}`)
       }
@@ -210,10 +214,10 @@ const handleDownloadJs = () => {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    toast.success(t('importExport.downloadedSuccess'))
+    notification.success({ title: t('importExport.downloadedSuccess'), duration: 3000 })
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : t('importExport.unknownError')
-    toast.error(t('importExport.failedParseJson', { message }))
+    notification.error({ title: t('importExport.failedParseJson', { message }) })
   }
 }
 </script>

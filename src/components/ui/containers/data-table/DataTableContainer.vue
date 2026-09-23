@@ -176,9 +176,7 @@ const deleteSearchItem = (index: number) => {
 }
 
 // 搜索区渲染实际控件：schema 子节点（children）→ { key, title, element }，按来源元素渲染输入控件
-const searchColumns = computed(() =>
-  columnsFromChildren(dndSearch.items.value as unknown as Record<string, unknown>[]),
-)
+const searchColumns = computed(() => columnsFromChildren(dndSearch.items.value))
 // 画布本地搜索值（仅展示/演示用，不入表单数据模型；搜索过滤在预览组件中执行）
 const canvasSearchValues = ref<Record<string, unknown>>({})
 function onSearchValue(key: string | undefined, v: unknown) {
@@ -378,7 +376,7 @@ const titleOf = (item: any) => item?.label ?? item?.name ?? ''
         >
           <div
             v-for="(item, idx) in dndSearch.items.value"
-            :key="(item as any)?.__key || (item as any)?.name || idx"
+            :key="item?.__key || item?.name || idx"
             data-canvas-item="true"
             :class="[
               'group relative flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-xs cursor-grab active:cursor-grabbing',

@@ -1,5 +1,6 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { getContainerSpec } from '@/elements/container-spec'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 // 生成稳定的字段 key，用于拖拽过程中的字段身份识别
 export const generateKey = () => {
@@ -9,51 +10,21 @@ export const generateKey = () => {
 }
 
 // 在 schema 树中按 __key 查找节点（用于从“真实 schema”读取最新 outerClass 等属性）
-export const findSchemaByKey = (schema: any[], key: string): any | undefined => {
+export const findSchemaByKey = (schema: SchemaNode[], key: string): SchemaNode | undefined => {
   for (const node of schema) {
-    if (node && typeof node === 'object' && (node as any).__key === key) return node
-    const children = (node as any)?.children
-    if (Array.isArray(children)) {
-      const found = findSchemaByKey(children, key)
-      if (found) return found
-    }
+    if (node && typeof node === 'object' && node.__key === key) return node
+    const found = findSchemaByKey(schemaChildren(node), key)
+    if (found) return found
   }
   return undefined
 }
 
-// 将字段名规整为安全标识（小写、下划线、避免数字开头）
-export const toSafeName = (input: unknown) => {
-  const raw = typeof input === 'string' ? input : ''
-  let name = raw
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '')
-  if (!name) name = 'field'
-  if (/^\d/.test(name)) name = `field_${name}`
-  return name
-}
-
 // 递归收集 schema 里所有已存在的 name，用于生成不冲突的新字段名
-export const collectSchemaNames = (schema: FormKitSchemaFormKit[], names: Set<string>) => {
+export const collectSchemaNames = (schema: SchemaNode[], names: Set<string>) => {
   for (const field of schema) {
     if (typeof field?.name === 'string' && field.name) names.add(field.name)
-    const children = (field as any)?.children
-    if (Array.isArray(children)) collectSchemaNames(children as FormKitSchemaFormKit[], names)
+    collectSchemaNames(schemaChildren(field), names)
   }
-}
-
-// 生成唯一 name（如 name, name_1, name_2...）
-export const ensureUniqueName = (base: string, existing: Set<string>) => {
-  let name = base
-  let i = 1
-  while (existing.has(name)) {
-    name = `${base}_${i}`
-    i++
-  }
-  existing.add(name)
-  return name
 }
 
 // 生成字段 name（作为提交后端的数据字段名）：field_1、field_2 ...
@@ -79,7 +50,7 @@ export const duplicateNode = (
   node: FormKitSchemaFormKit,
   existingNames: Set<string>,
 ): FormKitSchemaFormKit => {
-  const val = JSON.parse(JSON.stringify(node)) as any
+  const val: SchemaNode = JSON.parse(JSON.stringify(node))
   if (typeof val !== 'object' || val === null) return val as FormKitSchemaFormKit
   const nextKey = generateKey()
   const nextName = val.$formkit === 'submit' ? val.name : generateNextFieldName(existingNames)
@@ -100,19 +71,19 @@ export const duplicateNode = (
   const spec = getContainerSpec(val.$cmp ?? val.$formkit)
   if (spec && spec.primitive === 'cmp') {
     const props = { ...val.props, [spec.keyProp]: nextKey }
-    if (props && typeof props === 'object') delete props.modelValue
+    delete props.modelValue
     val.__key = nextKey
     val.name = nextName
     val.id = `field_${nextKey}`
     val.props = props
-    val.children = Array.isArray(val.children) ? val.children : []
+    val.children = schemaChildren(val)
   } else {
     val.__key = nextKey
     val.name = nextName
     val.id = `field_${nextKey}`
   }
   if (Array.isArray(val.children)) {
-    val.children = val.children.map((c: any) => duplicateNode(c, existingNames))
+    val.children = schemaChildren(val).map((c) => duplicateNode(c, existingNames))
   }
   return val as FormKitSchemaFormKit
 }

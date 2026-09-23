@@ -38,17 +38,18 @@ const initial = computed(() => (Array.isArray(props.modelValue) ? props.modelVal
 const canvasCtx = useCanvasSchemaContext()
 
 const normalizeChildren = (values: FormKitSchemaFormKit[]) => {
-  const list = Array.isArray(values) ? values : []
+  // 拷贝一份：values 可能是 DnD 内部持有的数组引用，rebalanceRowSpans 会改写数组自己
+  // 的下标（不改节点对象），拷贝后不影响调用方后续仍持有的那份
+  const list = Array.isArray(values) ? [...values] : []
   if (list.length === 0) return []
   if (list.length === 1) {
-    const only = list[0] as any
-    setColSpan(only, 12)
+    const only = setColSpan(list[0], 12)
     return [stripInputGroupOuterClass(only)]
   }
   // 输入组单行：总 col-span 不得超过 12（一行网格上限），超出按比例缩放。
   // 宽度只记 outerClass 的 col-span-N，内层元素不再带 outerClass 宽度类（w-[xx%]/pt-2）
   rebalanceRowSpans(list, 12)
-  return list.map((f: any) => stripInputGroupOuterClass(f))
+  return list.map((f) => stripInputGroupOuterClass(f))
 }
 
 // 输入组单行：当前项 span 最大只能占到 12 - 其余各项之和（至少 2），
@@ -103,7 +104,7 @@ const duplicateChild = (index: number) => {
   const source = dnd.items.value[index]
   if (!source) return
   const names = new Set<string>()
-  collectSchemaNames(formSchema.value as any, names)
+  collectSchemaNames(formSchema.value, names)
   const clone = duplicateNode(source, names)
   const next = [...dnd.items.value]
   next.splice(index + 1, 0, clone)

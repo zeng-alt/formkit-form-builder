@@ -6,8 +6,6 @@
 
 import {
   registerElementType,
-  fieldType,
-  containerType,
   layoutType,
   staticType,
   tabsPaneType,
@@ -38,12 +36,8 @@ export function registerBuiltinElementTypes(): void {
   registerElementType(stepsPaneType())
 
   // ─── 静态展示：原生 $el 元素（无目录，画布直接输出 HTML 标签）─────────────────
-  registerElementType(staticType('button', { match: (s) => (s as any).$el === 'button' }))
-  registerElementType(staticType('paragraph', { match: (s) => (s as any).$el === 'p' }))
-  registerElementType(
-    staticType('heading', { match: (s) => /^h[1-6]$/.test(String((s as any).$el)) }),
-  )
-  registerElementType(staticType('divider', { match: (s) => (s as any).$el === 'hr' }))
+  registerElementType(staticType('button', { match: (s) => s.$el === 'button' }))
+  registerElementType(staticType('paragraph', { match: (s) => s.$el === 'p' }))
+  registerElementType(staticType('heading', { match: (s) => /^h[1-6]$/.test(String(s.$el)) }))
+  registerElementType(staticType('divider', { match: (s) => s.$el === 'hr' }))
 }
-
-export { fieldType, containerType, layoutType, staticType, tabsPaneType, stepsPaneType }

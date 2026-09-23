@@ -9,7 +9,7 @@ const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { props, bind } = useSchemaAttrs(context)
+const { props, bind, disabled } = useSchemaAttrs(context)
 const { runEvent } = useBindEvents(context, bind)
 
 const value = computed(() => (context._value ?? '') as string)
@@ -27,6 +27,7 @@ async function handleUpdateValue(next: string) {
       v-bind="props"
       style="width: 100%"
       :value="value"
+      :disabled="disabled"
       @update:value="handleUpdateValue"
     />
   </div>

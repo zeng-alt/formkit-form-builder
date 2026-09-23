@@ -37,7 +37,7 @@ export function useSchemaAttrs(context: FormKitFrameworkContext, opts: { omit?: 
   // config：context.attrs 的响应式镜像（含 __bind 等内部键），整体镜像到稳定 reactive 对象
   const config = reactive<Record<string, unknown>>({})
   watchEffect(() => {
-    const { props = {}, ...rest } = (context as any)?.attrs || {}
+    const { props = {}, ...rest } = context?.attrs || {}
     const bag = {
       ...props,
       ...rest,
@@ -74,5 +74,14 @@ export function useSchemaAttrs(context: FormKitFrameworkContext, opts: { omit?: 
       : {},
   )
 
-  return { config, props, bind }
+  // ─── disabled：FormKit 保留属性名，会被拦截、永远不会流入 context.attrs / props ──
+  // disabled 命中 @formkit/vue useInput.ts 的 pseudoProps 表（字面量 "disabled"），
+  // 因此不会像其余配置那样经 context.attrs 流入上面的 props；FormKit 改落到
+  // context.disabled（节点自身配置 / 表单级联二合一，两者谁有值就生效）。这里统一算
+  // 一次，所有字段包装组件都直接解构使用，不用每个组件各自重复摸底层位置——
+  // 仍兜底读一次 config.disabled，覆盖用户经"自定义属性"面板绕开保留名拦截的情形
+  // （config 镜像的是 context.attrs，正常路径下不会有 disabled，只有这条兜底路径才用得到）。
+  const disabled = computed<boolean>(() => Boolean(config.disabled) || Boolean(context.disabled))
+
+  return { config, props, bind, disabled }
 }

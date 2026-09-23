@@ -9,12 +9,8 @@
  *  6. 表单定义持久化（localStorage 存取）与 DSL 结构示例
  */
 import { computed, ref, watch } from 'vue'
-import {  NTag } from 'naive-ui'
-import {
-  BuilderProvider,
-  FormBuilder,
-  FormRenderer,
-} from '@zeng-alt/formkit-form-builder'
+import { NTag } from 'naive-ui'
+import { BuilderProvider, FormBuilder, FormRenderer } from '@zeng-alt/formkit-form-builder'
 import type { FormBuilderConfig, FormDefinition } from '@zeng-alt/formkit-form-builder'
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -64,7 +60,14 @@ const mockTreeDictionaries = [
         label: '总公司',
         value: 'hq',
         children: [
-          { label: '研发部', value: 'rd', children: [{ label: '前端组', value: 'fe' }, { label: '后端组', value: 'be' }] },
+          {
+            label: '研发部',
+            value: 'rd',
+            children: [
+              { label: '前端组', value: 'fe' },
+              { label: '后端组', value: 'be' },
+            ],
+          },
           { label: '市场部', value: 'marketing' },
         ],
       },
@@ -88,7 +91,14 @@ const mockTreeDictionaries = [
         children: [
           { label: '北京', value: 'bj' },
           { label: '上海', value: 'sh' },
-          { label: '广东', value: 'gd', children: [{ label: '广州', value: 'gz' }, { label: '深圳', value: 'sz' }] },
+          {
+            label: '广东',
+            value: 'gd',
+            children: [
+              { label: '广州', value: 'gz' },
+              { label: '深圳', value: 'sz' },
+            ],
+          },
         ],
       },
     ],
@@ -130,7 +140,8 @@ const formBuilderConfig = computed<FormBuilderConfig>(() => ({
         phone: {
           name: 'Telefonnummer',
           label: 'Telefonnummer',
-          description: 'Ein benutzerdefiniertes Telefonnummer-Eingabefeld (registerElement Erweiterung)',
+          description:
+            'Ein benutzerdefiniertes Telefonnummer-Eingabefeld (registerElement Erweiterung)',
         },
       },
     },
@@ -193,7 +204,7 @@ const sampleDefinition: FormDefinition = {
   id: 'demo-form',
   name: '员工信息登记',
   description: '演示 DSL：覆盖字段类型 / 校验 / 选项 / 栅格布局 / 静态展示',
-  settings: { layout: 'vertical', columns: 12, labelWidth: 80 },
+  settings: { labelWidth: 80 },
   root: {
     id: 'root',
     type: 'group',
@@ -319,9 +330,13 @@ watch(
   },
   { deep: false },
 )
-function onFormSubmit(value: Record<string, unknown>, id: string | undefined, version: number | undefined) {
-  console.log(id);
-  console.log(version);
+function onFormSubmit(
+  value: Record<string, unknown>,
+  id: string | undefined,
+  version: number | undefined,
+) {
+  console.log(id)
+  console.log(version)
   alert('提交数据：' + JSON.stringify(value))
 }
 // function onSave() {
@@ -339,13 +354,10 @@ const definitionJson = computed(() => JSON.stringify(definition.value ?? {}, nul
          FormRenderer 与 FormBuilder 一起放在 BuilderProvider 内：
          共享 config（locale / elements / messages），作为姊妹节点各自渲染；
          class 通过属性透传落到 provider 根节点上作为栅格容器。 -->
-    <BuilderProvider
-      :config="formBuilderConfig"
-    >
+    <BuilderProvider :config="formBuilderConfig">
       <!-- 设计器 -->
       <div class="min-h-0 overflow-hidden">
-        <FormBuilder v-model="definition">
-        </FormBuilder>
+        <FormBuilder v-model="definition"> </FormBuilder>
       </div>
 
       <!-- 渲染结果 / 数据 -->

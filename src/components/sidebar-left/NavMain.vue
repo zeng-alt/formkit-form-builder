@@ -28,7 +28,7 @@ const filteredFormElements = computed(() => {
     (element) =>
       element.name.toLowerCase().includes(query) ||
       element.description.toLowerCase().includes(query) ||
-      String((element as any).$formkit ?? (element as any).$cmp ?? '')
+      String(element.$formkit ?? element.$cmp ?? '')
         .toLowerCase()
         .includes(query),
   )
@@ -50,8 +50,7 @@ const groupedElements = computed(() => {
   }
 
   filteredFormElements.value.forEach((item) => {
-    const typeName =
-      getElementTypeBySchema(item) ?? String((item as any).$formkit ?? (item as any).$cmp ?? '')
+    const typeName = getElementTypeBySchema(item) ?? String(item.$formkit ?? item.$cmp ?? '')
     const prop = fieldProps.value.find((p) => p.name === typeName)
     const category = prop?.category ?? 'field'
     // 布局元素（card / tabs / grid 等）并入容器分类展示

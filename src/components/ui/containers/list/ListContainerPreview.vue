@@ -6,32 +6,36 @@ import { NButton, NTooltip, NEmpty } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
 import { getElementTypeDef } from '@/dsl'
+import { useSchemaRenderData } from '@/composables/use-schema-render-data'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 const props = defineProps<{
-  nodeKey?: string
   listKey?: string
   children?: FormKitSchemaFormKit[]
   modelValue?: FormKitSchemaFormKit[]
   label?: string
   name?: string
-  isPlaceholder?: boolean
   bordered?: boolean
   /** 嵌套列表项模式：以 :index 绑定到外层 list 的数组元素（array of arrays） */
   itemIndex?: number
 }>()
 
-const restore = inject('previewListRestore', null as unknown as ((key: string) => void) | null)
 const interactive = inject('previewListInteractive', true)
 
 const { t } = useFormBuilderI18n()
 
 const schemaLibrary = getPreviewSchemaLibrary()
+// 表单数据 + 表达式 helper：list 是数组容器，条目内字段的 visibleIf 按字段名引用
+// 表单数据——默认 dataStructure:'flat' 下字段名平铺在表单数据顶层，传根表单数据是对的；
+// dataStructure:'nested' 时容器子字段会嵌套进 group，这里仍传根级数据，但
+// useSchemaRenderData 内部会按字段名做树内查找（lookupFieldValue），根层查不到时
+// 会往嵌套结构里找，两种模式行为一致（见 use-schema-render-data.ts 顶部注释）。
+const schemaRenderData = useSchemaRenderData()
 
 const title = computed(() =>
   typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
 )
 const bordered = computed<boolean>(() => props.bordered ?? true)
-const nodeKey = computed(() => props.nodeKey ?? props.listKey ?? '')
 const listName = computed(() =>
   typeof props.name === 'string' && props.name.trim() ? props.name.trim() : props.listKey || 'list',
 )
@@ -43,10 +47,10 @@ const listItems = computed<FormKitSchemaFormKit[]>(() =>
       : [],
 )
 // 拆箱：跳过外层 $el 包装层（col-span 壳），取出列表项真正的模板节点
-const unwrapElLayers = (node: any): any => {
+const unwrapElLayers = (node: SchemaNode): SchemaNode => {
   let n = node
-  while (n && typeof n.$el === 'string' && Array.isArray(n.children) && n.children.length === 1) {
-    n = n.children[0]
+  while (n && typeof n.$el === 'string' && schemaChildren(n).length === 1) {
+    n = schemaChildren(n)[0]!
   }
   return n
 }
@@ -66,9 +70,10 @@ const recordFields = computed(() => {
   // 列表项模板若为单个顶层 group（list 内拖入 group）：直接渲染 group 内部字段，
   // group 名不再产生嵌套，保证每条记录是扁平 object（[{...}]）
   if (list.length === 1) {
-    const only = unwrapElLayers(list[0] as any)
+    const only = unwrapElLayers(list[0]!)
     if (only && typeof only === 'object' && (only.$formkit === 'group' || only.$cmp === 'group')) {
-      if (Array.isArray(only.children) && only.children.length) return only.children
+      const children = schemaChildren(only)
+      if (children.length) return children
     }
   }
   return list
@@ -91,13 +96,13 @@ const itemTemplate = computed<{
     if (!list.length) return null
     return { type: 'group', attrs: {}, children: list }
   }
-  const only = unwrapElLayers(list[0] as any)
+  const only = unwrapElLayers(list[0]!)
   const kind = only?.$formkit ?? only?.$cmp
   // 列表项最外层 $el 包装的 col-span（容器的占列数，如 card 的 col-span-6）；
   // 解壳后用它回包 $cmp 子节点，保证布局宽度不被丢弃
   const outerElClass =
-    typeof (list[0] as any)?.$el === 'string' && typeof (list[0] as any)?.attrs?.class === 'string'
-      ? ((list[0] as any).attrs.class as string)
+    typeof list[0]?.$el === 'string' && typeof list[0]?.attrs?.class === 'string'
+      ? (list[0].attrs.class as string)
       : ''
   const outerSpanClass = outerElClass.match(/\bcol-span-\d+\b/)?.[0] ?? ''
   // 直接字段：标量项（$formkit / $cmp 化字段均可）。字段由外层 :index 定位，
@@ -121,21 +126,19 @@ const itemTemplate = computed<{
   // 顶层 group：扁平对象项。剥离组名，展开内部字段（解掉内部 grid 壳），
   // 由模板外层统一铺 grid，避免组内再套一层 group / 网格
   if (kind === 'group') {
-    let inner = Array.isArray(only.children) ? (only.children as FormKitSchemaFormKit[]) : []
+    let inner = schemaChildren(only)
     // 组内单一 $el 包装：可能是内部 grid 壳，也可能是容器（card）自身的 col-span 壳；
     // 解壳时记住它的类，回包 $cmp 子节点时优先沿用（否则 colspan 6 会退成 12）
     let innerElClass = ''
     if (
       inner.length === 1 &&
       inner[0] &&
-      typeof (inner[0] as any).$el === 'string' &&
-      Array.isArray((inner[0] as any).children)
+      typeof inner[0].$el === 'string' &&
+      Array.isArray(inner[0].children)
     ) {
       innerElClass =
-        typeof (inner[0] as any).attrs?.class === 'string'
-          ? ((inner[0] as any).attrs.class as string)
-          : ''
-      inner = (inner[0] as any).children as FormKitSchemaFormKit[]
+        typeof inner[0].attrs?.class === 'string' ? (inner[0].attrs.class as string) : ''
+      inner = schemaChildren(inner[0])
     }
     // 容器/布局子节点（$cmp，如 list 内嵌 card）：组件根不是 formkit-outer，网格里缺 col-span
     // 会退化成 1/12 列宽（xxxx---），按最外层 col-span 回包（缺省 12 = 撑满父容器整行）。
@@ -143,9 +146,7 @@ const itemTemplate = computed<{
     // 套进全宽 div 丢失自身的 col-span 布局。
     const wrapClass = innerElClass.match(/\bcol-span-\d+\b/)?.[0] || outerSpanClass || 'col-span-12'
     inner = inner.map((c) =>
-      c &&
-      typeof (c as any).$cmp === 'string' &&
-      getElementTypeDef((c as any).$cmp)?.category !== 'field'
+      c && typeof c.$cmp === 'string' && getElementTypeDef(c.$cmp)?.category !== 'field'
         ? ({
             $el: 'div',
             attrs: { class: wrapClass },
@@ -164,8 +165,6 @@ const itemTemplate = computed<{
   // 其他 $cmp 容器：包 group 兜底（保持现状）
   return { type: 'group', attrs: {}, children: list }
 })
-const canRestore = computed(() => props.isPlaceholder === true && typeof restore === 'function')
-
 const addItem = (node: unknown, value: unknown) => {
   // 字段子节点：新增标量项；group 子节点：新增对象项；list 子节点：新增数组项
   const t = itemTemplate.value?.type
@@ -189,21 +188,7 @@ const removeItem = (node: unknown, value: unknown, index: number) => {
     </div>
 
     <div class="p-2">
-      <div
-        v-if="props.isPlaceholder === true"
-        class="min-h-[140px] flex items-center justify-center"
-      >
-        <div class="flex flex-col items-center gap-3">
-          <n-empty :description="t('builder.listRemove')" />
-          <n-button v-if="canRestore" secondary @click="restore?.(nodeKey)">
-            <template #icon><span class="i-lucide-plus h-4 w-4"></span></template>
-            {{ t('builder.addListContainer') }}
-          </n-button>
-        </div>
-      </div>
-
       <FormKit
-        v-else
         type="list"
         :name="itemIndex === undefined ? listName : undefined"
         :index="itemIndex"
@@ -223,6 +208,7 @@ const removeItem = (node: unknown, value: unknown, index: number) => {
               v-if="itemTemplate?.nestedList"
               :schema="nestedItemSchema(itemTemplate.nestedList, index as number)"
               :library="schemaLibrary"
+              :data="schemaRenderData"
             />
             <FormKit
               v-else-if="itemTemplate"
@@ -232,7 +218,11 @@ const removeItem = (node: unknown, value: unknown, index: number) => {
             >
               <template v-if="itemTemplate.children">
                 <div class="grid grid-cols-12 gap-x-4 gap-y-2">
-                  <FormKitSchema :schema="itemTemplate.children" :library="schemaLibrary" />
+                  <FormKitSchema
+                    :schema="itemTemplate.children"
+                    :library="schemaLibrary"
+                    :data="schemaRenderData"
+                  />
                 </div>
               </template>
             </FormKit>

@@ -3,7 +3,7 @@ import type { AxiosInstance } from 'axios'
 import { computed, inject, provide, type ComputedRef } from 'vue'
 
 /** 字段事件 / 数据表格远程等组件经此键接收 HTTP 实例（FormBuilder config.http / FormRenderer http） */
-export const BIND_AXIOS_KEY = 'previewAxios'
+const BIND_AXIOS_KEY = 'previewAxios'
 
 /**
  * 提供 JS 绑定代码用的 HTTP 实例给设计画布 / 渲染器子树。

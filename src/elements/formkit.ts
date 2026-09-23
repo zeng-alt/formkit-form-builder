@@ -48,14 +48,14 @@ import NaiveProgress from '@/components/ui/structure/NaiveProgress.vue'
 
 registerBuiltinElementTypes()
 
-export interface FormkitBinding {
+interface FormkitBinding {
   component: Component
   /** $cmp 名称（与 DSL 模板 target 一致；缺省 = type） */
   libraryName?: string
 }
 
 // 文本类字段共用同一底层组件，但 $cmp target 独立（NaiveEmailInput 等）保证往返可判别
-export const formkitBindings: Record<string, FormkitBinding> = {
+const formkitBindings: Record<string, FormkitBinding> = {
   // ─── 字段 ──────────────────────────────────────────────────────────────────────
   text: { component: NaiveTextInput, libraryName: 'NaiveTextInput' },
   textarea: { component: NaiveTextarea, libraryName: 'NaiveTextarea' },
@@ -127,7 +127,7 @@ export function registerFormkitBinding(type: string, binding: FormkitBinding): v
   registerLegacyCmpAliases({ [binding.libraryName ?? type]: type })
 }
 
-export function getFormkitBinding(type: string): FormkitBinding | undefined {
+function getFormkitBinding(type: string): FormkitBinding | undefined {
   return formkitBindings[type] ?? extraBindings.get(type)
 }
 

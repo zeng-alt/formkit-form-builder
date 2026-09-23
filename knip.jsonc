@@ -1,0 +1,18 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // 库的唯一公共入口是 src/index.ts；playground/api-demo.ts 由 api-demo.html 的
+  // <script src> 引用，knip 的 vite 插件探测不到，需显式列出
+  "entry": [
+    "src/index.ts",
+    "playground/api-demo.ts",
+    "src/**/__tests__/**/*.test.ts"
+  ],
+  "project": ["src/**/*.{ts,vue}", "playground/**/*.{ts,vue}"],
+  // dist/ 不存在时（CI 里 knip 在构建前运行）knip 会提示"Remove from ignore"，
+  // 不要删：本地构建后 package.json 的 main/module/types 指向 dist 产物，
+  // dist/index.d.ts 会被当成入口扫描，其中来自 Vue 自身 $watch 签名的
+  // import { OnCleanup } from '@vue/reactivity' 会被误报为未声明依赖
+  "ignore": ["dist/**"],
+  // uno.css 是 UnoCSS vite 插件提供的虚拟模块，不是 npm 包
+  "ignoreDependencies": ["uno.css"]
+}

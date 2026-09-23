@@ -9,7 +9,7 @@ export const getValueParts = (value: string) => {
   return [parts[0] || '', parts[1] || '']
 }
 
-export function eqRegExp(x: RegExp, y: RegExp): boolean {
+function eqRegExp(x: RegExp, y: RegExp): boolean {
   return (
     x.source === y.source && x.flags.split('').sort().join('') === y.flags.split('').sort().join('')
   )

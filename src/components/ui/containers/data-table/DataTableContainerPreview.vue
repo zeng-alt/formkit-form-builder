@@ -12,7 +12,8 @@ import {
 } from 'naive-ui'
 import { runBindCode } from '@/utils/bind-runtime'
 import { useBinderHttp } from '@/composables/use-bind-http'
-import { useFormDefinition } from '@/composables/form-fields'
+import { PREVIEW_FORM_DATA_KEY } from '@/composables/use-schema-render-data'
+import { useFormDefinition } from '@/composables/use-form-definition'
 import { useFormBuilderI18n } from '@/i18n/context'
 import {
   columnsFromChildren,
@@ -29,12 +30,13 @@ import DataTableCellRenderer from './DataTableCellRenderer.vue'
 import DataTableRowCellInput from './DataTableRowCellInput.vue'
 import DataTableSearchField from './DataTableSearchField.vue'
 import type { DataTableColumn } from './types'
+import type { SchemaNode } from '@/utils/schema/types'
 
 // 根节点是 n-message-provider（Fragment 渲染，无法继承属性）；DSL 透传的 id 等
 // 非 props 属性走 attrs 会触发 Vue 警告，这里显式关闭继承（这些 attrs 本无用途）。
 defineOptions({ inheritAttrs: false })
 
-// 预览组件：运行时（FormSchemaRenderer）以 $cmp: dataTable 渲染。
+// 预览组件：运行时（FormRenderer）以 $cmp: dataTable 渲染。
 // 结构：搜索区（容器 children 字段 → 输入框 + 搜索/重置）+ 内容区（表格，props.columns）。
 // 数据通道：
 //   - 固定数据（默认）：data 本地数组，pagination=true 时前端分页；
@@ -93,8 +95,8 @@ const props = withDefaults(
 
 const { t } = useFormBuilderI18n()
 const { formId, formVersion, formName } = useFormDefinition()
-// 当前表单数据（FormSchemaRenderer 注入的响应式对象；未注入则用空对象）
-const injectedFormData = inject<Ref<Record<string, unknown>> | null>('previewFormData', null)
+// 当前表单数据（FormRenderer 注入的响应式对象；未注入则用空对象）
+const injectedFormData = inject<Ref<Record<string, unknown>> | null>(PREVIEW_FORM_DATA_KEY, null)
 const bindAxios = useBinderHttp()
 
 const getDataCode = computed(() => {
@@ -117,7 +119,9 @@ const useRemote = computed(() => props.remote === true && !!getDataCode.value)
 
 // 分区契约（见 types.ts）：搜索区 = children（modelValue），列区 = props.columns。
 // 搜索字段（name/label → key/title）渲染为输入框 + 搜索/重置
-const searchFields = computed(() => columnsFromChildren((props.modelValue as any[]) ?? []))
+const searchFields = computed(() =>
+  columnsFromChildren((props.modelValue as SchemaNode[] | undefined) ?? []),
+)
 const columns = computed<DataTableColumn[]>(() =>
   Array.isArray(props.columns) ? props.columns : [],
 )
@@ -527,6 +531,12 @@ async function deleteRow(row: Record<string, unknown>) {
         </div>
       </div>
 
+      <!-- n-data-table 的 columns/data 是按渲染场景推导的重泛型类型（RowData 与
+           TableColumn<RowData> 互相绑定），我们的列配置来自设计态 JSON（DataTableColumn[]），
+           不是给 naive-ui 走类型推导用的，双方类型体系对不上；size 同 TabsContainerPreview.vue，
+           也曾尝试标注为 DataTableProps['size']。这三处都因 naive-ui 的类型经
+           ExtractPublicPropTypes 包装、Vue 的类型解析器无法解析（会静默退化成不做运行时
+           校验的 `type: null`）而保留断言 -->
       <n-data-table
         :columns="tableColumns as any"
         :data="displayRows as any"

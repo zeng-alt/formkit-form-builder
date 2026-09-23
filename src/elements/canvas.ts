@@ -11,6 +11,7 @@ import { buildElementSchemaLibrary } from './formkit'
 import { registerBuiltinElementTypes } from '../dsl/definitions'
 import { getContainerSpec, type ContainerSpec } from './container-spec'
 import { applyGroupDisabled, getColSpan, stripInputGroupOuterClass } from '@/utils/dnd/grid'
+import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 import ListContainer from '@/components/ui/containers/list/ListContainer.vue'
 import ListContainerPreview from '@/components/ui/containers/list/ListContainerPreview.vue'
@@ -32,11 +33,10 @@ import DataTableContainerPreview from '@/components/ui/containers/data-table/Dat
 
 registerBuiltinElementTypes()
 
-export type SchemaNode = FormKitSchemaFormKit & Record<string, unknown>
+export type { SchemaNode }
 
-export type ContainerFormatCtx = {
+type ContainerFormatCtx = {
   key?: string
-  isPlaceholder: boolean
   format: (node: FormKitSchemaFormKit, index: number) => FormKitSchemaFormKit
 }
 
@@ -50,7 +50,7 @@ export type ContainerDefinition = {
 }
 
 /** 子节点装饰 hook（inputGroup 宽度 / buttonGroup 宽度+禁用），由容器定义按需提供 */
-export type TransformChildren = (
+type TransformChildren = (
   children: FormKitSchemaFormKit[],
   normalized: SchemaNode,
 ) => FormKitSchemaFormKit[]
@@ -78,6 +78,9 @@ export function normalizeContainer(
   type: string,
   spec: ContainerSpec,
 ): SchemaNode {
+  // next 在 group 分支要删掉必填的 $formkit（还原成 $cmp 节点），SchemaNode 继承自
+  // FormKitSchemaFormKit（$formkit 必填，见 utils/schema/types.ts 顶部说明），删不掉该
+  // 字段（TS2790）；这里就地改写节点形态，保留 any，返回值仍以 SchemaNode 对外承诺
   const next: any = { ...node }
   next.$cmp = type
   if (spec.primitive === 'group') delete next.$formkit
@@ -86,7 +89,7 @@ export function normalizeContainer(
   props[spec.keyProp] =
     typeof props[spec.keyProp] === 'string' && props[spec.keyProp]
       ? props[spec.keyProp]
-      : ((next.__key as string | undefined) ?? '')
+      : (next.__key ?? '')
   props.modelValue = next.children
   if (spec.primitive === 'group' && typeof next.name === 'string' && next.name)
     props.name = next.name
@@ -127,31 +130,25 @@ const stripGridWidthClasses = (outerClass: unknown) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-function inputGroupSpanOf(child: any): number {
+function inputGroupSpanOf(child: SchemaNode): number {
   return getColSpan(child)
 }
 
-function decorateInputGroupChild(child: FormKitSchemaFormKit): FormKitSchemaFormKit {
-  const anyChild = child as any
-  const span = inputGroupSpanOf(anyChild)
+function decorateInputGroupChild(child: SchemaNode): SchemaNode {
+  const span = inputGroupSpanOf(child)
   const widthClass = INPUT_GROUP_WIDTH_CLASS[span] ?? 'w-[100%]'
-  const base = stripGridWidthClasses(anyChild?.outerClass)
+  const base = stripGridWidthClasses(child.outerClass)
   const outerClass = `${widthClass} ${base}`.trim()
-  const next: any = { ...child, outerClass: outerClass || undefined }
+  const next: SchemaNode = { ...child, outerClass: outerClass || undefined }
   // $cmp 节点：FormKitSchema 把嵌套 props 传给包装组件再透传 FormKit，外框类在
   // props.outerClass 里同样要改写/去网格类，否则预览仍按旧 outerClass 渲染
-  if (
-    anyChild &&
-    typeof anyChild === 'object' &&
-    anyChild.props &&
-    typeof anyChild.props === 'object'
-  ) {
-    const props = { ...anyChild.props }
-    const propsBase = stripGridWidthClasses((props as any).outerClass)
+  if (child.props && typeof child.props === 'object') {
+    const props = { ...child.props }
+    const propsBase = stripGridWidthClasses(props.outerClass)
     props.outerClass = outerClass || propsBase
     next.props = props
   }
-  return next as FormKitSchemaFormKit
+  return next
 }
 
 function decorateInputGroupChildren(
@@ -167,7 +164,7 @@ function decorateButtonGroupChildren(
   children: FormKitSchemaFormKit[],
   normalized: SchemaNode,
 ): FormKitSchemaFormKit[] {
-  const disabled = (normalized as any).props?.disabled
+  const disabled = normalized.props?.disabled
   return children.map((c) => {
     const stripped = stripInputGroupOuterClass(c)
     return disabled ? applyGroupDisabled(stripped) : stripped
@@ -180,24 +177,24 @@ const defs: ContainerDefinition[] = [
   {
     id: 'list',
     match: (n) => isContainerOf(n, 'list'),
-    canvas: { libraryKey: 'list', component: ListContainer as any },
-    preview: { libraryKey: 'list', component: ListContainerPreview as any },
+    canvas: { libraryKey: 'list', component: ListContainer },
+    preview: { libraryKey: 'list', component: ListContainerPreview },
     normalize: (n) => normalizeContainer(n, 'list', specOf('list')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'list', specOf('list')),
   },
   {
     id: 'card',
     match: (n) => isContainerOf(n, 'card'),
-    canvas: { libraryKey: 'card', component: CardContainer as any },
-    preview: { libraryKey: 'card', component: CardContainerPreview as any },
+    canvas: { libraryKey: 'card', component: CardContainer },
+    preview: { libraryKey: 'card', component: CardContainerPreview },
     normalize: (n) => normalizeContainer(n, 'card', specOf('card')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'card', specOf('card')),
   },
   {
     id: 'inputGroup',
     match: (n) => isContainerOf(n, 'inputGroup'),
-    canvas: { libraryKey: 'inputGroup', component: InputGroupContainer as any },
-    preview: { libraryKey: 'inputGroup', component: InputGroupContainerPreview as any },
+    canvas: { libraryKey: 'inputGroup', component: InputGroupContainer },
+    preview: { libraryKey: 'inputGroup', component: InputGroupContainerPreview },
     normalize: (n) => normalizeContainer(n, 'inputGroup', specOf('inputGroup')),
     formatPreview: (n, ctx) =>
       formatContainer(n, ctx, 'inputGroup', specOf('inputGroup'), {
@@ -207,8 +204,8 @@ const defs: ContainerDefinition[] = [
   {
     id: 'buttonGroup',
     match: (n) => isContainerOf(n, 'buttonGroup'),
-    canvas: { libraryKey: 'buttonGroup', component: ButtonGroupContainer as any },
-    preview: { libraryKey: 'buttonGroup', component: ButtonGroupContainerPreview as any },
+    canvas: { libraryKey: 'buttonGroup', component: ButtonGroupContainer },
+    preview: { libraryKey: 'buttonGroup', component: ButtonGroupContainerPreview },
     normalize: (n) => normalizeContainer(n, 'buttonGroup', specOf('buttonGroup')),
     formatPreview: (n, ctx) =>
       formatContainer(n, ctx, 'buttonGroup', specOf('buttonGroup'), {
@@ -218,45 +215,45 @@ const defs: ContainerDefinition[] = [
   {
     id: 'badge',
     match: (n) => isContainerOf(n, 'badge'),
-    canvas: { libraryKey: 'badge', component: BadgeContainer as any },
-    preview: { libraryKey: 'badge', component: BadgeContainerPreview as any },
+    canvas: { libraryKey: 'badge', component: BadgeContainer },
+    preview: { libraryKey: 'badge', component: BadgeContainerPreview },
     normalize: (n) => normalizeContainer(n, 'badge', specOf('badge')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'badge', specOf('badge')),
   },
   {
     id: 'tabs',
     match: (n) => isContainerOf(n, 'tabs'),
-    canvas: { libraryKey: 'tabs', component: TabsContainer as any },
-    preview: { libraryKey: 'tabs', component: TabsContainerPreview as any },
+    canvas: { libraryKey: 'tabs', component: TabsContainer },
+    preview: { libraryKey: 'tabs', component: TabsContainerPreview },
     normalize: (n) => normalizeContainer(n, 'tabs', specOf('tabs')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'tabs', specOf('tabs')),
   },
   {
     id: 'steps',
     match: (n) => isContainerOf(n, 'steps'),
-    canvas: { libraryKey: 'steps', component: StepsContainer as any },
-    preview: { libraryKey: 'steps', component: StepsContainerPreview as any },
+    canvas: { libraryKey: 'steps', component: StepsContainer },
+    preview: { libraryKey: 'steps', component: StepsContainerPreview },
     normalize: (n) => normalizeContainer(n, 'steps', specOf('steps')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'steps', specOf('steps')),
   },
   {
     id: 'group',
     match: (n) => isContainerOf(n, 'group'),
-    canvas: { libraryKey: 'group', component: GroupContainer as any },
+    canvas: { libraryKey: 'group', component: GroupContainer },
     normalize: (n) => normalizeContainer(n, 'group', specOf('group')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'group', specOf('group')),
   },
   {
     id: 'dataTable',
     match: (n) => isContainerOf(n, 'dataTable'),
-    canvas: { libraryKey: 'dataTable', component: DataTableContainer as any },
-    preview: { libraryKey: 'dataTable', component: DataTableContainerPreview as any },
+    canvas: { libraryKey: 'dataTable', component: DataTableContainer },
+    preview: { libraryKey: 'dataTable', component: DataTableContainerPreview },
     normalize: (n) => normalizeContainer(n, 'dataTable', specOf('dataTable')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'dataTable', specOf('dataTable')),
   },
 ]
 
-export function getContainerDefinition(node: unknown): ContainerDefinition | null {
+function getContainerDefinition(node: unknown): ContainerDefinition | null {
   for (const def of defs) {
     if (def.match(node)) return def
   }
@@ -278,7 +275,7 @@ export function getCanvasSchemaLibrary(): Record<string, Component> {
   const lib: Record<string, Component> = { ...buildElementSchemaLibrary() }
   for (const def of defs) {
     if (!def.canvas) continue
-    lib[def.canvas.libraryKey] = markRaw(def.canvas.component) as unknown as Component
+    lib[def.canvas.libraryKey] = markRaw(def.canvas.component)
   }
   return lib
 }
@@ -287,7 +284,7 @@ export function getPreviewSchemaLibrary(): Record<string, Component> {
   const lib: Record<string, Component> = { ...buildElementSchemaLibrary() }
   for (const def of defs) {
     if (!def.preview) continue
-    lib[def.preview.libraryKey] = markRaw(def.preview.component) as unknown as Component
+    lib[def.preview.libraryKey] = markRaw(def.preview.component)
   }
   return lib
 }
@@ -316,32 +313,32 @@ export function formatContainer(
   spec: ContainerSpec,
   opts?: { transformChildren?: TransformChildren },
 ): FormKitSchemaFormKit {
-  const key = (node as any)?.__key as string | undefined
+  const key = node.__key
   const normalized = normalizeContainer(node, type, spec)
-  const rawChildren = Array.isArray(normalized.children)
-    ? (normalized.children as FormKitSchemaFormKit[]).map((c, i) => ctx.format(c, i))
-    : []
+  const rawChildren = schemaChildren(normalized).map((c, i) => ctx.format(c, i))
   const children = opts?.transformChildren
     ? opts.transformChildren(rawChildren, normalized)
     : rawChildren
-  const schemaIf = (normalized as any).if
-  const containerName =
-    ((normalized as any).props?.name as string | undefined) ??
-    ((normalized as any).name as string | undefined)
+  const schemaIf = normalized.if
+  const containerName = normalized.props?.name ?? normalized.name
+  const keyPropValue = normalized.props?.[spec.keyProp] ?? key ?? ''
 
-  const keyPropValue =
-    ((normalized as any).props?.[spec.keyProp] as string | undefined) ?? key ?? ''
+  // 下面各分支新建的 nextNode/containerNode/groupNode 都是 $cmp 或 $el 节点（没有
+  // $formkit），SchemaNode 继承自 FormKitSchemaFormKit，$formkit 是必填字段（见
+  // utils/schema/types.ts 顶部说明），这类字面量声明为 SchemaNode 会报"缺少 $formkit"；
+  // 按分支各自定义一次性的字面量类型又与运行时收益不成比例，故保留 any，读取 normalized/
+  // pane 时仍然是有类型的 SchemaNode。
 
   // none（buttonGroup）：纯展示容器，不包 group（按钮不产数据），直接 $cmp 承载子按钮
   if (spec.dataShape === 'none') {
     const nextNode: any = {
       $el: 'div',
-      attrs: { class: (normalized as any).outerClass || 'col-span-12' },
+      attrs: { class: normalized.outerClass || 'col-span-12' },
       children: [
         {
           $cmp: type,
           props: {
-            ...(normalized as any).props,
+            ...normalized.props,
             [spec.keyProp]: keyPropValue,
             modelValue: children,
           },
@@ -357,7 +354,7 @@ export function formatContainer(
   //（动态 FormKit list，内置 +/删除 交互）。array 每条记录为标量/单字段，arrayOfObjects
   // 每条记录为 object，但预览渲染共用同一组件。
   if (spec.dataShape === 'arrayOfObjects' || spec.dataShape === 'array') {
-    const containerProps = { ...(normalized as any).props }
+    const containerProps = { ...normalized.props }
     delete containerProps.modelValue
     const containerNode: any = {
       $cmp: type,
@@ -366,12 +363,11 @@ export function formatContainer(
         [spec.keyProp]: keyPropValue,
         name: containerName,
         modelValue: children,
-        isPlaceholder: ctx.isPlaceholder,
       },
     }
     const nextNode: any = {
       $el: 'div',
-      attrs: { class: (normalized as any).outerClass || 'col-span-12' },
+      attrs: { class: normalized.outerClass || 'col-span-12' },
       children: [containerNode],
     }
     if (typeof schemaIf === 'string' && schemaIf.trim()) nextNode.if = schemaIf
@@ -381,46 +377,42 @@ export function formatContainer(
 
   // objectOfObjects（tabs/steps）：每个 pane/step 内容包在 group 中提供 structured data
   if (spec.dataShape === 'objectOfObjects') {
-    const panes = Array.isArray(normalized.children)
-      ? (normalized.children as FormKitSchemaFormKit[]).map((pane: any, idx) => {
-          const paneChildren = Array.isArray(pane?.children)
-            ? (pane.children as FormKitSchemaFormKit[]).map((c, i) => ctx.format(c, i))
-            : []
-          const paneLabel = pane?.label as string | undefined
-          const paneName = pane?.name as string | undefined
-          // 每个 pane 的内容包裹在 group 中，提供 JSON object 数据；组名用 pane 的 name
-          //（数据字段名），未设置时回退 label
-          const groupNode: any = {
-            $formkit: 'group',
-            children: paneChildren.length
-              ? [
-                  {
-                    $el: 'div',
-                    attrs: { class: 'grid grid-cols-12 gap-x-4 gap-y-2' },
-                    children: paneChildren,
-                  },
-                ]
-              : [],
-            outerClass:
-              '!border-0 !p-0 !m-0 ![&>.formkit-wrapper]:border-0 ![&>.formkit-wrapper]:p-0 ![&>.formkit-wrapper]:m-0 ![&>.formkit-wrapper>fieldset]:border-0 ![&>.formkit-wrapper>fieldset]:p-0 ![&>.formkit-wrapper>fieldset]:m-0',
-          }
-          const paneDataKey = paneName ?? paneLabel
-          if (paneDataKey) groupNode.name = paneDataKey
-          return {
-            ...pane,
-            label: paneLabel,
-            children: [groupNode],
-            __key: pane?.__key ?? `${idx}`,
-          } as any
-        })
-      : []
+    const panes = schemaChildren(normalized).map((pane, idx) => {
+      const paneChildren = schemaChildren(pane).map((c, i) => ctx.format(c, i))
+      const paneLabel = pane.label
+      const paneName = pane.name
+      // 每个 pane 的内容包裹在 group 中，提供 JSON object 数据；组名用 pane 的 name
+      //（数据字段名），未设置时回退 label
+      const groupNode: any = {
+        $formkit: 'group',
+        children: paneChildren.length
+          ? [
+              {
+                $el: 'div',
+                attrs: { class: 'grid grid-cols-12 gap-x-4 gap-y-2' },
+                children: paneChildren,
+              },
+            ]
+          : [],
+        outerClass:
+          '!border-0 !p-0 !m-0 ![&>.formkit-wrapper]:border-0 ![&>.formkit-wrapper]:p-0 ![&>.formkit-wrapper]:m-0 ![&>.formkit-wrapper>fieldset]:border-0 ![&>.formkit-wrapper>fieldset]:p-0 ![&>.formkit-wrapper>fieldset]:m-0',
+      }
+      const paneDataKey = paneName ?? paneLabel
+      if (paneDataKey) groupNode.name = paneDataKey
+      return {
+        ...pane,
+        label: paneLabel,
+        children: [groupNode],
+        __key: pane.__key ?? `${idx}`,
+      }
+    })
     const nextNode: any = {
       $el: 'div',
-      attrs: { class: (normalized as any).outerClass || 'col-span-12' },
+      attrs: { class: normalized.outerClass || 'col-span-12' },
       children: [
         {
           $cmp: type,
-          props: { ...(normalized as any).props, [spec.keyProp]: keyPropValue, modelValue: panes },
+          props: { ...normalized.props, [spec.keyProp]: keyPropValue, modelValue: panes },
         },
       ],
     }
@@ -433,7 +425,7 @@ export function formatContainer(
   // 子节点递归格式化后放入内部 grid（col-span 布局）；group 原生 schema 是 fragment
   //（无包裹元素，outerClass 无处落地），外层用 $el:div 承载 col-span 宽度。
   if (spec.primitive === 'group') {
-    const outerClass = (normalized as any).outerClass
+    const outerClass = normalized.outerClass
     const groupNode: any = {
       $formkit: 'group',
       children: children.length
@@ -453,7 +445,7 @@ export function formatContainer(
 
   // object + primitive=cmp（card / inputGroup）：容器整体包裹在 $formkit:group 外层，
   // 提供 JSON object 数据结构；容器 props 中的 name 移入 group，避免组件重复携带
-  const containerProps = { ...(normalized as any).props }
+  const containerProps = { ...normalized.props }
   delete containerProps.name
   const containerNode: any = {
     $cmp: type,
@@ -474,7 +466,7 @@ export function formatContainer(
 
   const nextNode: any = {
     $el: 'div',
-    attrs: { class: (normalized as any).outerClass || 'col-span-12' },
+    attrs: { class: normalized.outerClass || 'col-span-12' },
     children: [groupNode],
   }
   if (typeof schemaIf === 'string' && schemaIf.trim()) nextNode.if = schemaIf

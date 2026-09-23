@@ -10,7 +10,7 @@ const { context } = defineProps<{
   context: FormKitFrameworkContext
 }>()
 
-const { config, props, bind } = useSchemaAttrs(context)
+const { config, props, bind, disabled } = useSchemaAttrs(context)
 const { runEvent } = useBindEvents(context, bind)
 // multiple 供 value 计算（决定空值形状）使用；透传给 NTreeSelect 的仍是 props.multiple
 const multiple = computed<boolean>(() => (config.multiple as boolean | undefined) ?? false)
@@ -63,6 +63,7 @@ const handleBlur = async (e: FocusEvent) => {
     :value="value"
     :options="options"
     :input-props="{ id: context.id }"
+    :disabled="disabled"
     @update:value="handleUpdateValue"
     @focus="handleFocus"
     @blur="handleBlur"

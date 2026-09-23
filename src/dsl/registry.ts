@@ -7,14 +7,7 @@
 // 本模块保持纯净（不含 .vue），保证 test-dsl 等纯 DSL 消费方可直接使用。
 
 import type { Component } from 'vue'
-import type {
-  FormNode,
-  NodeCategory,
-  FormDefinition,
-  LayoutType,
-  LayoutNode,
-  RenderKind,
-} from '../types/dsl'
+import type { FormNode, NodeCategory, LayoutType, LayoutNode, RenderKind } from '../types/dsl'
 import { generateKey } from '../utils/dnd/schema'
 import { getContainerSpec, type ContainerSpec } from '../elements/container-spec'
 import {
@@ -27,10 +20,9 @@ import {
   type SchemaNode,
   type ChildrenConvertCtx,
   type RenderTarget,
-} from './convert-common'
+} from './convert'
 
 export interface DslToSchemaCtx {
-  form?: FormDefinition
   children?: SchemaNode[]
 }
 
@@ -142,7 +134,7 @@ export function registerLegacyCmpAliases(aliases: Record<string, string>): void 
 
 /** schema 节点的 legacy $cmp 名 → 统一后的 type */
 function legacyCmpTypeOf(s: SchemaNode): string | undefined {
-  const cmp = (s as any)?.$cmp
+  const cmp = s?.$cmp
   if (typeof cmp !== 'string') return undefined
   return LEGACY_CMP_TYPE[cmp]
 }
@@ -187,8 +179,7 @@ export function elementTypeFromSchema(entry: ElementCatalogEntry): ElementTypeDe
     // 兼容 $formkit === type 与 legacy $cmp 名（如 NaiveTextInput → text）
     match:
       schema.match ??
-      ((s) =>
-        matchSchemaKind(s, rt) || (s as any).$formkit === type || legacyCmpTypeOf(s) === type),
+      ((s) => matchSchemaKind(s, rt) || s.$formkit === type || legacyCmpTypeOf(s) === type),
     fromSchema: schema.fromSchema ?? ((s, ctx) => nodeFromSchemaByCategory(s, category, ctx, type)),
   }
 }
@@ -215,7 +206,9 @@ function defaultFormNode(entry: ElementCatalogEntry): FormNode {
       base.options = props.options
       delete props.options
     }
-    const rules = parseValidation(schema.validation)
+    // schema.validation 是模板作者写的单条规则名（如 'email'，从不带参数），
+    // 包一层数组形态交给 parseValidation 复用同一套修饰符解析逻辑
+    const rules = parseValidation(schema.validation ? [[schema.validation]] : undefined)
     if (rules?.length) base.validation = rules
   } else {
     if (schema.value !== undefined) props.value = schema.value
@@ -232,84 +225,6 @@ function defaultFormNode(entry: ElementCatalogEntry): FormNode {
     }
   }
   return base as FormNode
-}
-
-// ─── 构造器：字段 ───────────────────────────────────────────────────────────────
-
-export function fieldType(
-  type: string,
-  extra?: Partial<ElementTypeDef> & { cmp?: string; target?: string },
-): ElementTypeDef {
-  const rt = rtOf(extra?.cmp, type, 'formkit', extra?.target)
-  const def: ElementTypeDef = {
-    type,
-    category: 'field',
-    renderAs: rt.renderAs,
-    target: rt.target,
-    defaults: () => ({
-      id: generateKey(),
-      category: 'field',
-      type,
-      renderAs: rt.renderAs,
-      ...(rt.target && rt.target !== type ? { target: rt.target } : {}),
-    }),
-    toSchema: (node) => nodeToSchemaByCategory(node, 'field', rt, undefined),
-    match: (s) => matchSchemaKind(s, rt),
-    fromSchema: (s) => nodeFromSchemaByCategory(s, 'field', undefined, type),
-    ...extra,
-  }
-  return def
-}
-
-// ─── 构造器：容器 ───────────────────────────────────────────────────────────────
-
-export function containerType(
-  type: string,
-  extra?: Partial<ElementTypeDef> & {
-    dataType?: 'object' | 'array'
-    cmp?: string
-    target?: string
-  },
-): ElementTypeDef {
-  const dataType = extra?.dataType ?? 'object'
-  const cmp = extra?.cmp
-  // 容器规格：声明数据结构 + keyProp + 渲染原语；缺省按 type 查 container-spec
-  // （group → 原生 $formkit；list/inputGroup/buttonGroup 等 → $cmp）
-  const spec = extra?.container ?? getContainerSpec(type)
-  const renderAs: RenderKind =
-    spec != null
-      ? spec.primitive === 'group'
-        ? 'formkit'
-        : 'cmp'
-      : cmp != null || extra?.target != null
-        ? 'cmp'
-        : 'formkit'
-  const rt: RenderTarget = {
-    renderAs,
-    target: extra?.target ?? cmp ?? type,
-    ...(spec ? { container: spec } : {}),
-  }
-  const def: ElementTypeDef = {
-    type,
-    category: 'container',
-    renderAs: rt.renderAs,
-    target: rt.target,
-    container: spec ?? undefined,
-    defaults: () => ({
-      id: generateKey(),
-      category: 'container',
-      type,
-      renderAs: rt.renderAs,
-      ...(rt.target && rt.target !== type ? { target: rt.target } : {}),
-      dataType,
-      children: [],
-    }),
-    toSchema: (node, ctx) => nodeToSchemaByCategory(node, 'container', rt, ctx),
-    match: (s) => matchSchemaKind(s, rt) || (s as any).$cmp === type,
-    fromSchema: (s, ctx) => nodeFromSchemaByCategory(s, 'container', ctx, type),
-    ...extra,
-  }
-  return def
 }
 
 // ─── 构造器：布局 ───────────────────────────────────────────────────────────────
@@ -415,7 +330,7 @@ export function staticType(
 }
 
 // tabs/steps 布局的子 pane（非独立布局类型，由容器内部使用）。
-// 共享同一转换器，pane 类型经 __paneType 标记（见 convert-common）区分，避免注册顺序影响。
+// 共享同一转换器，pane 类型经 __paneType 标记（见 dsl/convert/layout.ts）区分，避免注册顺序影响。
 function paneType(type: 'tabsPane' | 'stepsPane'): ElementTypeDef {
   const isSteps = type === 'stepsPane'
   return {

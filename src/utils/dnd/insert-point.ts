@@ -1,12 +1,14 @@
-import type { InsertState, NodeRecord, ParentRecord } from '@formkit/drag-and-drop'
+import type { DragState, NodeRecord, ParentRecord } from '@formkit/drag-and-drop'
 import { state } from '@formkit/drag-and-drop'
 import { findSchemaByKey } from './schema'
 import { computePlacements, findInsertIndexForCell, getRowSpan } from './grid'
 import { getRealCoords } from './range'
-import type { DndContext } from './context'
+import type { DndParentConfig } from './context'
+import type { InsertStateEx } from './insert-state'
+import type { SchemaNode } from '@/utils/schema/types'
 
 // 创建插入提示线 DOM
-export function createInsertPoint<T>(parent: ParentRecord<T>, insertState: InsertState<T>) {
+export function createInsertPoint<T>(parent: ParentRecord<T>, insertState: InsertStateEx<T>) {
   const insertPoint = parent.data.config.insertConfig?.insertPoint({
     el: parent.el,
     data: parent.data,
@@ -27,7 +29,7 @@ export function createInsertPoint<T>(parent: ParentRecord<T>, insertState: Inser
   })
 }
 
-export function removeInsertPoint<T>(insertState: InsertState<T>) {
+function removeInsertPoint<T>(insertState: InsertStateEx<T>) {
   if (insertState.insertPoint?.el) insertState.insertPoint.el.remove()
   insertState.insertPoint = null
 }
@@ -38,12 +40,12 @@ export function positionInsertPoint<T>(
   position: { x: number[]; y: number[]; vertical: boolean },
   ascending: boolean,
   node: NodeRecord<T>,
-  insertState: InsertState<T>,
+  insertState: InsertStateEx<T>,
 ) {
   // 所属画布实例的 schema 投影：精确插入定位需按最新 DSL 计算 row-span / 占位。
   // 多实例时从目标 parent 的 config 读取各自画布投影，避免读到别的画布。
-  const ctx = (parent.data.config as any)?.dndContext as DndContext | undefined
-  const liveSchema = (ctx?.formSchema.value ?? []) as any[]
+  const ctx = (parent.data.config as DndParentConfig<T>).dndContext
+  const liveSchema = ctx?.formSchema.value ?? []
 
   if (insertState.insertPoint?.parent.el !== parent.el) {
     removeInsertPoint(insertState)
@@ -60,8 +62,8 @@ export function positionInsertPoint<T>(
 
   const insertPointEl = insertState.insertPoint.el
 
-  ;(insertState as any).explicitIndex = undefined
-  ;(insertState as any).explicitRow = undefined
+  insertState.explicitIndex = undefined
+  insertState.explicitRow = undefined
 
   const resetInsertPointSegments = () => {
     if (insertPointEl.childElementCount) insertPointEl.replaceChildren()
@@ -89,21 +91,26 @@ export function positionInsertPoint<T>(
     const leftPosition = targetX - insertPointWidth / 2
     const targetHeight = position.y[1]! - position.y[0]!
 
-    const latestValues = parent.data.getValues(parent.el) as any
+    const latestValues = parent.data.getValues(parent.el)
     const latestValue =
       Array.isArray(latestValues) && typeof node.data.index === 'number'
         ? latestValues[node.data.index]
         : undefined
-    const targetKey = (node.data.value as any)?.__key
+    // node.data.value 是插件系统的形参 T，运行时搬运的值始终是 schema 节点
+    const targetKey = (node.data.value as SchemaNode | undefined)?.__key
     const schemaValue =
       typeof targetKey === 'string' && targetKey
         ? findSchemaByKey(liveSchema, targetKey)
         : undefined
     const targetRowSpan = getRowSpan(schemaValue ?? latestValue ?? node.data.value)
-    const draggedRowSpan = (insertState as any).draggedRowSpan ?? 1
+    const draggedRowSpan = insertState.draggedRowSpan ?? 1
     const shouldSegment = targetRowSpan > 1 && draggedRowSpan === 1
 
-    const coords = (state as any).coordinates as { x?: number; y?: number } | undefined
+    // 全局单例 state 声明为 BaseDragState<unknown>（没有 coordinates），但插入定位只在
+    // dragover 期间触发，此时必然是 DragState/SynthDragState（二者都带 coordinates）；
+    // 这里不用 isDragState 再收窄一次（避免引入新分支判断，保持原有的可选链兜底），
+    // 直接按更精确的类型断言
+    const coords = (state as DragState<unknown>).coordinates
     if (targetRowSpan > 1 && typeof node.data.index === 'number' && coords?.y !== undefined) {
       const nodeCoords = getRealCoords(node.el)
       const relY = coords.y - nodeCoords.top
@@ -111,8 +118,8 @@ export function positionInsertPoint<T>(
       const segment = Math.max(1, Math.min(targetRowSpan, Math.floor(relY / segmentHeight) + 1))
       if (segment > 1) {
         const valuesForPlacement = Array.isArray(latestValues)
-          ? latestValues.map((v: any) => {
-              const k = v?.__key
+          ? latestValues.map((v) => {
+              const k = (v as SchemaNode | undefined)?.__key
               if (typeof k === 'string' && k) return findSchemaByKey(liveSchema, k) ?? v
               return v
             })
@@ -122,12 +129,8 @@ export function positionInsertPoint<T>(
         if (p) {
           const desiredRow = p.row + (segment - 1)
           const desiredCol = ascending ? p.col + p.colSpan : p.col
-          ;(insertState as any).explicitRow = desiredRow
-          ;(insertState as any).explicitIndex = findInsertIndexForCell(
-            placements,
-            desiredRow,
-            desiredCol,
-          )
+          insertState.explicitRow = desiredRow
+          insertState.explicitIndex = findInsertIndexForCell(placements, desiredRow, desiredCol)
         }
       }
     }

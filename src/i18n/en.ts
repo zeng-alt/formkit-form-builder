@@ -37,7 +37,6 @@ export default {
     quickInsert: 'Quick insert: ',
     bindHint:
       'Write JavaScript. Available params: event (event object), form (form data), $form (form meta {id, version, name}), $value (current value), $node (node), $name (field name), $get(name) (get field value), $slots (slots), attrs (node config), ctx (full context), axios (HTTP). Click the quick-insert chips above to insert.',
-    addListContainer: 'Add list container',
     formDataTitle: 'Form Data:',
     formSubmitted: 'Form submitted!',
     listContainer: 'List container',
@@ -46,6 +45,7 @@ export default {
     listDropHere: 'Drag fields here',
     addStep: 'Add step',
     deleteStep: 'Delete step (keeps the first one)',
+    addTab: 'Add tab',
     prevStep: 'Previous',
     nextStep: 'Next',
     finish: 'Finish',
@@ -95,6 +95,8 @@ export default {
   formSettings: {
     title: 'Form settings',
     name: 'Form name',
+    id: 'Form ID',
+    version: 'Version',
     labelPosition: 'Label position',
     labelWidth: 'Label width',
     positionTop: 'Top',
@@ -117,7 +119,6 @@ export default {
     promptPlaceholder: 'Prompt AI',
     emptyPrompt: 'Empty chat prompt!',
     emptyPromptDescription: 'Please enter a prompt to generate a form.',
-    close: 'Close',
     defaultInstructions: "Generate a FormKit schema based on the user's description",
     requestFailed: 'AI request failed',
     parseFailed: 'Could not parse the form schema returned by AI. Try again or rephrase.',
@@ -313,6 +314,8 @@ export default {
     nameFormat:
       'Field name may only contain letters, numbers and underscores, and cannot start with a digit',
     nameExists: 'Field name already exists',
+    nameReserved:
+      'Field name cannot start with "{prefix}" (reserved for built-in condition functions)',
     button: {
       textPlaceholder: 'Button text',
     },

@@ -1,0 +1,39 @@
+// ═══ 表单级标签布局：画布与运行时共享 ══════════════════════════════════════════
+// 标签位置/宽度此前在 use-canvas-schema.ts（画布）与 FormRenderer.vue（运行时）
+// 各写一份类名拼接，已经出现漂移（运行时多一个 fk-label-left 标记类，画布没有）；
+// 默认标签宽度也到处散落着字面量 80（部分非法输入兜底甚至是 120）。这里收敛成
+// 唯一实现，画布/运行时/各编辑器全部改用它，不再各自拼一份。
+
+/** 表单级标签宽度默认值（settings.labelWidth 缺省/非法时的兜底） */
+export const DEFAULT_LABEL_WIDTH = 80
+
+/**
+ * 按标签位置返回表单根元素上要挂的标签布局类：
+ * - top（默认）：仅通用的标签字号/字重类；
+ * - left：额外加 fk-label-left 标记类 + 标签/输入区水平排列的一整套类
+ *   （标签定宽 = --fk-label-width CSS 变量，见 formLabelWidthStyle）。
+ */
+export function formLabelLayoutClass(labelAlign: 'top' | 'left' | undefined): string {
+  const common = ['[&_.formkit-label]:text-xs', '[&_.formkit-label]:font-bold'].join(' ')
+  if (labelAlign !== 'left') return common
+  return [
+    common,
+    'fk-label-left',
+    '[&_.formkit-wrapper]:flex',
+    '[&_.formkit-wrapper]:flex-row',
+    '[&_.formkit-wrapper]:items-start',
+    '[&_.formkit-wrapper]:gap-3',
+    '[&_.formkit-label]:mb-0',
+    '[&_.formkit-label]:w-[var(--fk-label-width)]',
+    '[&_.formkit-label]:shrink-0',
+    '[&_.formkit-label]:pt-1',
+    '[&_.formkit-inner]:flex-1',
+    '[&_.formkit-inner]:min-w-0',
+  ].join(' ')
+}
+
+/** 表单根元素上要挂的 `--fk-label-width` CSS 变量（left 布局的标签类读它定宽） */
+export function formLabelWidthStyle(width: number | undefined): Record<string, string> {
+  const w = Number.isFinite(width) ? Number(width) : DEFAULT_LABEL_WIDTH
+  return { '--fk-label-width': `${w}px` }
+}

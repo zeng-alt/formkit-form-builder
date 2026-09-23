@@ -16,7 +16,3 @@ export function createCanvasUiState(): CanvasUiState {
   const isLoading = ref(false)
   return { canvasView, isLoading }
 }
-
-// 模块级默认实例（向后兼容）。
-export const defaultCanvasUiState = createCanvasUiState()
-export const { canvasView, isLoading } = defaultCanvasUiState

@@ -4,7 +4,7 @@
 
 基于 Vue 3 + FormKit 的可视化表单 Schema 设计器（左侧物料库 / 中间画布 / 右侧属性面板），支持拖拽搭建、校验配置、预览，以及可选的 AI 生成 Schema。
 
-核心概念：设计器产出的是**版本化 DSL（`FormDefinition`）**而非裸 schema，通过 `FormRenderer`（内部 `dslToSchema` 转换）渲染成 FormKit 表单。DSL 是 JSON-safe 的结构，后端（如 Java）可直接反序列化。
+核心概念：设计器产出的是**版本化 DSL（`FormDefinition`）**而非裸 schema，通过 `FormRenderer`（内部 `dslToSchema` 转换）渲染成 FormKit 表单。DSL 主体是 JSON-safe 的结构，后端（如 Java）可直接反序列化；其中 `key`（画布 DnD 身份）与 `meta.rawSchema`（未注册类型兜底）是前端专用字段，持久化前建议先用 `toPortableDefinition` 剥离（见下文「DSL 与转换」）。
 
 ## 安装
 
@@ -12,11 +12,19 @@
 pnpm i @zeng-alt/formkit-form-builder
 ```
 
-本库依赖以下 peer 依赖（需要你在项目里自行安装）：
+本库依赖以下 peer 依赖（需要你在项目里自行安装）。以下为**必装**依赖：
 
 ```bash
-pnpm i vue naive-ui @vueuse/core
+pnpm i vue naive-ui @vueuse/core @formkit/core @formkit/vue @formkit/i18n
 ```
+
+以下依赖仅在使用设计器的表达式 / JS 绑定编辑器时才需要（用于驱动基于 CodeMirror 的代码编辑面板）：
+
+```bash
+pnpm i @codemirror/autocomplete @codemirror/commands @codemirror/lang-javascript @codemirror/language @codemirror/lint @codemirror/state @codemirror/theme-one-dark @codemirror/view
+```
+
+> 为什么这些包是 `peerDependencies` 而不是直接打进产物？是为了让本库与你的项目**共用同一份实例**。FormKit 在每份模块实例内部维护全局的节点 / 插件 / input 类型 / i18n locale 注册表，两份 `@formkit/core`（你项目里一份 + 本库内打包一份）互相不认识对方注册的内容，字段可能悄悄渲染不出来或校验失效；CodeMirror 则会主动检测同一页面内是否存在多份 `@codemirror/state` 实例，一旦发现就直接抛错，代码编辑器会直接不可用。把这些包作为 peer 依赖装在你的项目里，能保证全局只加载一份。
 
 ## 样式引入
 
@@ -54,7 +62,8 @@ import type { FormDefinition } from "@zeng-alt/formkit-form-builder";
 
 const definition = ref<FormDefinition>();
 const config = {
-  apiKey: "", // 可选：AI 面板使用 OpenAI 时需要
+  apiKey: "", // 可选：AI 面板使用 OpenAI 时需要。生产环境不要把真实密钥下发到浏览器，
+  // 应改用 `aiBaseUrl` 指向自建服务端代理，见下方"安全说明"。
 };
 </script>
 
@@ -67,9 +76,11 @@ const config = {
 
 `FormBuilder` 通过 `v-model` 双向绑定 `FormDefinition`：预载已有表单并实时吐出编辑结果，可直接保存到后端。
 
+> 经 `update:modelValue` 吐出的定义视为不可变（开发构建下会被深度冻结）：请勿原地修改，需要改动时先拷贝一份。设计器依靠这一点在编辑之间保持未改动节点的对象身份，从而只重渲染发生变化的部分。
+
 ### 3) 渲染表单
 
-`FormRenderer`（`FormSchemaRenderer` 的现名）渲染 `FormDefinition` 为可填写、可提交的 FormKit 表单：
+`FormRenderer` 渲染 `FormDefinition` 为可填写、可提交的 FormKit 表单：
 
 ```vue
 <script setup lang="ts">
@@ -92,7 +103,7 @@ const data = ref({});
 ```
 
 - `definition`：主输入（版本化 DSL）；也可用 `schema` 直接传裸 FormKit schema（二选一，同传时优先 `definition`）。
-- `dataStructure`：`'flat'`（默认，扁平输出）| `'nested'`（容器转 group 嵌套）。
+- `dataStructure`：`'flat'`（默认，扁平输出）| `'nested'`（容器转 group 嵌套）。字段引用（`visibleIf` / `expr`）按字段名在整棵表单数据里解析，flat 与 nested 两种模式行为一致；跨容器引用字段时，建议让字段名保持全局唯一（重名取第一个命中）。
 - 其余可选 props：`formName`、`labelPosition`（`'top' | 'left'`）、`labelWidth`、`formClass`、`interactiveContainers` 等。
 - **主题**：主题的唯一来源是 `BuilderProvider`（渲染一个 `n-config-provider`），支持 `theme` prop（`BuilderTheme`：`'light' | 'dark'`，缺省自动跟随系统）+ 其余 `ConfigProviderProps`（`themeOverrides` / `breakpoints` 等）透传。`FormBuilder` / `FormRenderer` 作为子树继承 Provider 的主题，保证两者一致；二者各自也保留独立的 `theme` / `ConfigProviderProps` prop（仅当未被 `BuilderProvider` 包裹、独立使用时生效）。内置 `ThemeSwitcher`（深色 / 浅色 / 跟随系统）与 `theme` prop 共用同一个 `useColorMode` 数据源，naive-ui 主题与 UnoCSS 的 `dark:` 样式始终一致。
 - **locale**：读取所在 `BuilderProvider` / `FormBuilder` 提供的运行时代码（缺省 `zh-CN`），同步 FormKit 提交按钮与校验文案；也可用 `:locale` / `:date-locale` 直接传 naive 语言包覆盖。
@@ -142,8 +153,7 @@ import {
   BuilderProvider, // 全局配置提供者
   BuilderPreview, // 可复用弹窗预览组件
   FormDefinitionPreview, // 独立分栏预览组件：左侧渲染表单、右侧实时展示数据
-  FormRenderer, // 表单渲染组件（FormSchemaRenderer 的现名）
-  FormSchemaRenderer, // @deprecated 用 FormRenderer
+  FormRenderer, // 表单渲染组件
   FormBuilderPlugin, // 一键接入插件
   formkitConfig, // FormKit 装配工厂（可传扩展元素）
   registerElement, // 配置式扩展元素
@@ -153,6 +163,7 @@ import {
   provideFormBuilderConfig,
   createFormBuilderState, // 多设计器实例状态
   useFormBuilderState,
+  useOptionalFormBuilderState, // 可选版本：供脱离 FormBuilder/FormRenderer 子树使用的组件调用
   provideFormBuilderState,
   dslToSchema, // DSL → FormKit schema
   dslToOutputSchema, // DSL → 嵌套 group 输出 schema
@@ -160,6 +171,12 @@ import {
   buildFormkitInputs,
 } from "@zeng-alt/formkit-form-builder";
 ```
+
+`useFormBuilderState()` 只能在 `FormBuilder` / `FormRenderer` 子树内调用（含手动
+`provideFormBuilderState()` 的子树）；子树外调用会直接抛错，不再回落到某个全局共享实例。
+需要脱离 `FormBuilder` 独立使用的组件请改用 `useOptionalFormBuilderState()`，子树外它返回
+`null`。特别地，`BuilderPreview` 独立使用（不在 `FormBuilder` 内）时需要传入 `schema` prop，
+否则没有可渲染的表单结构。
 
 ### FormBuilder API
 
@@ -176,7 +193,7 @@ import {
 
 | 事件 | 参数 | 说明 |
 |------|------|------|
-| `update:modelValue` | `value: FormDefinition` | 表单定义变更时触发（v-model 双向绑定） |
+| `update:modelValue` | `value: FormDefinition` | 表单定义变更时触发（v-model 双向绑定）。视为不可变，见上文说明，请勿原地修改 |
 
 #### Slots
 
@@ -191,7 +208,7 @@ import {
 
 ---
 
-### FormRenderer API (原 FormSchemaRenderer)
+### FormRenderer API
 
 #### Props
 
@@ -245,8 +262,8 @@ import {
 
 | 组件 | 内部渲染器 | 布局 |
 |------|-----------|------|
-| `BuilderPreview` | `FormSchemaRenderer` | 单个表单；可选数据面板在下方 |
-| `FormDefinitionPreview` | `FormSchemaRenderer` | 分栏：左侧表单，右侧实时表单数据 |
+| `BuilderPreview` | `FormRenderer` | 单个表单；可选数据面板在下方 |
+| `FormDefinitionPreview` | `FormRenderer` | 分栏：左侧表单，右侧实时表单数据 |
 
 两者都通过 `defineExpose` 暴露 `open` / `close` 方法，并触发 `update:show` 与 `submit`（`formData, id?, version?`）事件。
 
@@ -309,6 +326,39 @@ const outputSchema = dslToOutputSchema(definition); // 容器转 group 嵌套（
 const backToDsl = schemaToDsl(schema);
 ```
 
+**持久化到后端前剥离前端专用字段**：`BaseNode.key` 是画布 DnD 身份标识（映射旧
+schema 的 `__key`，用于拖拽排序 / 选中定位），`meta.rawSchema` 是 `schemaToDsl`
+对未注册类型节点的无损兜底（原样存了一份原始 schema，只为保证前端渲染不崩）。两者
+都是纯前端概念，对后端没有意义，也不该存进你的表单定义存储。保存前过一遍
+`toPortableDefinition`：
+
+```ts
+import { toPortableDefinition } from "@zeng-alt/formkit-form-builder";
+
+const portable = toPortableDefinition(definition); // 深拷贝并递归剥掉 key / meta.rawSchema
+await saveFormDefinition(portable); // 再交给后端持久化
+```
+
+节点的 `events: [{ event: "click", handler: "..." }]` 是事件绑定的唯一真源：`handler`
+为不透明的函数体字符串，由前端运行时执行（可访问 `event` / `form` / `$form` / `$value` /
+`$node` / `$get` 等注入参数），Java 等后端只需原样透传。可绑定事件为
+`click` / `change` / `input` / `focus` / `blur`。`dslToSchema` 会把它编译成 schema 侧的
+`__bind: { onClick: handler, ... }`。
+
+节点的 `visibleIf`（可移植表达式 AST，`Expr`：字段引用 / 字面量 / 内置函数调用）是条件
+显示的唯一真源，`dslToSchema` 把它编译成 schema 的 `if` 字符串，交给 FormKit 渲染时
+求值。内置函数（`eq` / `not` / `if` / `coalesce` / `contains` 等，完整清单见
+`getBuiltin`）一律编译为 `$fkb_<fn>(args...)` 形式的 helper 函数调用——
+FormKit v2 schema 的 `if` 由 `@formkit/core` 自带的一个手写迷你表达式解析器执行，只认
+`&& || === !== == != >= <= > < + - * / %` 和 `$token(args)` 调用语法，不支持三元 `?:`、
+`??`、一元 `!`，把每个内置函数拆成"看似等价"的原生算子曾经是真实翻车的来源（`not`
+被解释反、`if`/`coalesce` 返回 `undefined`、`contains` 返回子串而非布尔值）。改成
+helper 调用后，`if` 条件与 `evalExpr`（计算字段 / 设计器实时预览）共用同一份求值
+实现（见 `EXPR_SCHEMA_HELPERS`），因此画布预览、运行时渲染、后端按 `Expr` AST 自行
+求值三者的语义天然保持一致，不再需要为每个函数单独核对两套语义是否等价。`fkb_` 是
+这套 helper 的保留 token 前缀，**字段名不能以 `fkb_` 开头**，否则会被同名 helper 覆盖
+导致条件显示静默失效。
+
 ### 扩展元素
 
 通过 `config.elements` 或 `registerElement(s)` 注册自定义元素（DSL 注册中心 + FormKit input + 画布/预览一次打通）：
@@ -345,6 +395,42 @@ const config = {
   },
 };
 ```
+
+DSL 表达式函数 `today()` 按当前运行语言解析时区（`zh-CN` → `Asia/Shanghai`、`ja` →
+`Asia/Tokyo` 等，`en` 无固定映射，回落浏览器本地时区），而非固定 UTC，避免夜间取到
+昨天的日期。语言切换会自动同步；宿主也可用 `LOCALE_TIME_ZONES` 扩展映射表，或用
+`setExprLocale` 手动设置求值语言（脱离 `FormBuilder` / `FormRenderer` 单独使用 DSL 转换
+工具时适用）。
+
+```ts
+import { setExprLocale, LOCALE_TIME_ZONES } from "@zeng-alt/formkit-form-builder";
+
+LOCALE_TIME_ZONES["fr"] = "Europe/Paris"; // 扩展映射
+setExprLocale("zh-CN"); // 手动设置（FormBuilder/FormRenderer 内会随 locale 自动同步）
+```
+
+## 安全说明
+
+`FormDefinition` 有几处会携带不透明的 JS 字符串：字段/静态节点的 `events`（事件绑定，
+如 `onClick`）、`settings.submit`（自定义提交逻辑）、数据表格的 `getData` /
+`createData` / `updateData` / `deleteData`（远程数据钩子）。`FormRenderer` 在浏览器端
+用 `new Function` 执行这些代码，代码里可以访问注入的 `axios` 实例——默认携带页面的
+同源凭据（cookie）。
+
+含义：**谁能编辑表单定义，谁就能在所有填表用户的浏览器里执行任意 JS。** 这是低代码/
+无代码平台的常见设计取舍，不是漏洞——但如果设计表单的人和填表的人处于不同的信任域
+（例如运营团队配表单、终端客户来填），一份未经审查的 `FormDefinition` 就等价于存储型
+XSS。
+
+建议：
+
+- 后端持久化 `FormDefinition` 时，对 `props.__bind`（事件绑定）、`settings.submit`、
+  数据表格的 `getData`/`createData`/`updateData`/`deleteData` 字段做白名单或签名校验，
+  再重新信任它们。
+- 只把设计器（`FormBuilder`）开放给你信任其可以写 JS 的角色；对来自低信任角色提交的
+  `FormDefinition`，按不可信输入处理。
+- `config.apiKey` 由浏览器直接发往 AI 端点。生产环境不要下发真实密钥，应改用
+  `config.aiBaseUrl` 指向自建服务端代理，密钥留在服务端。
 
 ## 示例
 

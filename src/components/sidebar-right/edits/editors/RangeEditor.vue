@@ -32,5 +32,6 @@ const { t } = useFormBuilderI18n()
       }
     "
   />
-  <NaiveBasicSection :size="true" :disabled="true" />
+  <!-- NSlider 没有 size prop，开了也不会生效 -->
+  <NaiveBasicSection :disabled="true" />
 </template>

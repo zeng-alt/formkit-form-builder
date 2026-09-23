@@ -68,12 +68,13 @@ export const staticElements: ElementDefinition[] = [
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveButtonEditor.vue'),
     schema: {
       renderAs: 'cmp',
+      // disabled 不显式写 false：它是 FormKit 保留的级联属性名，节点一旦显式写入
+      // false 就会锁死不再响应表单/分组级联禁用（理由同 fields.ts 的 commonProps 注释）
       props: {
         block: true,
         bordered: true,
         circle: false,
         dashed: false,
-        disabled: false,
         focusable: true,
         fullWidth: false,
         align: 'left',

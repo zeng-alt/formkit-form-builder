@@ -5,6 +5,7 @@ import { FormKitSchema } from '@formkit/vue'
 import { NBadge, NEmpty } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
+import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 import { useBadgeSupPosition } from '@/composables/use-badge-sup-position'
 import { useBadgeValue } from '@/composables/use-badge-value'
 
@@ -27,6 +28,8 @@ const props = defineProps<{
 const { t } = useFormBuilderI18n()
 
 const schemaLibrary = getPreviewSchemaLibrary()
+// 表单数据 + 表达式 helper：容器内嵌套 FormKitSchema 需要表单数据才能正确求值 visibleIf
+const schemaRenderData = useSchemaRenderData()
 
 const title = computed(() =>
   typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
@@ -84,6 +87,11 @@ const badgeOffset = computed(() =>
       <div v-if="helpText" class="text-xs text-muted-foreground">{{ helpText }}</div>
     </div>
 
+    <!-- type/offset 同 TabsContainerPreview.vue：本组件自己的 prop 类型比 naive-ui
+         NBadge 对应 prop 的字面量联合 / 元组类型更宽，两边类型来源不同。曾尝试标注为
+         BadgeProps['type'] / BadgeProps['offset']，但 Vue 的类型解析器无法解析 naive-ui
+         经 ExtractPublicPropTypes 包装的类型，会静默退化成不做运行时校验的 `type: null`，
+         故保留断言 -->
     <div ref="badgeWrapRef" class="w-full">
       <n-badge
         v-if="hasChild"
@@ -99,7 +107,7 @@ const badgeOffset = computed(() =>
         :style="badgeStyle"
       >
         <div class="w-full grid grid-cols-12 gap-x-4 gap-y-2">
-          <FormKitSchema :schema="modelValue" :library="schemaLibrary" />
+          <FormKitSchema :schema="modelValue" :library="schemaLibrary" :data="schemaRenderData" />
         </div>
       </n-badge>
 

@@ -1,7 +1,17 @@
-import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
+import {
+  computed,
+  inject,
+  provide,
+  ref,
+  watch,
+  type ComputedRef,
+  type InjectionKey,
+  type Ref,
+} from 'vue'
 import { dateEnUS, dateZhCN, enUS, zhCN, type NDateLocale, type NLocale } from 'naive-ui'
+import { setExprLocale } from '../dsl/expr-env'
 
-export type RuntimeLocale = string
+type RuntimeLocale = string
 
 const naiveLocaleMap: Record<string, NLocale> = {
   'zh-CN': zhCN,
@@ -58,6 +68,10 @@ export function provideRuntimeLocale(options: {
   const naiveLocale = computed(() => getNaiveLocale(locale.value))
   const naiveDateLocale = computed(() => getNaiveDateLocale(locale.value))
 
+  // today() 表达式的时区跟随运行语言（见 dsl/expr-env）：语言切换即时生效，
+  // immediate 保证初始语言也接线（否则首次求值仍用 expr-env 的默认值）
+  watch(locale, (l) => setExprLocale(l), { immediate: true })
+
   const setLocale: RuntimeLocaleContext['setLocale'] = (next) => {
     if (availableLocales.includes(next)) {
       locale.value = next
@@ -83,6 +97,7 @@ export function useRuntimeLocale() {
     locale: fallbackLocale,
     setLocale: (next) => {
       fallbackLocale.value = next
+      setExprLocale(next)
     },
     availableLocales: computed(() => [
       { label: '中文', value: 'zh-CN' },

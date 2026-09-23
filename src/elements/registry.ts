@@ -7,11 +7,11 @@ import { defineAsyncComponent } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { getElementTypeDef, getElementTypeDefs, type ElementTypeDef } from '../dsl/registry'
 import { registerBuiltinElementTypes } from '../dsl/definitions'
-import type { SchemaNode } from '../dsl/convert-common'
+import type { SchemaNode } from '../dsl/convert'
 import type { FormNode } from '../types/dsl'
 import type { ElementDefinition, ElementPaletteProp } from './types'
 
-// 确保内置 DSL 元素类型已在 fieldProps 创建前注册
+// 确保内置 DSL 元素类型已在 createFieldProps() 等读取注册表之前注册
 registerBuiltinElementTypes()
 
 export function getElementDefinition(type: string | null | undefined): ElementDefinition | null {
@@ -68,9 +68,6 @@ export function createFieldProps(t: (key: string) => string): ElementPaletteProp
     }))
 }
 
-// 未翻译版本（用于按 name 查找分类/图标）
-export const fieldProps: ElementPaletteProp[] = createFieldProps((v) => v)
-
 // ─── 画布默认元素（DSL 模板 → 翻译 → toSchema）─────────────────────────────────
 
 function defaultDslNodeFromTemplate(def: ElementTypeDef, t: (key: string) => string): FormNode {
@@ -111,7 +108,7 @@ export function createDefaultFormElements(t: (key: string) => string): FormKitSc
   for (const def of getElementTypeDefs()) {
     if (!def.template) continue
     const node = defaultDslNodeFromTemplate(def, t)
-    const schema = convert(node) as any
+    const schema = convert(node)
     // 面板展示元数据（副标题 / 便捷项图标）：仅左侧面板使用，标记为不可枚举，
     // 保证拖拽 payload 经 JSON 序列化（JSON.parse(JSON.stringify(...))）时不会带进 DSL。
     // description 若可枚举会泄漏进字段 props.description（DSL 里多出面板文案）。
@@ -127,7 +124,7 @@ export function createDefaultFormElements(t: (key: string) => string): FormKitSc
         configurable: true,
       })
     }
-    out.push(schema as FormKitSchemaFormKit)
+    out.push(schema)
   }
   return out
 }
@@ -142,5 +139,3 @@ export function getElementTypeBySchema(node: unknown): string | undefined {
   }
   return undefined
 }
-
-export type { ElementCategory, ElementDefinition, ElementPaletteProp, ElementEditor } from './types'

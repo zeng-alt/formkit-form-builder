@@ -8,5 +8,6 @@ import { INPUT_BASIC_EVENTS } from '@/elements/definitions/bind-events'
 <template>
   <BindEditor :events="INPUT_BASIC_EVENTS" />
   <LabelHelpSection />
-  <NaiveBasicSection :size="false" :disabled="true" :clearable="true" />
+  <!-- NColorPicker 没有 clearable prop，开了也不会生效；size 它确实声明了，打开 -->
+  <NaiveBasicSection :size="true" :disabled="true" />
 </template>

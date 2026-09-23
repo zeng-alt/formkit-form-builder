@@ -2,10 +2,7 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 import type { FormNode } from '@/types/dsl'
 
-// 状态门面：formSchema 已迁到 form-definition.ts（DSL 真源 + 只读投影），
-// 这里统一 re-export，避免既有消费方改动。
-export { formSchema } from './form-definition'
-
+// 选中状态：按实例创建，不再暴露模块级门面。
 export interface SelectionState {
   selectedIndex: Ref<number>
   selectedKey: Ref<string | null>
@@ -40,7 +37,3 @@ export function createSelectionState(): SelectionState {
     elementEditCommit,
   }
 }
-
-// 模块级默认实例（向后兼容）。
-export const defaultSelectionState = createSelectionState()
-export const { selectedIndex, selectedKey, selectedTarget } = defaultSelectionState

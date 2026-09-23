@@ -25,7 +25,7 @@
     </template>
     <n-scrollbar style="max-height: 600px">
       <div class="py-4 px-3">
-        <FormSchemaRenderer
+        <FormRenderer
           ref="rendererRef"
           :schema="schemaSnapshot"
           v-model="data"
@@ -60,14 +60,17 @@ import { dslToSchema } from '@/dsl'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useFormBuilderI18n } from '@/i18n/context'
 import type { CanvasView } from '@/state/canvas-ui'
-import FormSchemaRenderer from '@/renderer/FormSchemaRenderer.vue'
-import { useFormBuilderState } from '@/state/create-form-builder-state'
+import FormRenderer from '@/renderer/FormRenderer.vue'
+import { useOptionalFormBuilderState } from '@/state/create-form-builder-state'
+import { DEFAULT_LABEL_WIDTH } from '@/utils/form-layout'
 
 const { t } = useFormBuilderI18n()
 
 // 所属 FormBuilder 实例状态：预览快照 / 视口绑定到各自实例；
-// 独立使用（传入 schema prop）时回落到默认实例。
-const { formDefinition, canvasView } = useFormBuilderState()
+// 独立使用（未挂在 FormBuilder / FormRenderer 子树内，靠 schema / view prop 驱动）时
+// 用可选版本的 hook，取不到就是 null，不再回落全局单例。
+const state = useOptionalFormBuilderState()
+const formDefinition = computed(() => state?.formDefinition.value)
 
 type ModelValue = Record<string, unknown>
 
@@ -121,7 +124,7 @@ const safeClone = <T>(value: T): T => {
 const data = ref<ModelValue>({})
 const schemaSnapshot = ref<FormKitSchemaFormKit[]>([])
 
-const resolvedView = computed<CanvasView>(() => props.view ?? canvasView.value)
+const resolvedView = computed<CanvasView>(() => props.view ?? state?.canvasView.value ?? 'desktop')
 const resolvedTitle = computed(() => props.title ?? t('builder.previewTitle'))
 const resolvedDescription = computed(() => props.description ?? t('builder.previewDescription'))
 
@@ -129,7 +132,9 @@ const formName = computed(() => formDefinition.value?.name ?? 'form')
 const formLabelPosition = computed<'top' | 'left'>(() =>
   formDefinition.value?.settings?.labelAlign === 'left' ? 'left' : 'top',
 )
-const formLabelWidth = computed(() => formDefinition.value?.settings?.labelWidth ?? 80)
+const formLabelWidth = computed(
+  () => formDefinition.value?.settings?.labelWidth ?? DEFAULT_LABEL_WIDTH,
+)
 
 const prettyData = computed(() =>
   JSON.stringify(
@@ -143,7 +148,13 @@ const prettyData = computed(() =>
 )
 
 const initSnapshot = () => {
-  const base = props.schema ?? dslToSchema(formDefinition.value)
+  const def = formDefinition.value
+  if (!props.schema && !def && import.meta.env.DEV) {
+    // 独立使用（不在 FormBuilder / FormRenderer 子树内）又没传 schema：无处取表单结构，
+    // 只能渲染空表单——DEV 下提示一次，帮助排查而不是静默显示空白。
+    console.warn('[BuilderPreview] 独立使用 BuilderPreview 需传入 schema prop（否则无表单可渲染）')
+  }
+  const base = props.schema ?? (def ? dslToSchema(def) : [])
   schemaSnapshot.value = safeClone(base)
   data.value = safeClone(props.initialData ?? {})
 }
@@ -175,7 +186,7 @@ const close = () => {
   isOpen.value = false
 }
 
-// ── 校验：转发到内部 FormSchemaRenderer（n-modal 内容随弹窗挂载，等待其就绪）──
+// ── 校验：转发到内部 FormRenderer（n-modal 内容随弹窗挂载，等待其就绪）──
 type RendererExposed = {
   validate: () => Promise<boolean>
 }

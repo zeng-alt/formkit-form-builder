@@ -14,18 +14,18 @@ export type NodeCategory = 'field' | 'container' | 'layout' | 'static'
 export type RenderKind = 'formkit' | 'cmp' | 'el'
 
 // ─── 可移植表达式 AST（JSON-safe，Java 可解析/生成/校验）────────────────────────
-export type StaticValue = any
+type StaticValue = any
 
-export interface ExprLiteral {
+interface ExprLiteral {
   type: 'literal'
   value: StaticValue
 }
-export interface ExprField {
+interface ExprField {
   type: 'field'
   /** 引用表单数据里的字段名（提交给后端的数据 key） */
   name: string
 }
-export interface ExprCall {
+interface ExprCall {
   type: 'call'
   /** 内置函数名，见 src/dsl/expr-builtins.ts；前后端共用同一份清单 */
   fn: string
@@ -35,7 +35,7 @@ export interface ExprCall {
 export type Expr = ExprLiteral | ExprField | ExprCall
 
 /** 字段值：静态值 */
-export type FieldValue = StaticValue
+type FieldValue = StaticValue
 
 // ─── 校验规则（结构化，JSON-safe）───────────────────────────────────────────────
 export interface ValidationRule {
@@ -58,7 +58,7 @@ export interface OptionItem {
 }
 
 /** 动态字典来源：options 为对象 { dynamic, code, label? }，运行时用 config.fetchDictionary 拉取 */
-export interface DynamicOptionSource {
+interface DynamicOptionSource {
   /** 标记为动态字典来源（区别于静态 OptionItem[]） */
   dynamic: true
   /** 字典编码 */
@@ -67,31 +67,25 @@ export interface DynamicOptionSource {
   label?: string
 }
 
-
-
 // ─── 事件绑定（handler 为不透明函数体字符串，前端运行时执行，Java 透传）──────────
-export type FormKitEvent = 'change' | 'input' | 'blur' | 'focus'
-export type ElEvent =
-  | 'click'
-  | 'dblclick'
-  | 'mouseenter'
-  | 'mouseleave'
-  | 'keydown'
-  | 'keyup'
-  | 'keypress'
-  | 'submit'
-export type FormEvent = FormKitEvent | ElEvent
+// 单一来源：与运行时 runBindCode 的放行集合（bind-runtime.ts）、编辑器 BindEditor
+// 的开关一一对应，三者不再各自维护一份事件清单。
+export const FORM_EVENTS = ['click', 'change', 'input', 'focus', 'blur'] as const
+export type FormEvent = (typeof FORM_EVENTS)[number]
 
 export interface EventBinding {
   event: FormEvent
   handler: string
 }
+// schema 侧表示统一为 __bind: { onClick: handler, ... }（formkit 节点在顶层，
+// cmp 节点在 props，el 节点在 attrs）；handler 字符串原样透传，Java 侧不解析。
 
 // ─── 节点基类 ────────────────────────────────────────────────────────────────────
-export interface BaseNode {
+interface BaseNode {
   /** 稳定唯一 id（前端生成，用于树操作 / 选中 / 绑定） */
   id: string
-  /** 画布 DnD 身份（映射 legacy schema 的 __key；非画布场景可省略） */
+  /** 画布 DnD 身份（映射 legacy schema 的 __key；非画布场景可省略）。
+   *  仅前端使用，交给后端前用 toPortableDefinition() 剥离（见 src/dsl/portable.ts）。 */
   key?: string
   /** 字段名（提交到后端的数据 key）；容器 / 布局 / 静态节点可不填 */
   name?: string
@@ -163,14 +157,14 @@ export interface StaticNode extends BaseNode {
 export type FormNode = FieldNode | ContainerNode | LayoutNode | StaticNode
 
 // ─── 表单定义（顶层）────────────────────────────────────────────────────────────
+// 只保留真正生效的字段：layout/columns/fullWidth 曾经声明过，但没有任何编辑器能改，
+// dslToSchema 只是原样塞进 form 节点 props，渲染侧从未读取——DSL 是要交给后端
+// 反序列化的契约，声明了却不生效的字段只会误导消费方，已删除（不需要向后兼容）。
+// labelAlign 同理去掉了从未生效过的 'right'（所有代码都把它当 top 处理，编辑器也
+// 只提供 top/left 两个选项）。
 export interface FormSettings {
-  /** 布局方向 */
-  layout: 'vertical' | 'horizontal' | 'inline'
+  labelAlign?: 'top' | 'left'
   labelWidth?: number
-  labelAlign?: 'left' | 'right' | 'top'
-  /** 根栅格列数（默认 12） */
-  columns?: number
-  fullWidth?: boolean
   submit?: string
 }
 
@@ -184,6 +178,3 @@ export interface FormDefinition {
   settings: FormSettings
   meta?: Record<string, unknown>
 }
-
-// ─── 向后兼容别名（迁移期）───────────────────────────────────────────────────────
-export type ConditionNode = Expr

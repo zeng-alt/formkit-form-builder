@@ -90,7 +90,7 @@ const duplicateChild = (index: number) => {
   const source = dnd.items.value[index]
   if (!source) return
   const names = new Set<string>()
-  collectSchemaNames(formSchema.value as any, names)
+  collectSchemaNames(formSchema.value, names)
   const clone = duplicateNode(source, names)
   const next = [...dnd.items.value]
   next.splice(index + 1, 0, clone)

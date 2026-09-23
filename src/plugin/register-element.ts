@@ -7,7 +7,7 @@
 
 import type { Component } from 'vue'
 import type { ElementCatalogEntry, ElementTemplate } from '../dsl/registry'
-import { registerElementType, elementTypeFromSchema, getElementTypeDef } from '../dsl/registry'
+import { registerElementType, elementTypeFromSchema } from '../dsl/registry'
 import type { ContainerDefinition } from '../elements/canvas'
 import {
   registerContainerDefinition,
@@ -81,6 +81,3 @@ export function registerElements(inputs: RegisterElementInput[] | undefined): vo
   }
 }
 
-export function hasRegisteredElement(type: string): boolean {
-  return Boolean(getElementTypeDef(type))
-}

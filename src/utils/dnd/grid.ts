@@ -16,9 +16,11 @@ export function getColSpan(item: any): number {
   return MAX_COL_SPAN
 }
 
-// 写入/替换 outerClass 中的 col-span-*（自动钳制到 2..12）
-export function setColSpan(item: any, span: number) {
-  if (!item) return
+// 写入/替换 outerClass 中的 col-span-*（自动钳制到 2..12）。纯函数：不改动 item
+// 本身（item 可能是画布 DnD 内部数组里的共享引用，最终指向 dslToSchema 缓存的
+// schema 节点），返回一个新对象，调用方把返回值写回自己持有的数组下标。
+export function setColSpan(item: any, span: number): any {
+  if (!item || typeof item !== 'object') return item
   const safe = clampColSpan(span)
   let classes = item.outerClass || ''
   if (/col-span-\d+/.test(classes)) {
@@ -26,7 +28,7 @@ export function setColSpan(item: any, span: number) {
   } else {
     classes = `${classes} col-span-${safe}`.trim()
   }
-  item.outerClass = classes
+  return { ...item, outerClass: classes }
 }
 
 // 输入组内层元素：宽度只由 outerClass 的 col-span-N 决定，
@@ -98,10 +100,14 @@ export function rebalanceRowSpans(values: any[], maxSpan = MAX_COL_SPAN): void {
     }
     k++
   }
-  values.forEach((v, i) => setColSpan(v, next[i]!))
+  // setColSpan 是纯函数，这里把结果写回 values 数组自己的下标（values 是调用方
+  // 本地持有的数组，不是被缓存的节点本身，改写数组下标是安全的）
+  values.forEach((v, i) => {
+    values[i] = setColSpan(v, next[i]!)
+  })
 }
 
-export type Placement = {
+type Placement = {
   index: number
   row: number
   col: number
@@ -208,9 +214,15 @@ export function adjustColSpansForInsertAtRow(
 
   if (totalCount <= 4) {
     const newSpan = 12 / totalCount
-    rowItems.forEach((item) => setColSpan(item, newSpan))
-    insertValues.forEach((val) => setColSpan(val, newSpan))
+    rowIndices.forEach((i) => {
+      targetParentValues[i] = setColSpan(targetParentValues[i], newSpan)
+    })
+    insertValues.forEach((val, i) => {
+      insertValues[i] = setColSpan(val, newSpan)
+    })
   } else {
-    insertValues.forEach((val) => setColSpan(val, 3))
+    insertValues.forEach((val, i) => {
+      insertValues[i] = setColSpan(val, 3)
+    })
   }
 }

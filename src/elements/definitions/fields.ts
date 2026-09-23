@@ -8,7 +8,11 @@ import {
 // 纯数据目录：不 import 任何 .vue。FormKit 组件绑定在 elements/formkit.ts（按 type 索引）。
 // 所有字段均以 $cmp 组件引用渲染（renderAs:'cmp'），target 为 FormKitSchema 的 $cmp 名。
 
-const commonProps = { size: 'medium', disabled: false, clearable: true } as const
+// disabled 不放进公共默认值：它是 FormKit 保留的级联属性名，节点一旦显式写入
+// false，就会锁死该节点不再响应表单/分组级 :disabled 级联（FormKit 只在节点自身
+// 未显式设置该 prop 时才会回退到父级 config.disabled）。默认不写此键，字段就能
+// 正常继承外层禁用态；编辑面板的"禁用"开关仍可按需显式打开，覆盖继承值。
+const commonProps = { size: 'medium', clearable: true } as const
 
 export const fieldElements: ElementDefinition[] = [
   {
@@ -312,9 +316,10 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.naiveTransfer.name',
       labelKey: 'elements.naiveTransfer.label',
+      // disabled 不显式写 false：理由同 commonProps 顶部注释——显式 false 会锁死
+      // 该节点，不再响应表单/分组级联禁用
       props: {
         size: 'medium',
-        disabled: false,
         filterable: false,
         options: [
           { label: 'Option 1', value: '1' },
@@ -336,7 +341,8 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.naiveMention.name',
       labelKey: 'elements.naiveMention.label',
-      props: { size: 'medium', disabled: false },
+      // disabled 不显式写 false：理由同 commonProps 顶部注释
+      props: { size: 'medium' },
       placeholderKey: 'elements.naiveMention.placeholder',
       options: ['alice', 'bob'],
       descriptionKey: 'elements.naiveMention.description',
@@ -368,7 +374,8 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.naiveSwitch.name',
       labelKey: 'elements.naiveSwitch.label',
-      props: { size: 'medium', disabled: false },
+      // disabled 不显式写 false：理由同 commonProps 顶部注释
+      props: { size: 'medium' },
       value: false,
       descriptionKey: 'elements.naiveSwitch.description',
     },
@@ -383,7 +390,9 @@ export const fieldElements: ElementDefinition[] = [
       renderAs: 'cmp',
       nameKey: 'elements.naiveRate.name',
       labelKey: 'elements.naiveRate.label',
-      props: { disabled: false, clearable: true, allowHalf: false, count: 5 },
+      // 不写 disabled 默认值，理由同 commonProps 顶部注释：留空才能继承表单/分组的
+      // 级联禁用态，参见 NaiveRate.vue 里 disabled → readonly 的映射
+      props: { clearable: true, allowHalf: false, count: 5 },
       value: 0,
       descriptionKey: 'elements.naiveRate.description',
     },

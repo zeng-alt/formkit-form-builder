@@ -24,8 +24,9 @@ import { handleEnd } from './commit'
 import { insertState } from './insert-state'
 import { positionInsertPoint, createInsertPoint } from './insert-point'
 import { isRootDropArea, type DndContext } from './context'
-import { defineRanges } from './range'
+import { defineRanges, type InsertRange, type InsertRangeData } from './range'
 import { eventCoordinates, pd } from '../utils'
+import type { SchemaNode } from '@/utils/schema/types'
 
 let documentController: AbortController | undefined
 
@@ -94,7 +95,7 @@ function checkPosition(e: DragEvent | PointerEvent) {
   }
 }
 
-export function handleNodeDragover<T>(data: NodeDragEventData<T>) {
+function handleNodeDragover<T>(data: NodeDragEventData<T>) {
   const config = data.targetData.parent.data.config
   if (!config.nativeDrag) return
   data.e.preventDefault()
@@ -139,11 +140,11 @@ function processParentDragEvent<T>(
   state.currentParent = realTargetParent
 }
 
-export function handleParentDragover<T>(data: ParentEventData<T>, state: DragState<T>) {
+function handleParentDragover<T>(data: ParentEventData<T>, state: DragState<T>) {
   processParentDragEvent(data.e as DragEvent, data.targetData, state, true)
 }
 
-export function handleParentPointerover<T>(data: PointeroverParentEvent<T>) {
+function handleParentPointerover<T>(data: PointeroverParentEvent<T>) {
   const { detail } = data
   const { state, targetData } = detail
   if (state.scrolling) return
@@ -157,7 +158,10 @@ function handleInsertBasedOnRange<T>(
   if (!foundRange) return
 
   const key = foundRange[1] as 'left' | 'right' | 'top' | 'bottom'
-  const position = foundRange[0].data.range ? (foundRange[0].data.range as any)[key] : undefined
+  // node.data.range 的库类型是 { ascending?, descending? }，实际存的是本仓库自定义的
+  // 四向命中范围（见 range.ts 的 InsertRangeData 说明）
+  const range = foundRange[0].data.range as InsertRangeData | undefined
+  const position = range?.[key]
   if (!position) return
 
   insertState.verticalInsert = key === 'top' || key === 'bottom'
@@ -167,12 +171,12 @@ function handleInsertBasedOnRange<T>(
     position,
     key === 'right' || key === 'bottom',
     foundRange[0],
-    insertState as any,
+    insertState,
   )
 }
 
 // 在一个 parent 内移动（排序）
-export function moveBetween<T>(data: ParentRecord<T>, state: DragState<T>) {
+function moveBetween<T>(data: ParentRecord<T>, state: DragState<T>) {
   if (data.data.config.sortable === false) return
 
   // 单元素容器（list / badge 等）：容器已满时 accepts 会拒绝新元素，但拖入瞬间
@@ -196,8 +200,9 @@ export function moveBetween<T>(data: ParentRecord<T>, state: DragState<T>) {
 
   insertState.draggedRowSpan = Math.max(
     1,
+    // T 是插件系统的形参，运行时搬运的值始终是 schema 节点（见 commit.ts 顶部说明）
     ...state.draggedNodes.map((n) => {
-      const outerClass = (n.data as any)?.value?.outerClass
+      const outerClass = (n.data.value as SchemaNode | undefined)?.outerClass
       if (typeof outerClass !== 'string') return 1
       const match = outerClass.match(/\brow-span-(\d+)\b/)
       const parsed = match ? parseInt(match[1]!, 10) : 1
@@ -209,7 +214,10 @@ export function moveBetween<T>(data: ParentRecord<T>, state: DragState<T>) {
   if (values.length === 0) {
     insertState.draggedOverParent = data as ParentRecord<unknown>
     addParentClass([data.el], data.data.config.dropZoneClass)
-    if (!insertState.insertPoint) createInsertPoint(data, insertState as any)
+    // insertState 是跨画布实例共享的单例，固定为 InsertState<unknown>（不跟随调用方的 T），
+    // data 这里按同一约定收窄成 ParentRecord<unknown>，和 insertState.draggedOverParent 的
+    // 赋值（上面几行）用的是同一个模式
+    if (!insertState.insertPoint) createInsertPoint(data as ParentRecord<unknown>, insertState)
     if (insertState.insertPoint) {
       const rect = data.el.getBoundingClientRect()
       const scrollLeft = window.scrollX || document.documentElement.scrollLeft
@@ -294,7 +302,7 @@ function moveOutside<T>(data: ParentRecord<T>, state: DragState<T>) {
     insertState.draggedRowSpan = Math.max(
       1,
       ...state.draggedNodes.map((n) => {
-        const outerClass = (n.data as any)?.value?.outerClass
+        const outerClass = (n.data.value as SchemaNode | undefined)?.outerClass
         if (typeof outerClass !== 'string') return 1
         const match = outerClass.match(/\brow-span-(\d+)\b/)
         const parsed = match ? parseInt(match[1]!, 10) : 1
@@ -314,8 +322,9 @@ function findClosest<T>(enabledNodes: NodeRecord<T>[], state: DragState<T>) {
   for (let x = 0; x < enabledNodes.length; x++) {
     const node = enabledNodes[x]
     if (!node || !node.data.range) continue
-    const nodeRange = node.data.range as any
-    const inRange = (range: any) =>
+    // 同 handleInsertBasedOnRange：range 是本仓库自定义的四向命中范围，非库自己的类型
+    const nodeRange = node.data.range as InsertRangeData
+    const inRange = (range: InsertRange) =>
       state.coordinates.y > range.y[0]! &&
       state.coordinates.y < range.y[1]! &&
       state.coordinates.x > range.x[0]! &&
@@ -348,7 +357,11 @@ function findClosest<T>(enabledNodes: NodeRecord<T>[], state: DragState<T>) {
 
 // 对外暴露：在画布 DnD 里作为插件传入。deps 为所属画布实例的 DnD 上下文，
 // 挂到该 parent 的 config 上，供提交（handleEnd）与插入定位（positionInsertPoint）运行时读取。
-export function customInsertPlugin<T>(insertConfig: InsertConfig<T>, deps?: DndContext) {
+// 参数必传、不允许省略：画布 drop-zone（根 / 容器）必须传真实上下文，省略等于让该 drop-zone
+// 的拖放静默失败（见 commit.ts 的 ctx 缺失分支）；纯拖拽源（左侧调色板，不属于任何画布、
+// 从不作为落点）显式传 null——提交时 ctx 一律从落点 parent 读取，不会用到拖拽源的上下文，
+// 传 null 比造一个 no-op 假上下文更诚实，也不会把"静默什么都不做"重新引回来。
+export function customInsertPlugin<T>(insertConfig: InsertConfig<T>, deps: DndContext | null) {
   return (parent: HTMLElement) => {
     const parentData = parents.get(parent)
     if (!parentData) return
@@ -356,7 +369,7 @@ export function customInsertPlugin<T>(insertConfig: InsertConfig<T>, deps?: DndC
     const insertParentConfig = {
       ...parentData.config,
       insertConfig,
-      dndContext: deps,
+      dndContext: deps ?? undefined,
     }
 
     return {
@@ -372,7 +385,11 @@ export function customInsertPlugin<T>(insertConfig: InsertConfig<T>, deps?: DndC
 
         const originalHandleEnd = insertParentConfig.handleEnd
         insertParentConfig.handleEnd = (state: DragState<T> | SynthDragState<T>) => {
-          handleEnd(state as any)
+          // customInsertPlugin 只用于画布 DnD，搬运的值始终是 schema 节点；这里的 <T> 是
+          // @formkit/drag-and-drop 插件系统的形参，commit.ts 的 handleEnd 把值固定为
+          // SchemaNode（见该文件顶部说明），两者对同一批运行时数据的类型描述不同，故需
+          // 断言，但断言目标是具体类型而非 any
+          handleEnd(state as DragState<SchemaNode> | SynthDragState<SchemaNode>)
           originalHandleEnd(state)
         }
 
@@ -403,7 +420,8 @@ export function customInsertPlugin<T>(insertConfig: InsertConfig<T>, deps?: DndC
                 setParentValues(parent, parentData, [...newSchema])
               }
             },
-            { deep: true },
+            // 不需要 deep：formSchema 是不可变投影，任何改动都会产出新的根数组引用；
+            // deep 会在每次编辑时把整棵 schema 遍历一遍
           )
         }
 

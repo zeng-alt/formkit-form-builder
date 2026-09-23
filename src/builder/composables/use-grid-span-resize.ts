@@ -14,7 +14,7 @@ function withColSpanClass(field: FormKitSchemaFormKit, span: number) {
   } else {
     classes = `${classes} col-span-${safeSpan}`.replace(/\s+/g, ' ').trim()
   }
-  return { ...(field as any), outerClass: classes || undefined } as FormKitSchemaFormKit
+  return { ...field, outerClass: classes || undefined }
 }
 
 export function useGridSpanResize(params: {

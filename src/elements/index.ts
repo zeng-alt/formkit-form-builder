@@ -8,24 +8,7 @@ export {
   getElementDefinitions,
   getFieldEditorComponent,
   createFieldProps,
-  fieldProps,
   createDefaultFormElements,
   getElementTypeBySchema,
 } from './registry'
-export {
-  buildFormkitInputs,
-  buildElementSchemaLibrary,
-  getElementCmpName,
-  registerFormkitBinding,
-  getFormkitBinding,
-} from './formkit'
-export {
-  getContainerDefinition,
-  normalizeContainerNode,
-  formatContainerPreviewNode,
-  getCanvasSchemaLibrary,
-  getPreviewSchemaLibrary,
-  registerContainerDefinition,
-} from './canvas'
-export type { ContainerDefinition, ContainerFormatCtx } from './canvas'
-export type { FormkitBinding } from './formkit'
+export { buildFormkitInputs, buildElementSchemaLibrary, getElementCmpName } from './formkit'

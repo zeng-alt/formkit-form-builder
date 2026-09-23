@@ -19,7 +19,8 @@ export function useContainerDragAndDrop<T>(params: {
   accepts?: (value: T) => boolean
 }) {
   // 所属画布实例状态：多设计器并存时，容器的根 / 提交漏斗绑定到各自实例。
-  // 预览等非 Builder 子树内调用会回落到默认实例，DnD 禁用时不影响。
+  // 容器组件总是渲染在 FormBuilder 或 FormRenderer（含 BuilderPreview 内部转发）子树内，
+  // 二者都会 provide 状态；真走到子树外说明组件被挪用了，useFormBuilderState() 会直接报错。
   const state = useFormBuilderState()
   const rootSelector = computed(
     () => params.rootSelector ?? `[data-testid="drop-area-${state.instanceId}"]`,
@@ -34,7 +35,9 @@ export function useContainerDragAndDrop<T>(params: {
     commitSchemaReconcile: state.commitSchemaReconcile,
   }
 
-  const [containerRef, items, updateConfig] = useDragAndDrop<T>(params.modelValue.value, {
+  // 拷贝初始值：直接把投影数组交给 DnD 库，库内部可能原地改写数组（见 dnd/commit.ts
+  // 的 setParentValues 用法），不拷贝会污染 dslToSchema 的缓存投影
+  const [containerRef, items, updateConfig] = useDragAndDrop<T>([...params.modelValue.value], {
     group: 'form-builder',
     nativeDrag: true,
     // 校验被拖节点类型。值来源优先级：activeState（拖拽起始节点）→ currentTargetValue
@@ -81,7 +84,7 @@ export function useContainerDragAndDrop<T>(params: {
     if (!el || !data) return
     root.dispatchEvent(
       new CustomEvent('hasNestedParent', {
-        detail: { parent: active ? ({ el, data } as any) : null },
+        detail: { parent: active ? { el, data } : null },
       }),
     )
   }
@@ -95,7 +98,7 @@ export function useContainerDragAndDrop<T>(params: {
       const el = (containerRef.value as unknown as HTMLElement | null) ?? null
       const data = el ? parents.get(el) : undefined
       if (el && data) {
-        setParentValues(el, data, [...next] as any)
+        setParentValues(el, data, [...next])
       } else {
         items.value = [...next]
       }

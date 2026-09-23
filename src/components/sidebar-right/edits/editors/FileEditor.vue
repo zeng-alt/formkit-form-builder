@@ -24,5 +24,6 @@ const { t } = useFormBuilderI18n()
     :value="numOfFiles"
     @update:value="(v) => (numOfFiles = v)"
   />
-  <NaiveBasicSection :size="true" :disabled="true" :clearable="true" />
+  <!-- NUpload 没有 clearable prop，开了也不会生效 -->
+  <NaiveBasicSection :size="true" :disabled="true" />
 </template>

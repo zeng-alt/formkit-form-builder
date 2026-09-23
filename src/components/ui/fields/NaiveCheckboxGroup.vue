@@ -11,7 +11,7 @@ const { context } = defineProps<{
 }>()
 
 // horizontal 是布局键（wrapper class），不是 NCheckboxGroup 属性
-const { config, props, bind } = useSchemaAttrs(context, { omit: ['horizontal'] })
+const { config, props, bind, disabled } = useSchemaAttrs(context, { omit: ['horizontal'] })
 const { runEvent } = useBindEvents(context, bind)
 
 type GroupSize = 'small' | 'medium' | 'large'
@@ -63,7 +63,13 @@ async function handleUpdateValue(next: Array<string | number>) {
 </script>
 
 <template>
-  <NCheckboxGroup v-bind="props" :value="value" :size="size" @update:value="handleUpdateValue">
+  <NCheckboxGroup
+    v-bind="props"
+    :value="value"
+    :size="size"
+    :disabled="disabled"
+    @update:value="handleUpdateValue"
+  >
     <div
       :class="
         horizontal ? 'flex flex-row flex-wrap gap-4 w-full py-1' : 'flex flex-col gap-2 w-full py-1'

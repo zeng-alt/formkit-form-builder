@@ -1,5 +1,6 @@
 import type { ComputedRef } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
+import type { ParentConfig } from '@formkit/drag-and-drop'
 
 /**
  * 画布实例的 DnD 上下文。挂在每个 drop-zone parent 的 config 上（见 plugin.ts setup）：
@@ -14,6 +15,13 @@ export interface DndContext {
     nextSchema: FormKitSchemaFormKit[],
     opts?: { reason?: string; merge?: boolean },
   ) => void
+}
+
+/** customInsertPlugin 在 parent.config 上额外挂的字段：@formkit/drag-and-drop 自己的
+ *  ParentConfig 类型不包含 dndContext（应用私有扩展，见 utils/dnd/plugin.ts 的
+ *  customInsertPlugin），读取处按这个扩展接口断言，替代裸的 as any。 */
+export interface DndParentConfig<T> extends ParentConfig<T> {
+  dndContext?: DndContext
 }
 
 /** 从任意元素向上找到所属画布根 drop-area（testid 以 drop-area 开头）。 */

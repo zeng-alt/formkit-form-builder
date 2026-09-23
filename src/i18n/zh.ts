@@ -36,7 +36,6 @@ export default {
     quickInsert: '快捷插入：',
     bindHint:
       '编写 JavaScript。可用参数：event（事件对象）、form（表单数据）、$form（表单元信息 {id,version,name}）、$value（当前值）、$node（节点）、$name（字段名）、$get(name)（取字段值）、$slots（插槽）、attrs（节点配置）、ctx（全量）、axios（HTTP 请求）。点击上方快捷标签即可插入。',
-    addListContainer: '添加列表容器',
     formDataTitle: '表单数据：',
     formSubmitted: '表单已提交！',
     listContainer: '列表容器',
@@ -45,6 +44,7 @@ export default {
     listDropHere: '拖拽字段到这里',
     addStep: '添加步骤',
     deleteStep: '删除步骤（默认保留第一个）',
+    addTab: '新增标签',
     prevStep: '上一步',
     nextStep: '下一步',
     finish: '完成',
@@ -118,7 +118,6 @@ export default {
     promptPlaceholder: '让 AI 生成表单',
     emptyPrompt: '提示为空！',
     emptyPromptDescription: '请输入提示词以生成表单。',
-    close: '关闭',
     defaultInstructions: '根据用户描述生成 FormKit schema',
     requestFailed: 'AI 请求失败',
     parseFailed: '无法解析 AI 返回的表单 Schema，请重试或调整描述',
@@ -272,6 +271,7 @@ export default {
     nameRequired: '字段名不能为空',
     nameFormat: '字段名只能包含字母/数字/下划线，且不能以数字开头',
     nameExists: '字段名已存在',
+    nameReserved: '字段名不能以 {prefix} 开头（保留给条件表达式的内置函数使用）',
     button: {
       textPlaceholder: '按钮文本',
     },

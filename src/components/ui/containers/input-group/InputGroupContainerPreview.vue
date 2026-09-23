@@ -5,6 +5,7 @@ import { FormKitSchema } from '@formkit/vue'
 import { NInputGroup, NEmpty } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
+import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 
 const props = defineProps<{
   children?: FormKitSchemaFormKit[]
@@ -16,6 +17,8 @@ const props = defineProps<{
 const { t } = useFormBuilderI18n()
 
 const schemaLibrary = getPreviewSchemaLibrary()
+// 表单数据 + 表达式 helper：容器内嵌套 FormKitSchema 需要表单数据才能正确求值 visibleIf
+const schemaRenderData = useSchemaRenderData()
 
 const title = computed(() =>
   typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
@@ -37,7 +40,7 @@ const modelValue = computed(() => {
       <div v-if="title" class="text-12px font-bold">{{ title }}</div>
     </div>
     <n-input-group class="w-full">
-      <FormKitSchema v-if="modelValue.length" :schema="modelValue" :library="schemaLibrary" />
+      <FormKitSchema v-if="modelValue.length" :schema="modelValue" :library="schemaLibrary" :data="schemaRenderData" />
 
       <div v-else class="flex w-full items-center justify-center">
         <n-empty :description="t('builder.listDropHere')" />

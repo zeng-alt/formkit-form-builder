@@ -3,24 +3,7 @@ import { compileExpr } from '@/expression/evaluator'
 import { evalExpr, schemaNodeToDslNode } from '@/dsl'
 import type { FieldNode } from '@/types/dsl'
 import type { DataTableColumn, DataTableConfig } from './types'
-
-/** 画布缺失时兜底样本列 + 数据，保证拖入即有可看效果 */
-export const CANVAS_SAMPLE_COLUMNS: DataTableColumn[] = [
-  { key: 'name', title: '姓名', width: 140 },
-  { key: 'role', title: '角色', width: 120 },
-  { key: 'status', title: '状态', width: 90 },
-]
-
-export const CANVAS_SAMPLE_DATA = [
-  { name: '张三', role: '管理员', status: '正常' },
-  { name: '李四', role: '编辑', status: '停用' },
-  { name: '王五', role: '访客', status: '正常' },
-]
-
-export function toColumns(cfg: DataTableConfig): DataTableColumn[] {
-  const columns = (cfg as any).columns as DataTableColumn[] | undefined
-  return Array.isArray(columns) ? columns : []
-}
+import type { SchemaNode } from '@/utils/schema/types'
 
 export function toData(cfg: DataTableConfig): Record<string, unknown>[] {
   return Array.isArray(cfg.data) ? cfg.data : []
@@ -71,7 +54,7 @@ export function isColumnVisible(
 }
 
 /** 列渲染形态：按 render 类型归类，供画布 / 预览只读渲染与占位数据生成使用 */
-export type ColumnCellKind = 'switch' | 'rate' | 'color' | 'tag' | 'text'
+type ColumnCellKind = 'switch' | 'rate' | 'color' | 'tag' | 'text'
 
 export function columnKind(render?: string): ColumnCellKind {
   const t = render ?? ''
@@ -85,28 +68,23 @@ export function columnKind(render?: string): ColumnCellKind {
 /** 由 schema 字段节点派生 { key, title, element }：搜索区（children）按来源元素渲染原控件。
  *  引擎渲染后传入的 children 是已转换的 FormKit schema 节点（$formkit/$cmp/$el），
  *  经 schemaNodeToDslNode 回转为 DSL FieldNode；本身已是 DSL 节点则直接复用。 */
-export function columnsFromChildren(children: Array<Record<string, unknown>>): DataTableColumn[] {
+export function columnsFromChildren(children: SchemaNode[]): DataTableColumn[] {
   if (!Array.isArray(children)) return []
   return children.map((c) => {
-    const anyC = c as any
-    const key =
-      (anyC.name as string | undefined) ??
-      (anyC.props?.name as string | undefined) ??
-      (anyC.id as string)
-    const title =
-      (anyC.label as string | undefined) ||
-      (anyC.props?.label as string | undefined) ||
-      (key as string)
+    const key = c.name ?? c.props?.name ?? c.id
+    const title = c.label || c.props?.label || key
     let element: FieldNode | undefined
-    if (anyC && typeof anyC === 'object') {
-      if (anyC.category === 'field') {
-        element = anyC as FieldNode
+    if (c && typeof c === 'object') {
+      // category 不在 SchemaNode 的已知键里（那是 DSL FieldNode 的字段，不是 schema
+      // 节点的字段）；两种输入形态在这里合流（见函数头注释），按需要探测一次
+      if ((c as unknown as FieldNode).category === 'field') {
+        element = c as unknown as FieldNode
       } else if (
-        typeof anyC.$formkit === 'string' ||
-        typeof anyC.$cmp === 'string' ||
-        typeof anyC.$el === 'string'
+        typeof c.$formkit === 'string' ||
+        typeof c.$cmp === 'string' ||
+        typeof c.$el === 'string'
       ) {
-        const node = schemaNodeToDslNode(anyC)
+        const node = schemaNodeToDslNode(c)
         if (node && node.category === 'field') element = node as FieldNode
       }
     }
@@ -131,15 +109,4 @@ export function normalizeRemoteResult(res: unknown): {
     rows,
     total,
   }
-}
-
-/** 供画布展示：列缺失时用样本列，数据缺失时用样本数据 */
-export function canvasColumns(cfg: DataTableConfig) {
-  const cols = toColumns(cfg)
-  return cols.length > 0 ? cols : CANVAS_SAMPLE_COLUMNS
-}
-
-export function canvasData(cfg: DataTableConfig) {
-  const rows = toData(cfg)
-  return rows.length > 0 ? rows : CANVAS_SAMPLE_DATA
 }

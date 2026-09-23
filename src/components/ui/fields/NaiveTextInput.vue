@@ -10,7 +10,11 @@ const { context } = defineProps<{
 }>()
 
 // 配置经 context.attrs 响应式流入（属性面板修改即触发重渲染）；prefix/suffix 是插槽内容键
-const { config, props, bind } = useSchemaAttrs(context, { omit: ['prefix', 'suffix'] })
+// disabled 由 useSchemaAttrs 统一算出（见该文件顶部注释）：它是 FormKit 保留属性名，
+// 会被拦截进 context.disabled，永远不会流入 context.attrs / props 这个透传包——因此
+// 必须单独转发给 NInput，否则编辑面板的"禁用"开关、以及 FormRenderer 的整表单禁用
+// 都对输入框没有任何效果（与 CustomButton.vue 的 disabled 处理同一模式）。
+const { config, props, bind, disabled } = useSchemaAttrs(context, { omit: ['prefix', 'suffix'] })
 const { runEvent } = useBindEvents(context, bind)
 
 const inputType = computed(() => {
@@ -65,6 +69,7 @@ const handleBlur = async (e: FocusEvent) => {
     :input-props="{ id: context.id }"
     :pair="pair"
     :separator="separator"
+    :disabled="disabled"
     @update:value="handleUpdateValue"
     @focus="handleFocus"
     @blur="handleBlur"

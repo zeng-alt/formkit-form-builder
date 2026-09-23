@@ -10,7 +10,7 @@ const { context } = defineProps<{
 }>()
 
 // 配置经 context.attrs 响应式流入（属性面板修改即触发重渲染）；prefix/suffix 是插槽内容键
-const { config, props, bind } = useSchemaAttrs(context, { omit: ['prefix', 'suffix'] })
+const { config, props, bind, disabled } = useSchemaAttrs(context, { omit: ['prefix', 'suffix'] })
 const { runEvent } = useBindEvents(context, bind)
 
 const prefix = computed(() => String((config.prefix as string | undefined) ?? '').trim())
@@ -42,6 +42,7 @@ const handleBlur = async (e: FocusEvent) => {
     :value="value"
     type="textarea"
     :input-props="{ id: context.id }"
+    :disabled="disabled"
     @update:value="handleUpdateValue"
     @focus="handleFocus"
     @blur="handleBlur"

@@ -1,67 +1,29 @@
 // ═══ DSL 层出口 ════════════════════════════════════════════════════════════════
 
 export { DSL_VERSION } from '../types/dsl'
-export type {
-  FormDefinition,
-  FormNode,
-  BaseNode,
-  FieldNode,
-  ContainerNode,
-  LayoutNode,
-  StaticNode,
-  LayoutType,
-  FormSettings,
-  NodeCategory,
-  RenderKind,
-  Expr,
-  ExprLiteral,
-  ExprField,
-  ExprCall,
-  FieldValue,
-  StaticValue,
-  ValidationRule,
-  OptionItem,
-  EventBinding,
-} from '../types/dsl'
 
 export {
   dslToSchema,
   dslToOutputSchema,
+  createSchemaProjector,
   schemaToDsl,
   schemaNodeToDslNode,
   reconcileDslTree,
 } from './schema-adapter'
-export type { SchemaToDslOptions } from './schema-adapter'
 
+export { toPortableDefinition } from './portable'
+
+export { getElementTypeDef, getElementTypeDefs } from './registry'
+
+export { getBuiltin } from './expr-builtins'
 export {
-  registerElementType,
-  getElementTypeDef,
-  getElementTypeDefs,
-  fieldType,
-  containerType,
-  layoutType,
-  staticType,
-  tabsPaneType,
-  elementTypeFromSchema,
-} from './registry'
-export type {
-  ElementTypeDef,
-  ElementTemplate,
-  ElementCatalogEntry,
-  DslToSchemaCtx,
-} from './registry'
-
-export { registerBuiltinElementTypes } from './definitions'
-export { getBuiltin, isBuiltin } from './expr-builtins'
-export type { BuiltinFn } from './expr-builtins'
-export { exprToJs, resolveValidation, resolveEvents } from './compile'
+  setExprLocale,
+  getExprLocale,
+  resolveTimeZoneForLocale,
+  formatIsoDate,
+  LOCALE_TIME_ZONES,
+} from './expr-env'
+export { exprToJs } from './compile'
+export { EXPR_HELPER_PREFIX, EXPR_SCHEMA_HELPERS } from './expr-schema-helpers'
 export { evalExpr } from './eval'
-export type { EvalResult } from './eval'
-export {
-  parseExprString,
-  parseValidation,
-  parseEvents,
-  parseOuterClass,
-  nodeOuterClass,
-} from './convert-common'
-export type { SchemaNode } from './convert-common'
+export { parseExprString } from './convert'

@@ -1,5 +1,4 @@
 import { useFormBuilderConfig } from './use-config'
-import type { DictionaryOption, TreeDictionaryOption } from '../types/env'
 
 /** 动态字典来源：options 为对象 { dynamic: true, code, label? } */
 export interface DynamicSource {
@@ -35,5 +34,3 @@ export function useDictionary() {
     fetchTreeDictionaryPage: config.fetchTreeDictionaryPage,
   }
 }
-
-export type { DictionaryOption, TreeDictionaryOption }

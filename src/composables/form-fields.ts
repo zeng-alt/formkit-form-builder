@@ -1,12 +1,14 @@
 import type { WritableComputedRef } from 'vue'
 import { computed } from 'vue'
 import { findDslNodeByKey, updateDslNodeAtKey } from '@/utils/schema/dsl-tree'
-import { exprToJs, resolveValidation, parseExprString, parseValidation } from '@/dsl'
+import { exprToJs, parseExprString } from '@/dsl'
+import { eventsToBind, bindToEvents } from '@/dsl/events'
 import { getColSpan } from '@/utils/dnd/grid'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { DSL_VERSION } from '@/types/dsl'
-import type { FieldNode, FormNode, OptionItem } from '@/types/dsl'
+import type { FieldNode, FormNode, OptionItem, ValidationRule } from '@/types/dsl'
 import type { DataTableColumn } from '@/components/ui/containers/data-table/types'
+import { DEFAULT_LABEL_WIDTH } from '@/utils/form-layout'
 
 export function useFormField() {
   // 所属 FormBuilder 实例状态：选中 / 真源 / 提交漏斗全部绑定到各自实例。
@@ -133,6 +135,20 @@ export function useFormField() {
     })
   }
 
+  // ─── disabled 专用写路径：关闭开关时删键而非写 false ─────────────────────────
+  // disabled 是 FormKit 保留的级联属性名：节点一旦显式写入 false，就会锁死不再
+  // 响应表单/分组级联禁用（FormKit 只在节点自身完全没有这个 prop 时才会回退到
+  // 父级 config.disabled）。编辑面板的"禁用"开关如果先打开再关闭，用普通
+  // createPropsProp 关闭时会写入 disabled:false，字段从此对整表单禁用免疫——
+  // 这里关闭时改走 setPropsProp(key, undefined) 删键（等价于从未打开过），
+  // 打开时仍正常写 true。
+  const createDisabledProp = (): WritableComputedRef<boolean, boolean> => {
+    return computed({
+      get: () => Boolean(selectedField.value?.props?.disabled),
+      set: (value: boolean) => setPropsProp('disabled', value ? true : undefined),
+    })
+  }
+
   // ─── 数据表格列编辑写路径：改所属表格节点的 props.columns[idx] ────────────────
   const setColumnProp = (key: string, value: unknown) => {
     patchTreeTarget((node) => {
@@ -178,32 +194,23 @@ export function useFormField() {
     })
   }
 
-  // ─── 校验（DSL 存 ValidationRule[]，编辑层仍走 pipe 字符串）───────────────────
-  const validationString = computed({
-    get: () => {
-      const rules = (selectedField.value as FieldNode | undefined)?.validation
-      return resolveValidation(rules).validation ?? ''
-    },
-    set: (value: string) => {
-      const next = value.trim()
-      patchSelected((node) => {
-        if (node.category !== 'field') return node
-        const field = node as FieldNode
-        if (next) {
-          const rules = (parseValidation(next) ?? []).filter((r) => r.rule)
-          field.validation = rules.length ? rules : undefined
-        } else {
-          field.validation = undefined
-        }
-        return node
-      })
-    },
-  })
+  // ─── 校验（DSL 存 ValidationRule[]，直接读写规则数组）─────────────────────────
+  // FormKit v2 的校验数组语法（[[规则名, ...参数], ...]）不再把参数拼成逗号/竖线
+  // 分隔的字符串，右侧面板也随之直接操作 ValidationRule[]，不用先序列化成 pipe
+  // 字符串再解析回去——省掉一趟无意义的往返，也避免参数本身含逗号/竖线时被拆坏。
+  const fieldValidationRules = computed<ValidationRule[]>(
+    () => (selectedField.value as FieldNode | undefined)?.validation ?? [],
+  )
 
-  const validationStringLength = computed(() => {
-    if (!validationString.value) return 0
-    return validationString.value.split('|').length
-  })
+  const setValidationRules = (rules: ValidationRule[]) => {
+    patchSelected((node) => {
+      if (node.category !== 'field') return node
+      ;(node as FieldNode).validation = rules.length ? rules : undefined
+      return node
+    })
+  }
+
+  const validationStringLength = computed(() => fieldValidationRules.value.length)
 
   const createValidationValue = (validationType: string, active: boolean = true) => {
     return computed({
@@ -373,7 +380,7 @@ export function useFormField() {
       const visibleIf = selectedField.value?.visibleIf
       if (!visibleIf) return ''
       // var 模式：编辑器显示 $field（与表达式求值器 / FormKit schema 一致）
-      return exprToJs(visibleIf, 'var')
+      return exprToJs(visibleIf)
     },
     set: (value: string) => {
       const next = value.trim()
@@ -456,49 +463,46 @@ export function useFormField() {
     },
   })
 
-  // ─── 校验字符串工具（保持 pipe 字符串语义）────────────────────────────────────
-  const updateValidationString = (value: string, active: boolean = true) => {
-    const currentValidation = validationString.value.split('|').filter(Boolean)
-    let newValidation: string[]
+  // ─── 校验规则读写工具（右侧面板用，rule:arg1,arg2 只是这几个组件内部的书写习惯，
+  //     落盘前在这里转换成结构化 ValidationRule，不再经过 pipe 字符串）──────────
+  const parseValidationArgToken = (raw: string): unknown => {
+    const t = raw.trim()
+    if (/^-?\d+(\.\d+)?$/.test(t)) return Number(t)
+    if (t === 'true') return true
+    if (t === 'false') return false
+    return t
+  }
 
-    if (!value.includes(':')) {
-      if (currentValidation.includes(value)) {
-        newValidation = currentValidation.filter((item: string) => item !== value)
-      } else {
-        newValidation = [...currentValidation, value]
-      }
-      validationString.value = newValidation.join('|')
-      return
-    } else {
-      // 只切首个冒号：值中可能含冒号（如 matches 正则 /^a:b$/、starts_with:https:）
-      const colonIndex = value.indexOf(':')
-      const validationType = value.slice(0, colonIndex)
-      const ruleNameOf = (item: string) => {
-        const idx = item.indexOf(':')
-        return idx === -1 ? item : item.slice(0, idx)
-      }
-      // 关闭时按规则名整体移除；开启/编辑时按规则名替换（含无参规则，避免重复追加）
-      if (!active) {
-        newValidation = currentValidation.filter(
-          (item: string) => ruleNameOf(item) !== validationType,
-        )
-      } else {
-        const indexOfType = currentValidation.findIndex(
-          (item: string) => ruleNameOf(item) === validationType,
-        )
-        if (indexOfType === -1) {
-          newValidation = [...currentValidation, value]
-        } else {
-          newValidation = [
-            ...currentValidation.slice(0, indexOfType),
-            value,
-            ...currentValidation.slice(indexOfType + 1),
-          ]
-        }
-      }
-      validationString.value = newValidation.join('|')
+  const updateValidationString = (value: string, active: boolean = true) => {
+    // 只切首个冒号：参数本身可能含冒号（如 matches 正则 /^a:b$/、starts_with:https:）
+    const colonIndex = value.indexOf(':')
+    const ruleName = colonIndex === -1 ? value : value.slice(0, colonIndex)
+    const argStr = colonIndex === -1 ? undefined : value.slice(colonIndex + 1)
+    const rules = [...fieldValidationRules.value]
+    const idx = rules.findIndex((r) => r.rule === ruleName)
+
+    if (colonIndex === -1) {
+      // 无参规则：纯开关（与原行为一致——忽略 active，存在则移除、不存在则添加）
+      if (idx === -1) rules.push({ rule: ruleName })
+      else rules.splice(idx, 1)
+      setValidationRules(rules)
       return
     }
+
+    if (!active) {
+      if (idx !== -1) rules.splice(idx, 1)
+      setValidationRules(rules)
+      return
+    }
+
+    const args = argStr ? argStr.split(',').map(parseValidationArgToken) : []
+    const base: ValidationRule = idx !== -1 ? rules[idx]! : { rule: ruleName }
+    const nextRule: ValidationRule = { ...base, rule: ruleName }
+    if (args.length) nextRule.args = args
+    else delete nextRule.args
+    if (idx !== -1) rules[idx] = nextRule
+    else rules.push(nextRule)
+    setValidationRules(rules)
   }
 
   const isActive = (fn: (arg0: string) => boolean, strVal: string) => {
@@ -506,20 +510,8 @@ export function useFormField() {
   }
 
   const getParameterizedValidation = (validationType: string) => {
-    if (!validationString.value) return ''
-
-    const ruleNameOf = (item: string) => {
-      const colon = item.indexOf(':')
-      return colon === -1 ? item : item.slice(0, colon)
-    }
-
-    const validations = validationString.value.split('|')
-    const validation = validations.find((item: string) => ruleNameOf(item) === validationType)
-
-    if (!validation) return ''
-
-    const colon = validation.indexOf(':')
-    return colon === -1 ? '' : validation.slice(colon + 1)
+    const rule = fieldValidationRules.value.find((r) => r.rule === validationType)
+    return rule?.args?.length ? rule.args.join(',') : ''
   }
 
   // ─── 状态 ─────────────────────────────────────────────────────────────────────
@@ -581,10 +573,12 @@ export function useFormField() {
   })
 
   const formLabelWidth = computed<number>({
-    get: () => formDefinition.value?.settings?.labelWidth ?? 80,
+    get: () => formDefinition.value?.settings?.labelWidth ?? DEFAULT_LABEL_WIDTH,
     set: (value: number) => {
       const n = Number(value)
-      const next = Number.isFinite(n) ? Math.max(0, Math.min(2000, Math.round(n))) : 120
+      const next = Number.isFinite(n)
+        ? Math.max(0, Math.min(2000, Math.round(n)))
+        : DEFAULT_LABEL_WIDTH
       const def = formDefinition.value
       commitFormDefinition(
         { ...def, settings: { ...def.settings, labelWidth: next } },
@@ -594,7 +588,7 @@ export function useFormField() {
   })
 
   const formSubmit = computed<string>({
-    get: () => (formDefinition.value?.settings as any)?.submit ?? '',
+    get: () => formDefinition.value?.settings?.submit ?? '',
     set: (value: string) => {
       const def = formDefinition.value
       commitFormDefinition(
@@ -634,7 +628,8 @@ export function useFormField() {
 
   const rowSpan = computed<number>({
     get: () => {
-      const classes = typeof selectedField.value?.outerClass === 'string' ? selectedField.value.outerClass : ''
+      const classes =
+        typeof selectedField.value?.outerClass === 'string' ? selectedField.value.outerClass : ''
       const match = classes.match(/\brow-span-(\d+)\b/)
       const parsed = match ? parseInt(match[1]!, 10) : 1
       return Number.isFinite(parsed) && parsed > 1 ? parsed : 1
@@ -688,15 +683,20 @@ export function useFormField() {
     },
   })
 
+  // 事件绑定写路径：真源是 DSL events（编辑器仍以 schema 侧 __bind 形态读写，
+  // 见 BindEditor.vue），落盘时收敛到 node.events，不再写 props.__bind（单一来源）。
   const bindEvents = computed<Record<string, unknown>>({
     get: () => {
-      const value = selectedField.value?.props?.__bind
-      if (value && typeof value === 'object') return value as Record<string, unknown>
-      return {}
+      const node = selectedField.value
+      return node ? (eventsToBind(node.events) ?? {}) : {}
     },
     set: (value: Record<string, unknown>) => {
-      const hasAny = value && typeof value === 'object' && Object.keys(value).length > 0
-      setPropsProp('__bind', hasAny ? value : undefined)
+      patchSelected((node) => {
+        const events = bindToEvents(value)
+        if (events?.length) node.events = events
+        else delete node.events
+        return node
+      })
     },
   })
 
@@ -749,7 +749,6 @@ export function useFormField() {
     formSubmit,
     help,
     whichNumber,
-    validationString,
     numOfFiles,
     modelValue,
     optionsRaw,
@@ -758,47 +757,10 @@ export function useFormField() {
     isValidationChecked,
     createButtonProp,
     createPropsProp,
+    createDisabledProp,
     rowSpan,
     colSpan,
     bindEvents,
     customAttrs,
-  }
-}
-
-/** 仅读取表单级只读信息（version/id/name/root/settings 等），不包含字段编辑/写操作。
- *  供 FormSchemaRenderer 等只读渲染场景使用，避免引入 patchSelected 等设计器专用逻辑。 */
-export function useFormDefinition() {
-  const state = useFormBuilderState()
-
-  const formDefinition = computed(() => state.formDefinition.value)
-  const formName = computed(() => state.formDefinition.value?.name ?? '')
-  const formId = computed(() => state.formDefinition.value?.id ?? '')
-  const formVersion = computed(() => state.formDefinition.value?.version ?? DSL_VERSION)
-  const formLabelPosition = computed<'top' | 'left'>(() =>
-    state.formDefinition.value?.settings?.labelAlign === 'left' ? 'left' : 'top',
-  )
-  const formLabelWidth = computed(() => state.formDefinition.value?.settings?.labelWidth ?? 80)
-  const formSubmit = computed(() => (state.formDefinition.value?.settings as any)?.submit ?? '')
-  const formLayout = computed(() => state.formDefinition.value?.settings?.layout ?? 'vertical')
-  const formColumns = computed(() => state.formDefinition.value?.settings?.columns ?? 12)
-  const formFullWidth = computed(() => state.formDefinition.value?.settings?.fullWidth ?? false)
-  const formRoot = computed(() => state.formDefinition.value?.root)
-  const formSettings = computed(() => state.formDefinition.value?.settings)
-  const formMeta = computed(() => state.formDefinition.value?.meta)
-
-  return {
-    formDefinition,
-    formName,
-    formId,
-    formVersion,
-    formLabelPosition,
-    formLabelWidth,
-    formSubmit,
-    formLayout,
-    formColumns,
-    formFullWidth,
-    formRoot,
-    formSettings,
-    formMeta,
   }
 }
