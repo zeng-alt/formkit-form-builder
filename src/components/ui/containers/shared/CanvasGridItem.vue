@@ -6,7 +6,7 @@
 // 整个条目（含内部 FormKitSchema）就会跳过重渲染，不需要在这里手写 v-memo 的
 // 依赖列表——那份列表要跟随模板逐行核对，漏一项就是陈旧 UI bug，而组件边界的
 // props 浅比较由 Vue 保证，风险小得多（见规格 B5 的选型说明）。
-import { computed, type Component } from 'vue'
+import { computed, ref, type Component } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { FormKitSchema } from '@formkit/vue'
 import { NButton, NTooltip } from 'naive-ui'
@@ -60,10 +60,34 @@ const itemStyle = () => {
   if (props.layout === 'row') return { width: props.rowWidth, flex: props.rowFlex }
   return { gridColumn: props.gridColumn, gridRow: props.gridRow }
 }
+
+// ═══ J1：Mac 上 delete 键删不掉元素 ═════════════════════════════════════════════
+// 画布里的字段是"预览控件"（FormKit 渲染出来的真实 <input>/<select>/... ），点它的
+// 标签或输入框选中字段时，浏览器会把焦点交给这些控件——但预览控件里打字根本不会
+// 保存进表单定义，让焦点停留在里面没有意义，还会导致快捷键处理器把 Backspace 让给
+// 控件本身（Mac 的 delete 键发出的正是 Backspace），选中字段后按 delete 没反应。
+// 这里在条目自己的 focusin 上兜底：只要焦点落进了本条目内的 FormKit 预览控件（且不是
+// data-canvas-edit 标记的画布内真实编辑框，比如标签页改名、静态文本内联编辑），
+// 就把焦点收回条目自己身上（tabindex="0"）——快捷键处理器据此正常响应 Backspace/Delete。
+// 嵌套容器（比如 card 里的字段）时，focusin 会从内到外冒泡到每一层 <li data-canvas-item>；
+// 只有目标离得最近的那个条目（closest 命中的就是自己）才处理，外层条目原样放行，
+// 不会抢走本该属于最内层被选中条目的焦点。
+const liRef = ref<HTMLLIElement | null>(null)
+function onFocusin(e: FocusEvent) {
+  const target = e.target
+  const li = liRef.value
+  if (!li || !(target instanceof HTMLElement)) return
+  if (target === li) return
+  if (target.closest('[data-canvas-item]') !== li) return
+  if (target.closest('[data-canvas-edit]')) return
+  if (!target.closest('.formkit-outer')) return
+  li.focus({ preventScroll: true })
+}
 </script>
 
 <template>
   <li
+    ref="liRef"
     :data-item-key="itemKey"
     data-canvas-item="true"
     :class="[
@@ -81,6 +105,7 @@ const itemStyle = () => {
     @pointerdown.stop="props.onSelect(child, index)"
     @keydown.enter.stop.prevent="props.onSelect(child, index)"
     @keydown.space.stop.prevent="props.onSelect(child, index)"
+    @focusin="onFocusin"
   >
     <button
       v-if="dragEnabled && dragHandle"

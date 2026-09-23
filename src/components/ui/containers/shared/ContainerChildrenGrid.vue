@@ -7,8 +7,6 @@ import { toCanvasSchemaNode, getCanvasSchemaArray } from '@/utils/canvas-schema'
 import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
 import { useGridSpanResize } from '@/builder/composables/use-grid-span-resize'
-import { useOptionalFormBuilderState } from '@/state/create-form-builder-state'
-import { useDeleteUndoNotice } from '@/builder/composables/use-delete-undo-notice'
 import CanvasGridItem from './CanvasGridItem.vue'
 
 const props = defineProps<{
@@ -68,17 +66,6 @@ const computeFallbackSchemaNode = (n: unknown): unknown =>
 const renderSchema = (node: FormKitSchemaFormKit) => {
   if (canvasCtx?.renderNode) return canvasCtx.renderNode(node) as any
   return getCanvasSchemaArray(node, computeFallbackSchemaNode) as any
-}
-
-// H7：所有容器（根画布 / card / list / steps / tabs pane / group / button-group /
-// input-group / badge）共用这一个组件渲染删除按钮，在这里统一包一层撤销提示，
-// 不用在每个容器各自的 deleteChild 里重复接一遍。useOptionalFormBuilderState
-// 兜底：脱离 FormBuilder 单独使用这个组件的场景（如果有）拿不到状态就不提示。
-const builderState = useOptionalFormBuilderState()
-const deleteUndoNotice = builderState ? useDeleteUndoNotice(builderState) : null
-const handleDelete = (index: number) => {
-  props.onDelete(index)
-  if (deleteUndoNotice) deleteUndoNotice.notify(builderState!.formDefinition.value)
 }
 
 const tailwindSafelist = [
@@ -300,7 +287,7 @@ const itemKey = (child: FormKitSchemaFormKit, idx: number): string =>
         :schema-render-data="schemaRenderData"
         :render-schema="renderSchema"
         :on-select="props.onSelect"
-        :on-delete="handleDelete"
+        :on-delete="props.onDelete"
         :on-copy="props.onCopy"
         :on-start-resize="startResize"
       />

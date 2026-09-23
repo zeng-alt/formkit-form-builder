@@ -51,7 +51,6 @@ export default {
     addTab: '新增标签',
     stepsConsolidateNotice: '已有内容已移入第 1 步',
     paneNameDuplicate: '名称「{name}」已被占用，请换一个',
-    deletedNotice: '已删除',
     prevStep: '上一步',
     nextStep: '下一步',
     finish: '完成',

@@ -23,6 +23,7 @@ import {
   rebalanceRowSpans,
   stripInputGroupOuterClass,
 } from './grid'
+import { computeGridInsert, resolveGridInsertDirection } from './grid-insert'
 import { collectSchemaNames, generateKey, generateNextFieldName } from './schema'
 import { getContainerSpec } from '@/elements/container-spec'
 import { schemaContainsSteps } from '@/utils/schema/steps'
@@ -188,8 +189,11 @@ function normalizeInsertValues(
   }) as FormKitSchemaFormKit[]
 }
 
-// 调整横向插入时的 col-span：优先使用 explicitRow（row-span>1 的精确命中），否则回退到“视觉行”算法
-function adjustColSpansForInsert(
+// J3：横向 row 布局容器（输入组 / 按钮组）的宽度调整规则，维持既有实现不变——新的
+// grid 插入规则（见 grid-insert.ts）只作用于 grid 布局的画布根与容器，不动这里。
+// 调用方（handleEnd 两条提交路径）只在 data-dnd-axis === 'x' 时才会调用这个函数；
+// 按钮组（非输入组）在下面第一行直接 return，宽度维持模板值，与之前完全一致。
+function adjustRowGroupColSpansForInsert(
   targetParentValues: any[],
   draggedOverValue: any,
   insertValues: any[],
@@ -351,7 +355,7 @@ export function handleEnd(
   let targetNextValues: SchemaNode[] | null = null
 
   if (sourceParent.el === targetParent.el) {
-    const remaining = sourceValues.filter((v) => {
+    let remaining = sourceValues.filter((v) => {
       const k = v?.__key
       if (typeof k === 'string' && k) return !draggedKeys.has(k)
       return !draggedValues.some((y) => eq(v, y))
@@ -361,19 +365,47 @@ export function handleEnd(
     const nextIndex = Math.max(0, Math.min(remaining.length, index - removedBefore))
 
     if (draggedOverNode) {
-      adjustColSpansForInsert(
-        remaining,
-        draggedOverNode.data.value,
-        insertValues,
-        insertState.verticalInsert ?? false,
-      )
+      // J3：axis 为 'x' 的横向 row 容器（输入组 / 按钮组）沿用旧规则；grid 容器
+      // （画布根 / card / group / list 模板 / tabs pane / steps pane 等）改走新的
+      // 纯函数，宽度与插入位置一起算好、直接产出完整的新兄弟数组。
+      const parentEl = insertState.insertPoint?.parent?.el
+      const isGridContainer = parentEl?.getAttribute('data-dnd-axis') !== 'x'
+      const explicitRow = insertState.explicitRow
+      if (!isGridContainer) {
+        adjustRowGroupColSpansForInsert(
+          remaining,
+          draggedOverNode.data.value,
+          insertValues,
+          insertState.verticalInsert ?? false,
+        )
+        remaining.splice(nextIndex, 0, ...insertValues)
+      } else if (typeof explicitRow === 'number' && Number.isFinite(explicitRow)) {
+        // row-span > 1 的目标命中到具体子行：沿用已有的精确定位逻辑，不受 J3 影响
+        adjustColSpansForInsertAtRow(remaining, explicitRow, insertValues)
+        remaining.splice(nextIndex, 0, ...insertValues)
+      } else {
+        const targetIdx = remaining.indexOf(draggedOverNode.data.value)
+        if (targetIdx >= 0) {
+          remaining = computeGridInsert(
+            remaining,
+            targetIdx,
+            resolveGridInsertDirection(insertState.verticalInsert, insertState.ascending),
+            insertValues,
+          )
+        } else {
+          insertValues.forEach((val, i) => {
+            insertValues[i] = setColSpan(val, 12)
+          })
+          remaining.splice(nextIndex, 0, ...insertValues)
+        }
+      }
     } else {
       insertValues.forEach((val, i) => {
         insertValues[i] = setColSpan(val, 12)
       })
+      remaining.splice(nextIndex, 0, ...insertValues)
     }
 
-    remaining.splice(nextIndex, 0, ...insertValues)
     // ctx 缺失时不写 DnD 内部列表值：commit 已被跳过，写了也不会被最终 DSL 覆盖，
     // 会让画布视觉状态与真源永久错位（比什么都不做更糟）。
     if (ctx) {
@@ -431,26 +463,61 @@ export function handleEnd(
         }
       }
 
-      const nextTargetValues = [...targetValues]
+      let nextTargetValues = [...targetValues]
 
-      // 调色板拖入的新元素保留定义里的 outerClass（模板宽度），不做行内重排/强制 12；
-      // 仅对画布内已有元素移动做 col-span 调整，避免覆盖模板默认宽度。
-      if (!isSource) {
-        if (draggedOverNode) {
-          adjustColSpansForInsert(
-            nextTargetValues,
-            draggedOverNode.data.value,
-            insertValues,
-            insertState.verticalInsert ?? false,
-          )
+      // J3：面板拖入与画布内移动落到已有元素旁边时规则一致（grid 容器改走
+      // computeGridInsert，宽度与插入位置都由它算好）；axis 为 'x' 的横向 row 容器
+      // （输入组 / 按钮组）沿用旧规则不变——历史上面板拖入这类容器保留模板宽度，
+      // 这里维持不变。没有命中具体目标（拖进空白处）时同样维持旧行为：画布内移动强制
+      // 铺满 12 列，面板拖入保留模板宽度。
+      if (draggedOverNode) {
+        const parentEl = insertState.insertPoint?.parent?.el
+        const isGridContainer = parentEl?.getAttribute('data-dnd-axis') !== 'x'
+        const explicitRow = insertState.explicitRow
+
+        if (isGridContainer) {
+          if (typeof explicitRow === 'number' && Number.isFinite(explicitRow)) {
+            // row-span > 1 的目标命中到具体子行：沿用已有的精确定位逻辑，不受 J3 影响
+            adjustColSpansForInsertAtRow(nextTargetValues, explicitRow, insertValues)
+            nextTargetValues.splice(index, 0, ...insertValues)
+          } else {
+            const targetIdx = nextTargetValues.indexOf(draggedOverNode.data.value)
+            if (targetIdx >= 0) {
+              nextTargetValues = computeGridInsert(
+                nextTargetValues,
+                targetIdx,
+                resolveGridInsertDirection(insertState.verticalInsert, insertState.ascending),
+                insertValues,
+              )
+            } else {
+              if (!isSource) {
+                insertValues.forEach((val, i) => {
+                  insertValues[i] = setColSpan(val, 12)
+                })
+              }
+              nextTargetValues.splice(index, 0, ...insertValues)
+            }
+          }
         } else {
+          if (!isSource) {
+            adjustRowGroupColSpansForInsert(
+              nextTargetValues,
+              draggedOverNode.data.value,
+              insertValues,
+              insertState.verticalInsert ?? false,
+            )
+          }
+          nextTargetValues.splice(index, 0, ...insertValues)
+        }
+      } else {
+        if (!isSource) {
           insertValues.forEach((val, i) => {
             insertValues[i] = setColSpan(val, 12)
           })
         }
+        nextTargetValues.splice(index, 0, ...insertValues)
       }
 
-      nextTargetValues.splice(index, 0, ...insertValues)
       if (ctx) {
         setParentValues(targetParent.el, targetParent.data, [...nextTargetValues])
         targetNextValues = nextTargetValues

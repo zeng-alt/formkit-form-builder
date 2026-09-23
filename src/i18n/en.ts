@@ -52,7 +52,6 @@ export default {
     addTab: 'Add tab',
     stepsConsolidateNotice: 'Existing content has been moved into step 1',
     paneNameDuplicate: 'The name "{name}" is already in use, please choose another',
-    deletedNotice: 'Deleted',
     prevStep: 'Previous',
     nextStep: 'Next',
     finish: 'Finish',
