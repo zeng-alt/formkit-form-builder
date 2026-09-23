@@ -46,6 +46,7 @@ export default {
     listDropHere: 'Drag fields here',
     addStep: 'Add step',
     deleteStep: 'Delete step (keeps the first one)',
+    addTab: 'Add tab',
     prevStep: 'Previous',
     nextStep: 'Next',
     finish: 'Finish',

@@ -12,7 +12,7 @@ const { t } = useFormBuilderI18n()
 
 const type = createPropsProp<string>('type', 'line')
 const placement = createPropsProp<string>('placement', 'top')
-const size = createPropsProp<string>('size', 'medium')
+const size = createPropsProp<string>('size', 'small')
 const animated = createPropsProp<boolean>('animated', true)
 const closable = createPropsProp<boolean>('closable', false)
 </script>

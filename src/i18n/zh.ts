@@ -45,6 +45,7 @@ export default {
     listDropHere: '拖拽字段到这里',
     addStep: '添加步骤',
     deleteStep: '删除步骤（默认保留第一个）',
+    addTab: '新增标签',
     prevStep: '上一步',
     nextStep: '下一步',
     finish: '完成',
