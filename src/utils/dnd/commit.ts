@@ -33,11 +33,12 @@ import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 const UUID_NAME_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function normalizeInputGroupChildren(children: FormKitSchemaFormKit[]) {
-  const list = Array.isArray(children) ? children : []
+  // 防御性拷贝：不确定调用方数组是否会被其它地方保留引用，setColSpan/rebalanceRowSpans
+  // 只改数组自己的下标（不改节点对象），但拷贝一份仍更安全，成本可忽略
+  const list = Array.isArray(children) ? [...children] : []
   if (list.length === 0) return []
   if (list.length === 1) {
-    const only = list[0]
-    setColSpan(only, 12)
+    const only = setColSpan(list[0], 12)
     return [stripInputGroupOuterClass(only)]
   }
   // 输入组单行：总 col-span 不得超过 12（一行网格上限），超出按比例缩放，避免溢出容器。
@@ -200,7 +201,9 @@ function adjustColSpansForInsert(
   if (axis === 'x' && !isInputGroup) return
 
   if (isVertical) {
-    insertValues.forEach((val) => setColSpan(val, 12))
+    insertValues.forEach((val, i) => {
+      insertValues[i] = setColSpan(val, 12)
+    })
     return
   }
 
@@ -214,7 +217,9 @@ function adjustColSpansForInsert(
   const targetRow = rows.find((r) => r.items.includes(draggedOverValue))
 
   if (!targetRow) {
-    insertValues.forEach((val) => setColSpan(val, 12))
+    insertValues.forEach((val, i) => {
+      insertValues[i] = setColSpan(val, 12)
+    })
     return
   }
 
@@ -224,10 +229,20 @@ function adjustColSpansForInsert(
 
   if (totalCount <= 4) {
     const newSpan = 12 / totalCount
-    targetRow.items.forEach((item) => setColSpan(item, newSpan))
-    insertValues.forEach((val) => setColSpan(val, newSpan))
+    // targetRow.items 里的元素与 targetParentValues 同下标区间一一对应（getVisualRows
+    // 按下标顺序累积），直接改 targetParentValues 的下标，让 setColSpan 的结果真正
+    // 传播回调用方后续会用到的那份数组（remaining / nextTargetValues），而不是只改一份
+    // 用完即弃的 items 视图
+    for (let i = targetRow.startIndex; i <= targetRow.endIndex; i++) {
+      targetParentValues[i] = setColSpan(targetParentValues[i], newSpan)
+    }
+    insertValues.forEach((val, i) => {
+      insertValues[i] = setColSpan(val, newSpan)
+    })
   } else {
-    insertValues.forEach((val) => setColSpan(val, 3))
+    insertValues.forEach((val, i) => {
+      insertValues[i] = setColSpan(val, 3)
+    })
   }
 }
 
@@ -353,7 +368,9 @@ export function handleEnd(
         insertState.verticalInsert ?? false,
       )
     } else {
-      insertValues.forEach((val) => setColSpan(val, 12))
+      insertValues.forEach((val, i) => {
+        insertValues[i] = setColSpan(val, 12)
+      })
     }
 
     remaining.splice(nextIndex, 0, ...insertValues)
@@ -425,7 +442,9 @@ export function handleEnd(
             insertState.verticalInsert ?? false,
           )
         } else {
-          insertValues.forEach((val) => setColSpan(val, 12))
+          insertValues.forEach((val, i) => {
+            insertValues[i] = setColSpan(val, 12)
+          })
         }
       }
 

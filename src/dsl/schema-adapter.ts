@@ -2,6 +2,7 @@
 // dslToSchema：渲染 / 导出给前端运行时
 // schemaToDsl：导入 / 解析外部 schema（best-effort，未知节点无损保留到 meta）
 
+import { toRaw } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { FormDefinition, FormNode, FormSettings } from '../types/dsl'
 import { DSL_VERSION } from '../types/dsl'
@@ -9,33 +10,64 @@ import { generateKey } from '../utils/dnd/schema'
 import { getElementTypeDef, getElementTypeDefs } from './registry'
 import { registerBuiltinElementTypes } from './definitions'
 import type { SchemaNode } from './convert'
+import { freezeDeepDev } from '../utils/freeze'
 
 registerBuiltinElementTypes()
 
-export function dslToSchema(form: FormDefinition): FormKitSchemaFormKit[] {
-  const convert = (node: FormNode): SchemaNode => {
-    const def = getElementTypeDef(node.type)
-    if (!def) {
-      // 未注册类型：若来自 schemaToDsl 的 fallback（meta.rawSchema），原样透传，保证渲染不崩
-      const raw = (node as { meta?: { rawSchema?: unknown } }).meta?.rawSchema
-      if (raw && typeof raw === 'object') return raw as SchemaNode
+// 按 DSL 节点身份缓存转换结果：toSchema 只读 node 本身与 ctx.children（不读整个
+// form，见 DslToSchemaCtx），是节点身份的纯函数。DSL 的编辑路径全部不可变更新，
+// 节点引用不变 ⇒ 其整棵子树不变，命中缓存时直接复用同一个 schema 对象（含其全部
+// 子孙），未改动的字段在设计器画布上因此保持 === 引用，Vue/FormKit 的 props 浅比较
+// 才能跳过它们的重渲染——这是本文件"增量转换"的核心。
+const schemaCache = new WeakMap<FormNode, SchemaNode>()
+
+function convertNode(input: FormNode): SchemaNode {
+  // DSL 节点按设计应当是纯 JS 数据（formDefinition 是 shallowRef，从不套 reactive()），
+  // 但外部消费方（如 FormRenderer 的调用方）可能把 definition 包进了 reactive()/传给
+  // 一个会做响应式包装的宿主——这种情况下 node 是 Vue 的响应式 Proxy。toRaw 拿到的
+  // 原始对象上直接读属性不会再经过 reactive 的 get 陷阱，其嵌套属性（如 props.options）
+  // 也就还是普通对象，不会把响应式代理带进缓存/冻结（Object.freeze 一个响应式 Proxy
+  // 再读它会触发 Proxy 不变量校验失败，见测试里复现的场景）。缓存同样按 toRaw 后的
+  // 引用为键，保证同一份数据无论是否被外部套了 reactive() 都命中同一个缓存条目。
+  const node = toRaw(input)
+  const cached = schemaCache.get(node)
+  if (cached) return cached
+
+  const def = getElementTypeDef(node.type)
+  let schema: SchemaNode
+  if (!def) {
+    // 未注册类型：若来自 schemaToDsl 的 fallback（meta.rawSchema），原样透传，保证渲染不崩。
+    // rawSchema 是 node 自身携带的数据，同一个 node 引用下它也不变，缓存策略一致。
+    const raw = (node as { meta?: { rawSchema?: unknown } }).meta?.rawSchema
+    if (raw && typeof raw === 'object') {
+      schema = raw as SchemaNode
+    } else {
       throw new Error(`[dslToSchema] 未注册的 DSL 类型: ${node.category}/${node.type}`)
     }
+  } else {
     const hasChildren =
       (node.category === 'container' || node.category === 'layout') &&
       Array.isArray((node as { children?: FormNode[] }).children)
     const children: SchemaNode[] | undefined = hasChildren
-      ? (node as { children: FormNode[] }).children.map(convert)
+      ? (node as { children: FormNode[] }).children.map(convertNode)
       : undefined
-    return def.toSchema(node, { form, children })
+    schema = def.toSchema(node, { children })
   }
 
-  const rootChildren = form.root.children.map(convert)
-  const settings = form.settings
+  freezeDeepDev(schema)
+  schemaCache.set(node, schema)
+  return schema
+}
+
+export function dslToSchema(form: FormDefinition): FormKitSchemaFormKit[] {
+  // 同 convertNode：防御外部传入的响应式 definition，取 raw 后再读顶层字段
+  const rawForm = toRaw(form)
+  const rootChildren = rawForm.root.children.map(convertNode)
+  const settings = rawForm.settings
 
   const formNode: any = {
     $formkit: 'form',
-    name: form.name,
+    name: rawForm.name,
     props: {
       labelPosition: settings.labelAlign === 'left' ? 'left' : 'top',
       labelWidth: settings.labelWidth ?? 80,
@@ -44,8 +76,8 @@ export function dslToSchema(form: FormDefinition): FormKitSchemaFormKit[] {
       submit: settings.submit,
       // id / version 位于 DSL 顶层（非 settings），随 schema 带入表单节点 props，
       // 供 renderer 的 submit 逻辑与字段 bind 代码经 runBindCode 读取
-      id: form.id,
-      version: form.version,
+      id: rawForm.id,
+      version: rawForm.version,
     },
     children: rootChildren,
   }
@@ -60,23 +92,25 @@ export function dslToOutputSchema(form: FormDefinition): FormKitSchemaFormKit[] 
   return wrapped
 }
 
-/** 将表单 children 中的容器/布局节点包裹在 $formkit: 'group' 中 */
+/** 将表单 children 中的容器/布局节点包裹在 $formkit: 'group' 中。
+ *  纯函数，不改动输入——dslToSchema 缓存复用同一个 schema 对象供下次调用命中缓存，
+ *  这里原地改写会污染缓存（开发态下这些对象已被冻结，改写会直接抛错）。 */
 function wrapFormChildren(schemaNode: FormKitSchemaFormKit): FormKitSchemaFormKit {
   const n: SchemaNode = schemaNode
-  if (!n || typeof n !== 'object') return schemaNode
-  if (Array.isArray(n.children)) {
-    n.children = n.children.map((child) => wrapNodeWithGroup(child))
-  }
-  return schemaNode
+  if (!n || typeof n !== 'object' || !Array.isArray(n.children)) return schemaNode
+  return {
+    ...n,
+    children: n.children.map((child) => wrapNodeWithGroup(child)),
+  } as FormKitSchemaFormKit
 }
 
-function wrapNodeWithGroup(node: any): any {
-  if (!node || typeof node !== 'object') return node
+function wrapNodeWithGroup(input: any): any {
+  if (!input || typeof input !== 'object') return input
 
-  // 递归处理子节点
-  if (Array.isArray(node.children)) {
-    node.children = node.children.map((c: any) => wrapNodeWithGroup(c))
-  }
+  // 递归处理子节点：不改动传入节点，子节点有变化时换成拷贝后的新节点
+  const node = Array.isArray(input.children)
+    ? { ...input, children: input.children.map((c: any) => wrapNodeWithGroup(c)) }
+    : input
 
   // 跳过已包裹的节点
   if (node.$formkit === 'group' || node.$formkit === 'form' || node.$formkit === 'list') return node
@@ -95,9 +129,12 @@ function wrapNodeWithGroup(node: any): any {
   if (!isContainerOrLayout) return node
 
   const nodeName = node.props?.name ?? node.name
-  const original = { ...node }
-  // 容器/布局自身不再携带 name（由外层 group 提供）
-  if (original.props && original.props.name) delete original.props.name
+  const original: any = { ...node }
+  // 容器/布局自身不再携带 name（由外层 group 提供）；props 与 node 共享，删前先拷贝
+  if (original.props && original.props.name) {
+    original.props = { ...original.props }
+    delete original.props.name
+  }
   delete original.name
   const outerClass = original.outerClass
   delete original.outerClass
@@ -252,6 +289,12 @@ export function reconcileDslTree(
       if (!key) return schemaNodeToDslNode(schemaNode)
       existing = dslIndex.get(key)
       const oldSchema = schemaIndex.get(key)
+      // 引用快路径：画布/DnD 提交的 schema 节点常来自缓存投影（dslToSchema 命中缓存）
+      // 或 toRaw 后与旧投影同一份，直接 === 即可判定未变，免去整树 JSON.stringify；
+      // 代理/拷贝后仍等价（值相同但引用不同）时落到下面的深比较兜底
+      if (existing && oldSchema && toRaw(oldSchema) === toRaw(schemaNode)) {
+        return existing
+      }
       if (existing && oldSchema && JSON.stringify(oldSchema) === JSON.stringify(schemaNode)) {
         return existing
       }
@@ -263,9 +306,14 @@ export function reconcileDslTree(
       if (existing.category === 'container' || existing.category === 'layout') {
         const existingChildren = existing.children
         const newChildren = schemaChildrenOf(schemaNode)
+        const oldChildren = oldSchema ? schemaChildrenOf(oldSchema) : []
+        const sameChildrenByRef =
+          oldSchema != null &&
+          oldChildren.length === newChildren.length &&
+          oldChildren.every((c, i) => toRaw(c) === toRaw(newChildren[i]))
         if (
-          oldSchema &&
-          JSON.stringify(schemaChildrenOf(oldSchema)) === JSON.stringify(newChildren)
+          sameChildrenByRef ||
+          (oldSchema && JSON.stringify(oldChildren) === JSON.stringify(newChildren))
         ) {
           next.children = existingChildren
         } else {

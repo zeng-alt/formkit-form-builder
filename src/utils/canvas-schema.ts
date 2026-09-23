@@ -1,5 +1,33 @@
+import { toRaw } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { schemaChildren, type SchemaNode } from './schema/types'
+
+// 画布渲染身份缓存：按源节点（toRaw 后）缓存喂给 FormKitSchema 的单元素数组 [node]。
+// 同一个源 schema 节点每次都得到同一个数组引用，FormKitSchema 的 schema prop 因此
+// 保持 === 不变，未改动的字段就不会被 Vue 判定为"props 变了"而重新渲染。
+// WeakMap 键是源节点本身：dslToSchema 缓存命中时源节点引用不变 ⇒ 这里也命中。
+// 外层再按 compute 分桶：不同的渲染管线（画布上下文 / 无上下文兜底）对同一源节点
+// 产出不同结果，不能共用一份缓存；compute 因此必须是稳定的函数引用（模块级常量）。
+const canvasSchemaArrayCache = new WeakMap<object, WeakMap<object, unknown[]>>()
+
+/** 按源节点身份缓存 compute(field) 的单元素数组结果；compute 必须是 field 的纯函数且引用稳定。 */
+export function getCanvasSchemaArray(
+  field: unknown,
+  compute: (node: unknown) => unknown,
+): unknown[] {
+  if (!field || typeof field !== 'object') return [compute(field)]
+  let bucket = canvasSchemaArrayCache.get(compute)
+  if (!bucket) {
+    bucket = new WeakMap()
+    canvasSchemaArrayCache.set(compute, bucket)
+  }
+  const raw = toRaw(field as object)
+  const cached = bucket.get(raw)
+  if (cached) return cached
+  const next = [compute(field)]
+  bucket.set(raw, next)
+  return next
+}
 
 export function toCanvasSchemaNode(node: FormKitSchemaFormKit): FormKitSchemaFormKit {
   if (!node || typeof node !== 'object') return node

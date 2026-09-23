@@ -1,11 +1,12 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { computed, ref } from 'vue'
-import type { ComputedRef, Ref } from 'vue'
+import { computed, ref, toRaw } from 'vue'
+import type { ComputedRef, Ref, ShallowRef } from 'vue'
 import { dslToSchema } from '@/dsl'
 import { generateKey } from '../utils/dnd/schema'
 import { findDslNodeByKey } from '../utils/schema/dsl-tree'
 import { reconcileDslTree } from '@/dsl'
 import { ensureDslKeys } from '@/dsl/keys'
+import { freezeDeepDev } from '@/utils/freeze'
 import type { FormDefinition, FormNode } from '@/types/dsl'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
@@ -13,14 +14,6 @@ type DefSnapshot = FormDefinition
 
 const MAX_HISTORY = 100
 const MERGE_WINDOW_MS = 500
-
-function cloneDef(def: DefSnapshot): DefSnapshot {
-  try {
-    return structuredClone(def)
-  } catch {
-    return JSON.parse(JSON.stringify(def)) as DefSnapshot
-  }
-}
 
 function dslRoot(def: DefSnapshot): FormNode[] {
   return Array.isArray(def?.root?.children) ? def.root.children : []
@@ -33,22 +26,34 @@ function dslRoot(def: DefSnapshot): FormNode[] {
 // 没有任何地方读取），要么只在别处被过滤/丢弃（__raw__ifExpression 同理；bind 迁移
 // 也没有内部生产者，只覆盖极旧的 FormKit 原生 bind 用法）——本库无历史数据兼容负担，
 // 已随之删除，避免在每次 DnD 提交的热路径上做无人消费的搬字段。
-function ensureNodeKeys(schema: FormKitSchemaFormKit[]) {
-  const visit = (nodes: SchemaNode[]) => {
-    for (const node of nodes) {
-      if (!node || typeof node !== 'object') continue
-      if (typeof node.__key !== 'string' || !node.__key) {
-        node.__key = generateKey()
-      }
-      visit(schemaChildren(node))
-    }
-  }
-  visit(schema)
+//
+// 纯函数、结构共享：不改动传入的 schema 数组（画布 DnD 可能仍持有这份引用，
+// 里面的节点也可能是 dslToSchema 缓存的共享对象），对每个节点先 toRaw 再判断，
+// 缺 __key 或子树有变化时才拷贝该节点，否则原样返回同一个引用。
+function ensureSchemaKeys(nodes: FormKitSchemaFormKit[]): FormKitSchemaFormKit[] {
+  let arrChanged = false
+  const next = nodes.map((n) => {
+    if (!n || typeof n !== 'object') return n
+    const raw = toRaw(n) as SchemaNode
+    const children = schemaChildren(raw)
+    const nextChildren = children.length
+      ? ensureSchemaKeys(children as FormKitSchemaFormKit[])
+      : children
+    const childrenChanged = nextChildren !== children
+    const missingKey = typeof raw.__key !== 'string' || !raw.__key
+    if (!childrenChanged && !missingKey) return n
+    arrChanged = true
+    const result: SchemaNode = { ...raw }
+    if (childrenChanged) result.children = nextChildren
+    if (missingKey) result.__key = generateKey()
+    return result as FormKitSchemaFormKit
+  })
+  return arrChanged ? next : nodes
 }
 
 /** 写漏斗依赖的实例状态切片。 */
 export interface SchemaHistoryState {
-  formDefinition: Ref<FormDefinition>
+  formDefinition: ShallowRef<FormDefinition>
   formSchema: ComputedRef<FormKitSchemaFormKit[]>
   selectedIndex: Ref<number>
   selectedKey: Ref<string | null>
@@ -112,9 +117,11 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
   }
 
   // 所有写真源的路径（提交 / undo / redo / 外部替换）都经过这里：统一补齐画布 key，
-  // 无 key 的外部定义（如 toPortableDefinition 的产物）载入后容器子节点也能选中
+  // 无 key 的外部定义（如 toPortableDefinition 的产物）载入后容器子节点也能选中。
+  // 开发态深度冻结：真源自此不可变，增量转换/历史快照按引用判等才是可靠的——
+  // 冻结新节点是 O(变更量)（已冻结的未变子树直接跳过，见 freezeDeepDev 的实现）。
   function applyDefinition(nextDef: DefSnapshot) {
-    const def = ensureDslKeys(nextDef)
+    const def = freezeDeepDev(ensureDslKeys(nextDef))
     const prevKey = selectedKey.value
     formDefinition.value = def
     if (prevKey) {
@@ -147,7 +154,9 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
       past.value.length > 0
 
     if (!shouldMerge) {
-      past.value.push(cloneDef(currentDef))
+      // 历史快照直接存定义引用：DSL 全程不可变更新（展开拷贝），旧快照与当前定义
+      // 天然结构共享，不需要再深拷贝一份隔离
+      past.value.push(currentDef)
       if (past.value.length > MAX_HISTORY) {
         past.value.splice(0, past.value.length - MAX_HISTORY)
       }
@@ -169,10 +178,7 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
       settings?: FormDefinition['settings']
     },
   ) {
-    const working = cloneDef(
-      nextSchema as unknown as DefSnapshot,
-    ) as unknown as FormKitSchemaFormKit[]
-    ensureNodeKeys(working)
+    const working = ensureSchemaKeys(nextSchema)
     const source =
       options?.name || options?.settings
         ? {
@@ -188,13 +194,11 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
     nextSchema: FormKitSchemaFormKit[],
     options?: { reason?: string; merge?: boolean },
   ) {
-    const working = cloneDef(
-      nextSchema as unknown as DefSnapshot,
-    ) as unknown as FormKitSchemaFormKit[]
-    ensureNodeKeys(working)
+    const working = ensureSchemaKeys(nextSchema)
     const def = formDefinition.value
-    // 以 DSL 真源重新投影作为"旧 schema"基线：formSchema.value 是缓存投影，可能被画布
-    // DnD 的共享引用原地改写，导致 reconcile 误判为"无变更"而复用旧 DSL 子树。
+    // 以 DSL 真源重新投影作为"旧 schema"基线：直接用 formSchema.value 本应等价，
+    // 这里重新投影只是防御性写法——dslToSchema 是按节点身份缓存的纯函数，同一个
+    // def 再转一次立刻命中缓存，代价可忽略。
     const currentProjection = (() => {
       try {
         const wrapped = dslToSchema(def)
@@ -211,26 +215,27 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
     const previous = past.value.pop()
     if (!previous) return
 
-    future.value.unshift(cloneDef(formDefinition.value))
+    // 历史快照都是不可变定义引用，undo/redo 之间来回倒不需要拷贝隔离
+    future.value.unshift(formDefinition.value)
     if (future.value.length > MAX_HISTORY) {
       future.value.splice(MAX_HISTORY)
     }
 
     lastCommit.value = null
-    applyDefinition(cloneDef(previous))
+    applyDefinition(previous)
   }
 
   function redo() {
     const next = future.value.shift()
     if (!next) return
 
-    past.value.push(cloneDef(formDefinition.value))
+    past.value.push(formDefinition.value)
     if (past.value.length > MAX_HISTORY) {
       past.value.splice(0, past.value.length - MAX_HISTORY)
     }
 
     lastCommit.value = null
-    applyDefinition(cloneDef(next))
+    applyDefinition(next)
   }
 
   function resetHistory() {

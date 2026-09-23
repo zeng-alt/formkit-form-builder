@@ -35,7 +35,9 @@ export function useContainerDragAndDrop<T>(params: {
     commitSchemaReconcile: state.commitSchemaReconcile,
   }
 
-  const [containerRef, items, updateConfig] = useDragAndDrop<T>(params.modelValue.value, {
+  // 拷贝初始值：直接把投影数组交给 DnD 库，库内部可能原地改写数组（见 dnd/commit.ts
+  // 的 setParentValues 用法），不拷贝会污染 dslToSchema 的缓存投影
+  const [containerRef, items, updateConfig] = useDragAndDrop<T>([...params.modelValue.value], {
     group: 'form-builder',
     nativeDrag: true,
     // 校验被拖节点类型。值来源优先级：activeState（拖拽起始节点）→ currentTargetValue

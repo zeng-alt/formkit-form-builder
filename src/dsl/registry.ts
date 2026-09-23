@@ -7,14 +7,7 @@
 // 本模块保持纯净（不含 .vue），保证 test-dsl 等纯 DSL 消费方可直接使用。
 
 import type { Component } from 'vue'
-import type {
-  FormNode,
-  NodeCategory,
-  FormDefinition,
-  LayoutType,
-  LayoutNode,
-  RenderKind,
-} from '../types/dsl'
+import type { FormNode, NodeCategory, LayoutType, LayoutNode, RenderKind } from '../types/dsl'
 import { generateKey } from '../utils/dnd/schema'
 import { getContainerSpec, type ContainerSpec } from '../elements/container-spec'
 import {
@@ -30,7 +23,6 @@ import {
 } from './convert'
 
 export interface DslToSchemaCtx {
-  form?: FormDefinition
   children?: SchemaNode[]
 }
 

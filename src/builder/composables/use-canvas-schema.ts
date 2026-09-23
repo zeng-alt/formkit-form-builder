@@ -14,12 +14,17 @@ import {
   generateKey,
   generateNextFieldName,
 } from '@/utils/dnd/schema'
-import { toCanvasSchemaNode } from '@/utils/canvas-schema'
+import { toCanvasSchemaNode, getCanvasSchemaArray } from '@/utils/canvas-schema'
 import { normalizeContainerNode } from '@/elements/canvas'
 import { provideCanvasSchemaContext } from './canvas-schema-context'
 import { CANVAS_DRAGGING_CLASS, CANVAS_DROP_ZONE_CLASS } from '@/utils/dnd/drag-classes'
 import { schemaContainsSteps } from '@/utils/schema/steps'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
+
+// 画布渲染管线：容器规范化 + 画布专用改写。模块级常量，作为 getCanvasSchemaArray
+// 的缓存分桶键必须保持引用稳定
+const computeCanvasSchemaNode = (node: unknown): unknown =>
+  toCanvasSchemaNode(normalizeContainerNode(node) as FormKitSchemaFormKit)
 
 // 画布（根 DropArea）组合函数：负责根级 DnD 列表 + schema 变更/选中逻辑
 export function useCanvasSchema() {
@@ -80,14 +85,18 @@ export function useCanvasSchema() {
     const existingNames = new Set<string>()
     collectSchemaNames(formSchema.value, existingNames)
 
-    const ensureIdentity = (node: SchemaNode): SchemaNode => {
-      if (!node || typeof node !== 'object') return node
+    // 纯函数：不改动传入节点（可能来自缓存投影的共享引用），有变化时返回新对象
+    const ensureIdentity = (input: SchemaNode): SchemaNode => {
+      if (!input || typeof input !== 'object') return input
+      let node = input
       if (node.$formkit === 'submit' && Array.isArray(node.children)) {
-        delete node.children
+        const rest: SchemaNode = { ...node }
+        delete rest.children
+        node = rest
       }
       if (typeof node.__key === 'string' && node.__key) {
         if (Array.isArray(node.children))
-          node.children = schemaChildren(node).map((c) => ensureIdentity(c))
+          return { ...node, children: schemaChildren(node).map((c) => ensureIdentity(c)) }
         return node
       }
       const nextKey = generateKey()
@@ -115,7 +124,7 @@ export function useCanvasSchema() {
         next.children = schemaChildren(node).map((c) => ensureIdentity(c))
       return next
     }
-    const normalizedChildren = children.map((c) => ensureIdentity({ ...c }))
+    const normalizedChildren = children.map((c) => ensureIdentity(c))
 
     const childKeys = new Set<string>()
     const collectKeys = (nodes: SchemaNode[]) => {
@@ -180,7 +189,10 @@ export function useCanvasSchema() {
     const node: SchemaNode = { ...found.node }
     node.props = { ...node.props, ...props }
     const nextSchema = updateAtPath(formSchema.value, found.path, node)
-    commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], { reason: 'inline-edit', merge: true })
+    commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], {
+      reason: 'inline-edit',
+      merge: true,
+    })
   }
 
   // ── 根级 DnD ────────────────────────────────────────────────────────────────
@@ -189,7 +201,9 @@ export function useCanvasSchema() {
     formSchema: state.formSchema,
     commitSchemaReconcile: state.commitSchemaReconcile,
   }
-  const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>(formSchema.value, {
+  // 拷贝初始值：formSchema.value 是 dslToSchema 的缓存投影，直接交给 DnD 库、库内部
+  // 原地改写数组会污染缓存（数组本身不缓存，但传引用等于把它当成可写数组用了）
+  const [formFields, fields] = useDragAndDrop<FormKitSchemaFormKit>([...formSchema.value], {
     group: 'form-builder',
     nativeDrag: true,
     draggingClass: CANVAS_DRAGGING_CLASS,
@@ -250,11 +264,12 @@ export function useCanvasSchema() {
   // ── 渲染上下文（提供给容器组件）────────────────────────────────────────────
   const schemaLibrary = canvasSchemaLibrary
 
-  const renderCanvasSchemaNode = (field: any): any => {
-    if (!field || typeof field !== 'object') return field
-    const next = normalizeContainerNode(field)
-    return toCanvasSchemaNode(next as FormKitSchemaFormKit)
-  }
+  // 按源节点身份缓存渲染结果的单元素数组：同一个源节点（dslToSchema 缓存命中时引用
+  // 不变）每次拿到同一个数组，FormKitSchema 的 schema prop 保持 === 不变，Vue 才能
+  // 跳过未改动字段的重渲染。normalizeContainerNode / toCanvasSchemaNode 都是 field
+  // 的纯函数（只读 field 本身与模块级注册表，不读其它外部可变状态）。
+  const renderCanvasSchemaNode = (field: any): unknown[] =>
+    getCanvasSchemaArray(field, computeCanvasSchemaNode)
 
   provideCanvasSchemaContext({
     library: schemaLibrary,

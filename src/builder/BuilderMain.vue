@@ -121,6 +121,7 @@ if (!props.modelValue) {
 let syncingFromProps = false
 let syncingToProps = false
 
+// 外部传入的对象我们不能假设不被外部代码原地修改，预载前深拷贝隔离
 const safeClone = <T>(value: T): T => {
   try {
     return structuredClone(value)
@@ -146,12 +147,15 @@ watch(
 )
 
 // 内部 → 外部：任何编辑 / 拖拽 / undo / redo 后吐出当前表单定义。
+// 直接 emit def 本身，不再深拷贝：def 是不可变更新产出的定义（开发态已深度冻结），
+// 吐给外部的这份视为只读快照——调用方不应原地修改它（改了也改不动 DSL 真源，
+// 冻结下会直接抛错），需要另存一份改动请自行拷贝。v-model 使用方式见 README。
 watch(
   formDefinition,
   (def) => {
     if (syncingFromProps) return
     syncingToProps = true
-    emit('update:modelValue', safeClone(def))
+    emit('update:modelValue', def)
     nextTick(() => {
       syncingToProps = false
     })

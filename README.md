@@ -77,6 +77,8 @@ const config = {
 
 `FormBuilder` binds `FormDefinition` via `v-model` bidirectionally: preload existing forms and emit edits in real time, ready to save to backend.
 
+> The definition emitted through `update:modelValue` is treated as immutable (in dev builds it is deeply frozen): don't mutate it in place — copy it first if you need a modified version. This lets the builder keep unchanged nodes' object identity across edits, which is what makes incremental re-rendering possible.
+
 ### 3) Render Forms
 
 `FormRenderer` renders `FormDefinition` into a fillable, submittable FormKit form:
@@ -195,7 +197,7 @@ without it there is no form definition to render.
 
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `update:modelValue` | `value: FormDefinition` | Emitted when form definition changes (v-model bidirectional binding) |
+| `update:modelValue` | `value: FormDefinition` | Emitted when form definition changes (v-model bidirectional binding). Treated as immutable — see note above; don't mutate it in place |
 
 #### Slots
 

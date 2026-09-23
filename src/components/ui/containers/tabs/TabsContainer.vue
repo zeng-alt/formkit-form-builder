@@ -240,7 +240,7 @@ const duplicateChild = (index: number) => {
         :delete-tooltip-text="t('builder.deleteField')"
         :data-attrs="{ 'data-tabs-pane-key': activePaneKey }"
         :set-nested-parent-on-root="paneDnd.setNestedParentOnRoot"
-        :on-select="(child) => onSelectChild(child)"
+        :on-select="onSelectChild"
         :on-delete="deleteChild"
         :on-copy="duplicateChild"
         :on-resize-end="paneDnd.emitUpdate"

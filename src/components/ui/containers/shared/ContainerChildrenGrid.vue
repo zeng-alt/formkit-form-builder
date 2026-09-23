@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch, type Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
-import { FormKitSchema } from '@formkit/vue'
-import { NButton, NTooltip, NEmpty } from 'naive-ui'
+import { NEmpty } from 'naive-ui'
 import { getColSpan, getRowSpan } from '@/utils/dnd/grid'
-import { toCanvasSchemaNode } from '@/utils/canvas-schema'
+import { toCanvasSchemaNode, getCanvasSchemaArray } from '@/utils/canvas-schema'
 import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
-import { pluralize, validationCount } from '@/utils/text'
 import { useGridSpanResize } from '@/builder/composables/use-grid-span-resize'
-import type { SchemaNode } from '@/utils/schema/types'
+import CanvasGridItem from './CanvasGridItem.vue'
 
 const props = defineProps<{
   containerRef: Ref<unknown>
@@ -56,12 +54,18 @@ const schemaLibrary = computed(() => canvasCtx?.library)
 // 树下），退化为只有 helper——设计态本来就没有真实表单数据，行为与此前直接传
 // EXPR_SCHEMA_HELPERS 一致，只是改用统一入口，不再是特例
 const schemaRenderData = useSchemaRenderData()
-// canvasCtx.renderNode 类型是 (node: unknown) => unknown（画布上下文里可插拔的钩子，
-// 不锁定具体节点形态）；toCanvasSchemaNode 需要 FormKitSchemaFormKit，两个分支的输入/
-// 输出都不完全一致，且最终要喂给 FormKitSchema 的 schema prop（FormKit 自己的大联合
+// canvasCtx.renderNode 已经按源节点身份缓存，返回喂给 FormKitSchema 的单元素数组
+//（见 use-canvas-schema.ts）；没有 canvasCtx 时（脱离画布上下文的场景）本地按同样
+// 策略缓存 toCanvasSchemaNode 的结果，保证两条路径下 schema prop 都保持引用稳定。
+// canvasCtx.renderNode 类型是 (node: unknown) => unknown[]（画布上下文里可插拔的钩子，
+// 不锁定具体节点形态），最终要喂给 FormKitSchema 的 schema prop（FormKit 自己的大联合
 // 类型），这里保留必要的收尾断言
-const renderSchemaNode = (node: FormKitSchemaFormKit) => {
-  return (canvasCtx?.renderNode ? canvasCtx.renderNode(node) : toCanvasSchemaNode(node)) as any
+// 缓存分桶键，必须是稳定引用
+const computeFallbackSchemaNode = (n: unknown): unknown =>
+  toCanvasSchemaNode(n as FormKitSchemaFormKit)
+const renderSchema = (node: FormKitSchemaFormKit) => {
+  if (canvasCtx?.renderNode) return canvasCtx.renderNode(node) as any
+  return getCanvasSchemaArray(node, computeFallbackSchemaNode) as any
 }
 
 const tailwindSafelist = [
@@ -111,6 +115,9 @@ const { resizingIndex, startResize } = useGridSpanResize({
 const FLIP_DURATION_MS = 200
 const flipCssVar = '--canvas-item-flip'
 let prevFlipRects: Map<string, DOMRect> | null = null
+// 顺序 + 宽度（outerClass 里的 col/row-span）决定条目位置；两者都没变就不会有位移
+const flipKey = (c: FormKitSchemaFormKit | undefined) =>
+  `${c?.__key ?? c?.name ?? ''}|${c?.outerClass ?? ''}`
 
 const readChildRects = (): Map<string, DOMRect> => {
   const map = new Map<string, DOMRect>()
@@ -133,11 +140,15 @@ watch(
   () => props.items.value,
   (next, prev) => {
     if (!prev) return
+    // 只有"数量不变、顺序或宽度变了"才需要 FLIP；都没变（最常见的属性编辑）时直接跳过，
+    // 否则每次编辑都要对全部条目 getBoundingClientRect，强制同步布局，随字段数线性增长
+    if (next.length !== prev.length) return
+    if (next.every((c, i) => flipKey(c) === flipKey(prev[i]))) return
     prevFlipRects = readChildRects()
     nextTick(() => {
       const prevRects = prevFlipRects
       prevFlipRects = null
-      if (!prevRects || next.length !== prev.length) return
+      if (!prevRects) return
       const ul = props.containerRef?.value as HTMLElement | null
       if (!ul) return
       for (const li of Array.from(ul.children) as HTMLElement[]) {
@@ -166,10 +177,6 @@ const layout = computed(() => props.layout ?? 'grid')
 const dragEnabled = computed(() => props.dragEnabled !== false)
 const dragHandle = computed(() => props.dragHandle === true)
 
-// 步骤向导节点不提供复制按钮（全局唯一，复制无意义）
-const isStepsItem = (child: SchemaNode): boolean =>
-  child?.$cmp === 'steps' || child?.$formkit === 'steps'
-
 const baseUlClass = computed(() => {
   if (layout.value === 'row') {
     if (props.vertical) return 'w-full flex-1 flex flex-col items-start gap-0 list-none p-0 m-0'
@@ -184,27 +191,25 @@ const emptyPlaceholderClass = computed(
   () => 'absolute inset-0 flex items-center justify-center pointer-events-none',
 )
 
-const itemStyle = (child: FormKitSchemaFormKit) => {
-  if (layout.value === 'row') {
-    if (props.autoWidth) return { width: 'auto', flex: '0 0 auto' }
-    // 纵向按钮组：column 下 flex-basis 控制的是高度，width:0% 会把宽度压扁，
-    // 改为每个按钮占满整列宽度、不纵向拉伸
-    if (props.equalWidth && props.vertical) return { width: '100%', flex: '0 0 auto' }
-    // 按钮组：子按钮等分整行宽度（有多少个就平分多少）
-    if (props.equalWidth) return { flex: '1 1 0%', width: '0%' }
-    if (props.items.value.length === 1) return { width: '100%', flex: '0 0 auto' }
-    // 输入组（row 布局）：按 col-span/12 显示宽度（4 → 33%、6 → 50%）。
-    // 仅当历史数据总宽 > 12 时按比例缩放兜底，避免元素溢出容器、右侧按钮被裁掉
-    const spans = props.items.value.map((c) => Math.max(2, Math.min(12, getColSpan(c))))
-    const totalSpan = spans.reduce((a, b) => a + b, 0) || 1
-    const span = Math.max(2, Math.min(12, getColSpan(child)))
-    const pct = totalSpan > 12 ? (span / totalSpan) * 100 : (span / 12) * 100
-    return { width: `${pct}%`, flex: '0 0 auto' }
-  }
-  return {
-    gridColumn: `span ${getColSpan(child)} / span ${getColSpan(child)}`,
-    gridRow: `span ${getRowSpan(child)} / span ${getRowSpan(child)}`,
-  }
+// itemStyle 拆成两组原语（字符串）props 而不是一个 style 对象：CanvasGridItem 是
+// 独立组件，对象 prop 每次都是新引用会让 Vue 判定"变了"进而放弃 props 浅比较的
+// 短路优化；宽度/跨度这些值本身是原语，未变时可以真正 === 相等。
+// row 布局（输入组 / 按钮组）依赖同层全部兄弟项的总宽，grid 布局只依赖自身 outerClass。
+const rowItemStyle = (child: FormKitSchemaFormKit): { width: string; flex: string } => {
+  if (props.autoWidth) return { width: 'auto', flex: '0 0 auto' }
+  // 纵向按钮组：column 下 flex-basis 控制的是高度，width:0% 会把宽度压扁，
+  // 改为每个按钮占满整列宽度、不纵向拉伸
+  if (props.equalWidth && props.vertical) return { width: '100%', flex: '0 0 auto' }
+  // 按钮组：子按钮等分整行宽度（有多少个就平分多少）
+  if (props.equalWidth) return { flex: '1 1 0%', width: '0%' }
+  if (props.items.value.length === 1) return { width: '100%', flex: '0 0 auto' }
+  // 输入组（row 布局）：按 col-span/12 显示宽度（4 → 33%、6 → 50%）。
+  // 仅当历史数据总宽 > 12 时按比例缩放兜底，避免元素溢出容器、右侧按钮被裁掉
+  const spans = props.items.value.map((c) => Math.max(2, Math.min(12, getColSpan(c))))
+  const totalSpan = spans.reduce((a, b) => a + b, 0) || 1
+  const span = Math.max(2, Math.min(12, getColSpan(child)))
+  const pct = totalSpan > 12 ? (span / totalSpan) * 100 : (span / 12) * 100
+  return { width: `${pct}%`, flex: '0 0 auto' }
 }
 
 const resizeHandleClass = computed(() => {
@@ -212,6 +217,9 @@ const resizeHandleClass = computed(() => {
   if (layout.value === 'row') return 'absolute top-2 right-10 z-30'
   return 'absolute top-1/2 -translate-y-1/2 -right-3 z-30'
 })
+
+const itemKey = (child: FormKitSchemaFormKit, idx: number): string =>
+  child?.__key || child?.name || `${child?.$formkit}-${idx}`
 </script>
 
 <template>
@@ -244,214 +252,45 @@ const resizeHandleClass = computed(() => {
            - 进入：CSS animation（.canvas-item-enter）
            - 排序/移动：手动 FLIP（watch items → 记录旧位置 → nextTick 后对比 → transform 过渡）
            - 离开：即时移除（无 leave 动画） -->
-      <li
+      <CanvasGridItem
         v-for="(child, idx) in props.items.value"
-        :key="child?.__key || child.name || `${child.$formkit}-${idx}`"
-        :data-item-key="child?.__key || child.name || `${child.$formkit}-${idx}`"
-        data-canvas-item="true"
-        :class="[
-          'canvas-item-enter',
-          'group rounded-xl transition-[border-color,background-color,box-shadow] duration-150',
-          'px-2 py-1 pr-4 h-full !z-20 relative border-[1.5px] min-w-0 box-border',
-          dragEnabled ? (dragHandle ? '!cursor-default' : '!cursor-grab') : '!cursor-default',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a277ff] focus-visible:ring-offset-2',
-          child?.__key && child.__key === props.selectedKey
-            ? 'border-solid border-[#a277ff] bg-[#a277ff]/[0.05] shadow-[0_0_0_3px_rgba(79,110,247,0.12)] dark:bg-[#a277ff]/[0.08] canvas-item-select-pop'
-            : 'border-dashed border-transparent hover:border-[#7c9ef8] hover:bg-[#f0f4ff] dark:hover:bg-[rgba(100,130,255,0.07)]',
-        ]"
-        :style="itemStyle(child)"
-        tabindex="0"
-        @pointerdown.stop="props.onSelect(child, idx)"
-        @keydown.enter.stop.prevent="props.onSelect(child, idx)"
-        @keydown.space.stop.prevent="props.onSelect(child, idx)"
-      >
-        <button
-          v-if="dragEnabled && dragHandle"
-          type="button"
-          tabindex="-1"
-          aria-label="Drag to reorder"
-          draggable="false"
-          data-dnd-handle="true"
-          class="absolute top-2 left-2 z-40 text-muted-foreground/70 hover:text-muted-foreground !cursor-grab"
-        >
-          <span aria-hidden="true" class="i-lucide-grip-vertical h-4 w-4"></span>
-        </button>
-        <div class="flex gap-1.5 p-1 w-full pb-2">
-          <div class="flex-1 w-full min-w-0">
-            <FormKitSchema
-              :schema="[renderSchemaNode(child)]"
-              :library="schemaLibrary"
-              :data="schemaRenderData"
-              :key="`container-child-${idx}`"
-            />
-          </div>
-        </div>
-
-        <!-- 左上角显示元素名称（左对齐，浮在顶边框上方）：悬停（虚线框）或选中（实线框）时显示 -->
-        <div
-          class="absolute -top-[23px] left-0 z-30 flex h-[22px] max-w-[160px] items-center rounded-[7px] border border-border/70 bg-card px-2 shadow-[0_1px_4px_rgba(0,0,0,0.12)] transition-[opacity] duration-150 dark:border-border/50 dark:bg-neutral-900"
-          :class="[
-            'opacity-0 pointer-events-none',
-            'group-hover:opacity-100',
-            child?.__key === props.selectedKey ? '!opacity-100' : '',
-          ]"
-        >
-          <span class="truncate text-[11px] text-muted-foreground">
-            {{ child?.name || child?.$formkit || child?.$cmp }}
-          </span>
-        </div>
-
-        <!-- 悬停延伸区：覆盖复制/删除按钮及其左 8px、连接元素顶边，保证鼠标移向按钮时虚线框不消失 -->
-        <span aria-hidden="true" class="absolute -top-[23px] right-0 z-30 h-[23px] w-[52px]"></span>
-
-        <!-- 复制按钮：删除按钮左侧，浮在顶边框上方 -->
-        <n-tooltip
-          v-if="props.onCopy && props.showDeleteTooltip && !isStepsItem(child)"
-          placement="top"
-        >
-          <template #trigger>
-            <n-button
-              quaternary
-              size="small"
-              :aria-label="props.copyAriaLabel"
-              draggable="false"
-              @pointerdown.stop.prevent
-              @click.stop="props.onCopy?.(idx)"
-              :class="[
-                'absolute -top-[23px] right-[22px] z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-[#7c9ef8]/25 hover:!text-[#4f6ef7] active:!scale-95 active:!bg-[#7c9ef8]/35 active:!text-[#4f6ef7] dark:!border-border/50 dark:hover:!bg-[#7c9ef8]/30 transition-[transform,background-color,color,opacity] duration-150',
-                'opacity-0 pointer-events-none',
-                'group-hover:opacity-100 group-hover:pointer-events-auto',
-                child?.__key === props.selectedKey
-                  ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
-                  : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
-              ]"
-            >
-              <template #icon
-                ><span aria-hidden="true" class="i-lucide-copy !h-[12px] !w-[12px]"></span
-              ></template>
-            </n-button>
-          </template>
-          {{ props.copyTooltipText }}
-        </n-tooltip>
-
-        <n-button
-          v-if="props.onCopy && !props.showDeleteTooltip && !isStepsItem(child)"
-          quaternary
-          size="small"
-          :aria-label="props.copyAriaLabel"
-          draggable="false"
-          @pointerdown.stop.prevent
-          @click.stop="props.onCopy?.(idx)"
-          :class="[
-            'absolute -top-[23px] right-[22px] z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-[#7c9ef8]/25 hover:!text-[#4f6ef7] active:!scale-95 active:!bg-[#7c9ef8]/35 active:!text-[#4f6ef7] dark:!border-border/50 dark:hover:!bg-[#7c9ef8]/30 transition-[transform,background-color,color,opacity] duration-150',
-            'opacity-0 pointer-events-none',
-            'group-hover:opacity-100 group-hover:pointer-events-auto',
-            child?.__key === props.selectedKey
-              ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
-              : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
-          ]"
-        >
-          <template #icon
-            ><span aria-hidden="true" class="i-lucide-copy !h-[12px] !w-[12px]"></span
-          ></template>
-        </n-button>
-
-        <!-- 删除按钮浮在右上角边框外侧（与边框留间距，不相连）：悬停（虚线框）或选中（实线框）时显示 -->
-        <n-tooltip v-if="props.showDeleteTooltip" placement="top">
-          <template #trigger>
-            <n-button
-              quaternary
-              size="small"
-              :aria-label="props.deleteAriaLabel"
-              draggable="false"
-              @pointerdown.stop.prevent
-              @click.stop="props.onDelete(idx)"
-              :class="[
-                'absolute -top-[23px] right-0 z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-red-100 hover:!text-red-600 active:!scale-95 active:!bg-red-200 active:!text-red-700 dark:!border-border/50 dark:hover:!bg-red-950/50 dark:hover:!text-red-400 transition-[transform,background-color,color,opacity] duration-150',
-                'opacity-0 pointer-events-none',
-                'group-hover:opacity-100 group-hover:pointer-events-auto',
-                child?.__key === props.selectedKey
-                  ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
-                  : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
-              ]"
-            >
-              <template #icon
-                ><span aria-hidden="true" class="i-lucide-trash-2 !h-[12px] !w-[12px]"></span
-              ></template>
-            </n-button>
-          </template>
-          {{ props.deleteTooltipText }}
-        </n-tooltip>
-
-        <n-button
-          v-else
-          quaternary
-          size="small"
-          :aria-label="props.deleteAriaLabel"
-          draggable="false"
-          @pointerdown.stop.prevent
-          @click.stop="props.onDelete(idx)"
-          :class="[
-            'absolute -top-[23px] right-0 z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-red-100 hover:!text-red-600 active:!scale-95 active:!bg-red-200 active:!text-red-700 dark:!border-border/50 dark:hover:!bg-red-950/50 dark:hover:!text-red-400 transition-[transform,background-color,color,opacity] duration-150',
-            'opacity-0 pointer-events-none',
-            'group-hover:opacity-100 group-hover:pointer-events-auto',
-            child?.__key === props.selectedKey
-              ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
-              : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
-          ]"
-        >
-          <template #icon
-            ><span aria-hidden="true" class="i-lucide-trash-2 !h-[12px] !w-[12px]"></span
-          ></template>
-        </n-button>
-
-        <div class="absolute bottom-2 right-2 flex flex-row z-40">
-          <div
-            v-if="child?.__key && child.__key === props.selectedKey"
-            class="px-2 mr-1 border-1 border-ring/40 dark:border-ring/20 rounded-md flex items-center justify-center"
-          >
-            <span class="text-xs">
-              {{ validationCount(child) }} {{ pluralize(validationCount(child), 'rule') }}
-            </span>
-          </div>
-        </div>
-
-        <n-button
-          v-if="!props.autoWidth && !props.equalWidth"
-          text
-          size="small"
-          :aria-label="props.resizeAriaLabel ?? 'Resize'"
-          :class="[
-            resizeHandleClass,
-            'opacity-0 pointer-events-none',
-            'group-hover:opacity-100 group-hover:pointer-events-auto',
-            'transition-[transform,opacity] duration-150',
-            '!cursor-ew-resize',
-            resizingIndex === idx
-              ? '!opacity-100 scale-110'
-              : isDragging
-                ? '!opacity-0 !pointer-events-none'
-                : '',
-          ]"
-          content-class="!cursor-ew-resize"
-          @pointerdown.stop.prevent="startResize($event, idx)"
-        >
-          <template #icon>
-            <span aria-hidden="true" class="i-lucide-more-vertical h-5 w-5"></span>
-          </template>
-        </n-button>
-
-        <div
-          v-if="resizingIndex === idx"
-          class="absolute inset-0 z-40 bg-[#a277ff]/[0.06] flex items-center justify-center rounded-xl border-[1.5px] border-[#a277ff]/50"
-        >
-          <span
-            class="bg-[#a277ff] text-white text-xs font-medium px-2.5 py-1 rounded-lg tracking-wide"
-          >
-            {{ getColSpan(child) }}
-          </span>
-        </div>
-      </li>
+        :key="itemKey(child, idx)"
+        :item-key="itemKey(child, idx)"
+        :child="child"
+        :index="idx"
+        :selected="!!child?.__key && child.__key === props.selectedKey"
+        :resizing="resizingIndex === idx"
+        :dragging="isDragging"
+        :drag-enabled="dragEnabled"
+        :drag-handle="dragHandle"
+        :layout="layout"
+        :auto-width="props.autoWidth"
+        :equal-width="props.equalWidth"
+        :grid-column="
+          layout === 'grid' ? `span ${getColSpan(child)} / span ${getColSpan(child)}` : undefined
+        "
+        :grid-row="
+          layout === 'grid' ? `span ${getRowSpan(child)} / span ${getRowSpan(child)}` : undefined
+        "
+        :row-width="layout === 'row' ? rowItemStyle(child).width : undefined"
+        :row-flex="layout === 'row' ? rowItemStyle(child).flex : undefined"
+        :col-span="getColSpan(child)"
+        :resize-handle-class="resizeHandleClass"
+        :show-delete-tooltip="props.showDeleteTooltip"
+        :delete-tooltip-text="props.deleteTooltipText"
+        :delete-aria-label="props.deleteAriaLabel"
+        :copy-aria-label="props.copyAriaLabel"
+        :copy-tooltip-text="props.copyTooltipText"
+        :resize-aria-label="props.resizeAriaLabel"
+        :has-copy="!!props.onCopy"
+        :schema-library="schemaLibrary"
+        :schema-render-data="schemaRenderData"
+        :render-schema="renderSchema"
+        :on-select="props.onSelect"
+        :on-delete="props.onDelete"
+        :on-copy="props.onCopy"
+        :on-start-resize="startResize"
+      />
     </ul>
 
     <div v-if="props.items.value.length === 0" :class="emptyPlaceholderClass">
@@ -464,43 +303,5 @@ const resizeHandleClass = computed(() => {
   </div>
 </template>
 
-<style scoped>
-/* 画布条目进入动画：拖入 / 复制 / 撤销恢复时淡入 + 轻微上浮回位。
-   用元素挂载时自动播放的 animation（而非 TransitionGroup 的 enter-from/enter-active），
-   配合上方手动 FLIP 实现排序移动动画，同时避免 DnD 库因 TransitionGroup 的
-   leave 动画期间 DOM 与 values 数量不一致而告警。 */
-.canvas-item-enter {
-  animation: canvas-item-enter 180ms ease-out;
-}
-@keyframes canvas-item-enter {
-  from {
-    opacity: 0;
-    transform: scale(0.98) translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-/* 选中：一次性紫色 ring 扩散提示，结束后回落到常规选中阴影 */
-@keyframes canvas-item-select-pop {
-  0% {
-    box-shadow: 0 0 0 0 rgba(162, 119, 255, 0.45);
-  }
-  100% {
-    box-shadow: 0 0 0 14px rgba(162, 119, 255, 0);
-  }
-}
-.canvas-item-select-pop {
-  animation: canvas-item-select-pop 300ms ease-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .canvas-item-enter {
-    animation: none;
-  }
-  .canvas-item-select-pop {
-    animation: none !important;
-  }
-}
-</style>
+<!-- 画布条目进入动画 / 选中提示的 keyframes 已随 <li> 一起迁到 CanvasGridItem.vue
+     （scoped 样式绑定在拥有对应 class 的组件上，这里不再重复定义）。 -->

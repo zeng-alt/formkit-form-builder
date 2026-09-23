@@ -217,8 +217,7 @@ function moveBetween<T>(data: ParentRecord<T>, state: DragState<T>) {
     // insertState 是跨画布实例共享的单例，固定为 InsertState<unknown>（不跟随调用方的 T），
     // data 这里按同一约定收窄成 ParentRecord<unknown>，和 insertState.draggedOverParent 的
     // 赋值（上面几行）用的是同一个模式
-    if (!insertState.insertPoint)
-      createInsertPoint(data as ParentRecord<unknown>, insertState)
+    if (!insertState.insertPoint) createInsertPoint(data as ParentRecord<unknown>, insertState)
     if (insertState.insertPoint) {
       const rect = data.el.getBoundingClientRect()
       const scrollLeft = window.scrollX || document.documentElement.scrollLeft
@@ -421,7 +420,8 @@ export function customInsertPlugin<T>(insertConfig: InsertConfig<T>, deps: DndCo
                 setParentValues(parent, parentData, [...newSchema])
               }
             },
-            { deep: true },
+            // 不需要 deep：formSchema 是不可变投影，任何改动都会产出新的根数组引用；
+            // deep 会在每次编辑时把整棵 schema 遍历一遍
           )
         }
 

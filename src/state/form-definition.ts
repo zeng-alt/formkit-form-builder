@@ -1,9 +1,10 @@
-import { computed, ref } from 'vue'
-import type { ComputedRef, Ref } from 'vue'
+import { computed, shallowRef } from 'vue'
+import type { ComputedRef, ShallowRef } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { FormDefinition, FormSettings } from '../types/dsl'
 import { dslToSchema, schemaToDsl } from '../dsl'
 import { ensureDslKeys } from '../dsl/keys'
+import { freezeDeepDev } from '../utils/freeze'
 
 // 默认画布初始节点（带稳定 __key，保证投影 / 选中一致）。不在这里写死 label：
 // 这里没有 i18n（t 函数）可用，硬编码的英文 'Submit' 在中文界面下就是错的；
@@ -43,7 +44,7 @@ function buildWrappedSchema(
 }
 
 export interface FormDefinitionState {
-  formDefinition: Ref<FormDefinition>
+  formDefinition: ShallowRef<FormDefinition>
   formSchema: ComputedRef<FormKitSchemaFormKit[]>
   commitSchemaChildren: (
     children: FormKitSchemaFormKit[],
@@ -53,16 +54,20 @@ export interface FormDefinitionState {
 
 // 按实例创建表单定义状态（DSL 真源 + 只读 schema 投影）。
 export function createFormDefinitionState(initialDefinition?: FormDefinition): FormDefinitionState {
-  // 规范表单定义：唯一真源。画布 / DnD 的 schema（formSchema）是其只读投影。
-  const formDefinition = ref<FormDefinition>(
-    initialDefinition
-      ? ensureDslKeys(initialDefinition)
-      : schemaToDsl(
-          buildWrappedSchema(DEFAULT_CHILDREN, {
-            name: DEFAULT_FORM_NAME,
-            settings: DEFAULT_SETTINGS,
-          }),
-        ),
+  // 规范表单定义：唯一真源，整体替换、从不深层改写（编辑路径全是展开拷贝），
+  // 用 shallowRef 而不是 ref：深层代理对不可变数据没有意义，配合开发态冻结，
+  // Vue 的 reactive() 对不可扩展对象本来就会跳过代理直接返回原对象。
+  const formDefinition = shallowRef<FormDefinition>(
+    freezeDeepDev(
+      initialDefinition
+        ? ensureDslKeys(initialDefinition)
+        : schemaToDsl(
+            buildWrappedSchema(DEFAULT_CHILDREN, {
+              name: DEFAULT_FORM_NAME,
+              settings: DEFAULT_SETTINGS,
+            }),
+          ),
+    ),
   )
 
   // schema 投影（只读）：渲染 / DnD / 画布使用，由 DSL 派生

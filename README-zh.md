@@ -76,6 +76,8 @@ const config = {
 
 `FormBuilder` 通过 `v-model` 双向绑定 `FormDefinition`：预载已有表单并实时吐出编辑结果，可直接保存到后端。
 
+> 经 `update:modelValue` 吐出的定义视为不可变（开发构建下会被深度冻结）：请勿原地修改，需要改动时先拷贝一份。设计器依靠这一点在编辑之间保持未改动节点的对象身份，从而只重渲染发生变化的部分。
+
 ### 3) 渲染表单
 
 `FormRenderer` 渲染 `FormDefinition` 为可填写、可提交的 FormKit 表单：
@@ -191,7 +193,7 @@ import {
 
 | 事件 | 参数 | 说明 |
 |------|------|------|
-| `update:modelValue` | `value: FormDefinition` | 表单定义变更时触发（v-model 双向绑定） |
+| `update:modelValue` | `value: FormDefinition` | 表单定义变更时触发（v-model 双向绑定）。视为不可变，见上文说明，请勿原地修改 |
 
 #### Slots
 
