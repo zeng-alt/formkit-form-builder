@@ -169,7 +169,6 @@ export function containerNodeFromSchema(s: SchemaNode, ctx: ChildrenConvertCtx):
         'props',
         'attrs',
         '__key',
-        '__preview_placeholder',
         'id',
       ].includes(key)
     )

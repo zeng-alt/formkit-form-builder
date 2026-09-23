@@ -39,7 +39,7 @@ function buildFormDef(children: FieldNode[]): FormDefinition {
       dataType: 'object',
       children,
     },
-    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+    settings: { labelWidth: 80, labelAlign: 'top' },
   }
 }
 

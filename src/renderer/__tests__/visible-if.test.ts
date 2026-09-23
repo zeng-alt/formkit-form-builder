@@ -57,7 +57,7 @@ function buildDefinition(): FormDefinition {
       dataType: 'object',
       children: [flagField, rootField, cardNode],
     },
-    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+    settings: { labelWidth: 80, labelAlign: 'top' },
   }
 }
 
@@ -145,7 +145,7 @@ function buildNestedVisibleIfDefinition(): FormDefinition {
       dataType: 'object',
       children: [cardNode],
     },
-    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+    settings: { labelWidth: 80, labelAlign: 'top' },
   }
 }
 
@@ -212,7 +212,7 @@ function buildNestedExprDefinition(): FormDefinition {
       dataType: 'object',
       children: [cardNode],
     },
-    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+    settings: { labelWidth: 80, labelAlign: 'top' },
   }
 }
 

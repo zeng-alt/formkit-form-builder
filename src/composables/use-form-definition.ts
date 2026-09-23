@@ -10,10 +10,10 @@ import { computed, inject, provide } from 'vue'
 import type { ComputedRef, InjectionKey, Ref } from 'vue'
 import { DSL_VERSION } from '@/types/dsl'
 import type { FormDefinition } from '@/types/dsl'
+import { DEFAULT_LABEL_WIDTH } from '@/utils/form-layout'
 
-const FORM_DEFINITION_KEY: InjectionKey<
-  Ref<FormDefinition> | ComputedRef<FormDefinition>
-> = Symbol('formDefinition')
+const FORM_DEFINITION_KEY: InjectionKey<Ref<FormDefinition> | ComputedRef<FormDefinition>> =
+  Symbol('formDefinition')
 
 /** 为当前组件子树提供表单定义（只读窄上下文）。
  *  传入的 ref/computed 需保持稳定引用——provide 只在 setup 时捕获一次，子树消费方
@@ -45,11 +45,8 @@ export function useFormDefinition() {
   const formLabelPosition = computed<'top' | 'left'>(() =>
     source.value?.settings?.labelAlign === 'left' ? 'left' : 'top',
   )
-  const formLabelWidth = computed(() => source.value?.settings?.labelWidth ?? 80)
+  const formLabelWidth = computed(() => source.value?.settings?.labelWidth ?? DEFAULT_LABEL_WIDTH)
   const formSubmit = computed(() => source.value?.settings?.submit ?? '')
-  const formLayout = computed(() => source.value?.settings?.layout ?? 'vertical')
-  const formColumns = computed(() => source.value?.settings?.columns ?? 12)
-  const formFullWidth = computed(() => source.value?.settings?.fullWidth ?? false)
   const formRoot = computed(() => source.value?.root)
   const formSettings = computed(() => source.value?.settings)
   const formMeta = computed(() => source.value?.meta)
@@ -62,9 +59,6 @@ export function useFormDefinition() {
     formLabelPosition,
     formLabelWidth,
     formSubmit,
-    formLayout,
-    formColumns,
-    formFullWidth,
     formRoot,
     formSettings,
     formMeta,

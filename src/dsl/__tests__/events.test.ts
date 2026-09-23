@@ -75,7 +75,7 @@ function buildFormDef(node: FieldNode): FormDefinition {
       dataType: 'object',
       children: [node],
     },
-    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+    settings: { labelWidth: 80, labelAlign: 'top' },
   }
 }
 

@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import type { Component, DefineComponent } from 'vue'
-import { computed, provide, ref, shallowRef, watch } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import type { FormKitNode, FormKitSchemaFormKit } from '@formkit/core'
 import { createMessage } from '@formkit/core'
 import { FormKit, changeLocale } from '@formkit/vue'
 import FormKitSchemaWrapper from './FormKitSchemaWrapper.vue'
 import { NButton, type ConfigProviderProps } from 'naive-ui'
 import createFormattedSchema from '@/utils/format-schema'
-import { collectSchemaNames, generateKey, toSafeName } from '@/utils/dnd/schema'
-import { getContainerKind } from '@/utils/schema/containers'
-import { getContainerSpec } from '@/elements/container-spec'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
 import { createSchemaProjector } from '@/dsl'
 import { snapshotDeep, shareStructure } from '@/utils/structural-share'
@@ -29,14 +26,8 @@ import { createSchemaRenderData, PREVIEW_FORM_DATA_KEY } from '@/composables/use
 import axios from 'axios'
 import type { AxiosInstance } from 'axios'
 import { useExprRun } from '@/expression/runtime'
-import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
-import {
-  findNodeByKey,
-  getParentArrayAtPath,
-  insertAfterAtPath,
-  removeAtPath,
-  updateAtPath,
-} from '@/utils/schema/tree'
+import type { SchemaNode } from '@/utils/schema/types'
+import { DEFAULT_LABEL_WIDTH, formLabelLayoutClass, formLabelWidthStyle } from '@/utils/form-layout'
 
 type ModelValue = Record<string, unknown>
 
@@ -130,7 +121,7 @@ const FALLBACK_RENDER_DEFINITION: FormDefinition = {
     dataType: 'object',
     children: [],
   },
-  settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+  settings: { labelWidth: DEFAULT_LABEL_WIDTH, labelAlign: 'top' },
 }
 
 // 表单定义窄上下文：一次性 provide 一个稳定的 ref，definition 变化时同步改它的值。
@@ -209,12 +200,7 @@ const safeClone = <T>(value: T): T => {
   }
 }
 
-// internalSchema 只在运行时通过 insertAfterAtPath / updateAtPath / removeAtPath
-// 等不可变操作整体替换（见下方 list 行复制/禁用等 provide 的回调），不需要深响应式
-// 代理，改用 shallowRef：sourceSchema 变化时直接赋新引用即可
-const internalSchema = shallowRef<FormKitSchemaFormKit[]>([])
 const data = ref<ModelValue>({})
-const listItemSeq = ref<Record<string, number>>({})
 
 // 本组件实例的增量转换投影：按 DSL 节点身份缓存，definition 未改动的子树复用
 // 上次的 schema 对象引用（见下方 definitionSnapshot 的追踪机制）
@@ -268,15 +254,6 @@ const sourceSchema = computed<FormKitSchemaFormKit[]>(() => {
 })
 
 watch(
-  sourceSchema,
-  (next) => {
-    internalSchema.value = Array.isArray(next) ? next : []
-    listItemSeq.value = {}
-  },
-  { immediate: true },
-)
-
-watch(
   () => props.modelValue,
   (next) => {
     if (!next) return
@@ -315,7 +292,7 @@ const schemaLibrary = computed<Record<string, Component>>(() => {
 })
 
 const formWrapper = computed<SchemaNode | null>(() => {
-  const only = internalSchema.value.length === 1 ? internalSchema.value[0] : null
+  const only = sourceSchema.value.length === 1 ? sourceSchema.value[0] : null
   if (!only || typeof only !== 'object') return null
   if (only.$formkit !== 'form') return null
   if (!Array.isArray(only.children)) return null
@@ -324,7 +301,7 @@ const formWrapper = computed<SchemaNode | null>(() => {
 
 const schemaBody = computed<FormKitSchemaFormKit[]>(() => {
   if (formWrapper.value) return formWrapper.value.children as FormKitSchemaFormKit[]
-  return internalSchema.value
+  return sourceSchema.value
 })
 
 const resolvedFormName = computed(() => {
@@ -346,31 +323,13 @@ const resolvedLabelWidth = computed<number>(() => {
   if (Number.isFinite(fromSchema)) return fromSchema
   const fromProps = Number(props.labelWidth)
   if (Number.isFinite(fromProps)) return fromProps
-  return 80
+  return DEFAULT_LABEL_WIDTH
 })
 
-const resolvedFormClass = computed(() => {
-  const base = props.formClass
-  const common = ['[&_.formkit-label]:text-xs', '[&_.formkit-label]:font-bold'].join(' ')
-  if (resolvedLabelPosition.value === 'left') {
-    return [
-      base,
-      common,
-      'fk-label-left',
-      '[&_.formkit-wrapper]:flex',
-      '[&_.formkit-wrapper]:flex-row',
-      '[&_.formkit-wrapper]:items-start',
-      '[&_.formkit-wrapper]:gap-3',
-      '[&_.formkit-label]:mb-0',
-      '[&_.formkit-label]:w-[var(--fk-label-width)]',
-      '[&_.formkit-label]:shrink-0',
-      '[&_.formkit-label]:pt-1',
-      '[&_.formkit-inner]:flex-1',
-      '[&_.formkit-inner]:min-w-0',
-    ].join(' ')
-  }
-  return [base, common].join(' ')
-})
+// 与画布共用同一套标签布局类（见 utils/form-layout）；formClass prop 仍拼在最前面
+const resolvedFormClass = computed(() =>
+  [props.formClass, formLabelLayoutClass(resolvedLabelPosition.value)].join(' '),
+)
 
 const formattedSchema = createFormattedSchema(schemaBody)
 const resolvedSchema = formattedSchema
@@ -406,93 +365,6 @@ const topLevelSchemaItems = computed(() => {
   })
 })
 
-const canonicalBaseName = (value: unknown) => {
-  const safe = toSafeName(value)
-  const match = safe.match(/^(.*_\d+)_\d+$/)
-  return match?.[1] || safe
-}
-
-const isStructureNode = (node: SchemaNode) => {
-  const kind = getContainerKind(node)
-  if (kind) return true
-  return ['group'].includes(String(node?.$formkit ?? ''))
-}
-
-const collectLeafBases = (node: SchemaNode, bases: Set<string>) => {
-  if (!node || typeof node !== 'object') return
-  if (!isStructureNode(node) && node.$formkit !== 'submit') {
-    const rawName = node.name || node.$formkit || node.$cmp || 'field'
-    const base = canonicalBaseName(rawName)
-    if (base) bases.add(base)
-  }
-  for (const c of schemaChildren(node)) collectLeafBases(c, bases)
-}
-
-const cloneNodeWithFreshIdentity = (
-  node: SchemaNode,
-  existingNames: Set<string>,
-  listSuffix: number,
-): SchemaNode => {
-  if (!node || typeof node !== 'object') return node
-  const nextKey = generateKey()
-  const next: SchemaNode = { ...node, __key: nextKey }
-  const kind = getContainerKind(node)
-  if (node.$formkit !== 'submit') {
-    if (!isStructureNode(node)) {
-      const rawName = node.name || node.$formkit || node.$cmp || 'field'
-      const base = canonicalBaseName(rawName)
-      let candidate = listSuffix > 0 ? `${base}_${listSuffix}` : base
-      let i = 1
-      while (existingNames.has(candidate)) {
-        candidate = `${base}_${listSuffix}_${i}`
-        i++
-      }
-      next.name = candidate
-      existingNames.add(candidate)
-      existingNames.add(toSafeName(candidate))
-    }
-    next.id = `field_${nextKey}`
-  }
-  if (Array.isArray(node.children)) {
-    next.children = schemaChildren(node).map((c) =>
-      cloneNodeWithFreshIdentity(c, existingNames, listSuffix),
-    )
-  }
-  if (kind) {
-    const baseProps = typeof next.props === 'object' && next.props ? next.props : {}
-    // 按容器规格注入各自的 keyProp（listKey/cardKey/inputGroupKey/buttonGroupKey/tabsKey），
-    // 修复旧实现把 cardKey 误写进 inputGroup/buttonGroup/tabs 的问题
-    const spec = getContainerSpec(node.$cmp ?? node.$formkit)
-    if (spec && spec.primitive === 'cmp') {
-      next.props = {
-        ...baseProps,
-        [spec.keyProp]: nextKey,
-        modelValue: Array.isArray(next.children) ? next.children : [],
-      }
-    } else {
-      // group 预览为原生 $formkit: 'group'，无需容器 key；只更新 children 即可
-      next.props = baseProps
-    }
-  }
-  return next
-}
-
-const eachField = (schema: FormKitSchemaFormKit[], fn: (field: SchemaNode) => void) => {
-  for (const field of schema) {
-    fn(field)
-    eachField(schemaChildren(field), fn)
-  }
-}
-
-const collectSchemaNamesSafe = (schema: FormKitSchemaFormKit[], names: Set<string>) => {
-  collectSchemaNames(schema, names)
-  eachField(schema, (field) => {
-    const raw = field?.name
-    if (typeof raw !== 'string' || !raw) return
-    names.add(toSafeName(raw))
-  })
-}
-
 // 注入当前表单数据（dataTable 远程数据 JS 代码通过 form 读取当前值；容器组件的
 // 嵌套 FormKitSchema 也用它拼出各自的 schemaRenderData，见 useSchemaRenderData）
 provide(PREVIEW_FORM_DATA_KEY, data)
@@ -500,86 +372,9 @@ provide(PREVIEW_FORM_DATA_KEY, data)
 // 注入 JS 绑定代码用的 HTTP 实例：用户 http prop > config.http > 外层注入 > 内置 axios
 provideBinderHttp(computed(() => props.http ?? config?.http))
 
+// list/card/inputGroup/buttonGroup/tabs 容器预览的增删行交互开关（ListContainerPreview
+// 等组件 inject 读取），仅此一处控制，不涉及节点结构改写
 provide('previewListInteractive', props.interactiveContainers)
-
-provide('previewListDuplicate', (key: string) => {
-  if (!props.interactiveContainers) return
-  const found = findNodeByKey(internalSchema.value, key)
-  if (!found) return
-  const existingNames = new Set<string>()
-  collectSchemaNamesSafe(internalSchema.value, existingNames)
-  const bases = new Set<string>()
-  collectLeafBases(found.node, bases)
-  let nextSuffix = (listItemSeq.value[key] ?? 0) + 1
-  const isFree = (suffix: number) => {
-    for (const base of bases) {
-      const candidate = `${base}_${suffix}`
-      if (existingNames.has(candidate) || existingNames.has(toSafeName(candidate))) return false
-    }
-    return true
-  }
-  while (!isFree(nextSuffix)) nextSuffix++
-  listItemSeq.value = { ...listItemSeq.value, [key]: nextSuffix }
-  const cloned = cloneNodeWithFreshIdentity(safeClone(found.node), existingNames, nextSuffix)
-  internalSchema.value = insertAfterAtPath(internalSchema.value, found.path, cloned)
-})
-
-provide('previewListIsLast', (key: string) => {
-  if (!props.interactiveContainers) return true
-  const found = findNodeByKey(internalSchema.value, key)
-  if (!found) return true
-  const info = getParentArrayAtPath(internalSchema.value, found.path)
-  if (!info) return true
-  const { parentArr } = info
-  const last = [...parentArr]
-    .reverse()
-    .find((n) => getContainerKind(n) === 'list' && n?.__preview_placeholder !== true)
-  if (!last) return true
-  return last.__key === key
-})
-
-provide('previewListRemove', (key: string) => {
-  if (!props.interactiveContainers) return
-  const found = findNodeByKey(internalSchema.value, key)
-  if (!found) return
-  const hasOtherList = (() => {
-    const walk = (nodes: SchemaNode[]): boolean => {
-      for (const node of nodes) {
-        if (!node || typeof node !== 'object') continue
-        if (
-          getContainerKind(node) === 'list' &&
-          node.__key !== key &&
-          node.__preview_placeholder !== true
-        )
-          return true
-        if (walk(schemaChildren(node))) return true
-      }
-      return false
-    }
-    return walk(internalSchema.value)
-  })()
-
-  if (!hasOtherList) {
-    const nextNode: SchemaNode = { ...found.node, __preview_placeholder: true }
-    internalSchema.value = updateAtPath(internalSchema.value, found.path, nextNode)
-    return
-  }
-
-  internalSchema.value = removeAtPath(internalSchema.value, found.path)
-})
-
-provide('previewListRestore', (key: string) => {
-  if (!props.interactiveContainers) return
-  const found = findNodeByKey(internalSchema.value, key)
-  if (!found) return
-  const current = found.node
-  const { __preview_placeholder, ...rest } = current
-  const nextNode: SchemaNode = {
-    ...rest,
-    children: Array.isArray(current.children) ? current.children : [],
-  }
-  internalSchema.value = updateAtPath(internalSchema.value, found.path, nextNode)
-})
 
 // ── 操作区：submit / reset 经 FormKit 组件实例（expose 了 node）触发 ──
 // FormKit 组件实例 expose 的是完整 FormKitNode（submit/reset 只是 formNode 用到的子集，
@@ -724,7 +519,7 @@ const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.
       @update:model-value="onFormModelValueUpdate"
       @submit="handleSubmit"
       :form-class="resolvedFormClass"
-      :style="{ '--fk-label-width': `${resolvedLabelWidth}px` }"
+      :style="formLabelWidthStyle(resolvedLabelWidth)"
     >
       <FormKitSchemaWrapper
         v-for="item in topLevelSchemaItems"

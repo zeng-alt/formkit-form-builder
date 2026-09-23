@@ -20,6 +20,7 @@ import { provideCanvasSchemaContext } from './canvas-schema-context'
 import { CANVAS_DRAGGING_CLASS, CANVAS_DROP_ZONE_CLASS } from '@/utils/dnd/drag-classes'
 import { schemaContainsSteps } from '@/utils/schema/steps'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
+import { formLabelLayoutClass } from '@/utils/form-layout'
 
 // 画布渲染管线：容器规范化 + 画布专用改写。模块级常量，作为 getCanvasSchemaArray
 // 的缓存分桶键必须保持引用稳定
@@ -39,24 +40,10 @@ export function useCanvasSchema() {
     commitSchemaReconcile,
   } = state
 
-  // ── 画布表单样式 ────────────────────────────────────────────────────────────
-  const canvasFormClass = computed(() => {
-    const common = ['[&_.formkit-label]:text-xs', '[&_.formkit-label]:font-bold'].join(' ')
-    if (formDefinition.value?.settings?.labelAlign !== 'left') return common
-    return [
-      common,
-      '[&_.formkit-wrapper]:flex',
-      '[&_.formkit-wrapper]:flex-row',
-      '[&_.formkit-wrapper]:items-start',
-      '[&_.formkit-wrapper]:gap-3',
-      '[&_.formkit-label]:mb-0',
-      '[&_.formkit-label]:w-[var(--fk-label-width)]',
-      '[&_.formkit-label]:shrink-0',
-      '[&_.formkit-label]:pt-1',
-      '[&_.formkit-inner]:flex-1',
-      '[&_.formkit-inner]:min-w-0',
-    ].join(' ')
-  })
+  // ── 画布表单样式：与 FormRenderer 运行时共用同一套标签布局类（见 utils/form-layout） ──
+  const canvasFormClass = computed(() =>
+    formLabelLayoutClass(formDefinition.value?.settings?.labelAlign),
+  )
 
   // ── 删除根节点 ───────────────────────────────────────────────────────────────
   const deleteField = (index: number) => {

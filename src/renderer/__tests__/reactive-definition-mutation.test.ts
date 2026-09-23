@@ -34,7 +34,7 @@ describe('FormRenderer：原地修改 reactive definition 后应更新', () => {
         dataType: 'object',
         children: [f],
       } as any,
-      settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+      settings: { labelWidth: 80, labelAlign: 'top' },
     })
 
     const wrapper = mount(FormRenderer, {
@@ -81,7 +81,7 @@ describe('FormRenderer：原地修改 reactive definition 后应更新', () => {
         dataType: 'object',
         children: [group],
       } as any,
-      settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+      settings: { labelWidth: 80, labelAlign: 'top' },
     })
 
     const wrapper = mount(FormRenderer, {

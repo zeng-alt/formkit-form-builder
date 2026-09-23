@@ -6,6 +6,7 @@ import ContainerChildrenGrid from '@/components/ui/containers/shared/ContainerCh
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { cn } from '@/utils/utils'
 import { useFormBuilderI18n } from '@/i18n/context'
+import { formLabelWidthStyle } from '@/utils/form-layout'
 
 const { t } = useFormBuilderI18n()
 
@@ -47,7 +48,7 @@ defineSlots<{
     </div>
 
     <n-card
-      :style="{ '--fk-label-width': `${formDefinition?.settings?.labelWidth ?? 80}px` }"
+      :style="formLabelWidthStyle(formDefinition?.settings?.labelWidth)"
       :class="
         cn(
           'relative min-h-[80%] !h-fit rounded-xl shadow-md transition-[width] duration-300 flex flex-col',

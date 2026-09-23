@@ -62,6 +62,7 @@ import { useFormBuilderI18n } from '@/i18n/context'
 import type { CanvasView } from '@/state/canvas-ui'
 import FormRenderer from '@/renderer/FormRenderer.vue'
 import { useOptionalFormBuilderState } from '@/state/create-form-builder-state'
+import { DEFAULT_LABEL_WIDTH } from '@/utils/form-layout'
 
 const { t } = useFormBuilderI18n()
 
@@ -131,7 +132,9 @@ const formName = computed(() => formDefinition.value?.name ?? 'form')
 const formLabelPosition = computed<'top' | 'left'>(() =>
   formDefinition.value?.settings?.labelAlign === 'left' ? 'left' : 'top',
 )
-const formLabelWidth = computed(() => formDefinition.value?.settings?.labelWidth ?? 80)
+const formLabelWidth = computed(
+  () => formDefinition.value?.settings?.labelWidth ?? DEFAULT_LABEL_WIDTH,
+)
 
 const prettyData = computed(() =>
   JSON.stringify(

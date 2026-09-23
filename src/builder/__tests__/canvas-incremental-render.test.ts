@@ -67,7 +67,7 @@ function buildDefinition(labelOfField0: string): FormDefinition {
       dataType: 'object',
       children: [...rootFields, group],
     },
-    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+    settings: { labelWidth: 80, labelAlign: 'top' },
   }
 }
 

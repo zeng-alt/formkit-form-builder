@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { NButton, NModal, NTag } from 'naive-ui'
 import { useFormBuilderI18n } from '../../../../i18n/context'
 import { useFormField } from '../../../../composables/form-fields'
+import { DEFAULT_LABEL_WIDTH } from '../../../../utils/form-layout'
 import TextInput from '../common/TextInput.vue'
 import SelectInput from '../common/SelectInput.vue'
 import JsCodeEditor from '../common/JsCodeEditor.vue'
@@ -22,7 +23,7 @@ const labelWidth = computed({
   get: () => String(formLabelWidth.value),
   set: (v: string) => {
     const n = Number(v)
-    formLabelWidth.value = Number.isFinite(n) ? n : 120
+    formLabelWidth.value = Number.isFinite(n) ? n : DEFAULT_LABEL_WIDTH
   },
 })
 

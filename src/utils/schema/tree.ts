@@ -70,7 +70,7 @@ export function updateAtPath(
 }
 
 // 定位路径所在的父数组：根层返回 parentNode 为 null；路径中间某层没有 children 时返回 null
-export function getParentArrayAtPath(
+function getParentArrayAtPath(
   schema: SchemaNode[],
   path: NodePath,
 ): { parentArr: SchemaNode[]; index: number; parentNode: SchemaNode | null } | null {

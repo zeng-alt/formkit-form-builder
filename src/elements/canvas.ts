@@ -37,7 +37,6 @@ export type { SchemaNode }
 
 type ContainerFormatCtx = {
   key?: string
-  isPlaceholder: boolean
   format: (node: FormKitSchemaFormKit, index: number) => FormKitSchemaFormKit
 }
 
@@ -254,7 +253,7 @@ const defs: ContainerDefinition[] = [
   },
 ]
 
-export function getContainerDefinition(node: unknown): ContainerDefinition | null {
+function getContainerDefinition(node: unknown): ContainerDefinition | null {
   for (const def of defs) {
     if (def.match(node)) return def
   }
@@ -364,7 +363,6 @@ export function formatContainer(
         [spec.keyProp]: keyPropValue,
         name: containerName,
         modelValue: children,
-        isPlaceholder: ctx.isPlaceholder,
       },
     }
     const nextNode: any = {

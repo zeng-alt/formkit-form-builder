@@ -50,7 +50,6 @@ const STATIC_CONSUMED_KEYS = new Set([
   'props',
   '__bind',
   '__key',
-  '__preview_placeholder',
 ])
 
 export function staticNodeToSchema(node: StaticNode, rt?: RenderTarget): SchemaNode {

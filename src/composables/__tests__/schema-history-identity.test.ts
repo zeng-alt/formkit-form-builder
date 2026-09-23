@@ -23,7 +23,7 @@ function buildDef(labelA: string): FormDefinition {
       dataType: 'object',
       children: [textField('a', labelA), textField('b', 'B')],
     },
-    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+    settings: { labelWidth: 80, labelAlign: 'top' },
   }
 }
 

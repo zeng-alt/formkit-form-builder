@@ -36,11 +36,9 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
 
     const formatOneUncached = (field: SchemaNode, index: number): FormKitSchemaFormKit => {
       const key = field?.__key
-      const isPreviewPlaceholder = field?.__preview_placeholder === true
       const normalized = normalizeContainerNode(field) as SchemaNode
       const formattedContainer = formatContainerPreviewNode(normalized, {
         key,
-        isPlaceholder: isPreviewPlaceholder,
         format: formatOne,
       })
       if (formattedContainer) return formattedContainer

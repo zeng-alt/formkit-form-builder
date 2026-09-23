@@ -27,8 +27,15 @@ function definitionWithGroup(groupDisabled: boolean): FormDefinition {
     version: DSL_VERSION,
     id: 'bg',
     name: 'bg',
-    root: { id: 'r', category: 'container', type: 'group', renderAs: 'formkit', dataType: 'object', children: [group] },
-    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+    root: {
+      id: 'r',
+      category: 'container',
+      type: 'group',
+      renderAs: 'formkit',
+      dataType: 'object',
+      children: [group],
+    },
+    settings: { labelWidth: 80, labelAlign: 'top' },
   }
 }
 

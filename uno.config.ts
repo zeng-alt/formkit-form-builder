@@ -125,6 +125,23 @@ export default defineConfig({
     'col-span-10',
     'col-span-11',
     'col-span-12',
+    // 表单级标签布局类（src/utils/form-layout.ts）：字符串拼在一个独立的纯 .ts
+    // 模块里，UnoCSS 的 content.pipeline 扫描对这类被抽成公共模块、不直接出现在
+    // .vue 模板里的类名不够可靠（同类问题见上面 !w-[NN%] 的注释），显式加入
+    // safelist 保证一定生成
+    'fk-label-left',
+    '[&_.formkit-label]:text-xs',
+    '[&_.formkit-label]:font-bold',
+    '[&_.formkit-wrapper]:flex',
+    '[&_.formkit-wrapper]:flex-row',
+    '[&_.formkit-wrapper]:items-start',
+    '[&_.formkit-wrapper]:gap-3',
+    '[&_.formkit-label]:mb-0',
+    '[&_.formkit-label]:w-[var(--fk-label-width)]',
+    '[&_.formkit-label]:shrink-0',
+    '[&_.formkit-label]:pt-1',
+    '[&_.formkit-inner]:flex-1',
+    '[&_.formkit-inner]:min-w-0',
   ],
   theme: {
     colors: {

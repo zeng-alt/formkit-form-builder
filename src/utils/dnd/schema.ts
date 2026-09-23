@@ -10,30 +10,13 @@ export const generateKey = () => {
 }
 
 // 在 schema 树中按 __key 查找节点（用于从“真实 schema”读取最新 outerClass 等属性）
-export const findSchemaByKey = (
-  schema: SchemaNode[],
-  key: string,
-): SchemaNode | undefined => {
+export const findSchemaByKey = (schema: SchemaNode[], key: string): SchemaNode | undefined => {
   for (const node of schema) {
     if (node && typeof node === 'object' && node.__key === key) return node
     const found = findSchemaByKey(schemaChildren(node), key)
     if (found) return found
   }
   return undefined
-}
-
-// 将字段名规整为安全标识（小写、下划线、避免数字开头）
-export const toSafeName = (input: unknown) => {
-  const raw = typeof input === 'string' ? input : ''
-  let name = raw
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '')
-  if (!name) name = 'field'
-  if (/^\d/.test(name)) name = `field_${name}`
-  return name
 }
 
 // 递归收集 schema 里所有已存在的 name，用于生成不冲突的新字段名

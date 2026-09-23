@@ -52,7 +52,7 @@ describe('开发态深度冻结：createFormBuilderState', () => {
           } as any,
         ],
       },
-      settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+      settings: { labelWidth: 80, labelAlign: 'top' },
     }
     state.commitFormDefinition(nextDef)
 

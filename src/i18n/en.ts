@@ -37,7 +37,6 @@ export default {
     quickInsert: 'Quick insert: ',
     bindHint:
       'Write JavaScript. Available params: event (event object), form (form data), $form (form meta {id, version, name}), $value (current value), $node (node), $name (field name), $get(name) (get field value), $slots (slots), attrs (node config), ctx (full context), axios (HTTP). Click the quick-insert chips above to insert.',
-    addListContainer: 'Add list container',
     formDataTitle: 'Form Data:',
     formSubmitted: 'Form submitted!',
     listContainer: 'List container',
@@ -315,7 +314,8 @@ export default {
     nameFormat:
       'Field name may only contain letters, numbers and underscores, and cannot start with a digit',
     nameExists: 'Field name already exists',
-    nameReserved: 'Field name cannot start with "{prefix}" (reserved for built-in condition functions)',
+    nameReserved:
+      'Field name cannot start with "{prefix}" (reserved for built-in condition functions)',
     button: {
       textPlaceholder: 'Button text',
     },

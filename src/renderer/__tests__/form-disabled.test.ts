@@ -52,7 +52,12 @@ const settle = async () => {
 // 每一项尽量复现该类型在真实字段组件里的子结构（比如 checkbox/radio 组要带至少一个
 // 选项子组件、file 要带 dragger 子插槽），否则禁用态没有落点、diff 会是空集——这不是
 // "推导失败"，是基准本身没搭对，所以这里如实还原真实用法，而不是随便糊一个空壳。
-type Probe = { component: unknown; propKey: 'disabled' | 'readonly'; props?: Record<string, unknown>; slots?: Record<string, unknown> }
+type Probe = {
+  component: unknown
+  propKey: 'disabled' | 'readonly'
+  props?: Record<string, unknown>
+  slots?: Record<string, unknown>
+}
 
 const PROBES: Record<string, Probe> = {
   naiveAutoComplete: { component: NAutoComplete, propKey: 'disabled' },
@@ -139,7 +144,7 @@ function buildDefinition(type: string): FormDefinition {
       dataType: 'object',
       children: [field],
     },
-    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+    settings: { labelWidth: 80, labelAlign: 'top' },
   }
 }
 

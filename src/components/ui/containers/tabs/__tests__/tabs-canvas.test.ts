@@ -104,7 +104,7 @@ function buildTabsDefinition(tabsProps: Record<string, unknown>) {
       dataType: 'object',
       children: [tabs],
     },
-    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+    settings: { labelWidth: 80, labelAlign: 'top' },
   }
   return { def, pane1Key, pane2Key }
 }

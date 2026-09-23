@@ -5,6 +5,7 @@ import type { FormDefinition, FormSettings } from '../types/dsl'
 import { createSchemaProjector, schemaToDsl } from '../dsl'
 import { ensureDslKeys } from '../dsl/keys'
 import { freezeDeepDev } from '../utils/freeze'
+import { DEFAULT_LABEL_WIDTH } from '../utils/form-layout'
 
 // 默认画布初始节点（带稳定 __key，保证投影 / 选中一致）。不在这里写死 label：
 // 这里没有 i18n（t 函数）可用，硬编码的英文 'Submit' 在中文界面下就是错的；
@@ -20,7 +21,7 @@ const DEFAULT_CHILDREN: FormKitSchemaFormKit[] = [
 
 // 表单级设置默认值（未显式提供时使用）
 const DEFAULT_FORM_NAME = 'form'
-const DEFAULT_SETTINGS: FormSettings = { layout: 'vertical', labelWidth: 80, labelAlign: 'top' }
+const DEFAULT_SETTINGS: FormSettings = { labelWidth: DEFAULT_LABEL_WIDTH, labelAlign: 'top' }
 
 // 纯函数：组装 form 包裹节点。name / settings 未显式提供时回落 fallback（实例的当前表单级设置）。
 function buildWrappedSchema(
@@ -36,7 +37,7 @@ function buildWrappedSchema(
       name,
       props: {
         labelPosition: settings.labelAlign === 'left' ? 'left' : 'top',
-        labelWidth: settings.labelWidth ?? 80,
+        labelWidth: settings.labelWidth ?? DEFAULT_LABEL_WIDTH,
       },
       children,
     },

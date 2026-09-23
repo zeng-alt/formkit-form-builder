@@ -8,6 +8,7 @@ import type { FormDefinition } from '@/types/dsl'
 import { useFormBuilderI18n } from '../i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
+import { DEFAULT_LABEL_WIDTH } from '@/utils/form-layout'
 
 const props = defineProps<{
   show: boolean
@@ -86,11 +87,11 @@ const handleSaveAndImport = () => {
       const name = typeof rawName === 'string' && rawName.trim() ? rawName.trim() : 'form'
       const labelPosition = first.props?.labelPosition === 'left' ? 'left' : 'top'
       const labelWidthRaw = Number(first.props?.labelWidth)
-      const labelWidth = Number.isFinite(labelWidthRaw) ? labelWidthRaw : 120
+      const labelWidth = Number.isFinite(labelWidthRaw) ? labelWidthRaw : DEFAULT_LABEL_WIDTH
       commitSchema(first.children as FormKitSchemaFormKit[], {
         reason: 'import',
         name,
-        settings: { layout: 'vertical', labelAlign: labelPosition, labelWidth },
+        settings: { labelAlign: labelPosition, labelWidth },
       })
     } else {
       commitSchema(parsed as FormKitSchemaFormKit[], { reason: 'import' })

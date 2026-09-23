@@ -11,6 +11,7 @@ import { getElementTypeDef, getElementTypeDefs } from './registry'
 import { registerBuiltinElementTypes } from './definitions'
 import type { SchemaNode } from './convert'
 import { freezeDeepDev } from '../utils/freeze'
+import { DEFAULT_LABEL_WIDTH } from '../utils/form-layout'
 
 registerBuiltinElementTypes()
 
@@ -79,9 +80,7 @@ function buildSchema(
     name: rawForm.name,
     props: {
       labelPosition: settings.labelAlign === 'left' ? 'left' : 'top',
-      labelWidth: settings.labelWidth ?? 80,
-      columns: settings.columns ?? 12,
-      layout: settings.layout,
+      labelWidth: settings.labelWidth ?? DEFAULT_LABEL_WIDTH,
       submit: settings.submit,
       // id / version 位于 DSL 顶层（非 settings），随 schema 带入表单节点 props，
       // 供 renderer 的 submit 逻辑与字段 bind 代码经 runBindCode 读取
@@ -231,7 +230,7 @@ export function schemaToDsl(
   let name = options?.name ?? 'form'
   let id = options?.id ?? generateKey()
   let version = DSL_VERSION
-  const settings: FormSettings = { layout: 'vertical' }
+  const settings: FormSettings = {}
 
   // 识别 $formkit: form 包装层
   if (schema.length === 1) {
@@ -388,8 +387,6 @@ function parseFormSettings(props: unknown): Partial<FormSettings> {
   const settings: Partial<FormSettings> = {}
   if (p.labelPosition === 'left' || p.labelPosition === 'top') settings.labelAlign = p.labelPosition
   if (Number.isFinite(Number(p.labelWidth))) settings.labelWidth = Number(p.labelWidth)
-  if (Number.isFinite(Number(p.columns))) settings.columns = Number(p.columns)
-  if (p.layout === 'horizontal' || p.layout === 'inline') settings.layout = p.layout
   if (typeof p.submit === 'string' && p.submit) settings.submit = p.submit
   return settings
 }

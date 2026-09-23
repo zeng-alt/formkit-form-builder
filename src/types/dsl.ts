@@ -157,14 +157,14 @@ export interface StaticNode extends BaseNode {
 export type FormNode = FieldNode | ContainerNode | LayoutNode | StaticNode
 
 // ─── 表单定义（顶层）────────────────────────────────────────────────────────────
+// 只保留真正生效的字段：layout/columns/fullWidth 曾经声明过，但没有任何编辑器能改，
+// dslToSchema 只是原样塞进 form 节点 props，渲染侧从未读取——DSL 是要交给后端
+// 反序列化的契约，声明了却不生效的字段只会误导消费方，已删除（不需要向后兼容）。
+// labelAlign 同理去掉了从未生效过的 'right'（所有代码都把它当 top 处理，编辑器也
+// 只提供 top/left 两个选项）。
 export interface FormSettings {
-  /** 布局方向 */
-  layout: 'vertical' | 'horizontal' | 'inline'
+  labelAlign?: 'top' | 'left'
   labelWidth?: number
-  labelAlign?: 'left' | 'right' | 'top'
-  /** 根栅格列数（默认 12） */
-  columns?: number
-  fullWidth?: boolean
   submit?: string
 }
 

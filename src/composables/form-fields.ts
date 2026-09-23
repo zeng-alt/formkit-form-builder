@@ -8,6 +8,7 @@ import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { DSL_VERSION } from '@/types/dsl'
 import type { FieldNode, FormNode, OptionItem, ValidationRule } from '@/types/dsl'
 import type { DataTableColumn } from '@/components/ui/containers/data-table/types'
+import { DEFAULT_LABEL_WIDTH } from '@/utils/form-layout'
 
 export function useFormField() {
   // 所属 FormBuilder 实例状态：选中 / 真源 / 提交漏斗全部绑定到各自实例。
@@ -572,10 +573,12 @@ export function useFormField() {
   })
 
   const formLabelWidth = computed<number>({
-    get: () => formDefinition.value?.settings?.labelWidth ?? 80,
+    get: () => formDefinition.value?.settings?.labelWidth ?? DEFAULT_LABEL_WIDTH,
     set: (value: number) => {
       const n = Number(value)
-      const next = Number.isFinite(n) ? Math.max(0, Math.min(2000, Math.round(n))) : 120
+      const next = Number.isFinite(n)
+        ? Math.max(0, Math.min(2000, Math.round(n)))
+        : DEFAULT_LABEL_WIDTH
       const def = formDefinition.value
       commitFormDefinition(
         { ...def, settings: { ...def.settings, labelWidth: next } },

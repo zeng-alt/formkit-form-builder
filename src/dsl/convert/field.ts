@@ -38,7 +38,6 @@ const FIELD_KNOWN_KEYS = new Set([
   'outerClass',
   'children',
   '__key',
-  '__preview_placeholder',
   'bind',
   'props',
   'attrs',

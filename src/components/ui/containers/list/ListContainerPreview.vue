@@ -10,19 +10,16 @@ import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
 const props = defineProps<{
-  nodeKey?: string
   listKey?: string
   children?: FormKitSchemaFormKit[]
   modelValue?: FormKitSchemaFormKit[]
   label?: string
   name?: string
-  isPlaceholder?: boolean
   bordered?: boolean
   /** 嵌套列表项模式：以 :index 绑定到外层 list 的数组元素（array of arrays） */
   itemIndex?: number
 }>()
 
-const restore = inject('previewListRestore', null as unknown as ((key: string) => void) | null)
 const interactive = inject('previewListInteractive', true)
 
 const { t } = useFormBuilderI18n()
@@ -39,7 +36,6 @@ const title = computed(() =>
   typeof props.label === 'string' && props.label.trim() ? props.label.trim() : '',
 )
 const bordered = computed<boolean>(() => props.bordered ?? true)
-const nodeKey = computed(() => props.nodeKey ?? props.listKey ?? '')
 const listName = computed(() =>
   typeof props.name === 'string' && props.name.trim() ? props.name.trim() : props.listKey || 'list',
 )
@@ -140,7 +136,8 @@ const itemTemplate = computed<{
       typeof inner[0].$el === 'string' &&
       Array.isArray(inner[0].children)
     ) {
-      innerElClass = typeof inner[0].attrs?.class === 'string' ? (inner[0].attrs.class as string) : ''
+      innerElClass =
+        typeof inner[0].attrs?.class === 'string' ? (inner[0].attrs.class as string) : ''
       inner = schemaChildren(inner[0])
     }
     // 容器/布局子节点（$cmp，如 list 内嵌 card）：组件根不是 formkit-outer，网格里缺 col-span
@@ -168,8 +165,6 @@ const itemTemplate = computed<{
   // 其他 $cmp 容器：包 group 兜底（保持现状）
   return { type: 'group', attrs: {}, children: list }
 })
-const canRestore = computed(() => props.isPlaceholder === true && typeof restore === 'function')
-
 const addItem = (node: unknown, value: unknown) => {
   // 字段子节点：新增标量项；group 子节点：新增对象项；list 子节点：新增数组项
   const t = itemTemplate.value?.type
@@ -193,21 +188,7 @@ const removeItem = (node: unknown, value: unknown, index: number) => {
     </div>
 
     <div class="p-2">
-      <div
-        v-if="props.isPlaceholder === true"
-        class="min-h-[140px] flex items-center justify-center"
-      >
-        <div class="flex flex-col items-center gap-3">
-          <n-empty :description="t('builder.listRemove')" />
-          <n-button v-if="canRestore" secondary @click="restore?.(nodeKey)">
-            <template #icon><span class="i-lucide-plus h-4 w-4"></span></template>
-            {{ t('builder.addListContainer') }}
-          </n-button>
-        </div>
-      </div>
-
       <FormKit
-        v-else
         type="list"
         :name="itemIndex === undefined ? listName : undefined"
         :index="itemIndex"

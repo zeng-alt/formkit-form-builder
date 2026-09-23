@@ -41,7 +41,7 @@ function buildDefinition(overrides: Partial<FormDefinition>): FormDefinition {
       dataType: 'object',
       children: [cardNode],
     },
-    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+    settings: { labelWidth: 80, labelAlign: 'top' },
     ...overrides,
   }
 }
