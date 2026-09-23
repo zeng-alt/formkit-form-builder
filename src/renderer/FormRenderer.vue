@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component, DefineComponent } from 'vue'
-import { computed, provide, ref, watch } from 'vue'
+import { computed, provide, ref, shallowRef, watch } from 'vue'
 import type { FormKitNode, FormKitSchemaFormKit } from '@formkit/core'
 import { createMessage } from '@formkit/core'
 import { FormKit, changeLocale } from '@formkit/vue'
@@ -11,7 +11,9 @@ import { collectSchemaNames, generateKey, toSafeName } from '@/utils/dnd/schema'
 import { getContainerKind } from '@/utils/schema/containers'
 import { getContainerSpec } from '@/elements/container-spec'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
-import { dslToOutputSchema, dslToSchema } from '@/dsl'
+import { createSchemaProjector } from '@/dsl'
+import { snapshotDeep, shareStructure } from '@/utils/structural-share'
+import { getSingleNodeSchemaArray } from '@/utils/canvas-schema'
 import type { FormDefinition } from '@/types/dsl'
 import type { BuilderTheme } from '@/types/theme'
 import type { FormBuilderConfig } from '@/types/env'
@@ -207,9 +209,40 @@ const safeClone = <T>(value: T): T => {
   }
 }
 
-const internalSchema = ref<FormKitSchemaFormKit[]>([])
+// internalSchema 只在运行时通过 insertAfterAtPath / updateAtPath / removeAtPath
+// 等不可变操作整体替换（见下方 list 行复制/禁用等 provide 的回调），不需要深响应式
+// 代理，改用 shallowRef：sourceSchema 变化时直接赋新引用即可
+const internalSchema = shallowRef<FormKitSchemaFormKit[]>([])
 const data = ref<ModelValue>({})
 const listItemSeq = ref<Record<string, number>>({})
+
+// 本组件实例的增量转换投影：按 DSL 节点身份缓存，definition 未改动的子树复用
+// 上次的 schema 对象引用（见下方 definitionSnapshot 的追踪机制）
+const schemaProjector = createSchemaProjector()
+
+// definition 快照：snapshotDeep 通过响应式代理读取（不 toRaw），因此外部把 definition
+// 包进 reactive() 并原地修改嵌套字段时，这个 computed 能追踪到并重新求值；
+// shareStructure 把新快照与上一次的快照结构共享，没变的子树复用上次快照的对象引用——
+// 这样 schemaProjector 按节点身份的缓存才能在“原地修改”的场景下继续增量命中
+// （见 src/utils/structural-share.ts 顶部注释，修复 B 引入的回归）。
+// prevDefinitionSnapshot 用普通变量保存上次结果，不是 ref：它只是 shareStructure 的
+// 输入，不需要响应式。
+let prevDefinitionSnapshot: FormDefinition | undefined
+const definitionSnapshot = computed<FormDefinition | undefined>(() => {
+  const next = snapshotDeep(props.definition)
+  const shared = shareStructure(prevDefinitionSnapshot, next)
+  prevDefinitionSnapshot = shared
+  return shared
+})
+
+// props.schema（裸 schema 通道）同样做快照 + 结构共享，原因同上
+let prevSchemaPropSnapshot: FormKitSchemaFormKit[] | undefined
+const schemaPropSnapshot = computed<FormKitSchemaFormKit[] | undefined>(() => {
+  const next = snapshotDeep(props.schema)
+  const shared = shareStructure(prevSchemaPropSnapshot, next)
+  prevSchemaPropSnapshot = shared
+  return shared
+})
 
 // definition / schema 二选一：优先 definition（版本化 DSL），内部转 schema。
 let warnedBoth = false
@@ -219,25 +252,28 @@ const sourceSchema = computed<FormKitSchemaFormKit[]>(() => {
       warnedBoth = true
       console.warn('[FormRenderer] both "definition" and "schema" provided — using "definition"')
     }
-    const toSchema = props.dataStructure === 'nested' ? dslToOutputSchema : dslToSchema
+    const toSchema =
+      props.dataStructure === 'nested' ? schemaProjector.toOutputSchema : schemaProjector.toSchema
     try {
-      const next = toSchema(props.definition)
+      const next = toSchema(definitionSnapshot.value as FormDefinition)
       return Array.isArray(next) ? next : []
     } catch (e) {
       console.error('[FormRenderer] dslToSchema failed', e)
       return []
     }
   }
-  return Array.isArray(props.schema) ? props.schema : []
+  return Array.isArray(schemaPropSnapshot.value)
+    ? (schemaPropSnapshot.value as FormKitSchemaFormKit[])
+    : []
 })
 
 watch(
   sourceSchema,
   (next) => {
-    internalSchema.value = safeClone(Array.isArray(next) ? next : [])
+    internalSchema.value = Array.isArray(next) ? next : []
     listItemSeq.value = {}
   },
-  { immediate: true, deep: true },
+  { immediate: true },
 )
 
 watch(
@@ -338,6 +374,37 @@ const resolvedFormClass = computed(() => {
 
 const formattedSchema = createFormattedSchema(schemaBody)
 const resolvedSchema = formattedSchema
+
+// D4：按顶层节点拆分渲染，每个顶层节点各自一个 FormKitSchemaWrapper（而不是整份
+// resolvedSchema 交给一个 FormKitSchemaWrapper）。FormKitSchema 对 schema prop 是
+// deep watch，一旦引用/内容变化就整棵重新 parseSchema + 换新 instanceKey，所有字段
+// 组件重建（见 node_modules/@formkit/vue/dist/index.mjs 的 FormKitSchema 实现）；
+// 拆开后，未改动的顶层节点其 formatOne 结果 === 上次（D3），getSingleNodeSchemaArray
+// 按节点身份缓存的单元素数组同样 === 上次，那个 FormKitSchemaWrapper 的 schema prop
+// 引用不变，FormKit 就不会重新解析/重建它旗下的字段；只有真正变化的顶层节点会被
+// 重新解析。key 优先用 __key（画布 DnD 身份），没有则退化到 name/index——保证顶层
+// 节点顺序变化（删除/插入）时 Vue 按身份复用组件实例，FormKit 内部节点不会因为
+// v-for 位置错位而串值。
+// key 取格式化前源节点的 DSL id（formkit 节点在顶层 id，$cmp 节点在 props.id）：id 恒有
+// 且稳定——缺 key 的定义载入设计器后补齐的 __key 正是复用 id（见 dsl/keys.ts），用 __key
+// 的话同一个节点会在"补齐前后"换 key、整批重建。格式化结果里普通字段不再携带 __key、
+// 容器被包成无 name 的 $el 节点，所以不能直接用格式化结果；兜底 __key/name/index，
+// 重复时追加下标保证唯一
+const topLevelSchemaItems = computed(() => {
+  const seen = new Set<string>()
+  return resolvedSchema.value.map((node: SchemaNode, index: number) => {
+    const source = schemaBody.value[index] as SchemaNode | undefined
+    const sourceId = source?.id ?? source?.props?.id
+    let key =
+      (typeof sourceId === 'string' && sourceId) ||
+      (typeof source?.__key === 'string' && source.__key) ||
+      (typeof node?.name === 'string' && node.name) ||
+      `__idx_${index}`
+    if (seen.has(key)) key = `${key}__${index}`
+    seen.add(key)
+    return { key, schemaArr: getSingleNodeSchemaArray(node) as FormKitSchemaFormKit[] }
+  })
+})
 
 const canonicalBaseName = (value: unknown) => {
   const safe = toSafeName(value)
@@ -660,12 +727,20 @@ const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.
       :style="{ '--fk-label-width': `${resolvedLabelWidth}px` }"
     >
       <FormKitSchemaWrapper
-        :schema="resolvedSchema"
+        v-for="item in topLevelSchemaItems"
+        :key="item.key"
+        :schema="item.schemaArr"
         :data="schemaRenderData"
         :library="schemaLibrary"
       />
       <template v-if="$slots.actions">
-        <slot name="actions" :submit="submit" :reset="reset" :loading="loading" :disabled="disabled" />
+        <slot
+          name="actions"
+          :submit="submit"
+          :reset="reset"
+          :loading="loading"
+          :disabled="disabled"
+        />
       </template>
       <template v-else-if="actions">
         <div

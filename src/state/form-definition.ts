@@ -2,7 +2,7 @@ import { computed, shallowRef } from 'vue'
 import type { ComputedRef, ShallowRef } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { FormDefinition, FormSettings } from '../types/dsl'
-import { dslToSchema, schemaToDsl } from '../dsl'
+import { createSchemaProjector, schemaToDsl } from '../dsl'
 import { ensureDslKeys } from '../dsl/keys'
 import { freezeDeepDev } from '../utils/freeze'
 
@@ -46,6 +46,10 @@ function buildWrappedSchema(
 export interface FormDefinitionState {
   formDefinition: ShallowRef<FormDefinition>
   formSchema: ComputedRef<FormKitSchemaFormKit[]>
+  /** 本实例的增量转换投影（按节点身份缓存）。commitSchemaReconcile 的基线投影
+   *  复用同一个 projector 才能命中缓存，因此随实例状态一并暴露，不要再改调
+   *  公开的 dslToSchema（那是无缓存的纯函数，每次都会重新转换整棵树）。 */
+  schemaProjector: ReturnType<typeof createSchemaProjector>
   commitSchemaChildren: (
     children: FormKitSchemaFormKit[],
     source?: Pick<FormDefinition, 'name' | 'settings'>,
@@ -70,9 +74,13 @@ export function createFormDefinitionState(initialDefinition?: FormDefinition): F
     ),
   )
 
+  // 本实例的增量转换投影：formSchema 与 commitSchemaReconcile 的基线投影共用同一个
+  // projector，命中同一份按节点身份缓存的转换结果
+  const schemaProjector = createSchemaProjector()
+
   // schema 投影（只读）：渲染 / DnD / 画布使用，由 DSL 派生
   const formSchema = computed<FormKitSchemaFormKit[]>(() => {
-    const wrapped = dslToSchema(formDefinition.value)
+    const wrapped = schemaProjector.toSchema(formDefinition.value)
     const children = wrapped[0]?.children
     return Array.isArray(children) ? (children as FormKitSchemaFormKit[]) : []
   })
@@ -87,5 +95,5 @@ export function createFormDefinitionState(initialDefinition?: FormDefinition): F
       id: formDefinition.value?.id,
     })
 
-  return { formDefinition, formSchema, commitSchemaChildren }
+  return { formDefinition, formSchema, schemaProjector, commitSchemaChildren }
 }

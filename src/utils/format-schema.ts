@@ -1,12 +1,40 @@
-import { computed, type Ref } from 'vue'
+import { computed, toRaw, type Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { formatContainerPreviewNode, normalizeContainerNode } from '@/elements/canvas'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
+// 按节点缓存 formatOne(field, index) 的结果：normalizeContainerNode /
+// formatContainerPreviewNode（递归经 ctx.format，即 formatOne 自身）都只读 field 本身
+// 与模块级的容器定义注册表（见 elements/canvas.ts 的 defs），不读任何随渲染变化的
+// 外部可变状态；结果因此只依赖 field（按 toRaw 后的引用为键）与 index（无 name/id
+// 兜底命名时会用到）。缓存对象放在本次 createFormattedSchema 调用实例内（每个
+// FormRenderer 一份），未改动的顶层节点每次都拿到 === 上次的格式化结果。
 export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]> | undefined) {
+  const cache = new WeakMap<object, Map<number, FormKitSchemaFormKit>>()
+
   return computed(() => {
     if (!fields) return []
-    const formatOne = (field: SchemaNode, index: number): FormKitSchemaFormKit => {
+    const formatOne = (fieldInput: SchemaNode, index: number): FormKitSchemaFormKit => {
+      const raw =
+        fieldInput && typeof fieldInput === 'object' ? (toRaw(fieldInput) as object) : null
+      if (raw) {
+        const bucket = cache.get(raw)
+        const hit = bucket?.get(index)
+        if (hit) return hit
+      }
+      const result = formatOneUncached(fieldInput, index)
+      if (raw) {
+        let bucket = cache.get(raw)
+        if (!bucket) {
+          bucket = new Map()
+          cache.set(raw, bucket)
+        }
+        bucket.set(index, result)
+      }
+      return result
+    }
+
+    const formatOneUncached = (field: SchemaNode, index: number): FormKitSchemaFormKit => {
       const key = field?.__key
       const isPreviewPlaceholder = field?.__preview_placeholder === true
       const normalized = normalizeContainerNode(field) as SchemaNode

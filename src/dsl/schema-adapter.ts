@@ -14,14 +14,16 @@ import { freezeDeepDev } from '../utils/freeze'
 
 registerBuiltinElementTypes()
 
-// 按 DSL 节点身份缓存转换结果：toSchema 只读 node 本身与 ctx.children（不读整个
-// form，见 DslToSchemaCtx），是节点身份的纯函数。DSL 的编辑路径全部不可变更新，
-// 节点引用不变 ⇒ 其整棵子树不变，命中缓存时直接复用同一个 schema 对象（含其全部
-// 子孙），未改动的字段在设计器画布上因此保持 === 引用，Vue/FormKit 的 props 浅比较
-// 才能跳过它们的重渲染——这是本文件"增量转换"的核心。
-const schemaCache = new WeakMap<FormNode, SchemaNode>()
+// ── 转换核心（无缓存、无冻结的纯函数）──────────────────────────────────────────
+// convertNode / buildSchema / wrapNodeWithGroup 只依赖各自的输入参数，`cache` 为
+// null 时就是普通的递归转换，公开的 dslToSchema / dslToOutputSchema 走这条路径：
+// 每次调用都重新转换整棵树，返回全新对象，互不污染。
+// `cache` 非空时按节点身份记录转换结果并做开发态冻结——这是 createSchemaProjector()
+// 的增量转换实现：DSL 的编辑路径全部不可变更新，节点引用不变 ⇒ 其整棵子树不变，
+// 命中缓存时直接复用同一个 schema 对象（含其全部子孙），未改动的字段因此保持 ===
+// 引用，Vue/FormKit 的 props 浅比较才能跳过它们的重渲染。
 
-function convertNode(input: FormNode): SchemaNode {
+function convertNode(input: FormNode, cache: WeakMap<FormNode, SchemaNode> | null): SchemaNode {
   // DSL 节点按设计应当是纯 JS 数据（formDefinition 是 shallowRef，从不套 reactive()），
   // 但外部消费方（如 FormRenderer 的调用方）可能把 definition 包进了 reactive()/传给
   // 一个会做响应式包装的宿主——这种情况下 node 是 Vue 的响应式 Proxy。toRaw 拿到的
@@ -30,8 +32,10 @@ function convertNode(input: FormNode): SchemaNode {
   // 再读它会触发 Proxy 不变量校验失败，见测试里复现的场景）。缓存同样按 toRaw 后的
   // 引用为键，保证同一份数据无论是否被外部套了 reactive() 都命中同一个缓存条目。
   const node = toRaw(input)
-  const cached = schemaCache.get(node)
-  if (cached) return cached
+  if (cache) {
+    const cached = cache.get(node)
+    if (cached) return cached
+  }
 
   const def = getElementTypeDef(node.type)
   let schema: SchemaNode
@@ -49,20 +53,25 @@ function convertNode(input: FormNode): SchemaNode {
       (node.category === 'container' || node.category === 'layout') &&
       Array.isArray((node as { children?: FormNode[] }).children)
     const children: SchemaNode[] | undefined = hasChildren
-      ? (node as { children: FormNode[] }).children.map(convertNode)
+      ? (node as { children: FormNode[] }).children.map((c) => convertNode(c, cache))
       : undefined
     schema = def.toSchema(node, { children })
   }
 
-  freezeDeepDev(schema)
-  schemaCache.set(node, schema)
+  if (cache) {
+    freezeDeepDev(schema)
+    cache.set(node, schema)
+  }
   return schema
 }
 
-export function dslToSchema(form: FormDefinition): FormKitSchemaFormKit[] {
+function buildSchema(
+  form: FormDefinition,
+  cache: WeakMap<FormNode, SchemaNode> | null,
+): FormKitSchemaFormKit[] {
   // 同 convertNode：防御外部传入的响应式 definition，取 raw 后再读顶层字段
   const rawForm = toRaw(form)
-  const rootChildren = rawForm.root.children.map(convertNode)
+  const rootChildren = rawForm.root.children.map((c) => convertNode(c, cache))
   const settings = rawForm.settings
 
   const formNode: any = {
@@ -85,79 +94,126 @@ export function dslToSchema(form: FormDefinition): FormKitSchemaFormKit[] {
   return [formNode as FormKitSchemaFormKit]
 }
 
-/** 公开 API：将 DSL 转为含 Group 包裹的 FormKit schema，子节点嵌套为 JSON object 数据 */
-export function dslToOutputSchema(form: FormDefinition): FormKitSchemaFormKit[] {
-  const raw = dslToSchema(form)
-  const wrapped = raw.map((node) => wrapFormChildren(node))
-  return wrapped
-}
-
 /** 将表单 children 中的容器/布局节点包裹在 $formkit: 'group' 中。
- *  纯函数，不改动输入——dslToSchema 缓存复用同一个 schema 对象供下次调用命中缓存，
- *  这里原地改写会污染缓存（开发态下这些对象已被冻结，改写会直接抛错）。 */
-function wrapFormChildren(schemaNode: FormKitSchemaFormKit): FormKitSchemaFormKit {
+ *  纯函数，不改动输入——`cache` 非空时按源节点身份缓存并冻结结果，供 nested 模式
+ *  投影复用；为 null 时每次都重新构建，不写入任何共享状态。 */
+function wrapFormChildren(
+  schemaNode: FormKitSchemaFormKit,
+  cache: WeakMap<object, unknown> | null,
+): FormKitSchemaFormKit {
   const n: SchemaNode = schemaNode
   if (!n || typeof n !== 'object' || !Array.isArray(n.children)) return schemaNode
   return {
     ...n,
-    children: n.children.map((child) => wrapNodeWithGroup(child)),
+    children: n.children.map((child) => wrapNodeWithGroup(child, cache)),
   } as FormKitSchemaFormKit
 }
 
-function wrapNodeWithGroup(input: any): any {
+function wrapNodeWithGroup(input: any, cache: WeakMap<object, unknown> | null): any {
   if (!input || typeof input !== 'object') return input
+  if (cache) {
+    const cached = cache.get(input)
+    if (cached) return cached
+  }
 
   // 递归处理子节点：不改动传入节点，子节点有变化时换成拷贝后的新节点
   const node = Array.isArray(input.children)
-    ? { ...input, children: input.children.map((c: any) => wrapNodeWithGroup(c)) }
+    ? { ...input, children: input.children.map((c: any) => wrapNodeWithGroup(c, cache)) }
     : input
 
+  let result: any
   // 跳过已包裹的节点
-  if (node.$formkit === 'group' || node.$formkit === 'form' || node.$formkit === 'list') return node
-  if (node.$formkit === 'submit' || node.$formkit === 'reset') return node
+  if (node.$formkit === 'group' || node.$formkit === 'form' || node.$formkit === 'list') {
+    result = node
+  } else if (node.$formkit === 'submit' || node.$formkit === 'reset') {
+    result = node
+  } else {
+    const hasChildren = Array.isArray(node.children) && node.children.length > 0
+    // $cmp 化后字段（如 $cmp: text）不再是容器，不能按旧“$cmp 即容器”的规则误判包裹；
+    // 容器/布局按注册表分类判断，未注册节点沿用旧行为（$cmp 即包）
+    const cmpType = typeof node.$cmp === 'string' && node.$cmp !== '' ? node.$cmp : undefined
+    const def = cmpType ? getElementTypeDef(cmpType) : undefined
+    const isContainerOrLayout =
+      (typeof node.$cmp === 'string' &&
+        node.$cmp !== '' &&
+        (def ? def.category === 'container' || def.category === 'layout' : true)) ||
+      (typeof node.$el === 'string' && hasChildren)
 
-  const hasChildren = Array.isArray(node.children) && node.children.length > 0
-  // $cmp 化后字段（如 $cmp: text）不再是容器，不能按旧“$cmp 即容器”的规则误判包裹；
-  // 容器/布局按注册表分类判断，未注册节点沿用旧行为（$cmp 即包）
-  const cmpType = typeof node.$cmp === 'string' && node.$cmp !== '' ? node.$cmp : undefined
-  const def = cmpType ? getElementTypeDef(cmpType) : undefined
-  const isContainerOrLayout =
-    (typeof node.$cmp === 'string' &&
-      node.$cmp !== '' &&
-      (def ? def.category === 'container' || def.category === 'layout' : true)) ||
-    (typeof node.$el === 'string' && hasChildren)
-  if (!isContainerOrLayout) return node
+    if (!isContainerOrLayout) {
+      result = node
+    } else {
+      const nodeName = node.props?.name ?? node.name
+      const original: any = { ...node }
+      // 容器/布局自身不再携带 name（由外层 group 提供）；props 与 node 共享，删前先拷贝
+      if (original.props && original.props.name) {
+        original.props = { ...original.props }
+        delete original.props.name
+      }
+      delete original.name
+      const outerClass = original.outerClass
+      delete original.outerClass
 
-  const nodeName = node.props?.name ?? node.name
-  const original: any = { ...node }
-  // 容器/布局自身不再携带 name（由外层 group 提供）；props 与 node 共享，删前先拷贝
-  if (original.props && original.props.name) {
-    original.props = { ...original.props }
-    delete original.props.name
+      const group: any = {
+        $formkit: 'group',
+        children: [original],
+        outerClass: [
+          outerClass || 'col-span-12',
+          '!border-0',
+          '!p-0',
+          '!m-0',
+          '[&>.formkit-wrapper]:!border-0',
+          '[&>.formkit-wrapper]:!p-0',
+          '[&>.formkit-wrapper]:!m-0',
+          '[&>.formkit-wrapper>fieldset]:!border-0',
+          '[&>.formkit-wrapper>fieldset]:!p-0',
+          '[&>.formkit-wrapper>fieldset]:!m-0',
+        ].join(' '),
+      }
+      if (typeof nodeName === 'string' && nodeName.trim()) group.name = nodeName
+      result = group
+    }
   }
-  delete original.name
-  const outerClass = original.outerClass
-  delete original.outerClass
 
-  const group: any = {
-    $formkit: 'group',
-    children: [original],
-    outerClass: [
-      outerClass || 'col-span-12',
-      '!border-0',
-      '!p-0',
-      '!m-0',
-      '[&>.formkit-wrapper]:!border-0',
-      '[&>.formkit-wrapper]:!p-0',
-      '[&>.formkit-wrapper]:!m-0',
-      '[&>.formkit-wrapper>fieldset]:!border-0',
-      '[&>.formkit-wrapper>fieldset]:!p-0',
-      '[&>.formkit-wrapper>fieldset]:!m-0',
-    ].join(' '),
+  if (cache) {
+    freezeDeepDev(result)
+    cache.set(input, result)
   }
-  if (typeof nodeName === 'string' && nodeName.trim()) group.name = nodeName
+  return result
+}
 
-  return group
+/** 公开 API：DSL → FormKit schema。每次调用都重新转换整棵树，不缓存、不冻结、
+ *  返回全新对象——外部调用方（reactive() 包裹 + 原地修改、或改写返回结果）不会
+ *  互相污染，也不会因为命中过期缓存而拿到旧结果。渲染增量场景请用
+ *  createSchemaProjector()。 */
+export function dslToSchema(form: FormDefinition): FormKitSchemaFormKit[] {
+  return buildSchema(form, null)
+}
+
+/** 公开 API：将 DSL 转为含 Group 包裹的 FormKit schema，子节点嵌套为 JSON object 数据。
+ *  同 dslToSchema：不缓存、不冻结。 */
+export function dslToOutputSchema(form: FormDefinition): FormKitSchemaFormKit[] {
+  const raw = buildSchema(form, null)
+  return raw.map((node) => wrapFormChildren(node, null))
+}
+
+/** 增量转换投影：持有本实例的 WeakMap 缓存（节点转换 + group 包裹各一份），
+ *  `toSchema` / `toOutputSchema` 与公开的 dslToSchema / dslToOutputSchema 语义等价，
+ *  区别是同一个节点引用命中缓存时直接复用上次的 schema 对象（含冻结），配合不可变
+ *  的 DSL 编辑路径实现增量渲染。每个使用方（设计器状态实例、每个 FormRenderer 实例）
+ *  应各自持有一个 projector，不共享，否则不同调用方的编辑历史会互相污染缓存。 */
+export function createSchemaProjector(): {
+  toSchema: (form: FormDefinition) => FormKitSchemaFormKit[]
+  toOutputSchema: (form: FormDefinition) => FormKitSchemaFormKit[]
+} {
+  const nodeCache = new WeakMap<FormNode, SchemaNode>()
+  const wrapCache = new WeakMap<object, unknown>()
+  return {
+    toSchema: (form) => buildSchema(form, nodeCache),
+    toOutputSchema: (form) => {
+      const raw = buildSchema(form, nodeCache)
+      return raw.map((node) => wrapFormChildren(node, wrapCache))
+    },
+  }
 }
 
 interface SchemaToDslOptions {

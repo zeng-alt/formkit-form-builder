@@ -5,6 +5,7 @@ export { DSL_VERSION } from '../types/dsl'
 export {
   dslToSchema,
   dslToOutputSchema,
+  createSchemaProjector,
   schemaToDsl,
   schemaNodeToDslNode,
   reconcileDslTree,

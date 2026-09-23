@@ -29,6 +29,17 @@ export function getCanvasSchemaArray(
   return next
 }
 
+// 恒等 compute：不对节点做任何改写，单纯需要"同一个源节点每次拿到同一个单元素数组"
+// 时复用（如 FormRenderer 按顶层节点拆分 FormKitSchemaWrapper，见 D4）。compute
+// 引用必须稳定（模块级常量），否则退化为每次都不命中缓存。
+const identityCompute = (node: unknown): unknown => node
+
+/** 按源节点身份缓存的单元素数组，节点本身不做任何转换（对照 getCanvasSchemaArray
+ *  的画布场景，这里给渲染态的“顶层节点各自一个 FormKitSchemaWrapper”场景用）。 */
+export function getSingleNodeSchemaArray(node: unknown): unknown[] {
+  return getCanvasSchemaArray(node, identityCompute)
+}
+
 export function toCanvasSchemaNode(node: FormKitSchemaFormKit): FormKitSchemaFormKit {
   if (!node || typeof node !== 'object') return node
   const next: SchemaNode = { ...node }

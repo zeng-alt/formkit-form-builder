@@ -1,7 +1,7 @@
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { computed, ref, toRaw } from 'vue'
 import type { ComputedRef, Ref, ShallowRef } from 'vue'
-import { dslToSchema } from '@/dsl'
+import type { createSchemaProjector } from '@/dsl'
 import { generateKey } from '../utils/dnd/schema'
 import { findDslNodeByKey } from '../utils/schema/dsl-tree'
 import { reconcileDslTree } from '@/dsl'
@@ -55,6 +55,9 @@ function ensureSchemaKeys(nodes: FormKitSchemaFormKit[]): FormKitSchemaFormKit[]
 export interface SchemaHistoryState {
   formDefinition: ShallowRef<FormDefinition>
   formSchema: ComputedRef<FormKitSchemaFormKit[]>
+  /** 与 formSchema 同一个实例的增量转换投影，commitSchemaReconcile 的基线投影
+   *  用它重新投影才能命中缓存（见 src/state/form-definition.ts）。 */
+  schemaProjector: ReturnType<typeof createSchemaProjector>
   selectedIndex: Ref<number>
   selectedKey: Ref<string | null>
   commitSchemaChildren: (
@@ -94,7 +97,14 @@ export interface SchemaHistory {
 
 // 按实例创建写漏斗：闭包绑定传入的状态 refs，undo 快照互不串扰。
 export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
-  const { formDefinition, formSchema, selectedIndex, selectedKey, commitSchemaChildren } = state
+  const {
+    formDefinition,
+    formSchema,
+    schemaProjector,
+    selectedIndex,
+    selectedKey,
+    commitSchemaChildren,
+  } = state
 
   const past = ref<DefSnapshot[]>([])
   const future = ref<DefSnapshot[]>([])
@@ -197,11 +207,11 @@ export function createSchemaHistory(state: SchemaHistoryState): SchemaHistory {
     const working = ensureSchemaKeys(nextSchema)
     const def = formDefinition.value
     // 以 DSL 真源重新投影作为"旧 schema"基线：直接用 formSchema.value 本应等价，
-    // 这里重新投影只是防御性写法——dslToSchema 是按节点身份缓存的纯函数，同一个
-    // def 再转一次立刻命中缓存，代价可忽略。
+    // 这里重新投影只是防御性写法——用的是与 formSchema 同一个实例的 projector
+    // （按节点身份缓存），同一个 def 再转一次立刻命中缓存，代价可忽略。
     const currentProjection = (() => {
       try {
-        const wrapped = dslToSchema(def)
+        const wrapped = schemaProjector.toSchema(def)
         return (wrapped[0]?.children as FormKitSchemaFormKit[]) ?? []
       } catch {
         return formSchema.value
