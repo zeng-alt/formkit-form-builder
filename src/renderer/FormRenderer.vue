@@ -28,6 +28,13 @@ import axios from 'axios'
 import type { AxiosInstance } from 'axios'
 import { useExprRun } from '@/expression/runtime'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
+import {
+  findNodeByKey,
+  getParentArrayAtPath,
+  insertAfterAtPath,
+  removeAtPath,
+  updateAtPath,
+} from '@/utils/schema/tree'
 
 type ModelValue = Record<string, unknown>
 
@@ -332,84 +339,6 @@ const resolvedFormClass = computed(() => {
 const formattedSchema = createFormattedSchema(schemaBody)
 const resolvedSchema = formattedSchema
 
-type Found = { node: SchemaNode; path: number[] } | null
-
-const findSchemaNodeByKey = (schema: SchemaNode[], key: string, path: number[] = []): Found => {
-  for (let i = 0; i < schema.length; i++) {
-    const node = schema[i]
-    if (!node || typeof node !== 'object') continue
-    const nextPath = [...path, i]
-    if (node.__key === key) return { node, path: nextPath }
-    const found = findSchemaNodeByKey(schemaChildren(node), key, [...nextPath, -1])
-    if (found) return found
-  }
-  return null
-}
-
-const normalizePath = (path: number[]) => path.filter((p) => p !== -1)
-
-const getParentArrayAtPath = (schema: SchemaNode[], path: number[]) => {
-  const p = normalizePath(path)
-  if (p.length === 0) return null
-  if (p.length === 1) return { parentArr: schema, index: p[0]!, parentNode: null as SchemaNode | null }
-  let cursor: SchemaNode | undefined = schema[p[0]!]
-  for (let i = 1; i < p.length - 1; i++) {
-    cursor = schemaChildren(cursor)[p[i]!]
-  }
-  const parentArr = cursor ? schemaChildren(cursor) : []
-  return Array.isArray(cursor?.children)
-    ? { parentArr, index: p[p.length - 1]!, parentNode: cursor ?? null }
-    : null
-}
-
-const updateAtPath = (schema: SchemaNode[], path: number[], nextNode: SchemaNode): SchemaNode[] => {
-  const p = normalizePath(path)
-  if (p.length === 0) return schema
-  const nextSchema = [...schema]
-  const idx0 = p[0]!
-  if (p.length === 1) {
-    nextSchema[idx0] = nextNode
-    return nextSchema
-  }
-  const parent: SchemaNode = { ...nextSchema[idx0]! }
-  let cursor: SchemaNode = parent
-  for (let i = 1; i < p.length - 1; i++) {
-    const idx = p[i]!
-    const arr = schemaChildren(cursor)
-    const child: SchemaNode = { ...arr[idx]! }
-    arr[idx] = child
-    cursor.children = arr
-    cursor = child
-  }
-  const lastIdx = p[p.length - 1]!
-  const lastArr = schemaChildren(cursor)
-  lastArr[lastIdx] = nextNode
-  cursor.children = lastArr
-  nextSchema[idx0] = parent
-  return nextSchema
-}
-
-const removeAtPath = (schema: SchemaNode[], path: number[]) => {
-  const info = getParentArrayAtPath(schema, path)
-  if (!info) return schema
-  const { parentArr, index, parentNode } = info
-  const nextArr = parentArr.filter((_, i) => i !== index)
-  if (!parentNode) return nextArr
-  const nextParent: SchemaNode = { ...parentNode, children: nextArr }
-  return updateAtPath(schema, path.slice(0, -1), nextParent)
-}
-
-const insertAfterAtPath = (schema: SchemaNode[], path: number[], nextNode: SchemaNode) => {
-  const info = getParentArrayAtPath(schema, path)
-  if (!info) return schema
-  const { parentArr, index, parentNode } = info
-  const nextArr = [...parentArr]
-  nextArr.splice(index + 1, 0, nextNode)
-  if (!parentNode) return nextArr
-  const nextParent: SchemaNode = { ...parentNode, children: nextArr }
-  return updateAtPath(schema, path.slice(0, -1), nextParent)
-}
-
 const canonicalBaseName = (value: unknown) => {
   const safe = toSafeName(value)
   const match = safe.match(/^(.*_\d+)_\d+$/)
@@ -508,7 +437,7 @@ provide('previewListInteractive', props.interactiveContainers)
 
 provide('previewListDuplicate', (key: string) => {
   if (!props.interactiveContainers) return
-  const found = findSchemaNodeByKey(internalSchema.value, key)
+  const found = findNodeByKey(internalSchema.value, key)
   if (!found) return
   const existingNames = new Set<string>()
   collectSchemaNamesSafe(internalSchema.value, existingNames)
@@ -530,7 +459,7 @@ provide('previewListDuplicate', (key: string) => {
 
 provide('previewListIsLast', (key: string) => {
   if (!props.interactiveContainers) return true
-  const found = findSchemaNodeByKey(internalSchema.value, key)
+  const found = findNodeByKey(internalSchema.value, key)
   if (!found) return true
   const info = getParentArrayAtPath(internalSchema.value, found.path)
   if (!info) return true
@@ -544,7 +473,7 @@ provide('previewListIsLast', (key: string) => {
 
 provide('previewListRemove', (key: string) => {
   if (!props.interactiveContainers) return
-  const found = findSchemaNodeByKey(internalSchema.value, key)
+  const found = findNodeByKey(internalSchema.value, key)
   if (!found) return
   const hasOtherList = (() => {
     const walk = (nodes: SchemaNode[]): boolean => {
@@ -574,7 +503,7 @@ provide('previewListRemove', (key: string) => {
 
 provide('previewListRestore', (key: string) => {
   if (!props.interactiveContainers) return
-  const found = findSchemaNodeByKey(internalSchema.value, key)
+  const found = findNodeByKey(internalSchema.value, key)
   if (!found) return
   const current = found.node
   const { __preview_placeholder, ...rest } = current
