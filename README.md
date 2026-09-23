@@ -102,7 +102,7 @@ const data = ref({});
 ```
 
 - `definition`: Primary input (versioned DSL); alternatively pass raw FormKit schema via `schema` (choose one; `definition` takes priority if both provided).
-- `dataStructure`: `'flat'` (default, flat output) | `'nested'` (containers converted to group nesting).
+- `dataStructure`: `'flat'` (default, flat output) | `'nested'` (containers converted to group nesting). Field references (`visibleIf` / `expr`) are resolved by field name across the whole form data tree, so behavior is consistent between `flat` and `nested` — when referencing a field across containers, keep field names globally unique (a duplicate name resolves to the first match found).
 - Other optional props: `formName`, `labelPosition` (`'top' | 'left'`), `labelWidth`, `formClass`, `interactiveContainers`, etc.
 - **Theming**: The single source of truth is `BuilderProvider` (renders an `n-config-provider`). Supports `theme` prop (`BuilderTheme`: `'light' | 'dark'`, defaults to system preference) + remaining `ConfigProviderProps` (`themeOverrides` / `breakpoints`, etc.) passed through. `FormBuilder` / `FormRenderer` as children inherit the Provider's theme, ensuring consistency; both also retain independent `theme` / `ConfigProviderProps` props (only effective when not wrapped by `BuilderProvider`, used standalone). Built-in `ThemeSwitcher` (dark / light / system) shares the same `useColorMode` data source as the `theme` prop, keeping naive-ui theme and UnoCSS `dark:` styles in sync.
 - **i18n**: Reads runtime locale from the containing `BuilderProvider` / `FormBuilder` (default `zh-CN`), syncing FormKit submit button and validation messages; can also override via `:locale` / `:date-locale` with naive language packs.

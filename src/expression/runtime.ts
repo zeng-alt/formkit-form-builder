@@ -5,6 +5,7 @@
 import { type Ref, watch, nextTick, onScopeDispose } from 'vue'
 import type { FormKitNode, FormKitSchemaFormKit } from '@formkit/core'
 import { compileExpr, type CompiledExpr } from './evaluator'
+import { lookupFieldValue } from '../utils/schema/form-data'
 
 interface WritableNode {
   name?: unknown
@@ -138,7 +139,11 @@ export function useExprRun(
 
       const stop = watch(
         compiled.deps.length
-          ? compiled.deps.map((dep) => () => formData.value[dep])
+          ? // 按字段名查找依赖当前值：dataStructure:'nested' 下依赖字段可能嵌套在
+            // 容器 group 里，formData.value[dep] 只看根层会取不到（见 evaluator.ts
+            // compileExpr 的注释），watch 的依赖源要跟求值时用的是同一套查找逻辑，
+            // 否则依赖字段变化时可能不触发重新求值
+            compiled.deps.map((dep) => () => lookupFieldValue(formData.value, dep))
           : () => binding.name,
         () => write(binding),
         { immediate: true },

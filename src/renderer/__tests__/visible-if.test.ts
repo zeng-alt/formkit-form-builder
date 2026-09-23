@@ -102,3 +102,142 @@ describe('FormRenderer 真实渲染：visibleIf（根级 vs 容器内）', () =>
     wrapper.unmount()
   })
 })
+
+// ─── dataStructure: 'nested' ────────────────────────────────────────────────────
+// 上面这组用例的受控字段（$flag）在根级，根级字段在 dslToOutputSchema 里从不被
+// wrapNodeWithGroup 包裹（只有容器/布局节点才会被包成 group），所以它在 nested
+// 模式下仍然直接躺在表单数据根层——不能暴露 nested 模式的 bug。
+// nested 模式真正的坑在于：card 容器被包进同名 group 后，容器内字段的数据落在
+// `{ card: { 字段名: 值 } } }` 这样的嵌套结构里，而容器组件（CardContainerPreview）
+// 内部再渲染一层 FormKitSchema 时，仍然把"整棵根表单数据"原样传给它求值 $token——
+// 于是同一个 card 容器内，一个字段的 visibleIf / expr 引用同容器内的另一个字段
+// （字段名不在根层，只有進 group 后才能找到）就会解析不到。用同一个 card 容器内
+// 两个字段互相引用来复现。
+function buildNestedVisibleIfDefinition(): FormDefinition {
+  const ctrlField = getElementTypeDef('text')!.defaults() as FieldNode
+  ctrlField.name = 'ctrl'
+  ctrlField.label = 'Ctrl'
+
+  const targetField = getElementTypeDef('text')!.defaults() as FieldNode
+  targetField.name = 'target'
+  targetField.label = 'TargetInCard'
+  targetField.visibleIf = {
+    type: 'call',
+    fn: 'eq',
+    args: [
+      { type: 'field', name: 'ctrl' },
+      { type: 'literal', value: 'yes' },
+    ],
+  }
+
+  const cardNode = getElementTypeDef('card')!.defaults() as LayoutNode
+  cardNode.children = [ctrlField, targetField]
+
+  return {
+    version: DSL_VERSION,
+    id: 'nested-visible-if-test-form',
+    name: 'nested-visible-if-test-form',
+    root: {
+      id: 'root',
+      category: 'container',
+      type: 'group',
+      renderAs: 'formkit',
+      dataType: 'object',
+      children: [cardNode],
+    },
+    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+  }
+}
+
+describe('FormRenderer 真实渲染：dataStructure nested 下容器内字段互相引用', () => {
+  it('visibleIf：同一 card 内，ctrl=yes 应显示 target 字段', async () => {
+    const wrapper = mount(FormRenderer, {
+      global: { plugins: [[formkitPlugin, formkitDefaultConfig]] },
+      props: {
+        definition: buildNestedVisibleIfDefinition(),
+        modelValue: { card: { ctrl: 'yes' } },
+        dataStructure: 'nested',
+      },
+    })
+    await settle()
+
+    // 修复前：card 容器内嵌套渲染的 FormKitSchema 收到的是"整棵根数据"
+    // { card: { ctrl: 'yes' } }，$ctrl 在根层取不到（真正的值嵌在 card 键下面），
+    // if 恒不成立——本用例失败；修复后 lookupFieldValue 会在树里找到 ctrl，通过。
+    expect(wrapper.text()).toContain('TargetInCard')
+
+    wrapper.unmount()
+  })
+
+  it('visibleIf：同一 card 内，ctrl=no 时 target 字段应隐藏', async () => {
+    const wrapper = mount(FormRenderer, {
+      global: { plugins: [[formkitPlugin, formkitDefaultConfig]] },
+      props: {
+        definition: buildNestedVisibleIfDefinition(),
+        modelValue: { card: { ctrl: 'no' } },
+        dataStructure: 'nested',
+      },
+    })
+    await settle()
+
+    expect(wrapper.text()).not.toContain('TargetInCard')
+
+    wrapper.unmount()
+  })
+})
+
+// ─── expr 计算字段：nested 模式下同容器内互相引用 ─────────────────────────────────
+function buildNestedExprDefinition(): FormDefinition {
+  const priceField = getElementTypeDef('number')!.defaults() as FieldNode
+  priceField.name = 'price'
+  priceField.label = 'Price'
+
+  const totalField = getElementTypeDef('number')!.defaults() as FieldNode
+  totalField.name = 'total'
+  totalField.label = 'Total'
+  totalField.expr = '$price * 2'
+
+  const cardNode = getElementTypeDef('card')!.defaults() as LayoutNode
+  cardNode.children = [priceField, totalField]
+
+  return {
+    version: DSL_VERSION,
+    id: 'nested-expr-test-form',
+    name: 'nested-expr-test-form',
+    root: {
+      id: 'root',
+      category: 'container',
+      type: 'group',
+      renderAs: 'formkit',
+      dataType: 'object',
+      children: [cardNode],
+    },
+    settings: { layout: 'vertical', labelWidth: 80, labelAlign: 'top' },
+  }
+}
+
+describe('FormRenderer 真实渲染：expr 计算字段在 nested 模式下的依赖解析', () => {
+  it('total = $price * 2：同一 card 内取到正确的 price 依赖值', async () => {
+    const wrapper = mount(FormRenderer, {
+      global: { plugins: [[formkitPlugin, formkitDefaultConfig]] },
+      props: {
+        definition: buildNestedExprDefinition(),
+        modelValue: { card: { price: 5 } },
+        dataStructure: 'nested',
+      },
+    })
+    await settle()
+    await settle()
+
+    // card 内两个字段渲染顺序固定为 price、total，按顺序取第二个 input 定位 total
+    const inputs = wrapper.findAll('input')
+    const totalValue = inputs[1]?.element.value
+
+    // 修复前：useExprRun 用 formData.value['price'] 读依赖，nested 模式下 price
+    // 实际落在 formData.value.card.price，根层取不到 → undefined → toNum 按 0
+    // 处理 → total 算成 0（错误但"写入成功"，不是没写入）；修复后应为 5*2=10。
+    expect(totalValue).toBe('10')
+
+    wrapper.unmount()
+  })
+})

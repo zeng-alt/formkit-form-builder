@@ -30,8 +30,9 @@ const { t } = useFormBuilderI18n()
 const schemaLibrary = getPreviewSchemaLibrary()
 // 表单数据 + 表达式 helper：list 是数组容器，条目内字段的 visibleIf 按字段名引用
 // 表单数据——默认 dataStructure:'flat' 下字段名平铺在表单数据顶层，传根表单数据是对的；
-// dataStructure:'nested' 时容器子字段会嵌套进 group，这里仍传根级数据取不到同名字段，
-// 是已知限制（不在本次修复范围，见 use-schema-render-data.ts 顶部注释）。
+// dataStructure:'nested' 时容器子字段会嵌套进 group，这里仍传根级数据，但
+// useSchemaRenderData 内部会按字段名做树内查找（lookupFieldValue），根层查不到时
+// 会往嵌套结构里找，两种模式行为一致（见 use-schema-render-data.ts 顶部注释）。
 const schemaRenderData = useSchemaRenderData()
 
 const title = computed(() =>
