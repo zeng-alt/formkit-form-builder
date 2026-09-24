@@ -55,13 +55,11 @@ describe('数据表格新增列', () => {
     ] as FormBuilderState
 
     const addColumn = async (nth: number) => {
-      const btn = wrapper
-        .findAll('button')
-        .find((b) => b.text().includes('新增一列') || b.text().includes('Add column'))
-      expect(btn, '应能找到新增列按钮').toBeTruthy()
-      await btn!.trigger('click')
+      const btn = wrapper.find('[data-testid="data-table-add-column-btn"]')
+      expect(btn.exists(), '应能找到表头「+」新增列格').toBe(true)
+      await btn.trigger('click')
       await settle()
-      const options = Array.from(document.querySelectorAll('.n-modal .grid button'))
+      const options = Array.from(document.querySelectorAll('[data-field-type]'))
       expect(options.length).toBeGreaterThan(nth)
       ;(options[nth] as HTMLButtonElement).click()
       await settle()

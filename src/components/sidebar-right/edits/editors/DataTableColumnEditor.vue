@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { NRadioButton, NRadioGroup } from 'naive-ui'
+import { NButton, NRadioButton, NRadioGroup } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { useFormField } from '../../../../composables/form-fields'
 import { getElementDefinition, getElementDefinitions, getFieldEditorComponent } from '@/elements'
 import { getElementTypeDef } from '@/dsl'
+import { uniqueColumnKey } from '@/components/ui/containers/data-table/column-factory'
 import type { FieldNode } from '@/types/dsl'
+import type { DataTableColumn } from '@/components/ui/containers/data-table/types'
 import TextInput from '../common/TextInput.vue'
 import NumberInput from '../common/NumberInput.vue'
 import SelectInput from '../common/SelectInput.vue'
@@ -19,7 +21,31 @@ import IfConditionEditor from '../IfConditionEditor.vue'
 // 列非树节点，经 useFormField 的 selectedColumn / setColumnProp 读写所属表格节点；
 // 「元素属性」模式复用该字段类型自身的编辑器（setElementEditTarget 覆盖编辑目标）。
 const { t } = useFormBuilderI18n()
-const { selectedColumn, createColumnProp, setColumnProp, setElementEditTarget } = useFormField()
+const {
+  selectedColumn,
+  selectedTableField,
+  selectedColumnIndex,
+  createColumnProp,
+  setColumnProp,
+  setElementEditTarget,
+} = useFormField()
+
+// 顶部导航：返回表格 / 上一列 / 下一列（首末列禁用）
+const columnCount = computed(() => {
+  const cols = selectedTableField.value?.props?.columns
+  return Array.isArray(cols) ? cols.length : 0
+})
+const columnIndex = computed(() => selectedColumn.value?.index ?? 0)
+
+function backToTable() {
+  selectedColumnIndex.value = null
+}
+function goPrevColumn() {
+  if (columnIndex.value > 0) selectedColumnIndex.value = columnIndex.value - 1
+}
+function goNextColumn() {
+  if (columnIndex.value < columnCount.value - 1) selectedColumnIndex.value = columnIndex.value + 1
+}
 
 const colKey = createColumnProp<string>('key', '')
 const colTitle = createColumnProp<string>('title', '')
@@ -56,6 +82,23 @@ const colColspanSelect = computed<string>({
     colColspan.value = v ? Number(v) : null
   },
 })
+
+// 手改字段名（key）时去重：与所属表格其余列 key 冲突就自动加后缀，避免两列同名
+// 导致数据行读取/写入互相覆盖（uniqueColumnKey 同新增/复制列共用同一去重规则）
+function setColumnKey(v: string) {
+  const trimmed = v.trim()
+  if (!trimmed) {
+    colKey.value = v
+    return
+  }
+  const cols = selectedTableField.value?.props?.columns
+  const existing = Array.isArray(cols)
+    ? (cols as DataTableColumn[])
+        .filter((_, i) => i !== selectedColumn.value?.index)
+        .map((c) => c.key)
+    : []
+  colKey.value = uniqueColumnKey(trimmed, existing)
+}
 
 // ─── 来源元素：新增列时保存的字段元素 DSL 节点，编辑面板展示其信息（同新增列弹窗）───
 const columnElement = computed(() => selectedColumn.value?.column?.element)
@@ -143,6 +186,51 @@ const colRenderPropsJSON = computed<string>({
 </script>
 
 <template>
+  <!-- 顶部导航：返回表格 / 列标题 / 上一列-下一列 -->
+  <div class="flex items-center justify-between gap-2 mb-2">
+    <button
+      type="button"
+      data-testid="dt-column-editor-back"
+      class="flex items-center gap-1 shrink-0 text-xs text-muted-foreground hover:text-[#a277ff] border-0 bg-transparent p-0 cursor-pointer"
+      @click="backToTable"
+    >
+      <span class="i-lucide-arrow-left h-3.5 w-3.5"></span>
+      {{ t('edits.dataTable.columnEditorBack') }}
+    </button>
+    <span class="flex-1 min-w-0 truncate text-center text-xs font-medium">
+      {{ t('edits.dataTable.columnEditorTitle', { title: colTitle || colKey || '' }) }}
+    </span>
+    <div class="flex items-center gap-1 shrink-0">
+      <n-button
+        quaternary
+        circle
+        size="tiny"
+        data-testid="dt-column-editor-prev"
+        :disabled="columnIndex <= 0"
+        :aria-label="t('edits.dataTable.columnEditorPrev')"
+        @click="goPrevColumn"
+      >
+        <template #icon><span class="i-lucide-chevron-left h-3.5 w-3.5"></span></template>
+      </n-button>
+      <span class="text-[11px] text-muted-foreground tabular-nums">
+        {{
+          t('edits.dataTable.columnEditorIndex', { current: columnIndex + 1, total: columnCount })
+        }}
+      </span>
+      <n-button
+        quaternary
+        circle
+        size="tiny"
+        data-testid="dt-column-editor-next"
+        :disabled="columnIndex >= columnCount - 1"
+        :aria-label="t('edits.dataTable.columnEditorNext')"
+        @click="goNextColumn"
+      >
+        <template #icon><span class="i-lucide-chevron-right h-3.5 w-3.5"></span></template>
+      </n-button>
+    </div>
+  </div>
+
   <!-- 列 / 元素 属性模式切换 -->
   <n-radio-group v-model:value="editMode" size="small" class="w-full">
     <n-radio-button value="column" class="w-1/2">
@@ -189,7 +277,7 @@ const colRenderPropsJSON = computed<string>({
       :label="t('edits.dataTable.columnKey')"
       :placeholder="t('edits.dataTable.columnKeyPlaceholder')"
       :value="colKey"
-      @update:value="(v) => (colKey = v)"
+      @update:value="setColumnKey"
     />
 
     <TextInput
