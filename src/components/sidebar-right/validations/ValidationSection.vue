@@ -2,7 +2,7 @@
 import SingleValueValidation from './SingleValueValidation.vue'
 import SingleParamValidation from './SingleParamValidation.vue'
 import DoubleParamValidation from './DoubleParamValidation.vue'
-import { NCollapse, NCollapseItem } from 'naive-ui'
+import EditorCollapse from '../edits/common/EditorCollapse.vue'
 import { computed } from 'vue'
 import { useFormBuilderI18n } from '../../../i18n/context'
 import { useFormField } from '../../../composables/form-fields'
@@ -300,59 +300,41 @@ const visibleValidations = computed(() => {
 </script>
 
 <template>
-  <n-collapse
+  <EditorCollapse
     v-if="selectedField?.type !== 'submit'"
-    :default-expanded-names="['validation']"
-    class="validation-section"
+    name="validation"
+    :title="t('validation.rulesTitle')"
+    default-expanded
   >
-    <n-collapse-item name="validation">
-      <template #header>
-        <span class="text-[11px]">{{ t('validation.rulesTitle') }}</span>
+    <div class="space-y-2 md:space-y-3">
+      <template v-for="validation in visibleValidations.singleValue" :key="validation.value">
+        <SingleValueValidation
+          :value="validation.value"
+          :tooltip="validation.tooltip"
+          :label="validation.label"
+        />
       </template>
-      <template #arrow="{ collapsed }">
-        <span
-          :class="collapsed ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
-          class="h-3 w-3 text-muted-foreground/70 transition-[transform] duration-150"
-        ></span>
+
+      <template v-for="validation in visibleValidations.singleParam" :key="validation.value">
+        <SingleParamValidation
+          :value="validation.value"
+          :tooltip="validation.tooltip"
+          :label="validation.label"
+          :placeholder="validation.placeholder"
+        />
       </template>
-      <div class="space-y-2 md:space-y-3 pt-1">
-        <template v-for="validation in visibleValidations.singleValue" :key="validation.value">
-          <SingleValueValidation
-            :value="validation.value"
-            :tooltip="validation.tooltip"
-            :label="validation.label"
-          />
-        </template>
 
-        <template v-for="validation in visibleValidations.singleParam" :key="validation.value">
-          <SingleParamValidation
-            :value="validation.value"
-            :tooltip="validation.tooltip"
-            :label="validation.label"
-            :placeholder="validation.placeholder"
-          />
-        </template>
-
-        <template v-for="validation in visibleValidations.doubleParam" :key="validation.value">
-          <DoubleParamValidation
-            :value="validation.value"
-            :tooltip="validation.tooltip"
-            :switch-label="validation.switchLabel"
-            :label-one="validation.labelOne"
-            :label-two="validation.labelTwo"
-            :placeholder-one="validation.placeholderOne"
-            :placeholder-two="validation.placeholderTwo"
-          />
-        </template>
-      </div>
-    </n-collapse-item>
-  </n-collapse>
+      <template v-for="validation in visibleValidations.doubleParam" :key="validation.value">
+        <DoubleParamValidation
+          :value="validation.value"
+          :tooltip="validation.tooltip"
+          :switch-label="validation.switchLabel"
+          :label-one="validation.labelOne"
+          :label-two="validation.labelTwo"
+          :placeholder-one="validation.placeholderOne"
+          :placeholder-two="validation.placeholderTwo"
+        />
+      </template>
+    </div>
+  </EditorCollapse>
 </template>
-
-<style scoped>
-.validation-section {
-  --n-item-margin: 0;
-  --n-title-padding: 2px 0;
-  margin-left: 3px;
-}
-</style>

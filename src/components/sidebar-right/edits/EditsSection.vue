@@ -26,15 +26,12 @@ const editorComponent = computed(() => {
   <div v-if="!hasField" class="flex p-2 h-full text-[11px] md:text-xs text-muted-foreground">
     {{ t('common.selectFieldToEdit') }}
   </div>
-  <template v-else>
-    <div class="p-2">
-      <div class="space-y-2 md:space-y-3">
-        <NameInput />
-        <ColSpanSection v-if="!selectedIsForm" />
-        <StaticContentSection v-if="isStatic" />
-        <component :is="editorComponent" v-if="editorComponent" />
-        <CustomAttrsSection />
-      </div>
-    </div>
-  </template>
+  <!-- 外层 FormEditMain 已有 p-2，这里不再加内边距，保证与校验规则等分组左右对齐 -->
+  <div v-else class="space-y-2 md:space-y-3">
+    <NameInput />
+    <ColSpanSection v-if="!selectedIsForm" />
+    <StaticContentSection v-if="isStatic" />
+    <component :is="editorComponent" v-if="editorComponent" />
+    <CustomAttrsSection />
+  </div>
 </template>

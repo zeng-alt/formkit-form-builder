@@ -16,6 +16,7 @@ import JsonTextarea from '../common/JsonTextarea.vue'
 import NameInput from '../common/NameInput.vue'
 import ExpressionEditor from '../ExpressionEditor.vue'
 import IfConditionEditor from '../IfConditionEditor.vue'
+import ValidationSection from '../../validations/ValidationSection.vue'
 
 // 数据表格列编辑器：编辑选中列（props.columns 中的一项）。
 // 列非树节点，经 useFormField 的 selectedColumn / setColumnProp 读写所属表格节点；
@@ -127,15 +128,15 @@ const isElementField = computed(
   () => elementDef.value?.category === 'field' && !!columnElement.value,
 )
 
-// 进入元素模式：列元素就是 DSL 节点，直接作为编辑目标，改动经 commit 落回 columns[i].element
+// 编辑目标：列元素就是 DSL 节点，只要当前列有 element 就设为编辑目标（列属性 / 元素属性
+// 两种模式都设置，不只是「元素属性」模式）——底部 ValidationSection 读写 selectedField，
+// 靠这个目标才能落到 columns[i].element.validation；列属性的读写走 createColumnProp/
+// setColumnProp，基于 selectedTableField，不受这个目标影响，两者互不干扰。
+// 依赖列元素本身（而非 editMode）：切换单元格渲染类型（changeRender）会替换 element，
+// 这里跟着重新指向新元素，避免残留旧目标。
 watch(
-  [editMode, () => selectedColumn.value?.index],
-  () => {
-    if (editMode.value !== 'element') {
-      setElementEditTarget(null)
-      return
-    }
-    const el = selectedColumn.value?.column?.element
+  () => selectedColumn.value?.column?.element,
+  (el) => {
     if (!el) {
       setElementEditTarget(null)
       return
@@ -334,4 +335,8 @@ const colRenderPropsJSON = computed<string>({
       @update:value="(v) => (colRenderPropsJSON = v)"
     />
   </template>
+
+  <!-- 校验规则：两种模式都显示（复用编辑目标，落到 columns[i].element.validation），
+       列没有来源元素时不显示 -->
+  <ValidationSection v-if="columnElement" />
 </template>

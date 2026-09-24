@@ -10,6 +10,8 @@ import {
   useMessage,
   type MessageApi,
 } from 'naive-ui'
+import { FormKit } from '@formkit/vue'
+import type { FormKitNode } from '@formkit/core'
 import { runBindCode } from '@/utils/bind-runtime'
 import { useBinderHttp } from '@/composables/use-bind-http'
 import { PREVIEW_FORM_DATA_KEY } from '@/composables/use-schema-render-data'
@@ -365,6 +367,15 @@ const draftCells = computed(() => {
   return out
 })
 
+// 保存前按列校验：这个 form 只服务弹窗内部（:ignore 让它不挂到运行时主表单上），
+// 校验全部通过时才会触发 @submit → saveAdd()；不通过则 FormKit 自动显示提示、不进这个函数。
+// 单行弹窗不需要 group 分层，单元格直接挂在这个 form 下面。
+type FormKitInstance = { node?: FormKitNode }
+const addFormRef = ref<FormKitInstance | null>(null)
+function requestSaveAdd() {
+  addFormRef.value?.node?.submit?.()
+}
+
 async function saveAdd() {
   const row: Record<string, unknown> = { ...draftRow.value }
   // 表达式驱动列：落库取派生计算值（与表单运行时 expr 语义一致）
@@ -558,28 +569,42 @@ async function deleteRow(row: Record<string, unknown>) {
         <template #header>
           <span class="text-sm font-medium">{{ rowModalTitle }}</span>
         </template>
-        <div class="grid grid-cols-12 gap-x-3 gap-y-3">
-          <template v-for="col in columns" :key="col.key">
-            <div
-              v-if="col.key && draftCells[col.key]?.visible"
-              :class="`col-span-${toColspan(col)}`"
-            >
-              <div class="mb-1 text-xs text-muted-foreground">{{ col.title }}</div>
-              <div class="min-w-0">
-                <DataTableRowCellInput
-                  :column="col"
-                  :value="draftCells[col.key]?.value"
-                  :disabled="Boolean(draftCells[col.key]?.derived)"
-                  @update:value="(v) => (draftRow[col.key] = v)"
-                />
+        <!-- 保存前按列校验：:ignore 让这个 form 不挂到运行时主表单上，只在弹窗内部收集
+             各单元格的校验状态；「保存」按钮触发它的 submit()，全部通过才会走到 saveAdd -->
+        <FormKit
+          ref="addFormRef"
+          type="form"
+          :ignore="true"
+          :actions="false"
+          :incomplete-message="false"
+          @submit="saveAdd"
+        >
+          <div class="grid grid-cols-12 gap-x-3 gap-y-3">
+            <template v-for="col in columns" :key="col.key">
+              <div
+                v-if="col.key && draftCells[col.key]?.visible"
+                :class="`col-span-${toColspan(col)}`"
+              >
+                <div class="mb-1 text-xs text-muted-foreground">{{ col.title }}</div>
+                <div class="min-w-0">
+                  <DataTableRowCellInput
+                    :column="col"
+                    :value="draftCells[col.key]?.value"
+                    :disabled="Boolean(draftCells[col.key]?.derived)"
+                    :validate="true"
+                    @update:value="(v) => (draftRow[col.key] = v)"
+                  />
+                </div>
               </div>
-            </div>
-          </template>
-        </div>
-        <div class="mt-4 flex justify-end gap-2">
-          <n-button size="small" @click="addOpen = false">{{ t('common.cancel') }}</n-button>
-          <n-button size="small" type="primary" @click="saveAdd">{{ t('common.save') }}</n-button>
-        </div>
+            </template>
+          </div>
+          <div class="mt-4 flex justify-end gap-2">
+            <n-button size="small" @click="addOpen = false">{{ t('common.cancel') }}</n-button>
+            <n-button size="small" type="primary" @click="requestSaveAdd">{{
+              t('common.save')
+            }}</n-button>
+          </div>
+        </FormKit>
       </n-modal>
     </n-card>
   </n-message-provider>
