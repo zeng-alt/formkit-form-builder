@@ -117,6 +117,12 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
         validationVisibility,
         __raw__sectionsSchema,
         if: schemaIf,
+        // G：条件禁用 / 条件只读——与 validation（条件必填已内嵌其中，见
+        // dsl/convert/field.ts 的 resolveFieldValidation）同一来源，$formkit 叶子字段
+        // 走的是这条固定允许清单分支（$cmp 字段走上面的 ...rest 分支，天然透传），
+        // 漏列会导致裸 schema 通道（FormRenderer 的 schema prop）里这两个键被丢弃。
+        __disabledIf,
+        __readonlyIf,
       } = field
 
       const cleanField: any = {
@@ -136,6 +142,8 @@ export default function createFormattedSchema(fields: Ref<FormKitSchemaFormKit[]
         validationVisibility,
         __raw__sectionsSchema,
         expr,
+        __disabledIf,
+        __readonlyIf,
       }
       if (typeof bind === 'string' && bind.trim()) cleanField.bind = bind
       if (typeof schemaIf === 'string' && schemaIf.trim()) cleanField.if = schemaIf

@@ -592,6 +592,7 @@ async function deleteRow(row: Record<string, unknown>) {
                     :value="draftCells[col.key]?.value"
                     :disabled="Boolean(draftCells[col.key]?.derived)"
                     :validate="true"
+                    :row="draftRow"
                     @update:value="(v) => (draftRow[col.key] = v)"
                   />
                 </div>

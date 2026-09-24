@@ -8,6 +8,7 @@ describe('historyReasonI18nKey', () => {
     expect(historyReasonI18nKey('structure-delete')).toBe('delete')
     expect(historyReasonI18nKey('structure-dnd')).toBe('dnd')
     expect(historyReasonI18nKey('form-label-width')).toBe('formLabelWidth')
+    expect(historyReasonI18nKey('batch-edit')).toBe('batchEdit')
   })
 
   it('未登记 / 空 reason 落到 default', () => {

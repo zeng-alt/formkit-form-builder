@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { FormKit } from '@formkit/vue'
 import { NInput } from 'naive-ui'
-import { getElementTypeDef } from '@/dsl'
+import { evalExpr, getElementTypeDef } from '@/dsl'
 import { resolveValidation } from '@/dsl/compile'
 import type { FieldNode } from '@/types/dsl'
 import type { DataTableColumn } from './types'
@@ -13,11 +13,14 @@ import type { DataTableColumn } from './types'
 // disabled：表达式驱动（expr）的列值由行数据派生，禁止手输。
 // validate：为真且列有字段元素时按列的 validation 规则参与外层 FormKit 表单校验
 // （:ignore 改为 false，挂到调用方包好的 form/group 节点上）；默认 false，行为与此前一致。
+// row：当前行完整数据，供列元素的 requiredIf 按行内其它列的值求值（G：数据表格列
+// 条件必填，成本考量只做了这一项，见 dsl/compile.ts 里 resolveFieldValidation 附近的说明）。
 const props = defineProps<{
   column: DataTableColumn
   value: unknown
   disabled?: boolean
   validate?: boolean
+  row?: Record<string, unknown>
 }>()
 
 const emit = defineEmits<{
@@ -57,7 +60,15 @@ const formkitAttrs = computed<Record<string, unknown>>(() => {
     // FormKit 的标签只保留给读屏器，不在单元格里重复显示
     out.label = props.column.title
     out['label-class'] = 'sr-only'
-    out.validation = resolved.validation
+    let rules = resolved.validation
+    // G：条件必填——按当前行数据求值 requiredIf，字段已有静态 required 时静态优先
+    // （与普通字段的 dsl/convert/field.ts resolveFieldValidation 同一优先级）
+    const hasStaticRequired = (el?.validation ?? []).some((r) => r.rule === 'required')
+    if (el?.requiredIf && !hasStaticRequired) {
+      const result = evalExpr(el.requiredIf, props.row ?? {})
+      if (result.ok && result.value) rules = [...rules, ['required']]
+    }
+    out.validation = rules
     out['validation-messages'] = resolved['validation-messages']
     out['validation-visibility'] = 'dirty'
   }

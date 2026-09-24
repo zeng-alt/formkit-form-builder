@@ -45,6 +45,28 @@ export function toCanvasSchemaNode(node: FormKitSchemaFormKit): FormKitSchemaFor
   const next: SchemaNode = { ...node }
   if ('if' in next) delete next.if
   if ('__raw__ifExpression' in next) delete next.__raw__ifExpression
+  // G：条件禁用 / 条件只读在画布（设计态）上不生效——沿用 visibleIf 的既有处理方式，
+  // 保证画布上的字段始终可选中 / 可编辑，不因条件求值结果而被禁用挡住点击。
+  // 字段一律 renderAs:'cmp'，这两个键实际落在 props 里（极少数 formkit 渲染原语的
+  // 节点落在顶层），两处都清理，与 fieldNodeToSchema 的 putByKind 放置方式对应。
+  if ('__disabledIf' in next) delete next.__disabledIf
+  if ('__readonlyIf' in next) delete next.__readonlyIf
+  if (next.props && typeof next.props === 'object') {
+    if ('__disabledIf' in next.props || '__readonlyIf' in next.props) {
+      const nextProps: Record<string, unknown> = { ...next.props }
+      delete nextProps.__disabledIf
+      delete nextProps.__readonlyIf
+      next.props = nextProps
+    }
+  }
+  if (next.attrs && typeof next.attrs === 'object') {
+    if ('__disabledIf' in next.attrs || '__readonlyIf' in next.attrs) {
+      const nextAttrs: Record<string, unknown> = { ...next.attrs }
+      delete nextAttrs.__disabledIf
+      delete nextAttrs.__readonlyIf
+      next.attrs = nextAttrs
+    }
+  }
   if ('bind' in next && typeof next.bind !== 'string') {
     if (!next.__bind) next.__bind = next.bind
     delete next.bind

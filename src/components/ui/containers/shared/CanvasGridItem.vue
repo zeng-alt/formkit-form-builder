@@ -6,7 +6,7 @@
 // 整个条目（含内部 FormKitSchema）就会跳过重渲染，不需要在这里手写 v-memo 的
 // 依赖列表——那份列表要跟随模板逐行核对，漏一项就是陈旧 UI bug，而组件边界的
 // props 浅比较由 Vue 保证，风险小得多（见规格 B5 的选型说明）。
-import { computed, ref, type Component } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, type Component } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { FormKitSchema } from '@formkit/vue'
 import { NButton, NTooltip } from 'naive-ui'
@@ -128,6 +128,48 @@ function onItemPointerDown(e: PointerEvent) {
   props.onSelect(props.child, props.index)
 }
 
+// ─── I3（追加）：条目太窄时，右上角工具条会压住左上角名称标签 ───────────────────
+// 两者都是浮在条目外侧同一条水平带上的绝对定位元素，条目本身足够宽时各自贴左/右
+// 互不干扰；条目很窄（按钮组 / 输入组里等分的子项）时会叠在一起。这里用
+// ResizeObserver 分别量条目和名称标签的真实宽度，工具条自己的宽度由它按 @layout
+// 报上来（宽度只随按钮集合变化，量它自己最准，这里不重复猜）；三者凑不下
+// （标签宽 + 工具条宽 + 8px 间距 > 条目宽）就把标签隐去（右侧属性面板标题已经能
+// 看到名称，不算信息丢失）。用 opacity 而非 v-if/v-show 隐藏：标签必须始终留在
+// 布局里，ResizeObserver 才量得到它「真实想要的宽度」，display:none 量出来会是 0，
+// 之后条目变宽了也没法再判断该不该显示回来。
+const labelRef = ref<HTMLElement | null>(null)
+const liWidth = ref(0)
+const labelWidth = ref(0)
+const toolbarWidth = ref(0)
+const toolbarPinnedInside = ref(false)
+
+function onToolbarLayout(payload: { width: number; pinnedInside: boolean }) {
+  toolbarWidth.value = payload.width
+  toolbarPinnedInside.value = payload.pinnedInside
+}
+
+// 工具条贴到条目内侧（I3 前一半的改动）时和标签不在同一条带上，不存在互相压住的问题
+const hideLabelForToolbar = computed(() => {
+  if (!props.soloSelected || toolbarPinnedInside.value) return false
+  if (!liWidth.value || !labelWidth.value || !toolbarWidth.value) return false
+  return labelWidth.value + toolbarWidth.value + 8 > liWidth.value
+})
+
+let widthObserver: ResizeObserver | null = null
+onMounted(() => {
+  if (typeof ResizeObserver === 'undefined') return
+  widthObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const width = entry.contentRect.width
+      if (entry.target === liRef.value) liWidth.value = width
+      else if (entry.target === labelRef.value) labelWidth.value = width
+    }
+  })
+  if (liRef.value) widthObserver.observe(liRef.value)
+  if (labelRef.value) widthObserver.observe(labelRef.value)
+})
+onBeforeUnmount(() => widthObserver?.disconnect())
+
 // D4：右键菜单——命中当前多选中的一员则对整个多选生效，否则只对这一项生效
 // （并顺带把选中态切到它，符合右键菜单前先选中的直觉）
 const menuShow = ref(false)
@@ -210,14 +252,21 @@ function onMoreClick(e: MouseEvent) {
       </div>
     </div>
 
-    <!-- 左上角显示元素名称（左对齐，浮在顶边框上方）：悬停（虚线框）或选中（实线框）时显示 -->
+    <!-- 左上角显示元素名称（左对齐，浮在顶边框上方）：悬停（虚线框）或选中（实线框）时显示；
+         I3（追加）：条目太窄、装不下"标签 + 工具条 + 8px"时让位给工具条（见 hideLabelForToolbar），
+         始终用 opacity 隐藏而不是 v-if/v-show——标签必须留在布局里，ResizeObserver 才量得到它 -->
     <div
+      ref="labelRef"
       class="absolute -top-[23px] left-0 z-30 flex h-[22px] max-w-[220px] items-center rounded-[7px] border border-border/70 bg-card px-2 shadow-[0_1px_4px_rgba(0,0,0,0.12)] transition-[opacity] duration-150 dark:border-border/50 dark:bg-neutral-900"
-      :class="[
-        'opacity-0 pointer-events-none',
-        'group-hover:opacity-100',
-        selected ? '!opacity-100' : '',
-      ]"
+      :class="
+        hideLabelForToolbar
+          ? 'opacity-0 pointer-events-none'
+          : [
+              'opacity-0 pointer-events-none',
+              'group-hover:opacity-100',
+              selected ? '!opacity-100' : '',
+            ]
+      "
     >
       <span class="truncate text-[11px] text-muted-foreground">
         {{ child?.name || child?.$formkit || child?.$cmp }}
@@ -232,7 +281,7 @@ function onMoreClick(e: MouseEvent) {
     <!-- D3：选中单个元素（非多选）时显示浮动工具条，替换原来悬停出现的复制/删除
          小按钮：上移/下移/复制一份/包进容器/转换为/删除，一直可见（不再靠 hover 淡入
          淡出），点击项内按钮已各自 stop 冒泡，不会触发 li 自身的选中/取消逻辑 -->
-    <CanvasFloatingToolbar v-if="soloSelected" :item-key="itemKey" />
+    <CanvasFloatingToolbar v-if="soloSelected" :item-key="itemKey" @layout="onToolbarLayout" />
 
     <!-- D4：未选中时悬停出现的淡色「⋯」按钮，点开即右键菜单；选中态（含多选）不显示，
          多选用批量面板，单选已经有完整工具条 -->

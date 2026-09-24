@@ -8,7 +8,7 @@ import formkitDefaultConfig from '@/formkit.config'
 import BuilderMain from '@/builder/BuilderMain.vue'
 import { BUILDER_STATE_KEY, type FormBuilderState } from '@/state/create-form-builder-state'
 import { DSL_VERSION, getElementTypeDef } from '@/dsl'
-import type { FieldNode, FormDefinition, LayoutNode } from '@/types/dsl'
+import type { ContainerNode, FieldNode, FormDefinition, LayoutNode } from '@/types/dsl'
 
 const settle = async () => {
   for (let i = 0; i < 5; i++) await nextTick()
@@ -349,6 +349,63 @@ describe('H5：键盘快捷键', () => {
     const clone = root.find((n) => n.key !== 'age' && n.key !== 'card1')
     expect(clone?.label).toBe('年龄 副本')
     expect(state.selectedKey.value).toBe(clone?.key)
+
+    wrapper.unmount()
+  })
+
+  // I2：use-keyboard-shortcuts.ts 在 BuilderMain 自己的 setup 里调用命令层，取不到
+  // n-notification-provider 注入——之前这条路径下操作被拒绝会完全没有提示，现在应该
+  // 落到 use-canvas-commands.ts 里的独立通知实例，和工具条/右键菜单一样能看到提示。
+  it('I2：Ctrl+V 粘贴被规则拒绝时（按钮组只收按钮）也能看到提示', async () => {
+    const buttonGroup = getElementTypeDef('buttonGroup')!.defaults() as ContainerNode
+    buttonGroup.id = 'bg1'
+    buttonGroup.key = 'bg1'
+    buttonGroup.name = 'bg1'
+    buttonGroup.children = []
+    const def: FormDefinition = {
+      version: DSL_VERSION,
+      id: 'paste-reject-test',
+      name: 'paste-reject-test',
+      root: {
+        id: 'root',
+        category: 'container',
+        type: 'group',
+        renderAs: 'formkit',
+        dataType: 'object',
+        children: [textField('age', '年龄'), buttonGroup],
+      },
+      settings: { labelWidth: 80, labelAlign: 'top' },
+    }
+    const wrapper = mount(BuilderMain, {
+      props: { modelValue: def },
+      global: { plugins: [[formkitPlugin, formkitDefaultConfig]] },
+    })
+    await settle()
+    const state = getState(wrapper)
+
+    // 复制普通字段
+    state.selectedTarget.value = 'field'
+    state.selectedKey.value = 'age'
+    await settle()
+    await itemEl(wrapper, 'age').trigger('keydown', { key: 'c', ctrlKey: true })
+    await settle()
+
+    // 选中只收按钮的按钮组，Ctrl+V 粘贴普通字段应被规则拒绝
+    state.selectedTarget.value = 'field'
+    state.selectedKey.value = 'bg1'
+    await settle()
+    await itemEl(wrapper, 'bg1').trigger('keydown', { key: 'v', ctrlKey: true })
+    await settle()
+    await settle()
+
+    // 粘贴确实被拒绝：按钮组仍没有子节点
+    const bgNode = state.formDefinition.value.root.children.find((n) => n.key === 'bg1') as
+      | ContainerNode
+      | undefined
+    expect(bgNode?.children ?? []).toHaveLength(0)
+
+    // 拒绝提示走独立通知实例渲染到 document.body（不依赖 BuilderThemeScope 注入）
+    expect(document.body.textContent).toContain('按钮组只能放按钮')
 
     wrapper.unmount()
   })

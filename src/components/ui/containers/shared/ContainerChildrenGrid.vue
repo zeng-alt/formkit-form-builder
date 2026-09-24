@@ -287,9 +287,12 @@ const dragHandle = computed(() => props.dragHandle === true)
 const baseUlClass = computed(() => {
   if (layout.value === 'row') {
     if (props.vertical) return 'w-full flex-1 flex flex-col items-start gap-0 list-none p-0 m-0'
+    // 不能加 overflow 裁剪：条目的名称标签和浮动工具条浮在条目上方外侧，裁剪会把它们切掉
+    // （overflow-x-hidden 会连带把 overflow-y 变成 auto）；子项宽度已按总宽缩放，不会溢出。
+    // pt-4 给名称标签留出位置，避免压到容器标题
     if (props.autoWidth)
-      return 'w-full flex-1 flex flex-row flex-nowrap items-center gap-0 list-none p-0 m-0 overflow-x-hidden'
-    return 'w-full flex-1 flex flex-row flex-nowrap items-stretch gap-0 list-none p-0 m-0 overflow-x-hidden'
+      return 'w-full flex-1 flex flex-row flex-nowrap items-center gap-0 list-none p-0 pt-4 m-0'
+    return 'w-full flex-1 flex flex-row flex-nowrap items-stretch gap-0 list-none p-0 pt-4 m-0'
   }
   return 'w-full flex-1 grid grid-cols-12 gap-x-4 gap-y-6 list-none p-2 m-0'
 })
@@ -319,11 +322,8 @@ const rowItemStyle = (child: FormKitSchemaFormKit): { width: string; flex: strin
   return { width: `${pct}%`, flex: '0 0 auto' }
 }
 
-const resizeHandleClass = computed(() => {
-  // row 布局：右上角留给删除按钮，调节把手左移一格避免重叠
-  if (layout.value === 'row') return 'absolute top-2 right-10 z-30'
-  return 'absolute top-1/2 -translate-y-1/2 -right-3 z-30'
-})
+// 调宽把手：grid / row 布局一致，贴在条目右边框中点
+const resizeHandleClass = 'absolute top-1/2 -translate-y-1/2 -right-3 z-30'
 
 const itemKey = (child: FormKitSchemaFormKit, idx: number): string =>
   child?.__key || child?.name || `${child?.$formkit}-${idx}`

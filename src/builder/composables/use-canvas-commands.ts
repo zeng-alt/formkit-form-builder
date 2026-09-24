@@ -7,6 +7,7 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useNotification } from 'naive-ui'
+import { useColorMode, usePreferredDark } from '@vueuse/core'
 import { getElementTypeDef, schemaNodeToDslNode } from '@/dsl'
 import { getContainerSpec } from '@/elements/container-spec'
 import { getElementDefinition, getElementTypeBySchema, createDefaultFormElements } from '@/elements'
@@ -20,8 +21,10 @@ import {
 } from '@/utils/dnd/schema'
 import { schemaContainsSteps } from '@/utils/schema/steps'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
+import { setColSpan } from '@/utils/dnd/grid'
+import { findDslNodeByKey, updateDslNodeAtKey } from '@/utils/schema/dsl-tree'
 import type { FormBuilderState } from '@/state/create-form-builder-state'
-import type { FieldNode, ValidationRule } from '@/types/dsl'
+import type { FieldNode, FormNode, ValidationRule } from '@/types/dsl'
 
 // ─── 兼容类型分组（D6）──────────────────────────────────────────────────────────
 const TEXT_GROUP = new Set(['text', 'textarea', 'email', 'url', 'tel', 'password', 'richText'])
@@ -315,6 +318,122 @@ async function readSystemClipboard(): Promise<SchemaNode[] | null> {
   }
 }
 
+// ─── I2：键盘快捷键路径的兜底提示 ───────────────────────────────────────────────
+// useNotification() 要求调用者是 n-notification-provider（BuilderThemeScope 内部
+// 渲染）的真实后代；use-keyboard-shortcuts.ts 是在 BuilderMain.vue 自己的 setup 里
+// 调用本命令层——BuilderMain 是 BuilderThemeScope 的父级而非子孙，不管多早/多晚调用
+// 都拿不到注入（这是组件树结构问题，不是时序问题，provide/inject 只能沿子孙方向流动）。
+// 工具条/右键菜单/画布条目都是 BuilderThemeScope 的真实子孙，正常走注入；只有这一条
+// 路径需要兜底。
+// 本来想用 naive-ui 的 createDiscreteApi 顶一个不依赖注入的独立通知实例，但它不在
+// naive-ui 主入口导出，只能从 naive-ui/lib/discrete 这个子路径单独 import——这个包本身
+// 已经是 UMD 构建里外部化的 peer（见 vite.config.ts 的 PEER_GLOBALS），额外引入一个
+// 独立子路径会让 rollup 在 UMD 产物里对它另起一个 PEER_GLOBALS 没登记、消费方也提供
+// 不了的全局变量名（试过，构建时能看到 rollup 的 MISSING_GLOBAL_NAME 警告），所以放弃
+// 这条路，改成完全不依赖任何 UI 库 provider 体系的极简 toast：手写 DOM、跟随 vueuse
+// 的颜色模式（与 BuilderThemeScope 读的是同一个 localStorage key，明暗跟页面一致），
+// 定时自动消失。视觉上是简化版，但足以让键盘触发的粘贴/包进容器等操作被拒绝时也能
+// 看到提示，和鼠标路径的效果一致。
+let fallbackToastEl: HTMLDivElement | null = null
+// 显式用 number（浏览器 setTimeout 的真实返回类型）：ReturnType<typeof
+// window.setTimeout> 在同时装了 @types/node 的工程里会被解析成 NodeJS.Timeout，
+// 和运行时实际拿到的数字对不上
+let fallbackToastTimer: number | null = null
+
+function showFallbackNotice(message: string, isDark: boolean) {
+  if (!fallbackToastEl) {
+    fallbackToastEl = document.createElement('div')
+    fallbackToastEl.setAttribute('data-fkb-fallback-toast', 'true')
+    Object.assign(fallbackToastEl.style, {
+      position: 'fixed',
+      top: '16px',
+      right: '16px',
+      zIndex: '99999',
+      maxWidth: '320px',
+      padding: '10px 14px',
+      borderRadius: '8px',
+      fontSize: '13px',
+      lineHeight: '1.5',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.16)',
+      borderWidth: '1px',
+      borderStyle: 'solid',
+      borderColor: 'rgba(162,119,255,0.4)',
+      transition: 'opacity 180ms ease',
+      boxSizing: 'border-box',
+    } satisfies Partial<CSSStyleDeclaration>)
+    document.body.appendChild(fallbackToastEl)
+  }
+  const el = fallbackToastEl
+  el.textContent = message
+  el.style.background = isDark ? '#262626' : '#ffffff'
+  el.style.color = isDark ? '#f5f5f5' : '#1f1f1f'
+  el.style.opacity = '1'
+  if (fallbackToastTimer) window.clearTimeout(fallbackToastTimer)
+  fallbackToastTimer = window.setTimeout(() => {
+    el.style.opacity = '0'
+  }, 3000)
+}
+
+// ─── I1：批量改属性 ─────────────────────────────────────────────────────────────
+// 多选时右侧「批量设置」调用：一次提交同时改列宽/必填/禁用/尺寸中的若干项，不适用
+// 的元素自动跳过（如必填只对支持 required 校验的字段生效）。
+// 命令直接在 DSL 层（formDefinition）读写，不走 schema 层：字段带条件必填
+// （requiredIf）时，schema 层的 validation 已经被编译成 FormKit 条件属性
+// { if, then, else }（见 dsl/convert/field.ts 的 resolveFieldValidation），不再是
+// 单纯的数组——按数组语法直接改 schema.validation 会把条件必填和已有规则一起冲掉。
+// FieldNode.validation 是结构化的 ValidationRule[]，只增删 rule==='required' 这一条，
+// 不碰其余规则（含 requiredIf 编译前的静态规则），天然不会有这个问题。
+interface BatchPatch {
+  /** 占用列数：由 setColSpan 钳制到 2..12，对所有选中元素生效（无不适用场景） */
+  colSpan?: number
+  /** 必填：true=加 required 规则，false=去掉；只对支持 required 校验的字段生效 */
+  required?: boolean
+  /** 禁用：只对字段类节点生效；关闭时删键而非写 false，避免锁死表单/分组级联禁用
+   *（同 form-fields.ts 的 createDisabledProp） */
+  disabled?: boolean
+  /** 尺寸：null 表示"跟随表单"（删掉 size，交给渲染层默认值继承）；只对默认值里
+   *  定义了 props.size 的字段类型生效 */
+  size?: 'small' | 'medium' | 'large' | null
+}
+
+interface BatchPatchResult {
+  /** 命中至少一项 patch 字段、被实际改动的元素数 */
+  affected: number
+  total: number
+}
+
+/** 面板用：该元素是否支持批量"必填"，与 ValidationSection.vue 的判断口径一致
+ *（复用本文件顶部的 VALIDATION_RULE_TYPES；DSL 节点的 type 就是规范类型名，
+ *  不用再经 getElementTypeBySchema 从 schema 反查）。 */
+export function isBatchRequiredApplicable(node: FormNode): boolean {
+  return node.category === 'field' && isValidationRuleSupported('required', node.type)
+}
+/** 面板用：该元素是否支持批量"禁用"（只对字段类节点生效）。 */
+export function isBatchDisabledApplicable(node: FormNode): boolean {
+  return node.category === 'field'
+}
+/** 面板用：该元素是否支持批量"尺寸"（只对字段类节点、且默认值里定义了 props.size
+ *  的类型生效——容器类节点如 card/tabs/buttonGroup 同样有 size 默认值，但不是字段，
+ *  批量"尺寸"不应该动它们）。 */
+export function isBatchSizeApplicable(node: FormNode): boolean {
+  if (node.category !== 'field') return false
+  const defaults = getElementTypeDef(node.type)?.defaults() as FieldNode | undefined
+  return typeof defaults?.props?.size === 'string'
+}
+/** 面板用：读当前是否已有 required 规则（三态显示）。 */
+export function readBatchRequired(node: FormNode): boolean {
+  return (node as FieldNode).validation?.some((r) => r.rule === 'required') ?? false
+}
+/** 面板用：读当前 disabled（三态显示）。 */
+export function readBatchDisabled(node: FormNode): boolean {
+  return Boolean(node.props?.disabled)
+}
+/** 面板用：读当前 size；undefined 表示未显式设置（即"跟随表单"）。 */
+export function readBatchSize(node: FormNode): string | undefined {
+  const value = node.props?.size
+  return typeof value === 'string' ? value : undefined
+}
+
 export interface CanvasCommands {
   copy: (keys: string[]) => void
   cut: (keys: string[]) => void
@@ -337,6 +456,8 @@ export interface CanvasCommands {
   selectAllRoot: () => void
   /** 清空多选（Esc）：回落到无选中。 */
   clearSelection: () => void
+  /** I1：批量改属性——一次提交同时改列宽/必填/禁用/尺寸中的若干项。 */
+  batchPatch: (keys: string[], patch: BatchPatch) => BatchPatchResult
 }
 
 export function useCanvasCommands(state: FormBuilderState): CanvasCommands {
@@ -344,17 +465,27 @@ export function useCanvasCommands(state: FormBuilderState): CanvasCommands {
   // useNotification() 要求祖先链上已经渲染了 n-notification-provider（BuilderThemeScope
   // 内部提供）；本命令层大多数调用点（CanvasGridItem / 工具条 / 右键菜单）都在那棵子树
   // 里，能正常拿到。但 use-keyboard-shortcuts.ts 是在 BuilderMain.vue 自己的 setup 里
-  // 调用它——那时 BuilderThemeScope 还没挂载，提前于 provider 之前调用会直接抛错。
-  // 这里用 try/catch 兜底：拿不到时降级为不提示（增删改本身照常生效，只是键盘快捷键
-  // 触发的粘贴/多选被拒绝时不弹提示条，鼠标操作路径不受影响）。
+  // 调用它——BuilderMain 是 BuilderThemeScope 的父级而非子孙，取不到注入，直接调用会
+  // 抛错（I2：这里用 try/catch 兜底，拿不到时落到上面的极简 toast，保证键盘触发的
+  // 粘贴/包进容器等操作被拒绝时也能像鼠标路径一样看到提示）。
   let notification: ReturnType<typeof useNotification> | null = null
+  let useFallbackToast = false
   try {
     notification = useNotification()
   } catch {
-    notification = null
+    useFallbackToast = true
   }
+  // 颜色模式只在真走兜底 toast 时才需要，正常路径（拿到真注入）不必多订阅这两个 ref
+  const colorMode = useFallbackToast ? useColorMode() : null
+  const preferredDark = useFallbackToast ? usePreferredDark() : null
 
   const notify = (message: string) => {
+    if (useFallbackToast) {
+      const isDark =
+        colorMode?.value === 'dark' || (colorMode?.value === 'auto' && !!preferredDark?.value)
+      showFallbackNotice(message, isDark)
+      return
+    }
     notification?.info({ title: message, duration: 3000 })
   }
 
@@ -753,6 +884,72 @@ export function useCanvasCommands(state: FormBuilderState): CanvasCommands {
     state.selectedKey.value = key
   }
 
+  // ── 批量改属性（I1）──────────────────────────────────────────────────────────
+  // 直接读写 DSL（state.formDefinition），不经 schema 层：字段带条件必填等条件属性时，
+  // schema 层的 validation 已经不是单纯数组（见本节顶部注释），只有在 DSL 层按
+  // ValidationRule[] 精确增删 required 这一条规则才不会连带冲掉别的东西。
+  function batchPatch(keys: string[], patch: BatchPatch): BatchPatchResult {
+    const validKeys = keys.filter((k): k is string => typeof k === 'string' && !!k)
+    const total = validKeys.length
+    if (!total) return { affected: 0, total: 0 }
+    const def = state.formDefinition.value
+    let children = Array.isArray(def?.root?.children) ? def.root.children : []
+    const affected = new Set<string>()
+
+    for (const key of validKeys) {
+      const found = findDslNodeByKey(children, key)
+      if (!found) continue
+      let node: FormNode = { ...found.node }
+      let changed = false
+
+      if (patch.colSpan !== undefined) {
+        node = setColSpan(node, patch.colSpan) as FormNode
+        changed = true
+      }
+      if (patch.required !== undefined && isBatchRequiredApplicable(node)) {
+        const field = node as FieldNode
+        const rules = field.validation ?? []
+        const has = rules.some((r) => r.rule === 'required')
+        if (patch.required && !has) {
+          field.validation = [...rules, { rule: 'required' } as ValidationRule]
+          changed = true
+        } else if (!patch.required && has) {
+          const next = rules.filter((r) => r.rule !== 'required')
+          field.validation = next.length ? next : undefined
+          changed = true
+        }
+      }
+      if (patch.disabled !== undefined && isBatchDisabledApplicable(node)) {
+        const props: Record<string, unknown> = { ...node.props }
+        // 关闭时删键而非写 false：同 createDisabledProp 的理由，避免锁死表单/分组级联禁用
+        if (patch.disabled) props.disabled = true
+        else delete props.disabled
+        node.props = Object.keys(props).length ? props : undefined
+        changed = true
+      }
+      if (patch.size !== undefined && isBatchSizeApplicable(node)) {
+        const props: Record<string, unknown> = { ...node.props }
+        if (patch.size) props.size = patch.size
+        else delete props.size
+        node.props = Object.keys(props).length ? props : undefined
+        changed = true
+      }
+
+      if (changed) {
+        affected.add(key)
+        children = updateDslNodeAtKey(children, key, node).nodes
+      }
+    }
+
+    if (affected.size && def) {
+      state.commitFormDefinition(
+        { ...def, root: { ...def.root, children } },
+        { reason: 'batch-edit' },
+      )
+    }
+    return { affected: affected.size, total }
+  }
+
   return {
     copy,
     cut,
@@ -772,5 +969,6 @@ export function useCanvasCommands(state: FormBuilderState): CanvasCommands {
     selectItem,
     selectAllRoot,
     clearSelection,
+    batchPatch,
   }
 }

@@ -115,6 +115,14 @@ export interface FieldNode extends BaseNode {
   value?: FieldValue
   /** 表达式字符串（如 "$price * $count"），由运行时 watch 求值并写入 FormKit node */
   expr?: string
+  /** 条件必填：为真时按必填校验（等同临时加一条 required 规则，JSON-safe，方便后端对接）。
+   *  字段已有静态 required 规则时静态规则优先，条件必填不生效（编辑器给出提示）。 */
+  requiredIf?: Expr
+  /** 条件禁用：为真时禁用该字段，与表单级/字段静态 disabled 叠加（任一为真即禁用）。 */
+  disabledIf?: Expr
+  /** 条件只读：为真时原生支持只读的类型（见 READONLY_CAPABLE_TYPES）真只读，
+   *  其余退化为禁用，判断口径与表单级 readonly 共用同一份集合，不另起一套。 */
+  readonlyIf?: Expr
   validation?: ValidationRule[]
   /** select / radio / checkbox 等选项（静态数组，或 { dynamic, code } 动态字典） */
   options?: OptionItem[] | DynamicOptionSource

@@ -40,6 +40,7 @@ const REASON_LABEL_KEYS: Record<string, string> = {
   paste: 'paste',
   wrap: 'wrap',
   'convert-type': 'convertType',
+  'batch-edit': 'batchEdit',
 }
 
 /** 按提交 reason 取历史面板文案对应的 i18n key（拼接为 `history.reasons.<key>`）；
