@@ -67,7 +67,13 @@ describe('H6：复制后自动选中副本', () => {
     await settle()
     const state = getState(wrapper)
 
-    const copyBtn = wrapper.find('button[aria-label="复制字段"]')
+    // D3：复制一份改到浮动工具条（选中单个元素时才显示），不再是常驻悬停按钮，
+    // 先选中该元素
+    state.selectedTarget.value = 'field'
+    state.selectedKey.value = 'age'
+    await settle()
+
+    const copyBtn = wrapper.find('button[aria-label="复制一份"]')
     expect(copyBtn.exists()).toBe(true)
     await copyBtn.trigger('click')
     await settle()
@@ -93,14 +99,16 @@ describe('H6：复制后自动选中副本', () => {
     await settle()
     const state = getState(wrapper)
 
-    // 根级两个条目：age 字段 + card 容器，DOM 顺序上 card 子项的复制按钮排在 card
-    // 自身按钮之前，按 [data-item-key="card1"] 精确定位 card 自己的复制按钮
+    // D3：复制一份改到浮动工具条，只在单选这一个元素时出现——选中 card 本身
+    // （不是它内部的字段），工具条只会挂在 card 这一层，不会有嵌套按钮的歧义
+    state.selectedTarget.value = 'field'
+    state.selectedKey.value = 'card1'
+    await settle()
+
     const cardItem = wrapper.find('[data-item-key="card1"]')
     expect(cardItem.exists()).toBe(true)
-    // card1 的 li 子树里既有它自己的复制按钮，也有内部两个字段各自的复制按钮（DOM
-    // 顺序：子字段的按钮先出现，card 自己的覆盖层按钮在模板里排在内容之后，最后出现）
-    const buttonsInCard = cardItem.findAll('button[aria-label="复制字段"]')
-    const cardCopyBtn = buttonsInCard.at(-1)!
+    const cardCopyBtn = cardItem.find('button[aria-label="复制一份"]')
+    expect(cardCopyBtn.exists()).toBe(true)
     await cardCopyBtn.trigger('click')
     await settle()
 

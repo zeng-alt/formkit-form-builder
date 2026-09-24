@@ -12,12 +12,20 @@ import { FormKitSchema } from '@formkit/vue'
 import { NButton, NTooltip } from 'naive-ui'
 import { pluralize, validationCount } from '@/utils/text'
 import type { SchemaNode } from '@/utils/schema/types'
+import { useFormBuilderI18n } from '@/i18n/context'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
+import { useCanvasCommands } from '@/builder/composables/use-canvas-commands'
+import CanvasFloatingToolbar from './CanvasFloatingToolbar.vue'
+import CanvasContextMenu from './CanvasContextMenu.vue'
 
 const props = defineProps<{
   child: FormKitSchemaFormKit
   index: number
   itemKey: string
   selected: boolean
+  /** D3：本项是否为“唯一选中项”（多选时为 false）——只有这种情况才显示浮动工具条，
+   *  多选只显示紫色选中框，不显示单项工具条（批量操作走右侧面板）。 */
+  soloSelected?: boolean
   resizing: boolean
   dragging: boolean
   dragEnabled: boolean
@@ -63,10 +71,6 @@ const props = defineProps<{
   onResetSpan?: (index: number) => void
 }>()
 
-// 步骤向导节点不提供复制按钮（全局唯一，复制无意义）
-const isStepsItem = (child: SchemaNode): boolean =>
-  child?.$cmp === 'steps' || child?.$formkit === 'steps'
-
 const ruleCount = computed(() => validationCount(props.child))
 
 // ═══ K2：图片 fill 模式撑满所占行 ═══════════════════════════════════════════════
@@ -107,6 +111,48 @@ function onLabelClick(e: MouseEvent) {
   e.preventDefault()
   li.focus({ preventScroll: true })
 }
+
+// ═══ D1/D3/D4：多选点击 + 浮动工具条 + 右键菜单 ═══════════════════════════════════
+// 这里是画布上所有条目（根级 / 任意容器内嵌套）点击选中的唯一入口，天然是实现
+// Shift/Ctrl(Cmd) 多选切换的地方——不需要各容器组件各自感知多选。
+const { t } = useFormBuilderI18n()
+const state = useFormBuilderState()
+const commands = useCanvasCommands(state)
+
+function onItemPointerDown(e: PointerEvent) {
+  const key = (props.child as SchemaNode)?.__key
+  if (key && (e.shiftKey || e.ctrlKey || e.metaKey)) {
+    commands.selectItem(key, { shift: e.shiftKey, multi: e.ctrlKey || e.metaKey })
+    return
+  }
+  props.onSelect(props.child, props.index)
+}
+
+// D4：右键菜单——命中当前多选中的一员则对整个多选生效，否则只对这一项生效
+// （并顺带把选中态切到它，符合右键菜单前先选中的直觉）
+const menuShow = ref(false)
+const menuPos = ref({ x: 0, y: 0 })
+const menuTargetKeys = ref<string[]>([])
+function onContextMenu(e: MouseEvent) {
+  e.preventDefault()
+  const key = (props.child as SchemaNode)?.__key
+  if (!key) return
+  const inMultiSelection =
+    state.selectedKeys.value.length > 1 && state.selectedKeys.value.includes(key)
+  if (!inMultiSelection) props.onSelect(props.child, props.index)
+  menuTargetKeys.value = inMultiSelection ? [...state.selectedKeys.value] : [key]
+  menuPos.value = { x: e.clientX, y: e.clientY }
+  menuShow.value = true
+}
+
+// 未选中时悬停出现的「⋯」按钮：点开即右键菜单（同一份菜单，作用于这一项）
+function onMoreClick(e: MouseEvent) {
+  const key = (props.child as SchemaNode)?.__key
+  if (!key) return
+  menuTargetKeys.value = [key]
+  menuPos.value = { x: e.clientX, y: e.clientY }
+  menuShow.value = true
+}
 </script>
 
 <template>
@@ -127,7 +173,8 @@ function onLabelClick(e: MouseEvent) {
     ]"
     :style="itemStyle()"
     tabindex="0"
-    @pointerdown.stop="props.onSelect(child, index)"
+    @pointerdown.stop="onItemPointerDown"
+    @contextmenu="onContextMenu"
     @keydown.enter.stop.prevent="props.onSelect(child, index)"
     @keydown.space.stop.prevent="props.onSelect(child, index)"
     @click="onLabelClick"
@@ -182,106 +229,42 @@ function onLabelClick(e: MouseEvent) {
       </span>
     </div>
 
-    <!-- 悬停延伸区：覆盖复制/删除按钮及其左 8px、连接元素顶边，保证鼠标移向按钮时虚线框不消失 -->
-    <span aria-hidden="true" class="absolute -top-[23px] right-0 z-30 h-[23px] w-[52px]"></span>
+    <!-- D3：选中单个元素（非多选）时显示浮动工具条，替换原来悬停出现的复制/删除
+         小按钮：上移/下移/复制一份/包进容器/转换为/删除，一直可见（不再靠 hover 淡入
+         淡出），点击项内按钮已各自 stop 冒泡，不会触发 li 自身的选中/取消逻辑 -->
+    <CanvasFloatingToolbar v-if="soloSelected" :item-key="itemKey" />
 
-    <!-- 复制按钮：删除按钮左侧，浮在顶边框上方 -->
-    <n-tooltip v-if="hasCopy && showDeleteTooltip && !isStepsItem(child)" placement="top">
+    <!-- D4：未选中时悬停出现的淡色「⋯」按钮，点开即右键菜单；选中态（含多选）不显示，
+         多选用批量面板，单选已经有完整工具条 -->
+    <n-tooltip v-if="!selected" placement="top">
       <template #trigger>
         <n-button
           quaternary
           size="small"
-          :aria-label="copyAriaLabel"
+          :aria-label="t('builder.commands.more')"
           draggable="false"
           @pointerdown.stop.prevent
-          @click.stop="onCopy?.(index)"
+          @click.stop="onMoreClick"
           :class="[
-            'absolute -top-[23px] right-[22px] z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-[#7c9ef8]/25 hover:!text-[#4f6ef7] active:!scale-95 active:!bg-[#7c9ef8]/35 active:!text-[#4f6ef7] dark:!border-border/50 dark:hover:!bg-[#7c9ef8]/30 transition-[transform,background-color,color,opacity] duration-150',
+            'absolute -top-[23px] right-0 z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] !bg-[#7c9ef8]/10 !text-[#4f6ef7] hover:!bg-[#7c9ef8]/25 hover:!text-[#4f6ef7] active:!scale-95 dark:!border-border/50 dark:hover:!bg-[#7c9ef8]/30 transition-[transform,background-color,color,opacity] duration-150',
             'opacity-0 pointer-events-none',
             'group-hover:opacity-100 group-hover:pointer-events-auto',
-            selected
-              ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
-              : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
           ]"
         >
           <template #icon
-            ><span aria-hidden="true" class="i-lucide-copy !h-[12px] !w-[12px]"></span
+            ><span aria-hidden="true" class="i-lucide-ellipsis !h-[12px] !w-[12px]"></span
           ></template>
         </n-button>
       </template>
-      {{ copyTooltipText }}
+      {{ t('builder.commands.more') }}
     </n-tooltip>
 
-    <n-button
-      v-if="hasCopy && !showDeleteTooltip && !isStepsItem(child)"
-      quaternary
-      size="small"
-      :aria-label="copyAriaLabel"
-      draggable="false"
-      @pointerdown.stop.prevent
-      @click.stop="onCopy?.(index)"
-      :class="[
-        'absolute -top-[23px] right-[22px] z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-[#7c9ef8]/25 hover:!text-[#4f6ef7] active:!scale-95 active:!bg-[#7c9ef8]/35 active:!text-[#4f6ef7] dark:!border-border/50 dark:hover:!bg-[#7c9ef8]/30 transition-[transform,background-color,color,opacity] duration-150',
-        'opacity-0 pointer-events-none',
-        'group-hover:opacity-100 group-hover:pointer-events-auto',
-        selected
-          ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
-          : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
-      ]"
-    >
-      <template #icon
-        ><span aria-hidden="true" class="i-lucide-copy !h-[12px] !w-[12px]"></span
-      ></template>
-    </n-button>
-
-    <!-- 删除按钮浮在右上角边框外侧（与边框留间距，不相连）：悬停（虚线框）或选中（实线框）时显示 -->
-    <n-tooltip v-if="showDeleteTooltip" placement="top">
-      <template #trigger>
-        <n-button
-          quaternary
-          size="small"
-          :aria-label="deleteAriaLabel"
-          draggable="false"
-          @pointerdown.stop.prevent
-          @click.stop="onDelete(index)"
-          :class="[
-            'absolute -top-[23px] right-0 z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-red-100 hover:!text-red-600 active:!scale-95 active:!bg-red-200 active:!text-red-700 dark:!border-border/50 dark:hover:!bg-red-950/50 dark:hover:!text-red-400 transition-[transform,background-color,color,opacity] duration-150',
-            'opacity-0 pointer-events-none',
-            'group-hover:opacity-100 group-hover:pointer-events-auto',
-            selected
-              ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
-              : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
-          ]"
-        >
-          <template #icon
-            ><span aria-hidden="true" class="i-lucide-trash-2 !h-[12px] !w-[12px]"></span
-          ></template>
-        </n-button>
-      </template>
-      {{ deleteTooltipText }}
-    </n-tooltip>
-
-    <n-button
-      v-else
-      quaternary
-      size="small"
-      :aria-label="deleteAriaLabel"
-      draggable="false"
-      @pointerdown.stop.prevent
-      @click.stop="onDelete(index)"
-      :class="[
-        'absolute -top-[23px] right-0 z-40 !h-[22px] !w-[22px] !rounded-[7px] !border !border-border/70 !shadow-[0_1px_4px_rgba(0,0,0,0.12)] hover:!bg-red-100 hover:!text-red-600 active:!scale-95 active:!bg-red-200 active:!text-red-700 dark:!border-border/50 dark:hover:!bg-red-950/50 dark:hover:!text-red-400 transition-[transform,background-color,color,opacity] duration-150',
-        'opacity-0 pointer-events-none',
-        'group-hover:opacity-100 group-hover:pointer-events-auto',
-        selected
-          ? '!bg-[#a277ff]/15 !text-[#a277ff] !opacity-100 !pointer-events-auto'
-          : '!bg-[#7c9ef8]/10 !text-[#4f6ef7]',
-      ]"
-    >
-      <template #icon
-        ><span aria-hidden="true" class="i-lucide-trash-2 !h-[12px] !w-[12px]"></span
-      ></template>
-    </n-button>
+    <CanvasContextMenu
+      v-model:show="menuShow"
+      :x="menuPos.x"
+      :y="menuPos.y"
+      :target-keys="menuTargetKeys"
+    />
 
     <!-- 调宽把手（方案 B 胶囊）：可点击区域比可见胶囊左右各宽 4px（resize-pill-hit
          的内边距），光标 ew-resize；可聚焦，← / → 键盘调宽，双击恢复整行。悬停条目时

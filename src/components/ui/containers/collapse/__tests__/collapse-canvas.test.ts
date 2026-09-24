@@ -116,6 +116,11 @@ describe('折叠面板画布', () => {
     await settle()
     const state = getState(wrapper)
 
+    // D3：删除按钮改到浮动工具条，只在选中单个元素时出现，先选中 f1
+    state.selectedTarget.value = 'field'
+    state.selectedKey.value = 'f1'
+    await settle()
+
     const item = wrapper.find('[data-item-key="f1"]')
     expect(item.exists()).toBe(true)
     const deleteBtn = item.find('button[aria-label="删除字段"]')

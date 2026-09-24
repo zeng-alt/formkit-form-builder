@@ -118,6 +118,7 @@ export default defineConfig({
     'i-lucide-pilcrow',
     'i-lucide-quote',
     'i-lucide-eraser',
+    'i-lucide-history',
     '!w-[8.33%]',
     '!w-[16.67%]',
     '!w-[25%]',

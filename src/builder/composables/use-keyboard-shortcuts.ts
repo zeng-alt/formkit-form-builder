@@ -1,20 +1,19 @@
-// ═══ H5：设计器键盘快捷键 ═══════════════════════════════════════════════════════
-// Delete/Backspace 删除当前选中元素；Ctrl/Cmd+Z 撤销；Ctrl/Cmd+Shift+Z 与
-// Ctrl/Cmd+Y 重做；Ctrl/Cmd+D 复制选中元素（并阻止浏览器默认的加书签行为）。
+// ═══ H5 / D0：设计器键盘快捷键 ══════════════════════════════════════════════════
+// Delete/Backspace 删除当前选中元素（含多选）；Ctrl/Cmd+Z 撤销；Ctrl/Cmd+Shift+Z 与
+// Ctrl/Cmd+Y 重做；Ctrl/Cmd+D 复制选中元素；Ctrl/Cmd+C/X/V 复制/剪切/粘贴；
+// Esc 清空多选（并阻止浏览器默认的加书签 / 地址栏聚焦等行为）。
 //
 // 监听挂在设计器根元素上（BuilderMain.vue 的 @keydown），不挂 window：keydown 会
 // 从任意子孙元素冒泡到这个根节点，多个设计器实例各自的根节点互不干扰，不需要
 // window 单例监听器 + 手动判断"事件是否属于当前实例"。
 //
-// 删除/复制按 formSchema 的 __key 定位，用 utils/schema/tree.ts 的通用树工具
-// （findNodeByKey/removeAtPath/insertAfterAtPath）——这些工具本来就支持任意嵌套
-// 深度（容器内部的字段与根级字段用的是同一套 schema 树表示），不需要为"根级"和
-// "容器内"分别写一套逻辑。
-import { findNodeByKey, insertAfterAtPath, removeAtPath, updateAtPath } from '@/utils/schema/tree'
-import { collectSchemaNames, duplicateNode } from '@/utils/dnd/schema'
-import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
-import { useFormBuilderI18n } from '@/i18n/context'
+// 删除 / 复制一份 / 剪切 / 粘贴等增删改逻辑统一委托给 use-canvas-commands.ts
+// （D0 命令层）：工具条、右键菜单与这里的快捷键调用同一份实现，不再各写一套。
+// 数据表格列删除是唯一的例外——列不是树节点，走 props.columns，不经命令层。
+import { findNodeByKey, updateAtPath } from '@/utils/schema/tree'
+import { type SchemaNode } from '@/utils/schema/types'
 import { getElementTypeBySchema } from '@/elements'
+import { useCanvasCommands } from './use-canvas-commands'
 import type { FormBuilderState } from '@/state/create-form-builder-state'
 import type { FormKitSchemaFormKit } from '@formkit/core'
 import type { DataTableColumn } from '@/components/ui/containers/data-table/types'
@@ -63,28 +62,11 @@ function isCanvasNonTextControl(target: EventTarget | null): boolean {
   return !!target.closest('[data-canvas-item] .formkit-outer')
 }
 
-/** 定位 path 对应的兄弟数组 + 下标（tree.ts 的 path 语义：最后一段是目标在其所在
- *  数组里的下标，前面几段逐层描述到达那个数组要经过的节点下标）。 */
-function resolveParentArray(
-  schema: SchemaNode[],
-  path: number[],
-): { arr: SchemaNode[]; index: number } | null {
-  if (path.length === 0) return null
-  if (path.length === 1) return { arr: schema, index: path[0]! }
-  let cursor: SchemaNode | undefined = schema[path[0]!]
-  for (let i = 1; i < path.length - 1; i++) {
-    if (!cursor) return null
-    cursor = schemaChildren(cursor)[path[i]!]
-  }
-  if (!cursor) return null
-  return { arr: schemaChildren(cursor), index: path[path.length - 1]! }
-}
-
-// BuilderCanvas.vue 调用（BuilderThemeScope 子孙，useNotification() 能正常注入）：
+// BuilderMain.vue 调用（BuilderThemeScope 子孙，useNotification() 能正常注入）：
 // state 由调用方传入而不是这里自己 useFormBuilderState()——同一份状态，避免
 // 再走一次注入。
 export function useKeyboardShortcuts(state: FormBuilderState) {
-  const { t } = useFormBuilderI18n()
+  const commands = useCanvasCommands(state)
 
   // 数据表格选中列时优先删该列（列不是树节点，走 props.columns，不走通用的树删除）：
   // 命中返回 true，未命中（未选中列 / 选中节点不是数据表格）返回 false 交给
@@ -120,66 +102,10 @@ export function useKeyboardShortcuts(state: FormBuilderState) {
     return true
   }
 
-  // 删除当前选中元素（根级或容器内嵌套均可）：删除后选中态回落到同位置的相邻
-  // 元素，没有相邻元素时回落到表单设置
-  const deleteSelected = () => {
-    if (state.selectedTarget.value !== 'field') return
-    const key = state.selectedKey.value
-    if (!key) return
-    const schema = state.formSchema.value as SchemaNode[]
-    const found = findNodeByKey(schema, key)
-    if (!found) return
-
-    const parentInfo = resolveParentArray(schema, found.path)
-    let fallbackKey: string | null = null
-    if (parentInfo) {
-      const remaining = parentInfo.arr.filter((_, i) => i !== parentInfo.index)
-      const nextIndex = Math.min(parentInfo.index, remaining.length - 1)
-      fallbackKey = remaining[nextIndex]?.__key ?? null
-    }
-
-    const nextSchema = removeAtPath(schema, found.path)
-    state.commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], { reason: 'delete' })
-
-    if (fallbackKey) {
-      const stillThere = findNodeByKey(state.formSchema.value as SchemaNode[], fallbackKey)
-      if (stillThere) {
-        state.selectedTarget.value = 'field'
-        state.selectedKey.value = fallbackKey
-        state.selectedIndex.value = stillThere.rootIndex
-        return
-      }
-    }
-    state.selectedTarget.value = 'form'
-    state.selectedKey.value = null
-  }
-
-  // 复制当前选中元素（根级或容器内嵌套均可），复制完成后选中新副本（H6）
-  const duplicateSelected = () => {
-    if (state.selectedTarget.value !== 'field') return
-    const key = state.selectedKey.value
-    if (!key) return
-    const schema = state.formSchema.value as SchemaNode[]
-    const found = findNodeByKey(schema, key)
-    if (!found) return
-
-    const existingNames = new Set<string>()
-    collectSchemaNames(schema, existingNames)
-    const clone = duplicateNode(found.node as FormKitSchemaFormKit, existingNames, {
-      labelSuffix: t('common.copySuffix'),
-    }) as SchemaNode
-
-    const nextSchema = insertAfterAtPath(schema, found.path, clone)
-    state.commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], { reason: 'duplicate' })
-
-    const cloneKey = clone.__key
-    if (!cloneKey) return
-    const foundClone = findNodeByKey(state.formSchema.value as SchemaNode[], cloneKey)
-    if (!foundClone) return
-    state.selectedTarget.value = 'field'
-    state.selectedKey.value = cloneKey
-    state.selectedIndex.value = foundClone.rootIndex
-  }
+  // 当前选中的 key 列表：selectedKeys 由 state 自动跟随 selectedKey 同步（单选时
+  // 恒为 [selectedKey]），target 不是 'field' 时视为没有可操作的画布选中
+  const currentKeys = (): string[] =>
+    state.selectedTarget.value === 'field' ? state.selectedKeys.value : []
 
   const onKeydown = (e: KeyboardEvent) => {
     const mod = e.ctrlKey || e.metaKey
@@ -191,7 +117,15 @@ export function useKeyboardShortcuts(state: FormBuilderState) {
     if (!mod && (e.key === 'Delete' || e.key === 'Backspace')) {
       e.preventDefault()
       if (deleteSelectedColumn()) return
-      deleteSelected()
+      const keys = currentKeys()
+      if (keys.length) commands.remove(keys)
+      return
+    }
+    if (e.key === 'Escape' && state.selectedKeys.value.length > 1) {
+      // 只处理"清空多选"这一件事：单选 / 未选中时放行，交给其它 Escape 处理逻辑
+      // （如弹窗关闭）
+      e.preventDefault()
+      commands.clearSelection()
       return
     }
     if (mod && (e.key === 'z' || e.key === 'Z')) {
@@ -208,7 +142,27 @@ export function useKeyboardShortcuts(state: FormBuilderState) {
     if (mod && (e.key === 'd' || e.key === 'D')) {
       // 阻止浏览器默认的"添加书签"行为
       e.preventDefault()
-      duplicateSelected()
+      const keys = currentKeys()
+      if (keys.length) commands.duplicate(keys)
+      return
+    }
+    if (mod && (e.key === 'c' || e.key === 'C')) {
+      const keys = currentKeys()
+      if (!keys.length) return
+      e.preventDefault()
+      commands.copy(keys)
+      return
+    }
+    if (mod && (e.key === 'x' || e.key === 'X')) {
+      const keys = currentKeys()
+      if (!keys.length) return
+      e.preventDefault()
+      commands.cut(keys)
+      return
+    }
+    if (mod && (e.key === 'v' || e.key === 'V')) {
+      e.preventDefault()
+      void commands.paste()
       return
     }
   }

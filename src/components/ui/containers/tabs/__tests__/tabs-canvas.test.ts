@@ -274,6 +274,19 @@ describe('设计器画布：tabs 容器所见即所得', () => {
     wrapper.unmount()
   })
 
+  // buildField 没有显式设 __key（只有 name/label），是画布提交时兜底生成的随机
+  // key，测试构造阶段拿不到——D3 后按钮改到浮动工具条，只在选中单个元素时出现，
+  // 这里按文案定位到该字段的画布条目，模拟真实点击选中它（不需要事先知道 key）。
+  // 外层 tabs 容器自己的条目也会因为包含这个字段而文本命中，取最后一个（最内层，
+  // 文档顺序里嵌套条目排在外层条目之后）就是字段自己的条目。
+  function findFieldItem(wrapper: ReturnType<typeof mount>, label: string) {
+    const matches = wrapper
+      .findAll('[data-canvas-item="true"]')
+      .filter((li) => li.text().includes(label))
+    expect(matches.length, `应能找到「${label}」对应的画布条目`).toBeGreaterThan(0)
+    return matches[matches.length - 1]!
+  }
+
   it('pane 内字段可删除（画布能力不因改用 NTabs 而丢失）', async () => {
     const { wrapper } = mountBuilder({})
     await settle()
@@ -281,7 +294,11 @@ describe('设计器画布：tabs 容器所见即所得', () => {
     const tabsEl = wrapper.find(CANVAS_TABS)
     expect(tabsEl.text()).toContain('字段1')
 
-    const deleteBtn = tabsEl.find('button[aria-label="删除字段"]')
+    const item = findFieldItem(wrapper, '字段1')
+    await item.trigger('pointerdown')
+    await settle()
+
+    const deleteBtn = item.find('button[aria-label="删除字段"]')
     expect(deleteBtn.exists(), 'pane 内字段应能找到删除按钮').toBe(true)
     await deleteBtn.trigger('click')
     await settle()
@@ -295,8 +312,11 @@ describe('设计器画布：tabs 容器所见即所得', () => {
     const { wrapper } = mountBuilder({})
     await settle()
 
-    const tabsEl = wrapper.find(CANVAS_TABS)
-    const copyBtn = tabsEl.find('button[aria-label="复制字段"]')
+    const item = findFieldItem(wrapper, '字段1')
+    await item.trigger('pointerdown')
+    await settle()
+
+    const copyBtn = item.find('button[aria-label="复制一份"]')
     expect(copyBtn.exists(), 'pane 内字段应能找到复制按钮').toBe(true)
     await copyBtn.trigger('click')
     await settle()
