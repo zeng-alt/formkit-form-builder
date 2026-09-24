@@ -26,7 +26,14 @@ export default defineConfig({
   ],
   content: {
     pipeline: {
-      include: [/\.(vue|svelte|[jt]sx|mdx?|astro|elm|php|phtml|html)($|\?)/, 'src/**/*.{js,ts}'],
+      // src 下的 .ts/.js 也要扫描（formkit.theme.ts 的主题 class、各组件在 TS 里拼的 class）。
+      // 用正则匹配绝对路径而不是相对 glob：开发服务器的 root 是 playground/（见 vite.config），
+      // 'src/**/*.{js,ts}' 会被解析成 playground/src/** 而匹配不到，开发时主题里只出现在 .ts 的
+      // class（如校验提示的 text-red-500）不会生成；打包时 root 是仓库根目录，两种写法结果一致
+      include: [
+        /\.(vue|svelte|[jt]sx|mdx?|astro|elm|php|phtml|html)($|\?)/,
+        /\/src\/.+\.[jt]s($|\?)/,
+      ],
     },
   },
   safelist: [

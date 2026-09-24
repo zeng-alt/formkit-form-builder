@@ -5,9 +5,15 @@
 // 系列直接操作真实 DOM，再用 wrapper.emitted() 校验组件对外发出的事件。
 import { afterEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import { plugin as formkitPlugin } from '@formkit/vue'
+import formkitDefaultConfig from '@/formkit.config'
+import { getElementTypeDef } from '@/dsl'
+import { provideFormDefinition } from '@/composables/use-form-definition'
+import { createFormBuilderState } from '@/state/create-form-builder-state'
 import DataTableDataGridModal from '../DataTableDataGridModal.vue'
 import type { DataTableColumn } from '../types'
+import type { FieldNode } from '@/types/dsl'
 
 const settle = async () => {
   for (let i = 0; i < 6; i++) await nextTick()
@@ -18,10 +24,11 @@ const columns: DataTableColumn[] = [
   { key: 'age', title: '年龄' },
 ]
 
-function mountModal(data: Record<string, unknown>[]) {
+function mountModal(data: Record<string, unknown>[], cols: DataTableColumn[] = columns) {
   return mount(DataTableDataGridModal, {
-    props: { show: true, columns, data, rowKey: 'id' },
+    props: { show: true, columns: cols, data, rowKey: 'id' },
     attachTo: document.body,
+    global: { plugins: [[formkitPlugin, formkitDefaultConfig]] },
   })
 }
 
@@ -116,6 +123,111 @@ describe('DataTableDataGridModal', () => {
     click('[data-testid="dt-grid-add-row-empty"]')
     await settle()
     expect(rowEls()).toHaveLength(1)
+
+    wrapper.unmount()
+  })
+})
+
+// 列带真实字段元素时，单元格渲染成注册的 FormKit 输入组件（如 NaiveTextInput），
+// 它内部经 useBindEvents 依赖 useFormDefinition() 的表单定义上下文——用一个提供该
+// 上下文的宿主组件包一层，同真实画布 / 预览树的挂载方式。
+function mountModalWithFormContext(data: Record<string, unknown>[], cols: DataTableColumn[]) {
+  const state = createFormBuilderState()
+  const Host = defineComponent({
+    setup() {
+      provideFormDefinition(state.formDefinition)
+      const show = ref(true)
+      return () =>
+        h(DataTableDataGridModal, {
+          show: show.value,
+          columns: cols,
+          data,
+          rowKey: 'id',
+          'onUpdate:show': (v: boolean) => (show.value = v),
+        })
+    },
+  })
+  return mount(Host, {
+    attachTo: document.body,
+    global: { plugins: [[formkitPlugin, formkitDefaultConfig]] },
+  })
+}
+
+describe('DataTableDataGridModal：保存前按列校验', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  // 姓名列必填（来源元素带 validation），年龄列无来源元素（NInput 兜底，不参与校验）
+  const requiredCols: DataTableColumn[] = [
+    {
+      key: 'name',
+      title: '姓名',
+      element: {
+        ...(getElementTypeDef('text')!.defaults() as FieldNode),
+        name: 'name',
+        label: '姓名',
+        validation: [{ rule: 'required' }],
+      },
+    },
+    { key: 'age', title: '年龄' },
+  ]
+
+  it('必填列留空时点保存不 emit save，填上后可保存', async () => {
+    const wrapper = mountModalWithFormContext([], requiredCols)
+    const modal = wrapper.findComponent(DataTableDataGridModal)
+    await settle()
+
+    click('[data-testid="dt-grid-add-row-empty"]')
+    await settle()
+
+    click('[data-testid="dt-grid-save"]')
+    await settle()
+    expect(modal.emitted('save')).toBeFalsy()
+    // 必填提示随之出现
+    expect(document.body.textContent).toContain('姓名')
+
+    const nameInput = rowEls()[0]!.querySelector('input') as HTMLInputElement
+    nameInput.value = '张三'
+    nameInput.dispatchEvent(new Event('input'))
+    // FormKit 的 node.input() 内部有微任务/防抖提交，settle() 的 nextTick 不足以等到
+    // 值真正落到 node 上，这里让一次真实的宏任务过去
+    await new Promise((r) => setTimeout(r, 30))
+    await settle()
+
+    click('[data-testid="dt-grid-save"]')
+    await settle()
+    expect(modal.emitted('save')).toBeTruthy()
+    const rows = modal.emitted('save')![0]![0] as Record<string, unknown>[]
+    expect(rows[0]!.name).toBe('张三')
+    // 内部用的行标识不进入落盘数据
+    expect(rows[0]).not.toHaveProperty('__gridRowId')
+
+    wrapper.unmount()
+  })
+
+  it('派生列（disabled）不参与校验：只读也能直接保存', async () => {
+    const derivedCols: DataTableColumn[] = [
+      {
+        key: 'name',
+        title: '姓名',
+        element: {
+          ...(getElementTypeDef('text')!.defaults() as FieldNode),
+          name: 'name',
+          label: '姓名',
+          expr: '$age',
+          validation: [{ rule: 'required' }],
+        },
+      },
+      { key: 'age', title: '年龄' },
+    ]
+    const wrapper = mountModalWithFormContext([{ name: '', age: 1, id: 'u1' }], derivedCols)
+    const modal = wrapper.findComponent(DataTableDataGridModal)
+    await settle()
+
+    click('[data-testid="dt-grid-save"]')
+    await settle()
+    expect(modal.emitted('save')).toBeTruthy()
 
     wrapper.unmount()
   })

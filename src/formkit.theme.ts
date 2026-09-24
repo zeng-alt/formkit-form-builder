@@ -91,6 +91,10 @@ export function rootClasses(sectionName: string, node: FormKitNode): Record<stri
         [semanticKey]: true,
         'mt-1': true,
         'space-y-0.5': true,
+        // 圆点由 message 的 before 伪元素画，去掉 <ul> 的默认列表样式和缩进，避免出现两个圆点
+        'list-none': true,
+        'mb-0': true,
+        'p-0': true,
       }
     }
     if (sectionName === 'message') {
