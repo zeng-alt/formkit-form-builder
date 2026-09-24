@@ -5,6 +5,7 @@ import { useFormBuilderI18n } from '../i18n/context'
 import BuilderPreview from './BuilderPreview.vue'
 import AiPrompt from '../components/ai-prompt/AiPrompt.vue'
 import ThemeSwitcher from '../components/ui/theme-switcher/ThemeSwitcher.vue'
+import TemplatePickerModal from '@/templates/TemplatePickerModal.vue'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormBuilderConfig } from '@/composables/use-config'
 
@@ -17,6 +18,8 @@ const clearForm = () => {
   commitSchema([], { reason: 'clear' })
 }
 const showPreview = ref(false)
+// B2：顶栏「模板」入口，与空画布引导卡片共用同一个弹窗组件
+const showTemplates = ref(false)
 
 defineSlots<{
   /** 顶栏左侧区（清除 / 预览） */
@@ -65,6 +68,26 @@ defineSlots<{
             {{ t('builder.previewForm') }}
           </n-tooltip>
           <BuilderPreview v-model:show="showPreview" />
+
+          <n-tooltip>
+            <template #trigger>
+              <n-button
+                type="primary"
+                text
+                circle
+                size="small"
+                :aria-label="t('templates.entry')"
+                @click="showTemplates = true"
+                class="h-7 w-7 !p-2"
+              >
+                <template #icon
+                  ><span class="i-lucide-layout-template h-16px w-16px"></span
+                ></template>
+              </n-button>
+            </template>
+            {{ t('templates.entry') }}
+          </n-tooltip>
+          <TemplatePickerModal v-model:show="showTemplates" />
         </slot>
       </div>
 

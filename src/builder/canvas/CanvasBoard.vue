@@ -7,6 +7,7 @@ import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { cn } from '@/utils/utils'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { formLabelWidthStyle } from '@/utils/form-layout'
+import EmptyCanvasGuide from './EmptyCanvasGuide.vue'
 
 const { t } = useFormBuilderI18n()
 
@@ -77,8 +78,10 @@ defineSlots<{
         :on-copy="onCopy"
         :on-resize-end="onResizeEnd"
       >
-        <template v-if="$slots['empty']" #empty>
-          <slot name="empty" />
+        <template #empty>
+          <slot name="empty">
+            <EmptyCanvasGuide />
+          </slot>
         </template>
       </ContainerChildrenGrid>
     </n-card>

@@ -2,12 +2,9 @@
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../../i18n/context'
-import BindEditor from '../BindEditor.vue'
-import LabelHelpSection from '../common/LabelHelpSection.vue'
 import NaiveBasicSection from '../common/NaiveBasicSection.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 import TextInput from '../common/TextInput.vue'
-import { INPUT_BASIC_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
 const { t } = useFormBuilderI18n()
@@ -29,8 +26,6 @@ const naiveRateCount = computed({
 </script>
 
 <template>
-  <BindEditor :events="INPUT_BASIC_EVENTS" />
-  <LabelHelpSection />
   <TextInput
     :label="t('edits.props.count')"
     placeholder="5"

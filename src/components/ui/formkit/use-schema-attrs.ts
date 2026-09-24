@@ -1,5 +1,6 @@
 import { computed, reactive, watchEffect } from 'vue'
 import type { FormKitFrameworkContext } from '@formkit/core'
+import { useOptionalFormDefinition } from '@/composables/use-form-definition'
 
 // 配置经 FormKit 展平进 node.props.attrs，并由 bindings.observeProps 同步为 framework context
 // 的响应式 attrs（node.props.attrs 重赋值 → prop:attrs → context.attrs）。
@@ -31,8 +32,25 @@ const INTERNAL_KEYS = new Set([
   'children',
 ])
 
+// 表单级只读设置下，原生支持 readonly 语义的字段类型（底层 naive-ui 组件确实声明了
+// readonly prop：NInput / NInputNumber）；其余组件没有只读语义，统一在下面的 disabled
+// 计算属性里退化为禁用（见 FormSettings.readonly 的注释）。
+const READONLY_CAPABLE_TYPES = new Set([
+  'text',
+  'email',
+  'url',
+  'tel',
+  'password',
+  'textarea',
+  'number',
+])
+
 export function useSchemaAttrs(context: FormKitFrameworkContext, opts: { omit?: string[] } = {}) {
   const omitSet = new Set(opts.omit ?? [])
+  // 表单级设置（size/disabled/readonly 的渲染层兜底默认值）：字段自身有配置时优先用
+  // 字段自身的，没有配置时才回落到这里——不写回节点数据，纯渲染态计算。子树外
+  // （脱离 FormBuilder/FormRenderer 的孤立用法）拿不到上下文，按无表单级设置处理。
+  const formCtx = useOptionalFormDefinition()
 
   // config：context.attrs 的响应式镜像（含 __bind 等内部键），整体镜像到稳定 reactive 对象
   const config = reactive<Record<string, unknown>>({})
@@ -64,6 +82,20 @@ export function useSchemaAttrs(context: FormKitFrameworkContext, opts: { omit?: 
         out[key] = value
       }
     }
+    // 尺寸级联：字段自身未配置 size，或仍是元素定义里烘焙的基线默认值 'medium'
+    // （拖入画布的字段几乎都在 commonProps 里带着这个值出生，不是用户手动选的，
+    // 与"未设置"在语义上等价——参见 elements/definitions/fields.ts 的 commonProps），
+    // 才回落表单级设置；字段被显式改成 small/large 视为用户的确定选择，不覆盖。
+    if (out.size === undefined || out.size === 'medium') {
+      const formSize = formCtx?.formSettings.value?.size
+      if (formSize) out.size = formSize
+    }
+    // 只读级联：表单级只读时，只有原生支持 readonly 语义的字段类型才透传真正的
+    // readonly（值仍可见、不可编辑）；其余类型没有只读语义，交给下面的 disabled
+    // 计算属性统一退化为禁用
+    if (out.readonly === undefined && formCtx?.formSettings.value?.readonly) {
+      if (READONLY_CAPABLE_TYPES.has(context.type)) out.readonly = true
+    }
     return out
   })
 
@@ -81,7 +113,15 @@ export function useSchemaAttrs(context: FormKitFrameworkContext, opts: { omit?: 
   // 一次，所有字段包装组件都直接解构使用，不用每个组件各自重复摸底层位置——
   // 仍兜底读一次 config.disabled，覆盖用户经"自定义属性"面板绕开保留名拦截的情形
   // （config 镜像的是 context.attrs，正常路径下不会有 disabled，只有这条兜底路径才用得到）。
-  const disabled = computed<boolean>(() => Boolean(config.disabled) || Boolean(context.disabled))
+  const disabled = computed<boolean>(() => {
+    if (Boolean(config.disabled) || Boolean(context.disabled)) return true
+    const settings = formCtx?.formSettings.value
+    if (settings?.disabled) return true
+    // 表单级只读 + 当前字段类型不支持真正的 readonly 语义：退化为禁用（B1，见
+    // FormSettings.readonly 与上面 READONLY_CAPABLE_TYPES 的注释）
+    if (settings?.readonly && !READONLY_CAPABLE_TYPES.has(context.type)) return true
+    return false
+  })
 
   return { config, props, bind, disabled }
 }

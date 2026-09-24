@@ -166,6 +166,20 @@ export interface FormSettings {
   labelAlign?: 'top' | 'left'
   labelWidth?: number
   submit?: string
+  /** 统一控件尺寸：字段自身未设置 size 时继承（见 use-schema-attrs.ts 的渲染层默认值） */
+  size?: 'small' | 'medium' | 'large'
+  /** 整表禁用：级联到每个字段（FormKit 表单级 disabled 天然级联） */
+  disabled?: boolean
+  /** 整表只读：原生支持 readonly 的字段真只读，其余组件没有只读语义时退化为禁用 */
+  readonly?: boolean
+  /** 提交成功后的提示文案（naive-ui message），为空则不提示 */
+  successMessage?: string
+  /** 提交成功后跳转的地址：仅允许 http/https 绝对地址或以 / 开头的站内路径 */
+  successRedirect?: string
+  /** 是否显示重置按钮（默认 true） */
+  showReset?: boolean
+  submitText?: string
+  resetText?: string
 }
 
 export interface FormDefinition {

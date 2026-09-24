@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import BindEditor from '../BindEditor.vue'
-import LabelHelpSection from '../common/LabelHelpSection.vue'
 import PlaceholderSection from '../common/PlaceholderSection.vue'
 import OptionsTagsSection from '../common/OptionsTagsSection.vue'
 import NaiveBasicSection from '../common/NaiveBasicSection.vue'
@@ -11,7 +9,6 @@ import JsCodeEditor from '../common/JsCodeEditor.vue'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { useFormField } from '../../../../composables/form-fields'
 import { NButton, NModal } from 'naive-ui'
-import { INPUT_FULL_EVENTS } from '@/elements/definitions/bind-events'
 
 const { t } = useFormBuilderI18n()
 const { createPropsProp, availableFieldNames } = useFormField()
@@ -51,8 +48,6 @@ function saveCode() {
 </script>
 
 <template>
-  <BindEditor :events="INPUT_FULL_EVENTS" />
-  <LabelHelpSection />
   <PlaceholderSection />
   <OptionsTagsSection />
   <NaiveBasicSection :size="true" :disabled="true" :clearable="true" />

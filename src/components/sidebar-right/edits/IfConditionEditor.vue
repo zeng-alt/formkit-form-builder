@@ -60,9 +60,9 @@ const unparsed = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-2 mt-4 p-3 border border-border rounded-md bg-muted/30">
-    <div class="flex items-center justify-between">
-      <label class="text-xs font-medium text-foreground">{{ t('condition.useIf') }}</label>
+  <div class="space-y-1.5">
+    <div class="flex flex-row gap-2 items-center justify-between py-1">
+      <label class="text-xs text-foreground/80 font-medium">{{ t('condition.useIf') }}</label>
       <n-switch size="small" :value="enabled" @update:value="handleSwitchChange" />
     </div>
 

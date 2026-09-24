@@ -30,6 +30,8 @@ import StepsContainerPreview from '@/components/ui/containers/steps/StepsContain
 import GroupContainer from '@/components/ui/containers/group/GroupContainer.vue'
 import DataTableContainer from '@/components/ui/containers/data-table/DataTableContainer.vue'
 import DataTableContainerPreview from '@/components/ui/containers/data-table/DataTableContainerPreview.vue'
+import CollapseContainer from '@/components/ui/containers/collapse/CollapseContainer.vue'
+import CollapseContainerPreview from '@/components/ui/containers/collapse/CollapseContainerPreview.vue'
 
 registerBuiltinElementTypes()
 
@@ -250,6 +252,14 @@ const defs: ContainerDefinition[] = [
     preview: { libraryKey: 'dataTable', component: DataTableContainerPreview },
     normalize: (n) => normalizeContainer(n, 'dataTable', specOf('dataTable')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'dataTable', specOf('dataTable')),
+  },
+  {
+    id: 'collapse',
+    match: (n) => isContainerOf(n, 'collapse'),
+    canvas: { libraryKey: 'collapse', component: CollapseContainer },
+    preview: { libraryKey: 'collapse', component: CollapseContainerPreview },
+    normalize: (n) => normalizeContainer(n, 'collapse', specOf('collapse')),
+    formatPreview: (n, ctx) => formatContainer(n, ctx, 'collapse', specOf('collapse')),
   },
 ]
 

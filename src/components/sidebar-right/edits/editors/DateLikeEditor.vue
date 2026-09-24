@@ -2,14 +2,15 @@
 import { computed, watch } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../../i18n/context'
-import { DATE_PICKER_TYPE_VALUE_FORMATS, DEFAULT_DATE_VALUE_FORMAT, DEFAULT_TIME_VALUE_FORMAT } from '@/elements/constants'
-import BindEditor from '../BindEditor.vue'
-import LabelHelpSection from '../common/LabelHelpSection.vue'
+import {
+  DATE_PICKER_TYPE_VALUE_FORMATS,
+  DEFAULT_DATE_VALUE_FORMAT,
+  DEFAULT_TIME_VALUE_FORMAT,
+} from '@/elements/constants'
 import PlaceholderSection from '../common/PlaceholderSection.vue'
 import NaiveBasicSection from '../common/NaiveBasicSection.vue'
 import TextInput from '../common/TextInput.vue'
 import SelectInput from '../common/SelectInput.vue'
-import { INPUT_FULL_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp, currentFieldType } = useFormField()
 const { t } = useFormBuilderI18n()
@@ -34,9 +35,19 @@ const valueFormat = computed<string>({
 const naivePickerType = createPropsProp<string>('pickerType', 'date')
 
 const typeOptions = computed(() =>
-  ['date', 'datetime', 'daterange', 'datetimerange', 'month', 'monthrange', 'year', 'yearrange', 'quarter', 'quarterrange', 'week'].map(
-    (value) => ({ label: t(`edits.pickerType.${value}`), value }),
-  ),
+  [
+    'date',
+    'datetime',
+    'daterange',
+    'datetimerange',
+    'month',
+    'monthrange',
+    'year',
+    'yearrange',
+    'quarter',
+    'quarterrange',
+    'week',
+  ].map((value) => ({ label: t(`edits.pickerType.${value}`), value })),
 )
 
 watch(naivePickerType, (type) => {
@@ -45,8 +56,6 @@ watch(naivePickerType, (type) => {
 </script>
 
 <template>
-  <BindEditor :events="INPUT_FULL_EVENTS" />
-  <LabelHelpSection />
   <PlaceholderSection />
   <SelectInput
     v-if="currentFieldType === 'date'"

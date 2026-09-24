@@ -1,11 +1,8 @@
 <script setup lang="ts">
-// 标题内容由统一"内容"编辑区块（StaticContentSection）编辑
-import BindEditor from '../BindEditor.vue'
-import { NO_EVENTS } from '@/elements/definitions/bind-events'
+// 标题内容由统一"内容"编辑区块（StaticContentSection）编辑；本类型无其它可配置项
+// （事件由外层「事件」分组按 naiveH1~H6 定义的 bindEvents 渲染，均为空不显示）。
 </script>
 
-<!-- 标题内容由统一"内容"编辑区块（StaticContentSection）编辑 -->
 <template>
-  <BindEditor :events="NO_EVENTS" />
   <div class="hidden"></div>
 </template>

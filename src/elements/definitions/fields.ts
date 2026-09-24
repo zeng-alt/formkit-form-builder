@@ -4,6 +4,7 @@ import {
   DEFAULT_DATE_VALUE_FORMAT,
   DEFAULT_TIME_VALUE_FORMAT,
 } from '../constants'
+import { INPUT_FULL_EVENTS, INPUT_BASIC_EVENTS, DISPLAY_CLICK_EVENTS } from './bind-events'
 
 // 纯数据目录：不 import 任何 .vue。FormKit 组件绑定在 elements/formkit.ts（按 type 索引）。
 // 所有字段均以 $cmp 组件引用渲染（renderAs:'cmp'），target 为 FormKitSchema 的 $cmp 名。
@@ -21,6 +22,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-type',
     tooltipKey: 'fieldProps.tooltip.text',
     editor: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.text.name',
@@ -36,6 +38,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-letter-text',
     tooltipKey: 'fieldProps.tooltip.textarea',
     editor: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.textarea.name',
@@ -51,6 +54,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-mail',
     tooltipKey: 'fieldProps.tooltip.email',
     editor: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.email.name',
@@ -67,6 +71,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-link-2',
     tooltipKey: 'fieldProps.tooltip.url',
     editor: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.url.name',
@@ -83,6 +88,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-phone',
     tooltipKey: 'fieldProps.tooltip.tel',
     editor: () => import('@/components/sidebar-right/edits/editors/TextLikeEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.tel.name',
@@ -98,6 +104,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-lock',
     tooltipKey: 'fieldProps.tooltip.password',
     editor: () => import('@/components/sidebar-right/edits/editors/PasswordEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.password.name',
@@ -113,6 +120,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-hash',
     tooltipKey: 'fieldProps.tooltip.number',
     editor: () => import('@/components/sidebar-right/edits/editors/NumberEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.number.name',
@@ -129,6 +137,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-sliders-horizontal',
     tooltipKey: 'fieldProps.tooltip.range',
     editor: () => import('@/components/sidebar-right/edits/editors/RangeEditor.vue'),
+    bindEvents: INPUT_BASIC_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.range.name',
@@ -156,6 +165,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-calendar',
     tooltipKey: 'fieldProps.tooltip.date',
     editor: () => import('@/components/sidebar-right/edits/editors/DateLikeEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.date.name',
@@ -170,6 +180,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-clock',
     tooltipKey: 'fieldProps.tooltip.time',
     editor: () => import('@/components/sidebar-right/edits/editors/DateLikeEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.time.name',
@@ -184,6 +195,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-calendar-clock',
     tooltipKey: 'fieldProps.tooltip.dateTime',
     editor: () => import('@/components/sidebar-right/edits/editors/DateTimeEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.dateTime.name',
@@ -202,6 +214,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-list',
     tooltipKey: 'fieldProps.tooltip.select',
     editor: () => import('@/components/sidebar-right/edits/editors/SelectEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.select.name',
@@ -221,6 +234,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-circle-dot',
     tooltipKey: 'fieldProps.tooltip.radio',
     editor: () => import('@/components/sidebar-right/edits/editors/RadioEditor.vue'),
+    bindEvents: INPUT_BASIC_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.radio.name',
@@ -235,6 +249,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-square-check',
     tooltipKey: 'fieldProps.tooltip.checkbox',
     editor: () => import('@/components/sidebar-right/edits/editors/CheckboxEditor.vue'),
+    bindEvents: INPUT_BASIC_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.checkbox.name',
@@ -249,6 +264,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-list',
     tooltipKey: 'fieldProps.tooltip.naiveCascader',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveCascaderEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.naiveCascader.name',
@@ -282,6 +298,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-list-tree',
     tooltipKey: 'fieldProps.tooltip.naiveTreeSelect',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveTreeSelectEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.naiveTreeSelect.name',
@@ -312,6 +329,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-arrow-left-right',
     tooltipKey: 'fieldProps.tooltip.naiveTransfer',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveTransferEditor.vue'),
+    bindEvents: INPUT_BASIC_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.naiveTransfer.name',
@@ -337,6 +355,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-letter-text',
     tooltipKey: 'fieldProps.tooltip.naiveMention',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveMentionEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.naiveMention.name',
@@ -354,6 +373,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-sparkles',
     tooltipKey: 'fieldProps.tooltip.naiveAutoComplete',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveAutoCompleteEditor.vue'),
+    bindEvents: INPUT_FULL_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.naiveAutoComplete.name',
@@ -370,6 +390,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-square-check',
     tooltipKey: 'fieldProps.tooltip.naiveSwitch',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveSwitchEditor.vue'),
+    bindEvents: INPUT_BASIC_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.naiveSwitch.name',
@@ -386,6 +407,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-sliders-horizontal',
     tooltipKey: 'fieldProps.tooltip.naiveRate',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveRateEditor.vue'),
+    bindEvents: INPUT_BASIC_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.naiveRate.name',
@@ -403,6 +425,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-paperclip',
     tooltipKey: 'fieldProps.tooltip.file',
     editor: () => import('@/components/sidebar-right/edits/editors/FileEditor.vue'),
+    bindEvents: INPUT_BASIC_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.file.name',
@@ -418,6 +441,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-image',
     tooltipKey: 'fieldProps.tooltip.naiveImage',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveImageEditor.vue'),
+    bindEvents: DISPLAY_CLICK_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.naiveImage.name',
@@ -443,6 +467,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-stash:user-avatar',
     tooltipKey: 'fieldProps.tooltip.naiveAvatar',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveAvatarEditor.vue'),
+    bindEvents: DISPLAY_CLICK_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.naiveAvatar.name',
@@ -457,6 +482,7 @@ export const fieldElements: ElementDefinition[] = [
     icon: 'i-lucide-pipette',
     tooltipKey: 'fieldProps.tooltip.color',
     editor: () => import('@/components/sidebar-right/edits/editors/ColorEditor.vue'),
+    bindEvents: INPUT_BASIC_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.color.name',
@@ -464,6 +490,59 @@ export const fieldElements: ElementDefinition[] = [
       value: '#00ff00',
       props: { ...commonProps },
       descriptionKey: 'elements.color.description',
+    },
+  },
+  {
+    type: 'richText',
+    category: 'field',
+    icon: 'i-lucide-file-text',
+    tooltipKey: 'fieldProps.tooltip.richText',
+    editor: () => import('@/components/sidebar-right/edits/editors/RichTextEditor.vue'),
+    bindEvents: INPUT_BASIC_EVENTS,
+    schema: {
+      renderAs: 'cmp',
+      nameKey: 'elements.richText.name',
+      labelKey: 'elements.richText.label',
+      // toolbar 默认全开（RICH_TEXT_TOOLBAR_ITEMS 的字面量列表见
+      // components/ui/fields/rich-text-toolbar.ts，此处不引入 .vue 目录不能 import 它，
+      // 直接照抄同一份 key，两处顺序/拼写必须保持一致）
+      props: {
+        minHeight: 160,
+        maxLength: null,
+        toolbar: [
+          'bold',
+          'italic',
+          'underline',
+          'strike',
+          'heading',
+          'bulletList',
+          'orderedList',
+          'blockquote',
+          'link',
+          'clear',
+          'undo',
+          'redo',
+        ],
+      },
+      placeholderKey: 'elements.richText.placeholder',
+      value: '',
+      descriptionKey: 'elements.richText.description',
+    },
+  },
+  {
+    type: 'signature',
+    category: 'field',
+    icon: 'i-lucide-signature',
+    tooltipKey: 'fieldProps.tooltip.signature',
+    editor: () => import('@/components/sidebar-right/edits/editors/SignatureEditor.vue'),
+    bindEvents: INPUT_BASIC_EVENTS,
+    schema: {
+      renderAs: 'cmp',
+      nameKey: 'elements.signature.name',
+      labelKey: 'elements.signature.label',
+      props: { height: 180, strokeColor: '#111111', strokeWidth: 2 },
+      value: '',
+      descriptionKey: 'elements.signature.description',
     },
   },
 ]

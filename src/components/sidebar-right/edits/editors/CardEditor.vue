@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../../i18n/context'
-import BindEditor from '../BindEditor.vue'
-import LabelHelpSection from '../common/LabelHelpSection.vue'
+import EditorSection from '../common/EditorSection.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
-import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
 const { t } = useFormBuilderI18n()
@@ -17,32 +15,32 @@ const cardHoverable = createPropsProp<boolean>('hoverable', false)
 </script>
 
 <template>
-  <BindEditor :events="NO_EVENTS" />
-  <LabelHelpSection />
-  <SelectInput
-    :label="t('edits.props.size')"
-    :value="cardSize"
-    :options="[
-      { label: 'small', value: 'small' },
-      { label: 'medium', value: 'medium' },
-      { label: 'large', value: 'large' },
-      { label: 'huge', value: 'huge' },
-    ]"
-    @update:value="(v) => (cardSize = v)"
-  />
-  <SwitchInput
-    :label="t('edits.props.bordered')"
-    :value="cardBordered"
-    @update:value="(v) => (cardBordered = v)"
-  />
-  <SwitchInput
-    :label="t('edits.props.embedded')"
-    :value="cardEmbedded"
-    @update:value="(v) => (cardEmbedded = v)"
-  />
-  <SwitchInput
-    :label="t('edits.props.hoverable')"
-    :value="cardHoverable"
-    @update:value="(v) => (cardHoverable = v)"
-  />
+  <EditorSection :title="t('edits.sections.appearance')">
+    <SelectInput
+      :label="t('edits.props.size')"
+      :value="cardSize"
+      :options="[
+        { label: 'small', value: 'small' },
+        { label: 'medium', value: 'medium' },
+        { label: 'large', value: 'large' },
+        { label: 'huge', value: 'huge' },
+      ]"
+      @update:value="(v) => (cardSize = v)"
+    />
+    <SwitchInput
+      :label="t('edits.props.bordered')"
+      :value="cardBordered"
+      @update:value="(v) => (cardBordered = v)"
+    />
+    <SwitchInput
+      :label="t('edits.props.embedded')"
+      :value="cardEmbedded"
+      @update:value="(v) => (cardEmbedded = v)"
+    />
+    <SwitchInput
+      :label="t('edits.props.hoverable')"
+      :value="cardHoverable"
+      @update:value="(v) => (cardHoverable = v)"
+    />
+  </EditorSection>
 </template>

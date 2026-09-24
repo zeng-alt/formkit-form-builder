@@ -71,6 +71,7 @@ const CONTAINER_KEY_ATTRS = [
   'data-steps-key',
   'data-group-key',
   'data-data-table-key',
+  'data-collapse-key',
 ] as const
 const CONTAINER_KEY_SELECTOR = CONTAINER_KEY_ATTRS.map((a) => `[${a}]`).join(',')
 

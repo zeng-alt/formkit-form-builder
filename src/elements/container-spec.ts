@@ -33,6 +33,8 @@ const containerSpecs: Record<string, ContainerSpec> = {
   steps: { dataShape: 'objectOfObjects', keyProp: 'stepsKey', primitive: 'cmp' },
   // 数据表格：列与数据在右侧面板配置，无 DnD 子节点，纯展示壳（同 buttonGroup）
   dataTable: { dataShape: 'none', keyProp: 'dataTableKey', primitive: 'cmp' },
+  // 折叠面板：单个可折叠分区，数据结构与 card 相同（单对象，壳 + group 包一层）
+  collapse: { dataShape: 'object', keyProp: 'collapseKey', primitive: 'cmp' },
 }
 
 export function getContainerSpec(type: string | undefined): ContainerSpec | null {

@@ -599,6 +599,98 @@ export function useFormField() {
     },
   })
 
+  // ─── B1：表单级设置（尺寸 / 状态 / 提交反馈）──────────────────────────────────
+  // 写路径统一走 { ...def, settings: { ...def.settings, key: value } }，与上面
+  // labelPosition/labelWidth/submit 同一套模式；merge:true + 相同 reason 在
+  // MERGE_WINDOW_MS 内合并历史，避免连续拖动/输入产生大量撤销步骤。
+  const formSize = computed<'small' | 'medium' | 'large' | undefined>({
+    get: () => formDefinition.value?.settings?.size,
+    set: (value) => {
+      const def = formDefinition.value
+      commitFormDefinition(
+        { ...def, settings: { ...def.settings, size: value || undefined } },
+        { reason: 'form-size', merge: true },
+      )
+    },
+  })
+
+  const formDisabled = computed<boolean>({
+    get: () => Boolean(formDefinition.value?.settings?.disabled),
+    set: (value: boolean) => {
+      const def = formDefinition.value
+      commitFormDefinition(
+        { ...def, settings: { ...def.settings, disabled: value || undefined } },
+        { reason: 'form-disabled', merge: true },
+      )
+    },
+  })
+
+  const formReadonly = computed<boolean>({
+    get: () => Boolean(formDefinition.value?.settings?.readonly),
+    set: (value: boolean) => {
+      const def = formDefinition.value
+      commitFormDefinition(
+        { ...def, settings: { ...def.settings, readonly: value || undefined } },
+        { reason: 'form-readonly', merge: true },
+      )
+    },
+  })
+
+  const formSuccessMessage = computed<string>({
+    get: () => formDefinition.value?.settings?.successMessage ?? '',
+    set: (value: string) => {
+      const def = formDefinition.value
+      commitFormDefinition(
+        { ...def, settings: { ...def.settings, successMessage: value || undefined } },
+        { reason: 'form-success-message', merge: true },
+      )
+    },
+  })
+
+  const formSuccessRedirect = computed<string>({
+    get: () => formDefinition.value?.settings?.successRedirect ?? '',
+    set: (value: string) => {
+      const def = formDefinition.value
+      commitFormDefinition(
+        { ...def, settings: { ...def.settings, successRedirect: value || undefined } },
+        { reason: 'form-success-redirect', merge: true },
+      )
+    },
+  })
+
+  const formShowReset = computed<boolean>({
+    get: () => formDefinition.value?.settings?.showReset !== false,
+    set: (value: boolean) => {
+      const def = formDefinition.value
+      commitFormDefinition(
+        { ...def, settings: { ...def.settings, showReset: value } },
+        { reason: 'form-show-reset', merge: true },
+      )
+    },
+  })
+
+  const formSubmitText = computed<string>({
+    get: () => formDefinition.value?.settings?.submitText ?? '',
+    set: (value: string) => {
+      const def = formDefinition.value
+      commitFormDefinition(
+        { ...def, settings: { ...def.settings, submitText: value || undefined } },
+        { reason: 'form-submit-text', merge: true },
+      )
+    },
+  })
+
+  const formResetText = computed<string>({
+    get: () => formDefinition.value?.settings?.resetText ?? '',
+    set: (value: string) => {
+      const def = formDefinition.value
+      commitFormDefinition(
+        { ...def, settings: { ...def.settings, resetText: value || undefined } },
+        { reason: 'form-reset-text', merge: true },
+      )
+    },
+  })
+
   const availableFieldNames = computed(() => {
     const names = new Set<string>()
     const walk = (nodes: FormNode[]) => {
@@ -748,6 +840,14 @@ export function useFormField() {
     formLabelPosition,
     formLabelWidth,
     formSubmit,
+    formSize,
+    formDisabled,
+    formReadonly,
+    formSuccessMessage,
+    formSuccessRedirect,
+    formShowReset,
+    formSubmitText,
+    formResetText,
     help,
     whichNumber,
     numOfFiles,

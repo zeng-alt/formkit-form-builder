@@ -30,6 +30,7 @@ export const CONTAINER_INTERNAL_PROPS = new Set([
   'stepsKey',
   'groupKey',
   'dataTableKey',
+  'collapseKey',
   'modelValue',
   'label',
   'title',

@@ -67,8 +67,9 @@ describe('NaiveImageEditor：sizeMode 切换', () => {
 
     expect(propsOf(state).sizeMode).toBe('fill')
     expect(wrapper.findComponent(NumberInput).exists()).toBe(true)
-    // 比例下拉不再显示：剩下 sizeMode + RowSpanSection 内部的行数下拉 + objectFit
-    expect(wrapper.findAllComponents(SelectInput).length).toBe(3)
+    // 比例下拉不再显示：剩下 sizeMode + objectFit（占用行数已挪到外层「基础」分组，
+    // 不再是这个编辑器自己的 RowSpanSection）
+    expect(wrapper.findAllComponents(SelectInput).length).toBe(2)
 
     wrapper.unmount()
   })
