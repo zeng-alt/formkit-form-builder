@@ -6,6 +6,22 @@ A visual FormKit Schema designer based on Vue 3 + FormKit (left sidebar / center
 
 Core concept: The designer outputs a **versioned DSL (`FormDefinition`)** rather than raw schema. The `FormRenderer` (internally using `dslToSchema` conversion) renders it into a FormKit form. The DSL body is a JSON-safe structure that can be directly deserialized by backends (e.g., Java); `key` (canvas DnD identity) and `meta.rawSchema` (fallback for unregistered types) are frontend-only fields — strip them with `toPortableDefinition` before persisting (see "DSL & Conversion" below).
 
+## Feature Overview
+
+- **Elements**: three categories — field / container / static (full catalog in `src/elements/definitions/*`) — covering common inputs plus rich text, a signature pad, a collapsible panel, and a data table, among others.
+- **Canvas**: drag-and-drop from the left palette, a floating toolbar on the selected element, a right-click context menu, copy / cut / paste, multi-select (Shift- or Ctrl/Cmd-click toggles an element; siblings in the same container only) with batch property edits, wrapping selected elements into a container, and converting an element to a compatible type.
+- **Structure tree**: the left-side outline stays in sync with canvas selection.
+- **Undo history panel**: browse past edits and jump back to any of them, in addition to Ctrl/Cmd+Z / Shift+Z.
+- **Templates & empty-canvas onboarding**: built-in starter templates (leave request, contact form, employee registration, user registration, satisfaction survey) plus guidance on an empty canvas.
+- **Form-level settings**: control size, disabled, readonly, success message / redirect after submit, reset button visibility, and submit/reset button text.
+- **Conditional logic**: conditional visibility, conditional required / disabled / readonly, and expression-computed field values.
+- **Validation rules**: a configurable rule library per field type (see `docs/dsl.md` / `docs/dsl.en.md` for the full rule list).
+- **Form health check**: a one-click scan for common issues (e.g. a condition referencing a non-existent field), with click-to-locate on each issue.
+- **Rename-sync**: renaming a field automatically rewrites every `visibleIf` / `requiredIf` / `disabledIf` / `readonlyIf` / `expr` that references it elsewhere in the form.
+- **Import / export**: round-trip a form definition as JSON.
+- **Multi-device preview**: preview the form at desktop / tablet / mobile widths.
+- **Dark theme**: built-in light/dark/system theme switcher, kept in sync with UnoCSS `dark:` styles.
+
 ## Installation
 
 ```bash
@@ -31,7 +47,7 @@ pnpm i @codemirror/autocomplete @codemirror/commands @codemirror/lang-javascript
 The ESM entry automatically loads styles — no manual import needed. Only required when using UMD / script-tag:
 
 ```ts
-import "@zeng-alt/formkit-form-builder/builder.css";
+import '@zeng-alt/formkit-form-builder/builder.css'
 ```
 
 ## Quick Start
@@ -42,12 +58,12 @@ Use the built-in `formkitConfig()` factory (auto-registers all built-in elements
 
 ```ts
 // main.ts
-import { createApp } from "vue";
-import { plugin as formkitPlugin } from "@formkit/vue";
-import { formkitConfig } from "@zeng-alt/formkit-form-builder";
-import App from "./App.vue";
+import { createApp } from 'vue'
+import { plugin as formkitPlugin } from '@formkit/vue'
+import { formkitConfig } from '@zeng-alt/formkit-form-builder'
+import App from './App.vue'
 
-createApp(App).use(formkitPlugin, formkitConfig()).mount("#app");
+createApp(App).use(formkitPlugin, formkitConfig()).mount('#app')
 ```
 
 > Alternatively, use the one-step plugin `FormBuilderPlugin` (auto-configures FormKit + global config + element registration), see below.
@@ -56,16 +72,16 @@ createApp(App).use(formkitPlugin, formkitConfig()).mount("#app");
 
 ```vue
 <script setup lang="ts">
-import { ref } from "vue";
-import { FormBuilder, BuilderProvider } from "@zeng-alt/formkit-form-builder";
-import type { FormDefinition } from "@zeng-alt/formkit-form-builder";
+import { ref } from 'vue'
+import { FormBuilder, BuilderProvider } from '@zeng-alt/formkit-form-builder'
+import type { FormDefinition } from '@zeng-alt/formkit-form-builder'
 
-const definition = ref<FormDefinition>();
+const definition = ref<FormDefinition>()
 const config = {
-  apiKey: "", // Optional: required for AI panel with OpenAI. Never ship a real key to
+  apiKey: '', // Optional: required for AI panel with OpenAI. Never ship a real key to
   // the browser in production — point `aiBaseUrl` at your own server-side proxy instead.
   // See "Security" below.
-};
+}
 </script>
 
 <template>
@@ -85,12 +101,12 @@ const config = {
 
 ```vue
 <script setup lang="ts">
-import { ref } from "vue";
-import { FormRenderer } from "@zeng-alt/formkit-form-builder";
-import type { FormDefinition } from "@zeng-alt/formkit-form-builder";
+import { ref } from 'vue'
+import { FormRenderer } from '@zeng-alt/formkit-form-builder'
+import type { FormDefinition } from '@zeng-alt/formkit-form-builder'
 
-const definition = ref<FormDefinition>();
-const data = ref({});
+const definition = ref<FormDefinition>()
+const data = ref({})
 </script>
 
 <template>
@@ -126,13 +142,15 @@ Don't want to manually `app.use(plugin, formkitConfig())` + wrap `BuilderProvide
 
 ```ts
 // main.ts
-import { createApp } from "vue";
-import { FormBuilderPlugin } from "@zeng-alt/formkit-form-builder";
-import App from "./App.vue";
+import { createApp } from 'vue'
+import { FormBuilderPlugin } from '@zeng-alt/formkit-form-builder'
+import App from './App.vue'
 
-createApp(App).use(FormBuilderPlugin, {
-  config: { apiKey: "" },
-}).mount("#app");
+createApp(App)
+  .use(FormBuilderPlugin, {
+    config: { apiKey: '' },
+  })
+  .mount('#app')
 ```
 
 ```vue
@@ -142,6 +160,24 @@ createApp(App).use(FormBuilderPlugin, {
   <FormRenderer :definition="definition" />
 </template>
 ```
+
+## Keyboard Shortcuts
+
+Shortcuts apply while focus is inside the designer's canvas root (not while typing in a text field, code editor, or a modal). Deleting/duplicating/copying etc. act on the current selection.
+
+| Action                                | Windows / Linux               | macOS                        |
+| ------------------------------------- | ----------------------------- | ---------------------------- |
+| Delete selected element(s)            | `Delete` / `Backspace`        | `Delete` / `Backspace`       |
+| Undo                                  | `Ctrl+Z`                      | `Cmd+Z`                      |
+| Redo                                  | `Ctrl+Shift+Z` or `Ctrl+Y`    | `Cmd+Shift+Z` or `Cmd+Y`     |
+| Duplicate in place                    | `Ctrl+D`                      | `Cmd+D`                      |
+| Copy                                  | `Ctrl+C`                      | `Cmd+C`                      |
+| Cut                                   | `Ctrl+X`                      | `Cmd+X`                      |
+| Paste                                 | `Ctrl+V`                      | `Cmd+V`                      |
+| Clear multi-selection                 | `Esc`                         | `Esc`                        |
+| Toggle an element in/out of selection | `Shift`+click or `Ctrl`+click | `Shift`+click or `Cmd`+click |
+
+The same actions are also available from the floating toolbar and the right-click context menu on the canvas (which additionally offer "wrap into container" and "convert to" another type), and from the header's undo/redo buttons.
 
 ## API
 
@@ -169,9 +205,18 @@ import {
   dslToSchema, // DSL → FormKit schema
   dslToOutputSchema, // DSL → nested group output schema
   schemaToDsl, // Raw schema → DSL
+  toPortableDefinition, // Strip frontend-only fields before persisting (see "DSL & Conversion")
   buildFormkitInputs,
-} from "@zeng-alt/formkit-form-builder";
+  buildElementSchemaLibrary, // Element $cmp → component library (advanced: custom schemaLibrary)
+  getElementCmpName, // Element type → its $cmp render name
+  CanvasActionsBar, // Default #toolbar content (import/export, language switch); reusable in #toolbar
+} from '@zeng-alt/formkit-form-builder'
 ```
+
+`FormKitFormBuilder` and `FormBuilderProvider` are plain aliases of `FormBuilder` and
+`BuilderProvider`, exported for naming preference only — both pairs are the same component.
+`setExprLocale` / `resolveTimeZoneForLocale` / `LOCALE_TIME_ZONES` are also exported (see
+"i18n Overrides" below).
 
 `useFormBuilderState()` only works inside a `FormBuilder` / `FormRenderer` subtree (including
 one set up via `provideFormBuilderState()`); calling it outside one throws instead of silently
@@ -186,29 +231,29 @@ without it there is no form definition to render.
 
 #### Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `modelValue` | `FormDefinition` | - | Form definition: v-model bidirectional binding; preload existing form and emit edits in real time |
-| `config` | `FormBuilderConfig` | - | Instance config; if provided, self-contained (registerElements + provide); otherwise falls back to injected `BuilderProvider` |
-| `theme` | `BuilderTheme` (`'light' \| 'dark'`) | Auto (system) | Custom theme: maps to naive-ui's `darkTheme` / `lightTheme` |
-| `...ConfigProviderProps` | `Partial<ConfigProviderProps>` | - | Pass-through for remaining naive-ui ConfigProvider props (`themeOverrides`, `breakpoints`, etc.) |
+| Prop                     | Type                                 | Default       | Description                                                                                                                   |
+| ------------------------ | ------------------------------------ | ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `modelValue`             | `FormDefinition`                     | -             | Form definition: v-model bidirectional binding; preload existing form and emit edits in real time                             |
+| `config`                 | `FormBuilderConfig`                  | -             | Instance config; if provided, self-contained (registerElements + provide); otherwise falls back to injected `BuilderProvider` |
+| `theme`                  | `BuilderTheme` (`'light' \| 'dark'`) | Auto (system) | Custom theme: maps to naive-ui's `darkTheme` / `lightTheme`                                                                   |
+| `...ConfigProviderProps` | `Partial<ConfigProviderProps>`       | -             | Pass-through for remaining naive-ui ConfigProvider props (`themeOverrides`, `breakpoints`, etc.)                              |
 
 #### Events
 
-| Event | Payload | Description |
-|-------|---------|-------------|
+| Event               | Payload                 | Description                                                                                                                           |
+| ------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `update:modelValue` | `value: FormDefinition` | Emitted when form definition changes (v-model bidirectional binding). Treated as immutable — see note above; don't mutate it in place |
 
 #### Slots
 
-| Slot | Scope | Description |
-|------|-------|-------------|
-| `header` | - | Entire header bar (including default content) |
-| `header-left` | - | Header left area (clear / preview); uses default if not provided |
-| `header-center` | - | Header center area (AI prompt); uses default if not provided |
-| `header-right` | - | Header right area (undo/redo / theme); uses default if not provided |
-| `empty` | - | Canvas empty state; uses default NEmpty if not provided |
-| `toolbar` | - | Right sidebar actions (import/export / language switch); uses default if not provided |
+| Slot            | Scope | Description                                                                           |
+| --------------- | ----- | ------------------------------------------------------------------------------------- |
+| `header`        | -     | Entire header bar (including default content)                                         |
+| `header-left`   | -     | Header left area (clear / preview); uses default if not provided                      |
+| `header-center` | -     | Header center area (AI prompt); uses default if not provided                          |
+| `header-right`  | -     | Header right area (undo/redo / theme); uses default if not provided                   |
+| `empty`         | -     | Canvas empty state; uses default NEmpty if not provided                               |
+| `toolbar`       | -     | Right sidebar actions (import/export / language switch); uses default if not provided |
 
 ---
 
@@ -216,47 +261,51 @@ without it there is no form definition to render.
 
 #### Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `definition` | `FormDefinition` | - | **Primary input**: Versioned DSL form definition; internally converted via `dslToSchema` |
-| `schema` | `FormKitSchemaFormKit[]` | - | **Alternative input**: Raw FormKit schema array; if both `definition` and `schema` provided, `definition` takes priority |
-| `dataStructure` | `'flat' \| 'nested'` | `'flat'` | Output structure when `definition` provided: `flat` (flat) \| `nested` (containers as group nesting) |
-| `modelValue` | `Record<string, unknown>` | `{}` | Form data v-model bidirectional binding |
-| `actions` | `boolean` | `false` | Render default action bar (submit/reset buttons); `false` hides it, use `#actions` slot for custom |
-| `submitLabel` | `string` | i18n: Submit | Default submit button label |
-| `resetLabel` | `string` | i18n: Reset | Default reset button label |
-| `submitAttrs` | `Record<string, unknown>` | - | Default submit button pass-through attrs (naive NButton props) |
-| `resetAttrs` | `Record<string, unknown>` | - | Default reset button pass-through attrs (naive NButton props) |
-| `actionsJustify` | `'start' \| 'center' \| 'end' \| 'space-between'` | `'start'` | Default action bar button alignment |
-| `formClass` | `string` | `'w-full !grid !grid-cols-12 gap-x-4 gap-y-2'` | Form root element class |
-| `formName` | `string` | - | Form name (priority: schema form.name > this prop) |
-| `labelPosition` | `'top' \| 'left'` | `'top'` | Label position (priority: schema form.props.labelPosition > this prop) |
-| `labelWidth` | `number` | `80` | Label width (priority: schema form.props.labelWidth > this prop) |
-| `schemaLibrary` | `Record<string, Component>` | Built-in preview lib | Custom schema component library (overrides built-in preview components) |
-| `interactiveContainers` | `boolean` | `true` | Enable interactions (add/remove rows) for list/card/input-group/button-group/tabs containers |
-| `theme` | `BuilderTheme` (`'light' \| 'dark'`) | Auto (system) | Custom theme: maps to naive-ui's `darkTheme` / `lightTheme` |
-| `...ConfigProviderProps` | `Partial<ConfigProviderProps>` | - | Pass-through for remaining naive-ui ConfigProvider props |
+| Prop                     | Type                                              | Default                                        | Description                                                                                                                                              |
+| ------------------------ | ------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `definition`             | `FormDefinition`                                  | -                                              | **Primary input**: Versioned DSL form definition; internally converted via `dslToSchema`                                                                 |
+| `schema`                 | `FormKitSchemaFormKit[]`                          | -                                              | **Alternative input**: Raw FormKit schema array; if both `definition` and `schema` provided, `definition` takes priority                                 |
+| `dataStructure`          | `'flat' \| 'nested'`                              | `'flat'`                                       | Output structure when `definition` provided: `flat` (flat) \| `nested` (containers as group nesting)                                                     |
+| `modelValue`             | `Record<string, unknown>`                         | `{}`                                           | Form data v-model bidirectional binding                                                                                                                  |
+| `actions`                | `boolean`                                         | `false`                                        | Render default action bar (submit/reset buttons); `false` hides it, use `#actions` slot for custom                                                       |
+| `submitLabel`            | `string`                                          | i18n: Submit                                   | Default submit button label                                                                                                                              |
+| `resetLabel`             | `string`                                          | i18n: Reset                                    | Default reset button label                                                                                                                               |
+| `submitAttrs`            | `Record<string, unknown>`                         | -                                              | Default submit button pass-through attrs (naive NButton props)                                                                                           |
+| `resetAttrs`             | `Record<string, unknown>`                         | -                                              | Default reset button pass-through attrs (naive NButton props)                                                                                            |
+| `actionsJustify`         | `'start' \| 'center' \| 'end' \| 'space-between'` | `'start'`                                      | Default action bar button alignment                                                                                                                      |
+| `formClass`              | `string`                                          | `'w-full !grid !grid-cols-12 gap-x-4 gap-y-2'` | Form root element class                                                                                                                                  |
+| `formName`               | `string`                                          | -                                              | Form name (priority: schema form.name > this prop)                                                                                                       |
+| `labelPosition`          | `'top' \| 'left'`                                 | `'top'`                                        | Label position (priority: schema form.props.labelPosition > this prop)                                                                                   |
+| `labelWidth`             | `number`                                          | `80`                                           | Label width (priority: schema form.props.labelWidth > this prop)                                                                                         |
+| `schemaLibrary`          | `Record<string, Component>`                       | Built-in preview lib                           | Custom schema component library (overrides built-in preview components)                                                                                  |
+| `interactiveContainers`  | `boolean`                                         | `true`                                         | Enable interactions (add/remove rows) for list/card/input-group/button-group/tabs containers                                                             |
+| `config`                 | `FormBuilderConfig`                               | -                                              | Self-contained instance config (registers elements + provides locale/i18n/http); if omitted, falls back to an injected `BuilderProvider` / `FormBuilder` |
+| `theme`                  | `BuilderTheme` (`'light' \| 'dark'`)              | Auto (system)                                  | Custom theme: maps to naive-ui's `darkTheme` / `lightTheme`                                                                                              |
+| `http`                   | `AxiosInstance`                                   | Built-in `axios`                               | Custom HTTP client used by JS binding code (`axios` variable) and `settings.submit`; takes priority over `config.http`                                   |
+| `disabled`               | `boolean`                                         | `false`                                        | Disable the whole form (all inputs + the default action bar); ORed with `definition.settings.disabled`                                                   |
+| `...ConfigProviderProps` | `Partial<ConfigProviderProps>`                    | -                                              | Pass-through for remaining naive-ui ConfigProvider props                                                                                                 |
 
 #### Events
 
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `update:modelValue` | `value: Record<string, unknown>` | Emitted when form data changes (v-model bidirectional binding) |
-| `submit` | `formData, id?, version?` | Emitted on form submit (not triggered if required validation fails) |
+| Event               | Payload                          | Description                                                                                                                                                   |
+| ------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `update:modelValue` | `value: Record<string, unknown>` | Emitted when form data changes (v-model bidirectional binding)                                                                                                |
+| `submit`            | `formData, id?, version?`        | Emitted on form submit (not triggered if required validation fails, and not emitted when `definition.settings.submit` is set — that custom code runs instead) |
 
 #### Slots
 
-| Slot | Scope | Description |
-|------|-------|-------------|
-| `actions` | `{ submit: () => void, reset: () => void, loading: boolean }` | Custom action bar (overrides default submit/reset buttons) |
+| Slot      | Scope                                                                            | Description                                                |
+| --------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `actions` | `{ submit: () => void, reset: () => void, loading: boolean, disabled: boolean }` | Custom action bar (overrides default submit/reset buttons) |
 
 #### Methods (via `defineExpose`)
 
-| Method | Type | Description |
-|--------|------|-------------|
-| `submit` | `() => void` | Submit form (does not trigger submit event if required validation fails) |
-| `reset` | `() => void` | Reset form to initial values |
-| `loading` | `Ref<boolean>` | Submit loading state |
+| Method     | Type                     | Description                                                                                              |
+| ---------- | ------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `submit`   | `() => void`             | Submit form (does not trigger submit event if required validation fails)                                 |
+| `reset`    | `() => void`             | Reset form to initial values                                                                             |
+| `validate` | `() => Promise<boolean>` | Trigger validation and show error messages without submitting; resolves to whether all validation passed |
+| `loading`  | `Ref<boolean>`           | Submit loading state                                                                                     |
 
 ---
 
@@ -264,45 +313,47 @@ without it there is no form definition to render.
 
 Two ready-made preview components reuse `FormRenderer` internally to fill and test a form in a modal dialog (naive-ui `n-modal` + `n-scrollbar`). Both render the produced FormKit schema into a truly interactive, submittable form.
 
-| Component | Internal renderer | Layout |
-|-----------|-------------------|--------|
-| `BuilderPreview` | `FormRenderer` | Single form; optional data panel below |
-| `FormDefinitionPreview` | `FormRenderer` | Split view: form on the left, live form data on the right |
+| Component               | Internal renderer | Layout                                                    |
+| ----------------------- | ----------------- | --------------------------------------------------------- |
+| `BuilderPreview`        | `FormRenderer`    | Single form; optional data panel below                    |
+| `FormDefinitionPreview` | `FormRenderer`    | Split view: form on the left, live form data on the right |
 
-Both expose `open` / `close` methods via `defineExpose`, and emit `update:show` + `submit` (`formData, id?, version?`).
+Both expose `open` / `close` / `validate` methods via `defineExpose` (`validate` triggers validation and returns whether it passed, same as `FormRenderer.validate`), and emit `update:show` + `submit` (`formData, id?, version?`).
 
 #### BuilderPreview Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `show` | `boolean` | - | Modal visibility; a `v-model:show` two-way binding |
-| `schema` | `FormKitSchemaFormKit[]` | - | Raw schema to preview; if omitted, built from the current `FormDefinition` via `dslToSchema` |
-| `title` | `string` | i18n: 表单预览 | Modal title |
-| `description` | `string` | i18n: 预览表单并测试其功能 | Header subtitle |
-| `showDataPanel` | `boolean` | `true` | Show the live form-data panel below the form |
-| `initialData` | `Record<string, unknown>` | `{}` | Initial form data |
-| `view` | `CanvasView` | Canvas state | Desktop / tablet / mobile preview container width |
-| `actions` | `boolean` | `false` | Render default action bar (submit/reset) |
-| `formClass` | `string` | `'w-full !grid !grid-cols-12 gap-x-4 gap-y-2'` | Form root element class |
-| `interactiveContainers` | `boolean` | `true` | Enable list/card/group/tabs interactive add/remove rows |
-| `resetOnSubmit` | `boolean` | `true` | Reset form data after submit |
+| Prop                    | Type                      | Default                                        | Description                                                                                  |
+| ----------------------- | ------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `show`                  | `boolean`                 | -                                              | Modal visibility; a `v-model:show` two-way binding                                           |
+| `schema`                | `FormKitSchemaFormKit[]`  | -                                              | Raw schema to preview; if omitted, built from the current `FormDefinition` via `dslToSchema` |
+| `title`                 | `string`                  | i18n: 表单预览                                 | Modal title                                                                                  |
+| `description`           | `string`                  | i18n: 预览表单并测试其功能                     | Header subtitle                                                                              |
+| `showDataPanel`         | `boolean`                 | `true`                                         | Show the live form-data panel below the form                                                 |
+| `initialData`           | `Record<string, unknown>` | `{}`                                           | Initial form data                                                                            |
+| `view`                  | `CanvasView`              | Canvas state                                   | Desktop / tablet / mobile preview container width                                            |
+| `actions`               | `boolean`                 | `false`                                        | Render default action bar (submit/reset)                                                     |
+| `formClass`             | `string`                  | `'w-full !grid !grid-cols-12 gap-x-4 gap-y-2'` | Form root element class                                                                      |
+| `interactiveContainers` | `boolean`                 | `true`                                         | Enable list/card/group/tabs interactive add/remove rows                                      |
+| `resetOnSubmit`         | `boolean`                 | `true`                                         | Reset form data after submit                                                                 |
+| `disabled`              | `boolean`                 | `false`                                        | Disable the whole previewed form                                                             |
 
 #### FormDefinitionPreview Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `show` | `boolean` | - | Modal visibility; a `v-model` two-way binding |
-| `formDefinition` | `FormDefinition` | required | Versioned DSL form definition (result of the designer export), converted via `dslToSchema` internally |
-| `title` | `string` | `''` | Modal title |
-| `initialData` | `Record<string, unknown>` | `{}` | Initial form data |
-| `actions` | `boolean` | `false` | Render the default action bar (submit/reset) |
-| `formClass` | `string` | `'w-full !grid !grid-cols-12 gap-x-4 gap-y-2'` | Form root element class |
-| `interactiveContainers` | `boolean` | `true` | Enable interactive containers |
-| `showDataPanel` | `boolean` | `true` | Show the right-side live data panel |
-| `dataPanelWidth` | `string` | `'320px'` | Right data panel width |
-| `resetOnSubmit` | `boolean` | `true` | Reset form data after submit |
+| Prop                    | Type                      | Default                                        | Description                                                                                           |
+| ----------------------- | ------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `show`                  | `boolean`                 | -                                              | Modal visibility; a `v-model` two-way binding                                                         |
+| `formDefinition`        | `FormDefinition`          | required                                       | Versioned DSL form definition (result of the designer export), converted via `dslToSchema` internally |
+| `title`                 | `string`                  | `''`                                           | Modal title                                                                                           |
+| `initialData`           | `Record<string, unknown>` | `{}`                                           | Initial form data                                                                                     |
+| `actions`               | `boolean`                 | `false`                                        | Render the default action bar (submit/reset)                                                          |
+| `formClass`             | `string`                  | `'w-full !grid !grid-cols-12 gap-x-4 gap-y-2'` | Form root element class                                                                               |
+| `interactiveContainers` | `boolean`                 | `true`                                         | Enable interactive containers                                                                         |
+| `showDataPanel`         | `boolean`                 | `true`                                         | Show the right-side live data panel                                                                   |
+| `dataPanelWidth`        | `string`                  | `'320px'`                                      | Right data panel width                                                                                |
+| `resetOnSubmit`         | `boolean`                 | `true`                                         | Reset form data after submit                                                                          |
+| `disabled`              | `boolean`                 | `false`                                        | Disable the whole previewed form                                                                      |
 
-`FormDefinitionPreview` additionally exposes a `reset` method. Both read the running locale / theme from the enclosing `BuilderProvider` / `FormBuilder`.
+`FormDefinitionPreview` additionally exposes a `reset` method (clears the local form data, distinct from `FormRenderer`'s `reset` which restores initial values). Both read the running locale / theme from the enclosing `BuilderProvider` / `FormBuilder`.
 
 ---
 
@@ -310,82 +361,76 @@ Both expose `open` / `close` methods via `defineExpose`, and emit `update:show` 
 
 ```ts
 export interface FormBuilderConfig {
-  apiKey?: string; // Required for AI panel with OpenAI
-  locale?: string; // Default: zh-CN
-  messages?: Record<string, any>; // i18n overrides (same structure as default messages)
-  elements?: RegisterElementInput[]; // Extended elements (config-based registration)
+  apiKey?: string // AI service API key (recommended: only via a server-side proxy, never expose a real key to the browser)
+  aiBaseUrl?: string // OpenAI-compatible endpoint; default https://api.deepseek.com (point at your own proxy)
+  aiModel?: string // AI model name; default deepseek-chat (e.g. gpt-4o-mini for OpenAI)
+  aiSystemPrompt?: string // Custom AI system prompt; defaults to the built-in Instructions.txt
+  http?: AxiosInstance // Custom HTTP client for JS binding code's `axios` variable (canvas preview + renderer); defaults to a built-in axios instance. FormRenderer's `http` prop takes priority
+  locale?: string
+  localeFallback?: string // Fallback locale when `locale` isn't in `availableLocales`; default zh-CN
+  messages?: Record<string, any> // i18n overrides (same structure as default messages)
+  availableLocales?: string[] // Available locales; default ['zh-CN', 'en']
+  elements?: RegisterElementInput[] // Extended elements (config-based registration)
+  fetchDictionary?: (code: string) => Promise<DictionaryOption[]> // Look up a dictionary's options [{label,value}] by code (used when rendering dynamic-dictionary fields)
+  fetchDictionaryPage?: (params: DictionaryPageQuery) => Promise<DictionaryPageResult> // Paged dictionary search, used by the edit panel's dictionary picker
+  fetchTreeDictionary?: (code: string) => Promise<TreeDictionaryOption[]> // Look up a tree-shaped dictionary's options by code (tree-select / cascader)
+  fetchTreeDictionaryPage?: (params: TreeDictionaryPageQuery) => Promise<TreeDictionaryPageResult> // Paged tree-dictionary search, used by the edit panel's picker
 }
 ```
 
+`locale` defaults to `zh-CN` when unset. The nested types (`DictionaryOption`,
+`DictionaryPageQuery`, `DictionaryPageResult`, `TreeDictionaryOption`, `TreeDictionaryPageQuery`,
+`TreeDictionaryPageResult`, defined in `src/types/env.ts`) are not currently re-exported from the
+package entry point — TypeScript consumers can still get their shape through `FormBuilderConfig`'s
+own field types, just not as standalone named imports. The `fetchDictionary*` /
+`fetchTreeDictionary*` callbacks are only used by select / radio / checkbox / cascader /
+tree-select fields whose `options` is a dynamic-dictionary reference (`{ dynamic: true, code }`)
+rather than a static option list.
+
 ### DSL & Conversion
 
-DSL node types: `FormDefinition` / `FormNode` (`FieldNode` / `ContainerNode` / `StaticNode` / `LayoutNode`), `NodeCategory` (`field | container | layout | static`), `RenderKind` (`formkit | cmp | el`). DSL is JSON-safe, serializable directly to backend.
+DSL node types: `FormDefinition` / `FormNode` (`FieldNode` / `ContainerNode` / `StaticNode` / `LayoutNode`), `NodeCategory` (`field | container | layout | static`), `RenderKind` (`formkit | cmp | el`). The DSL body is JSON-safe and meant to be persisted and deserialized directly by a backend (e.g. Java).
 
 ```ts
-import { dslToSchema, schemaToDsl, dslToOutputSchema } from "@zeng-alt/formkit-form-builder";
-import type { FormDefinition } from "@zeng-alt/formkit-form-builder";
+import {
+  dslToSchema,
+  schemaToDsl,
+  dslToOutputSchema,
+  toPortableDefinition,
+} from '@zeng-alt/formkit-form-builder'
+import type { FormDefinition } from '@zeng-alt/formkit-form-builder'
 
-const schema = dslToSchema(definition); // For rendering
-const outputSchema = dslToOutputSchema(definition); // Containers as group nesting (backend-model friendly)
-const backToDsl = schemaToDsl(schema);
+const schema = dslToSchema(definition) // DSL → FormKit schema, for rendering
+const outputSchema = dslToOutputSchema(definition) // Same, but containers/layouts nest as groups (see below)
+const backToDsl = schemaToDsl(schema) // FormKit schema → DSL (best-effort import)
+
+// Before persisting to the backend, strip frontend-only fields (BaseNode.key, meta.rawSchema):
+const portable = toPortableDefinition(definition)
+await saveFormDefinition(portable)
 ```
 
-**Strip frontend-only fields before persisting to the backend**: `BaseNode.key` is
-the canvas DnD identity (maps to the legacy schema's `__key`, used for drag
-reordering / selection), and `meta.rawSchema` is the lossless fallback `schemaToDsl`
-stores for unregistered node types (the original raw schema node, kept only so the
-frontend doesn't fail to render). Both are frontend-only concepts that mean nothing
-to a backend and shouldn't end up in your form-definition storage. Run
-`toPortableDefinition` before saving:
-
-```ts
-import { toPortableDefinition } from "@zeng-alt/formkit-form-builder";
-
-const portable = toPortableDefinition(definition); // deep-clones and strips key / meta.rawSchema recursively
-await saveFormDefinition(portable); // hand this to the backend
-```
-
-A node's `events: [{ event: "click", handler: "..." }]` is the single source of truth for
-event bindings: `handler` is an opaque function-body string executed by the frontend runtime
-(with injected params such as `event` / `form` / `$form` / `$value` / `$node` / `$get`); a
-backend like Java only needs to pass it through untouched. Bindable events are
-`click` / `change` / `input` / `focus` / `blur`. `dslToSchema` compiles it to the schema-side
-`__bind: { onClick: handler, ... }`.
-
-A node's `visibleIf` (a portable expression AST, `Expr`: field reference / literal / builtin
-function call) is the single source of truth for conditional visibility. `dslToSchema`
-compiles it into the schema's `if` string, which FormKit evaluates at render time. Builtin
-functions (`eq` / `not` / `if` / `coalesce` / `contains` / etc. — see `getBuiltin`
-for the full list) are always compiled into `$fkb_<fn>(args...)` helper function calls:
-FormKit v2 schema's `if` is executed by a hand-written mini expression parser bundled with
-`@formkit/core`, which only understands
-`&& || === !== == != >= <= > < + - * / %` and `$token(args)` call syntax — no ternary `?:`,
-no `??`, no unary `!`. Translating each builtin into a "seemingly equivalent" native operator
-used to be a real source of bugs (`not` got its logic inverted, `if`/`coalesce` returned
-`undefined`, `contains` returned the matched substring instead of a boolean). With helper
-calls, the `if` condition and `evalExpr` (computed fields / live designer preview) share the
-exact same evaluation logic (see `EXPR_SCHEMA_HELPERS`), so canvas preview, runtime
-rendering, and a backend evaluating the `Expr` AST on its own all stay semantically
-consistent by construction, instead of by manually cross-checking each function. `fkb_` is
-this helper layer's reserved token prefix — **field names must not start with `fkb_`**, or
-they'll be shadowed by the same-named helper and silently break conditional visibility.
+For the full DSL reference aimed at backend integration — every field of `FormDefinition` /
+`FormSettings` / node types, the expression AST and its built-in functions, validation rule
+structure, event bindings, each container's data shape (and how `flat` vs `nested`
+`dataStructure` changes the submitted JSON), what `toPortableDefinition` strips, and a complete
+worked example — see **[docs/dsl.en.md](./docs/dsl.en.md)** (Chinese: [docs/dsl.md](./docs/dsl.md)).
 
 ### Extending Elements
 
 Register custom elements via `config.elements` or `registerElement(s)` (DSL registry + FormKit input + canvas/preview all at once):
 
 ```ts
-import { registerElement, formkitConfig } from "@zeng-alt/formkit-form-builder";
-import type { RegisterElementInput } from "@zeng-alt/formkit-form-builder";
+import { registerElement, formkitConfig } from '@zeng-alt/formkit-form-builder'
+import type { RegisterElementInput } from '@zeng-alt/formkit-form-builder'
 
 registerElement({
-  type: "myField",
-  category: "field",
-  label: "Custom Field",
+  type: 'myField',
+  category: 'field',
+  label: 'Custom Field',
   // ... see RegisterElementInput type
-});
+})
 
-createApp(App).use(plugin, formkitConfig());
+createApp(App).use(plugin, formkitConfig())
 ```
 
 ## i18n Overrides
@@ -394,15 +439,15 @@ createApp(App).use(plugin, formkitConfig());
 
 ```ts
 const config = {
-  locale: "zh-CN",
+  locale: 'zh-CN',
   messages: {
-    "zh-CN": {
+    'zh-CN': {
       builder: {
-        clearForm: "Clear current form", // Only overrides this key; other builder.* preserved
+        clearForm: 'Clear current form', // Only overrides this key; other builder.* preserved
       },
     },
   },
-};
+}
 ```
 
 The DSL expression function `today()` resolves its time zone from the currently active
@@ -414,10 +459,10 @@ automatically on language switch; hosts can also extend the mapping via
 when using the DSL conversion utilities standalone, outside `FormBuilder` / `FormRenderer`).
 
 ```ts
-import { setExprLocale, LOCALE_TIME_ZONES } from "@zeng-alt/formkit-form-builder";
+import { setExprLocale, LOCALE_TIME_ZONES } from '@zeng-alt/formkit-form-builder'
 
-LOCALE_TIME_ZONES["fr"] = "Europe/Paris"; // extend the mapping
-setExprLocale("zh-CN"); // manual override (synced automatically inside FormBuilder/FormRenderer)
+LOCALE_TIME_ZONES['fr'] = 'Europe/Paris' // extend the mapping
+setExprLocale('zh-CN') // manual override (synced automatically inside FormBuilder/FormRenderer)
 ```
 
 ## Security
