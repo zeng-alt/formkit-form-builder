@@ -16,7 +16,8 @@ import { getContainerSpec } from '@/elements/container-spec'
 import FormEditor from './edits/editors/FormEditor.vue'
 import DataTableColumnEditor from './edits/editors/DataTableColumnEditor.vue'
 
-const { hasField, currentFieldType, selectedIsForm, selectedColumn } = useFormField()
+const { hasField, currentFieldType, selectedIsForm, selectedColumn, hasStaticRequiredRule } =
+  useFormField()
 const { t } = useFormBuilderI18n()
 // D1：多选时右侧面板只显示批量操作，不显示单个元素的属性
 const { selectedKeys } = useFormBuilderState()
@@ -52,10 +53,25 @@ const hasEvents = computed(() => bindEvents.value.length > 0)
       <FormEditor v-else-if="!hasField || selectedIsForm" />
       <template v-else>
         <EditsSection />
-        <!-- 逻辑：表达式值 / 条件渲染 -->
+        <!-- 逻辑：表达式值 / 条件渲染 / 条件必填 / 条件禁用 / 条件只读 -->
         <EditorSection :title="t('edits.sections.logic')">
           <ExpressionEditor v-if="isFieldsCategory" />
           <IfConditionEditor />
+          <!-- G：条件必填 / 条件禁用 / 条件只读——只对字段节点显示；条件必填还要求该字段
+               支持校验（容器/按钮等不存值的元素没有校验规则，见上面 hasValidation） -->
+          <template v-if="isFieldsCategory">
+            <template v-if="hasValidation">
+              <IfConditionEditor target-key="requiredIf" title-key="condition.requiredIf" />
+              <div
+                v-if="hasStaticRequiredRule"
+                class="text-[11px] leading-snug text-muted-foreground"
+              >
+                {{ t('condition.staticRequiredHint') }}
+              </div>
+            </template>
+            <IfConditionEditor target-key="disabledIf" title-key="condition.disabledIf" />
+            <IfConditionEditor target-key="readonlyIf" title-key="condition.readonlyIf" />
+          </template>
         </EditorSection>
         <!-- 事件：按元素定义的 bindEvents 决定是否显示 -->
         <EditorSection v-if="hasEvents" :title="t('edits.sections.events')">

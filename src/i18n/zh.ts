@@ -52,6 +52,18 @@ export default {
       batchDuplicate: '复制',
       batchWrap: '包进容器',
       batchWrapAs: '包进{name}',
+      // I1：批量设置（多选批量改属性）
+      batchSettingsTitle: '批量设置',
+      batchColSpan: '占用列数',
+      batchColSpanMixed: '混合',
+      batchRequired: '必填',
+      batchDisabled: '禁用',
+      batchSize: '尺寸',
+      batchSizeFollowForm: '跟随表单',
+      batchOn: '开',
+      batchOff: '关',
+      batchMixed: '混合',
+      batchApplyScope: '将作用于 {n} / {m} 个元素',
     },
     clearConfirm: '确定要清空吗？这会永久删除你创建的表单。',
     creatingForm: '正在生成新表单...',
@@ -299,6 +311,10 @@ export default {
     placeholder: '例如：$other == "yes" && $age >= 18',
     parseWarning:
       '内置语法无法解析这个条件，将原样交给 FormKit 求值；如果不是 FormKit 写法，请检查字段名、引号和括号',
+    requiredIf: '条件必填',
+    disabledIf: '条件禁用',
+    readonlyIf: '条件只读',
+    staticRequiredHint: '已设为必填，条件必填不生效',
   },
   ai: {
     tooltip: 'AI 助手',
@@ -956,6 +972,7 @@ export default {
       paste: '粘贴元素',
       wrap: '包进容器',
       convertType: '转换类型',
+      batchEdit: '批量修改',
       import: '导入',
       applyTemplate: '应用模板',
       ai: 'AI 生成',
@@ -990,5 +1007,27 @@ export default {
     duplicateNode: '复制一份',
     renameHint: '双击重命名',
     renamePlaceholder: '输入名称',
+  },
+  // H1：字段改名同步更新引用（NameInput.vue 的提示）
+  rename: {
+    refsUpdated: '已同步更新 {count} 处引用',
+  },
+  // H2：顶栏「体检」入口 + 体检面板
+  issues: {
+    entry: '体检',
+    empty: '没有发现问题',
+    groupError: '错误',
+    groupWarning: '警告',
+    groupInfo: '提示',
+    // 数据表格列问题的定位文案：{table} 是所属数据表格的元素名称，{column} 是列标题
+    columnLocation: '{table} · 列「{column}」',
+    codes: {
+      'duplicate-name': '字段名「{name}」重复（同一作用域内共 {count} 处）',
+      'unknown-field-ref': '引用了不存在的字段「{field}」',
+      'confirm-unknown-field': '一致性校验规则指向了不存在的字段「{field}」',
+      'unparsed-expr': '表达式无法解析，请检查语法',
+      'missing-options': '未设置选项，也不是动态字典',
+      'missing-label': '未设置标签',
+    },
   },
 } as const

@@ -30,7 +30,12 @@ const modelValue = computed(() => {
 <template>
   <div class="w-full">
     <n-button-group :size="props.size" :vertical="props.vertical" class="w-full">
-      <FormKitSchema v-if="modelValue.length" :schema="modelValue" :library="schemaLibrary" :data="schemaRenderData" />
+      <FormKitSchema
+        v-if="modelValue.length"
+        :schema="modelValue"
+        :library="schemaLibrary"
+        :data="schemaRenderData"
+      />
 
       <div v-else class="flex w-full items-center justify-center">
         <n-empty :description="t('builder.listDropHere')" />
@@ -44,6 +49,8 @@ const modelValue = computed(() => {
    按钮本身撑满槽位 —— 此前 width:0% 把内容链压成 0 宽，按钮只露出内容宽的部分 */
 :deep(.n-button-group .formkit-outer) {
   flex: 1 1 0% !important;
+  /* 提交 / 重置按钮在根画布上带 pt-2（与带标签的字段对齐），放进按钮组后会比普通按钮低一截 */
+  padding-top: 0 !important;
 }
 :deep(.n-button-group .formkit-wrapper),
 :deep(.n-button-group .formkit-inner .n-button) {

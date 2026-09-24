@@ -53,6 +53,18 @@ export default {
       batchDuplicate: 'Duplicate',
       batchWrap: 'Wrap in',
       batchWrapAs: 'Wrap in {name}',
+      // I1: batch settings (multi-select bulk property edit)
+      batchSettingsTitle: 'Batch settings',
+      batchColSpan: 'Column span',
+      batchColSpanMixed: 'Mixed',
+      batchRequired: 'Required',
+      batchDisabled: 'Disabled',
+      batchSize: 'Size',
+      batchSizeFollowForm: 'Follow form',
+      batchOn: 'On',
+      batchOff: 'Off',
+      batchMixed: 'Mixed',
+      batchApplyScope: 'Applies to {n} / {m} elements',
     },
     clearConfirm:
       'Are you absolutely sure? This will permanently delete the form you have created.',
@@ -303,6 +315,10 @@ export default {
     placeholder: 'e.g. $other == "yes" && $age >= 18',
     parseWarning:
       "The built-in syntax can't parse this condition; it will be passed to FormKit as-is. If it isn't FormKit syntax, check field names, quotes and brackets",
+    requiredIf: 'Conditional required',
+    disabledIf: 'Conditional disabled',
+    readonlyIf: 'Conditional read-only',
+    staticRequiredHint: 'Already set as required — conditional required has no effect',
   },
   ai: {
     tooltip: 'AI Assistant',
@@ -1020,6 +1036,7 @@ export default {
       paste: 'Pasted element',
       wrap: 'Wrapped in container',
       convertType: 'Converted type',
+      batchEdit: 'Batch edit',
       import: 'Imported',
       applyTemplate: 'Applied template',
       ai: 'Generated with AI',
@@ -1055,5 +1072,28 @@ export default {
     duplicateNode: 'Duplicate',
     renameHint: 'Double-click to rename',
     renamePlaceholder: 'Enter a name',
+  },
+  // H1: field rename syncing references (NameInput.vue toast)
+  rename: {
+    refsUpdated: 'Updated {count} reference(s)',
+  },
+  // H2: header "check" entry + issues panel
+  issues: {
+    entry: 'Check',
+    empty: 'No issues found',
+    groupError: 'Errors',
+    groupWarning: 'Warnings',
+    groupInfo: 'Info',
+    // Location label for data-table column issues: {table} is the table element's
+    // display name, {column} is the column title
+    columnLocation: '{table} · column "{column}"',
+    codes: {
+      'duplicate-name': 'Duplicate field name "{name}" ({count} occurrences in the same scope)',
+      'unknown-field-ref': 'References a field that does not exist: "{field}"',
+      'confirm-unknown-field': 'Confirm rule points to a field that does not exist: "{field}"',
+      'unparsed-expr': 'Expression could not be parsed, check the syntax',
+      'missing-options': 'No options set, and not a dynamic dictionary',
+      'missing-label': 'No label set',
+    },
   },
 } as const

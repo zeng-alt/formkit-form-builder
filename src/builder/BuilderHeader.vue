@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { NButton, NTooltip, NPopconfirm, NPopover } from 'naive-ui'
 import { useFormBuilderI18n } from '../i18n/context'
 import BuilderPreview from './BuilderPreview.vue'
@@ -7,15 +7,32 @@ import AiPrompt from '../components/ai-prompt/AiPrompt.vue'
 import ThemeSwitcher from '../components/ui/theme-switcher/ThemeSwitcher.vue'
 import TemplatePickerModal from '@/templates/TemplatePickerModal.vue'
 import HistoryPanel from './HistoryPanel.vue'
+import IssuesPanel from './IssuesPanel.vue'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormBuilderConfig } from '@/composables/use-config'
+import { lintDefinition } from '@/dsl/lint'
 
 const config = useFormBuilderConfig()
 // 所属 FormBuilder 实例状态：undo/redo / 清空提交绑定到各自实例。
-const { canRedo, canUndo, commitSchema, redo, undo } = useFormBuilderState()
+const { canRedo, canUndo, commitSchema, redo, undo, formDefinition } = useFormBuilderState()
 const { t } = useFormBuilderI18n()
 // E2：顶栏「历史」入口，弹出面板列出 historyEntries，点击跳转（state.jumpTo）。
 const showHistory = ref(false)
+
+// H2：顶栏「体检」入口——lintDefinition 是纯函数一次遍历，这里算一次通过 props
+// 传给 IssuesPanel，避免面板每次开合都重新跑一遍（大表单场景尤其明显）。
+const showIssues = ref(false)
+const issues = computed(() => lintDefinition(formDefinition.value))
+const issueErrorCount = computed(() => issues.value.filter((i) => i.severity === 'error').length)
+const issueWarningCount = computed(
+  () => issues.value.filter((i) => i.severity === 'warning').length,
+)
+// 右上角小圆点：有 error 时红色，仅 warning（没有 error）时琥珀色，都没有时不显示
+const issueDotClass = computed(() => {
+  if (issueErrorCount.value > 0) return 'bg-red-500 dark:bg-red-400'
+  if (issueWarningCount.value > 0) return 'bg-amber-500 dark:bg-amber-400'
+  return ''
+})
 
 const clearForm = () => {
   commitSchema([], { reason: 'clear' })
@@ -111,6 +128,54 @@ defineSlots<{
 
       <div class="flex items-center gap-2 justify-end">
         <slot name="right">
+          <div
+            class="inline-flex items-center gap-0.5 rounded-[10px] border border-solid border-border/70 bg-card p-[3px] shadow-sm dark:border-border/50"
+          >
+            <n-popover
+              trigger="click"
+              placement="bottom-end"
+              :show="showIssues"
+              style="padding: 0"
+              @update:show="(v: boolean) => (showIssues = v)"
+            >
+              <template #trigger>
+                <n-tooltip placement="bottom">
+                  <template #trigger>
+                    <n-button
+                      quaternary
+                      size="small"
+                      :class="[
+                        headerBtnClass,
+                        showIssues ? '!bg-[#a277ff]/12 !text-[#a277ff]' : '',
+                      ]"
+                      :aria-label="t('issues.entry')"
+                    >
+                      <template #icon>
+                        <span class="relative inline-flex h-[16px] w-[16px]">
+                          <span
+                            :class="[
+                              'i-lucide-stethoscope',
+                              headerIconClass,
+                              showIssues ? '!text-[#a277ff]' : '',
+                            ]"
+                          ></span>
+                          <span
+                            v-if="issueDotClass"
+                            :class="[
+                              'absolute -top-0.5 -right-0.5 h-[7px] w-[7px] rounded-full border border-solid border-card',
+                              issueDotClass,
+                            ]"
+                          ></span>
+                        </span>
+                      </template>
+                    </n-button>
+                  </template>
+                  {{ t('issues.entry') }}
+                </n-tooltip>
+              </template>
+              <IssuesPanel :issues="issues" />
+            </n-popover>
+          </div>
           <div
             class="inline-flex items-center gap-0.5 rounded-[10px] border border-solid border-border/70 bg-card p-[3px] shadow-sm dark:border-border/50"
           >

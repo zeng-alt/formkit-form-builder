@@ -134,6 +134,10 @@ const duplicateChild = (index: number) => {
 </template>
 
 <style scoped>
+/* 提交 / 重置按钮在根画布上带 pt-2（与带标签的字段对齐），放进按钮组后会比普通按钮低一截 */
+:deep(.n-button-group .formkit-outer) {
+  padding-top: 0 !important;
+}
 /* 按钮组：隐藏子字段的 label/help，让按钮靠自身文案对齐排布 */
 :deep(.n-button-group .formkit-label),
 :deep(.n-button-group .formkit-help) {

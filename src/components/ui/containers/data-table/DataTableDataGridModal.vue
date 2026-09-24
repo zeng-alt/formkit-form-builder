@@ -224,6 +224,7 @@ function save() {
                       :value="cellState(row, col).value"
                       :disabled="cellState(row, col).derived"
                       :validate="cellVisible(row, col)"
+                      :row="row"
                       @update:value="(v) => updateCell(idx, col.key, v)"
                     />
                   </td>

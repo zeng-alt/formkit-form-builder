@@ -4,8 +4,8 @@
 // props/attrs 嵌套；fromSchema（fieldNodeFromSchema）：反向解析，未知键回流 props。
 
 import { generateKey } from '../../utils/dnd/schema'
-import type { FieldNode } from '../../types/dsl'
-import { resolveValidation } from '../compile'
+import type { Expr, FieldNode } from '../../types/dsl'
+import { exprToJs, resolveValidation, schemaCondition } from '../compile'
 import { bindToEvents } from '../events'
 import {
   type SchemaNode,
@@ -35,6 +35,8 @@ const FIELD_KNOWN_KEYS = new Set([
   'validation-messages',
   'validationMessages',
   'options',
+  '__disabledIf',
+  '__readonlyIf',
   'outerClass',
   'children',
   '__key',
@@ -62,6 +64,24 @@ const FIELD_TOP_PROPS = new Set([
   'buttonText',
 ])
 
+// ─── 条件必填：requiredIf 为真时临时加一条 required 规则 ────────────────────────
+// 字段已有静态 required 规则时静态规则优先（两个分支都含 required，条件真假都不
+// 影响结果，等价于"条件必填不生效"，无需在这里额外判断跳过）。用 FormKit 的条件
+// 属性 { if, then, else } 让 validation 数组整体随条件切换，复用同一套 exprToJs +
+// compile() 求值链路，不用再写一个单独的表达式求值器。
+function resolveFieldValidation(node: FieldNode): Record<string, unknown> {
+  const resolved = resolveValidation(node.validation)
+  if (!node.requiredIf) return resolved as unknown as Record<string, unknown>
+  const hasStaticRequired = (node.validation ?? []).some((r) => r.rule === 'required')
+  const thenValidation = hasStaticRequired
+    ? resolved.validation
+    : [...resolved.validation, ['required']]
+  return {
+    ...resolved,
+    validation: schemaCondition(exprToJs(node.requiredIf), thenValidation, resolved.validation),
+  }
+}
+
 export function fieldNodeToSchema(node: FieldNode, rt?: RenderTarget): SchemaNode {
   const kind = rt?.renderAs ?? 'formkit'
   const target = rt?.target ?? node.type
@@ -81,9 +101,23 @@ export function fieldNodeToSchema(node: FieldNode, rt?: RenderTarget): SchemaNod
     else if (kind === 'cmp') delete base.props?.value
     else delete base.attrs?.value
   }
-  applyByKind(base, { ...resolveValidation(node.validation) }, kind)
+  applyByKind(base, resolveFieldValidation(node), kind)
   if (Array.isArray(node.options) ? node.options.length : node.options !== undefined)
     putByKind(base, 'options', node.options, kind)
+
+  // 条件禁用 / 条件只读：编译为 FormKit 的条件属性 { if, then }（省略 else，
+  // 条件不成立时该键的编译结果是 undefined）。这两个键只在 use-schema-attrs.ts
+  // 里读取（config.__disabledIf / config.__readonlyIf），不会被当成真实组件属性
+  // 透传给底层 naive-ui 组件（见 use-schema-attrs.ts 的 INTERNAL_KEYS）。
+  // 选用条件属性而非直接把表达式编译值写进 FormKit 保留的 disabled/readonly
+  // 属性名：后者是 FormKit 的级联属性（节点自身一旦有值就不再回退父级/表单级
+  // disabled），会与表单级禁用叠加规则冲突；改在这里只产出一个原始布尔信号，
+  // 实际叠加逻辑统一放在 use-schema-attrs.ts 的 disabled/readonly 计算属性里，
+  // 与表单级 disabled/readonly、字段静态 disabled 三者一起做"任一为真即生效"的判断。
+  if (node.disabledIf)
+    putByKind(base, '__disabledIf', schemaCondition(exprToJs(node.disabledIf), true), kind)
+  if (node.readonlyIf)
+    putByKind(base, '__readonlyIf', schemaCondition(exprToJs(node.readonlyIf), true), kind)
 
   if (node.props) {
     const nested: Record<string, unknown> = {}
@@ -171,12 +205,45 @@ export function fieldNodeFromSchema(s: SchemaNode, fallbackType = 'text'): Field
     // 同上
   }
 
-  const validation = parseValidation(P.validation, P['validation-messages'] ?? P.validationMessages)
+  // validation 可能是条件必填编译出的 { if, then, else }（见 resolveFieldValidation）：
+  // else 分支始终是"未生效条件必填时"的静态规则数组，按它还原 node.validation，
+  // if 还原成 requiredIf——两者互不干扰，含静态 required 时一并保留，与写入时对称。
+  let requiredIf: Expr | undefined
+  let validationSource: unknown = P.validation
+  if (
+    validationSource &&
+    typeof validationSource === 'object' &&
+    !Array.isArray(validationSource) &&
+    typeof (validationSource as { if?: unknown }).if === 'string'
+  ) {
+    const cond = validationSource as { if: string; then?: unknown; else?: unknown }
+    requiredIf = parseExprString(cond.if)
+    validationSource = Array.isArray(cond.else)
+      ? cond.else
+      : Array.isArray(cond.then)
+        ? cond.then
+        : []
+  }
+  const validation = parseValidation(
+    validationSource,
+    P['validation-messages'] ?? P.validationMessages,
+  )
   if (validation?.length) node.validation = validation
+  if (requiredIf) node.requiredIf = requiredIf
   if (Array.isArray(P.options)) node.options = P.options
 
   if (typeof anyS.if === 'string' && anyS.if) node.visibleIf = parseExprString(anyS.if)
   else if (typeof anyS.if === 'boolean') node.visibleIf = { type: 'literal', value: anyS.if }
+
+  // 条件禁用 / 条件只读：还原自 { if, then } 条件属性（见 fieldNodeToSchema）
+  const disabledIfSrc = P.__disabledIf as { if?: unknown } | undefined
+  if (disabledIfSrc && typeof disabledIfSrc === 'object' && typeof disabledIfSrc.if === 'string') {
+    node.disabledIf = parseExprString(disabledIfSrc.if)
+  }
+  const readonlyIfSrc = P.__readonlyIf as { if?: unknown } | undefined
+  if (readonlyIfSrc && typeof readonlyIfSrc === 'object' && typeof readonlyIfSrc.if === 'string') {
+    node.readonlyIf = parseExprString(readonlyIfSrc.if)
+  }
 
   // events 唯一真源：P.__bind 是真源位置（formkit 顶层 / cmp、el 节点各自的 props/attrs）
   const events = bindToEvents(P.__bind)

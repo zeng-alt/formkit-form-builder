@@ -13,6 +13,8 @@ const INTERNAL_KEYS = new Set([
   '__key',
   '__bind',
   '__attrs',
+  '__disabledIf',
+  '__readonlyIf',
   'outerClass',
   'value',
   'modelValue',
@@ -90,11 +92,16 @@ export function useSchemaAttrs(context: FormKitFrameworkContext, opts: { omit?: 
       const formSize = formCtx?.formSettings.value?.size
       if (formSize) out.size = formSize
     }
-    // 只读级联：表单级只读时，只有原生支持 readonly 语义的字段类型才透传真正的
-    // readonly（值仍可见、不可编辑）；其余类型没有只读语义，交给下面的 disabled
-    // 计算属性统一退化为禁用
-    if (out.readonly === undefined && formCtx?.formSettings.value?.readonly) {
-      if (READONLY_CAPABLE_TYPES.has(context.type)) out.readonly = true
+    // 只读级联：表单级只读、或字段自身条件只读（G：readonlyIf）为真时，只有原生
+    // 支持 readonly 语义的字段类型才透传真正的 readonly（值仍可见、不可编辑）；
+    // 其余类型没有只读语义，交给下面的 disabled 计算属性统一退化为禁用——判断口径
+    // 与表单级只读共用同一份 READONLY_CAPABLE_TYPES，不另起一套。
+    if (out.readonly === undefined) {
+      const formReadonly = Boolean(formCtx?.formSettings.value?.readonly)
+      const condReadonly = Boolean(config.__readonlyIf)
+      if ((formReadonly || condReadonly) && READONLY_CAPABLE_TYPES.has(context.type)) {
+        out.readonly = true
+      }
     }
     return out
   })
@@ -120,6 +127,13 @@ export function useSchemaAttrs(context: FormKitFrameworkContext, opts: { omit?: 
     // 表单级只读 + 当前字段类型不支持真正的 readonly 语义：退化为禁用（B1，见
     // FormSettings.readonly 与上面 READONLY_CAPABLE_TYPES 的注释）
     if (settings?.readonly && !READONLY_CAPABLE_TYPES.has(context.type)) return true
+    // G：条件禁用（disabledIf）直接生效；条件只读（readonlyIf）在当前类型不支持
+    // 原生只读语义时同样退化为禁用——与表单级 disabled/readonly、字段静态 disabled
+    // 三者是"任一为真即生效"的关系，这里统一 OR 进来，不走 FormKit 自己的
+    // disabled 级联属性（那套机制在节点自身有值时会屏蔽父级/表单级级联，见
+    // fieldNodeToSchema 里 __disabledIf/__readonlyIf 的注释）。
+    if (config.__disabledIf) return true
+    if (config.__readonlyIf && !READONLY_CAPABLE_TYPES.has(context.type)) return true
     return false
   })
 

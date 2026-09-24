@@ -355,4 +355,190 @@ describe('D0：画布命令层', () => {
 
     await teardown(wrapper)
   })
+
+  // ─── I1：批量改属性 ─────────────────────────────────────────────────────────────
+  describe('batchPatch：批量改属性', () => {
+    it('批量改列宽：所有选中元素都生效', async () => {
+      const wrapper = setup(buildDefinition())
+      await settle()
+      const { state, commands } = captured!
+
+      const result = commands.batchPatch(['age', 'name'], { colSpan: 6 })
+      await settle()
+
+      expect(result).toEqual({ affected: 2, total: 2 })
+      const root = state.formDefinition.value.root.children
+      expect(root.find((n) => n.key === 'age')?.outerClass).toContain('col-span-6')
+      expect(root.find((n) => n.key === 'name')?.outerClass).toContain('col-span-6')
+
+      await teardown(wrapper)
+    })
+
+    it('批量改必填：开=加 required 规则，关=去掉', async () => {
+      const wrapper = setup(buildDefinition())
+      await settle()
+      const { state, commands } = captured!
+
+      commands.batchPatch(['age', 'name'], { required: true })
+      await settle()
+      let root = state.formDefinition.value.root.children
+      expect(
+        (root.find((n) => n.key === 'age') as FieldNode).validation?.map((r) => r.rule),
+      ).toEqual(['required'])
+      expect(
+        (root.find((n) => n.key === 'name') as FieldNode).validation?.map((r) => r.rule),
+      ).toEqual(['required'])
+
+      commands.batchPatch(['age', 'name'], { required: false })
+      await settle()
+      root = state.formDefinition.value.root.children
+      expect((root.find((n) => n.key === 'age') as FieldNode).validation ?? []).toHaveLength(0)
+      expect((root.find((n) => n.key === 'name') as FieldNode).validation ?? []).toHaveLength(0)
+
+      await teardown(wrapper)
+    })
+
+    it('批量改禁用：开=写 props.disabled=true，关=删键（不写 false）', async () => {
+      const wrapper = setup(buildDefinition())
+      await settle()
+      const { state, commands } = captured!
+
+      commands.batchPatch(['age', 'name'], { disabled: true })
+      await settle()
+      let root = state.formDefinition.value.root.children
+      expect((root.find((n) => n.key === 'age') as FieldNode).props?.disabled).toBe(true)
+      expect((root.find((n) => n.key === 'name') as FieldNode).props?.disabled).toBe(true)
+
+      commands.batchPatch(['age', 'name'], { disabled: false })
+      await settle()
+      root = state.formDefinition.value.root.children
+      expect((root.find((n) => n.key === 'age') as FieldNode).props?.disabled).toBeUndefined()
+      expect((root.find((n) => n.key === 'name') as FieldNode).props?.disabled).toBeUndefined()
+
+      await teardown(wrapper)
+    })
+
+    it('批量改尺寸：size=null 删掉 props.size（跟随表单）', async () => {
+      const wrapper = setup(buildDefinition())
+      await settle()
+      const { state, commands } = captured!
+
+      commands.batchPatch(['age', 'name'], { size: 'large' })
+      await settle()
+      let root = state.formDefinition.value.root.children
+      expect((root.find((n) => n.key === 'age') as FieldNode).props?.size).toBe('large')
+
+      commands.batchPatch(['age', 'name'], { size: null })
+      await settle()
+      root = state.formDefinition.value.root.children
+      expect((root.find((n) => n.key === 'age') as FieldNode).props?.size).toBeUndefined()
+      expect((root.find((n) => n.key === 'name') as FieldNode).props?.size).toBeUndefined()
+
+      await teardown(wrapper)
+    })
+
+    it('跳过不适用元素：richText 不支持 required/size，容器不支持 required/disabled/size', async () => {
+      const richText = getElementTypeDef('richText')!.defaults() as FieldNode
+      richText.id = 'rt1'
+      richText.key = 'rt1'
+      richText.name = 'rt1'
+      const card = getElementTypeDef('card')!.defaults() as LayoutNode
+      card.id = 'card1'
+      card.key = 'card1'
+      card.name = 'card1'
+      const wrapper = setup(buildDefinition([textField('age', '年龄'), richText, card]))
+      await settle()
+      const { state, commands } = captured!
+
+      const result = commands.batchPatch(['age', 'rt1', 'card1'], {
+        colSpan: 4,
+        required: true,
+        disabled: true,
+        size: 'small',
+      })
+      await settle()
+
+      // colSpan 对三者都生效，required/disabled/size 各自跳过不支持的元素，
+      // 三个元素里至少一项被命中即计入 affected，故三者都算命中（colSpan 通吃）
+      expect(result.total).toBe(3)
+      expect(result.affected).toBe(3)
+
+      const root = state.formDefinition.value.root.children
+      const age = root.find((n) => n.key === 'age') as FieldNode
+      const rt = root.find((n) => n.key === 'rt1') as FieldNode
+      const cardNode = root.find((n) => n.key === 'card1') as LayoutNode
+
+      expect(age.outerClass).toContain('col-span-4')
+      expect(age.validation?.map((r) => r.rule)).toEqual(['required'])
+      expect(age.props?.disabled).toBe(true)
+      expect(age.props?.size).toBe('small')
+
+      expect(rt.outerClass).toContain('col-span-4')
+      expect(rt.validation ?? []).toHaveLength(0) // required 不支持，跳过
+      expect(rt.props?.disabled).toBe(true) // disabled 字段类都支持
+      expect(rt.props?.size).toBeUndefined() // size 不支持，跳过
+
+      expect(cardNode.outerClass).toContain('col-span-4')
+      // 容器不是字段：required/disabled/size 全部跳过
+      expect((cardNode as unknown as FieldNode).props?.disabled).toBeUndefined()
+
+      await teardown(wrapper)
+    })
+
+    it('一次提交、一次撤销全部还原', async () => {
+      const wrapper = setup(buildDefinition())
+      await settle()
+      const { state, commands } = captured!
+
+      commands.batchPatch(['age', 'name'], { colSpan: 4, required: true, disabled: true })
+      await settle()
+      let root = state.formDefinition.value.root.children
+      expect((root.find((n) => n.key === 'age') as FieldNode).props?.disabled).toBe(true)
+      expect((root.find((n) => n.key === 'name') as FieldNode).props?.disabled).toBe(true)
+
+      state.undo()
+      await settle()
+      root = state.formDefinition.value.root.children
+      expect((root.find((n) => n.key === 'age') as FieldNode).props?.disabled).toBeUndefined()
+      expect((root.find((n) => n.key === 'name') as FieldNode).props?.disabled).toBeUndefined()
+      expect((root.find((n) => n.key === 'age') as FieldNode).validation ?? []).toHaveLength(0)
+      expect(root.find((n) => n.key === 'age')?.outerClass ?? '').not.toContain('col-span-4')
+
+      await teardown(wrapper)
+    })
+
+    it('批量开必填不影响已有的 requiredIf 条件和其余校验规则（min）', async () => {
+      const wrapper = setup(buildDefinition())
+      await settle()
+      const { state, commands } = captured!
+
+      // 模拟字段已经有条件必填（G）+ 一条静态 min 规则：schema 层这种字段的
+      // validation 会被编译成 FormKit 条件属性对象（{ if, then, else }），批量开必填
+      // 必须在 DSL 层只增删 required 这一条规则，不能碰 requiredIf 或 min
+      const def = state.formDefinition.value
+      const nextChildren = def.root.children.map((n) =>
+        n.key === 'age'
+          ? ({
+              ...n,
+              requiredIf: { type: 'literal', value: true },
+              validation: [{ rule: 'min', args: [3] }],
+            } as FieldNode)
+          : n,
+      )
+      state.commitFormDefinition(
+        { ...def, root: { ...def.root, children: nextChildren } },
+        { reason: 'field-edit' },
+      )
+      await settle()
+
+      commands.batchPatch(['age'], { required: true })
+      await settle()
+
+      const age = state.formDefinition.value.root.children.find((n) => n.key === 'age') as FieldNode
+      expect(age.requiredIf).toEqual({ type: 'literal', value: true })
+      expect(age.validation?.map((r) => r.rule).sort()).toEqual(['min', 'required'])
+
+      await teardown(wrapper)
+    })
+  })
 })

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
+import { useMessage } from 'naive-ui'
 import { getElementTypeDef, EXPR_HELPER_PREFIX } from '@/dsl'
 import { useFormField } from '@/composables/form-fields'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
@@ -10,8 +11,17 @@ import TextInput from './TextInput.vue'
 
 // 所属 FormBuilder 实例状态：name 唯一性校验 / 选中定位绑定到各自实例。
 const { formDefinition, formSchema, selectedIndex, selectedKey } = useFormBuilderState()
-const { currentFieldType, fieldName, label, hasField } = useFormField()
+const { currentFieldType, fieldName, label, hasField, syncFieldRefs } = useFormField()
 const { t } = useFormBuilderI18n()
+
+// useMessage() 要求祖先链上有 n-message-provider（BuilderThemeScope 提供）；脱离它单独挂载
+// （如组件测试）时拿不到，改名同步照常进行，只是不弹提示
+let message: ReturnType<typeof useMessage> | null = null
+try {
+  message = useMessage()
+} catch {
+  message = null
+}
 
 // 类型 → 分类（直接查注册表，覆盖无 template 的 group / grid / tabsPane 等）
 const category = computed(() => {
@@ -86,6 +96,56 @@ const nameError = computed(() => {
   if (isNameTaken(fieldName.value)) return t('edits.nameExists')
   return ''
 })
+
+// ═══ H1：改名同步引用 ═══════════════════════════════════════════════════════════
+// 名称逐字符提交，中间态可能不合法（空、格式错）或与别的字段重名。只有新名字合法且不重名时
+// 才把引用改过去：若中间态撞上别的字段名时也同步，两边的引用就混在一起，之后再改名会把
+// 那个字段的引用一并带走、再也分不开。refsName 记录引用当前指向的名字；切换选中、或名字被
+// 输入框以外的途径改掉（撤销 / 重做等）时，重置为当前名字。
+let refsName = ''
+let editingName = false
+watch(
+  [currentFieldKey, fieldName],
+  () => {
+    if (!editingName) refsName = fieldName.value
+  },
+  { immediate: true, flush: 'sync' },
+)
+
+// 提示防抖：逐字符同步的处数累加，停顿后弹一次
+let pendingRefCount = 0
+let renameToastTimer: ReturnType<typeof setTimeout> | null = null
+function scheduleRenameToast(count: number) {
+  pendingRefCount += count
+  if (renameToastTimer) clearTimeout(renameToastTimer)
+  renameToastTimer = setTimeout(() => {
+    message?.success(t('rename.refsUpdated', { count: pendingRefCount }))
+    pendingRefCount = 0
+    renameToastTimer = null
+  }, 600)
+}
+onBeforeUnmount(() => {
+  if (renameToastTimer) clearTimeout(renameToastTimer)
+})
+
+function onNameInput(value: string) {
+  editingName = true
+  try {
+    fieldName.value = value
+  } finally {
+    editingName = false
+  }
+  if (!isFieldsCategory.value) return
+  const next = fieldName.value
+  if (!refsName) {
+    refsName = next
+    return
+  }
+  if (nameError.value || next === refsName) return
+  const count = syncFieldRefs(refsName, next)
+  refsName = next
+  if (count > 0) scheduleRenameToast(count)
+}
 </script>
 
 <template>
@@ -111,6 +171,6 @@ const nameError = computed(() => {
     :placeholder="t('edits.placeholder.fieldName')"
     :value="fieldName"
     :error="nameError"
-    @update:value="(v) => (fieldName = v)"
+    @update:value="onNameInput"
   />
 </template>

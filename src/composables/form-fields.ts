@@ -2,11 +2,12 @@ import type { WritableComputedRef } from 'vue'
 import { computed } from 'vue'
 import { findDslNodeByKey, updateDslNodeAtKey } from '@/utils/schema/dsl-tree'
 import { exprToSource, parseExprString } from '@/dsl'
+import { renameFieldRefs } from '@/dsl/refs'
 import { eventsToBind, bindToEvents } from '@/dsl/events'
 import { getColSpan } from '@/utils/dnd/grid'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { DSL_VERSION } from '@/types/dsl'
-import type { FieldNode, FormNode, OptionItem, ValidationRule } from '@/types/dsl'
+import type { Expr, FieldNode, FormNode, OptionItem, ValidationRule } from '@/types/dsl'
 import type { DataTableColumn } from '@/components/ui/containers/data-table/types'
 import { DEFAULT_LABEL_WIDTH } from '@/utils/form-layout'
 
@@ -254,10 +255,21 @@ export function useFormField() {
   const fieldName = computed({
     get: () => selectedField.value?.name || '',
     set: (newName: string) => {
-      const nextName = normalizeName(newName)
-      setFieldProp('name', nextName || undefined)
+      setFieldProp('name', normalizeName(newName) || undefined)
     },
   })
+
+  // H1：把全表对 fromName 的引用（条件表达式 / expr / confirm 校验规则 / 数据表格列元素）
+  // 改指向 toName，返回改动处数。名称输入框逐字符提交，中间态可能不合法或与别的字段重名，
+  // 何时同步、从哪个名字同步由调用方（NameInput.vue）判断，这里只负责替换。
+  // reason 与改名提交相同（'field-edit'）并允许合并，落进同一个合并窗口，一次撤销连同改名一起还原。
+  function syncFieldRefs(fromName: string, toName: string): number {
+    const def = formDefinition.value
+    if (!def || !fromName || !toName || fromName === toName) return 0
+    const { definition, count } = renameFieldRefs(def, fromName, toName)
+    if (count > 0) commitFormDefinition(definition, { reason: 'field-edit', merge: true })
+    return count
+  }
 
   const label = computed({
     get: () => selectedField.value?.label || '',
@@ -375,19 +387,41 @@ export function useFormField() {
 
   const valueExpression = exprExpression
 
-  const ifExpression = computed<string>({
-    get: () => {
-      const visibleIf = selectedField.value?.visibleIf
-      if (!visibleIf) return ''
-      // 显示可读源码（$field_1 == "123"），不是给 FormKit 运行时的 $fkb_eq(...) helper 调用；
-      // exprToSource 与 parseExprString 互逆，保存时原样解析回同一棵 AST
-      return exprToSource(visibleIf)
-    },
-    set: (value: string) => {
-      const next = value.trim()
-      setFieldProp('visibleIf', next ? parseExprString(next) : undefined)
-    },
-  })
+  // ─── 条件表达式（G：visibleIf / requiredIf / disabledIf / readonlyIf 共用）──────
+  // 四个键语义不同（是否显示 / 是否必填 / 是否禁用 / 是否只读），但读写形态完全一样：
+  // 都是 FieldNode（或 BaseNode）上一个可选的 Expr AST，编辑器都是"开关 + 只读输入框
+  // 展示可读源码 + 铅笔打开 ExprEditModal"。IfConditionEditor.vue 按 targetKey 复用
+  // 同一份交互，这里对应地把读写抽成一个按键名参数化的工厂函数，不为每个键各写一份。
+  type ConditionKey = 'visibleIf' | 'requiredIf' | 'disabledIf' | 'readonlyIf'
+  const createConditionExpression = (key: ConditionKey) =>
+    computed<string>({
+      get: () => {
+        const expr = (selectedField.value as Record<string, unknown> | undefined)?.[key] as
+          | Expr
+          | undefined
+        if (!expr) return ''
+        // 显示可读源码（$field_1 == "123"），不是给 FormKit 运行时的 $fkb_eq(...) helper 调用；
+        // exprToSource 与 parseExprString 互逆，保存时原样解析回同一棵 AST
+        return exprToSource(expr)
+      },
+      set: (value: string) => {
+        const next = value.trim()
+        setFieldProp(key as keyof FormNode, next ? parseExprString(next) : undefined)
+      },
+    })
+
+  const ifExpression = createConditionExpression('visibleIf')
+  const requiredIfExpression = createConditionExpression('requiredIf')
+  const disabledIfExpression = createConditionExpression('disabledIf')
+  const readonlyIfExpression = createConditionExpression('readonlyIf')
+
+  // 静态必填已开时条件必填不生效（运行时侧同一优先级，见 dsl/convert/field.ts），
+  // 编辑器据此显示灰色提示
+  const hasStaticRequiredRule = computed(() =>
+    ((selectedField.value as FieldNode | undefined)?.validation ?? []).some(
+      (r) => r.rule === 'required',
+    ),
+  )
 
   // ─── 数字 / 文件 / 范围 ───────────────────────────────────────────────────────
   const whichNumber = computed<string>({
@@ -816,9 +850,14 @@ export function useFormField() {
     createColumnProp,
     setColumnProp,
     fieldName,
+    syncFieldRefs,
     useExpressionValue,
     valueExpression,
     ifExpression,
+    requiredIfExpression,
+    disabledIfExpression,
+    readonlyIfExpression,
+    hasStaticRequiredRule,
     label,
     buttonText,
     buttonType,

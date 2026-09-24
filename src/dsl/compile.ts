@@ -34,6 +34,23 @@ export function exprToJs(expr: Expr): string {
   }
 }
 
+// ─── FormKit schema 条件属性（{ if, then, else }）───────────────────────────────
+// G：条件必填 / 条件禁用 / 条件只读复用 FormKit 自己的属性级条件语法（node_modules/
+// @formkit/vue 的 parseConditionAttr：命中 has(value,'if') && 值本身是对象即按
+// 条件属性处理），比另起一套表达式求值更省——条件成立时取 then，否则取 else
+// （省略 else 时为 undefined）。then/else 是 FormKit 固定的键名，不是这里能改的，
+// 也不是真的 Promise thenable，下面两行对象字面量按属性名误判的 lint 规则专门放行。
+export function schemaCondition(
+  ifExpr: string,
+  thenValue: unknown,
+  elseValue?: unknown,
+): Record<string, unknown> {
+  // oxlint-disable-next-line unicorn/no-thenable -- FormKit 的 { if, then, else } schema 语法，不是 Promise
+  if (elseValue === undefined) return { if: ifExpr, then: thenValue }
+  // oxlint-disable-next-line unicorn/no-thenable -- 同上
+  return { if: ifExpr, then: thenValue, else: elseValue }
+}
+
 // ─── 校验 ──────────────────────────────────────────────────────────────────────
 
 function resolveModifiers(m: ValidationRule | undefined): string {
