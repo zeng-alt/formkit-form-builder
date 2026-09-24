@@ -160,10 +160,14 @@ export default {
     useExpressionValue: 'Use expression value',
     placeholder: 'e.g. $my_variable + 1',
     variablesNotFound: 'Variables not found: {vars}',
+    parseError:
+      "This expression can't be parsed and won't be computed at runtime. Reference fields as $name and wrap strings in quotes, e.g. $name + ' Jr.'",
   },
   condition: {
     useIf: 'Conditional render (if)',
     placeholder: 'e.g. $other == "yes" && $age >= 18',
+    parseWarning:
+      "The built-in syntax can't parse this condition; it will be passed to FormKit as-is. If it isn't FormKit syntax, check field names, quotes and brackets",
   },
   ai: {
     tooltip: 'AI Assistant',

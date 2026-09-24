@@ -4,6 +4,7 @@
 
 import type { Expr } from '../../types/dsl'
 import { EXPR_HELPER_PREFIX } from '../expr-schema-helpers'
+import { getBuiltin } from '../expr-builtins'
 
 export function parseExprString(input: string): Expr {
   const raw = (str: string): Expr => ({
@@ -148,6 +149,9 @@ export function parseExprString(input: string): Expr {
       } else if (ch === '/') {
         pos++
         left = call('div', [left, parseUnary()])
+      } else if (ch === '%') {
+        pos++
+        left = call('mod', [left, parseUnary()])
       } else break
     }
     return left
@@ -207,8 +211,10 @@ export function parseExprString(input: string): Expr {
     skip()
     const ch = peek()
 
-    if (ch === '"' || ch === "'") {
-      const quote = ch
+    // 字符串：英文引号，以及中文输入法常打出的“”‘’（开闭引号不同，按配对的闭引号结束）
+    const closingQuote = ch === '“' ? '”' : ch === '‘' ? '’' : ch === '"' || ch === "'" ? ch : null
+    if (closingQuote) {
+      const quote = closingQuote
       pos++
       let out = ''
       for (;;) {
@@ -300,6 +306,31 @@ export function parseExprString(input: string): Expr {
 
     const wrapped = parseStringWrapper()
     if (wrapped) return wrapped
+
+    // 内置函数的普通调用写法：contains($a, "x")、empty($b)、today()（exprToSource 的输出形式）
+    const fnMatch = src.slice(pos).match(/^[a-zA-Z_][a-zA-Z0-9_]*/)
+    if (fnMatch && fnMatch[0] !== '__raw__' && getBuiltin(fnMatch[0])) {
+      const save = pos
+      pos += fnMatch[0].length
+      skip()
+      if (consume('(')) {
+        skip()
+        const args: Expr[] = []
+        if (peek() !== ')') {
+          args.push(parseConditional())
+          skip()
+          while (peek() === ',') {
+            pos++
+            skip()
+            args.push(parseConditional())
+            skip()
+          }
+        }
+        if (!consume(')')) throw new Error('parse error')
+        return call(fnMatch[0], args)
+      }
+      pos = save
+    }
 
     throw new Error('parse error')
   }

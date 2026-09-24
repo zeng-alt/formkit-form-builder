@@ -5,6 +5,7 @@ import { useFormBuilderI18n } from '../../../i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormField } from '../../../composables/form-fields'
 import ExprEditModal from './common/ExprEditModal.vue'
+import { isUnparsedExpr, parseExprString } from '@/dsl'
 
 const { selectedIndex, selectedKey, elementEditTarget } = useFormBuilderState()
 const { availableFields, ifExpression } = useFormField()
@@ -50,6 +51,12 @@ function handleSave(value: string) {
   ifExpression.value = value
   modalOpen.value = false
 }
+
+// 内置语法解析不了的条件会原样交给 FormKit 求值：可能是 FormKit 自己的写法，也可能写错了，给个提醒
+const unparsed = computed(() => {
+  const text = draft.value.trim()
+  return text !== '' && text !== '$' && isUnparsedExpr(parseExprString(text))
+})
 </script>
 
 <template>
@@ -70,6 +77,12 @@ function handleSave(value: string) {
       <n-button size="tiny" @click="openModal">
         <span class="i-lucide-pencil h-3.5 w-3.5" />
       </n-button>
+    </div>
+    <div
+      v-if="enabled && unparsed"
+      class="text-[11px] leading-snug text-amber-600 dark:text-amber-400"
+    >
+      {{ t('condition.parseWarning') }}
     </div>
 
     <ExprEditModal

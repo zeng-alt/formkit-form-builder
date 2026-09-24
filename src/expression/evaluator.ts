@@ -1,7 +1,7 @@
 // ═══ 表达式编译 + 求值 ═════════════════════════════════════════════════════════
 // 编译缓存：parseExprString 一次 → AST；evalExpr 每次用最新 data 求值。
 
-import { parseExprString, evalExpr } from '../dsl'
+import { parseExprString, evalExpr, isUnparsedExpr } from '../dsl'
 import type { Expr } from '../types/dsl'
 import { lookupFieldValue } from '../utils/schema/form-data'
 
@@ -20,6 +20,9 @@ export interface CompiledExpr {
  */
 export function compileExpr(expr: string): CompiledExpr {
   const ast = parseExprString(expr)
+  // 解析不了时 parseExprString 返回 __raw__ 兜底节点，它求值会原样返回源码字符串——
+  // 表达式值字段会把「foo($a)」这种源码当成值显示出来。这里直接抛错，调用方按求值失败处理
+  if (isUnparsedExpr(ast)) throw new Error(`无法解析表达式：${expr}`)
   const { deps } = evalExpr(ast, {})
   return {
     ast,

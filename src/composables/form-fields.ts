@@ -1,7 +1,7 @@
 import type { WritableComputedRef } from 'vue'
 import { computed } from 'vue'
 import { findDslNodeByKey, updateDslNodeAtKey } from '@/utils/schema/dsl-tree'
-import { exprToJs, parseExprString } from '@/dsl'
+import { exprToSource, parseExprString } from '@/dsl'
 import { eventsToBind, bindToEvents } from '@/dsl/events'
 import { getColSpan } from '@/utils/dnd/grid'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
@@ -379,8 +379,9 @@ export function useFormField() {
     get: () => {
       const visibleIf = selectedField.value?.visibleIf
       if (!visibleIf) return ''
-      // var 模式：编辑器显示 $field（与表达式求值器 / FormKit schema 一致）
-      return exprToJs(visibleIf)
+      // 显示可读源码（$field_1 == "123"），不是给 FormKit 运行时的 $fkb_eq(...) helper 调用；
+      // exprToSource 与 parseExprString 互逆，保存时原样解析回同一棵 AST
+      return exprToSource(visibleIf)
     },
     set: (value: string) => {
       const next = value.trim()
