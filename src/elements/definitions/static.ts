@@ -1,5 +1,6 @@
 import type { Component } from 'vue'
 import type { ElementDefinition } from '../types'
+import { NO_EVENTS, BUTTON_EVENTS } from './bind-events'
 
 // 纯数据目录：不 import 任何 .vue。FormKit 组件绑定在 elements/formkit.ts（按 type 索引）。
 // 按钮类配置已展平进 props。
@@ -17,6 +18,7 @@ const heading = (
   icon,
   tooltipKey,
   editor,
+  bindEvents: NO_EVENTS,
   schema: {
     renderAs: 'cmp',
     props: { text: 'text' },
@@ -32,6 +34,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-send-horizontal',
     tooltipKey: 'fieldProps.tooltip.submit',
     editor: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
+    bindEvents: BUTTON_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.submit.name',
@@ -49,6 +52,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-rotate-ccw',
     tooltipKey: 'fieldProps.tooltip.reset',
     editor: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
+    bindEvents: BUTTON_EVENTS,
     schema: {
       renderAs: 'cmp',
       nameKey: 'elements.reset.name',
@@ -66,6 +70,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-square-mouse-pointer',
     tooltipKey: 'fieldProps.tooltip.naiveButton',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveButtonEditor.vue'),
+    bindEvents: BUTTON_EVENTS,
     schema: {
       renderAs: 'cmp',
       // disabled 不显式写 false：它是 FormKit 保留的级联属性名，节点一旦显式写入
@@ -95,6 +100,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-letter-text',
     tooltipKey: 'fieldProps.tooltip.naiveText',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveTextEditor.vue'),
+    bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
       props: {
@@ -117,6 +123,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-letter-text',
     tooltipKey: 'fieldProps.tooltip.naiveP',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveParagraphEditor.vue'),
+    bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
       props: {
@@ -135,6 +142,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-link-2',
     tooltipKey: 'fieldProps.tooltip.naiveA',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveLinkEditor.vue'),
+    bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
       props: {
@@ -152,6 +160,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-letter-text',
     tooltipKey: 'fieldProps.tooltip.naiveBlockquote',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveBlockquoteEditor.vue'),
+    bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
       props: {
@@ -203,6 +212,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-list',
     tooltipKey: 'fieldProps.tooltip.naiveUl',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveUlEditor.vue'),
+    bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
       options: ['Item 1', 'Item 2', 'Item 3'],
@@ -216,6 +226,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-list',
     tooltipKey: 'fieldProps.tooltip.naiveOl',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveOlEditor.vue'),
+    bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
       options: ['Item 1', 'Item 2', 'Item 3'],
@@ -229,6 +240,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-list',
     tooltipKey: 'fieldProps.tooltip.naiveLi',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveLiEditor.vue'),
+    bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
       value: 'List Item',
@@ -242,6 +254,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-sliders-horizontal',
     tooltipKey: 'fieldProps.tooltip.naiveDivider',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveDividerEditor.vue'),
+    bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
       props: {
@@ -260,6 +273,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-triangle-alert',
     tooltipKey: 'fieldProps.tooltip.naiveAlert',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveAlertEditor.vue'),
+    bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
       props: {
@@ -281,6 +295,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-arrow-up-to-line',
     tooltipKey: 'fieldProps.tooltip.naiveBackTop',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveBackTopEditor.vue'),
+    bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
       props: {
@@ -299,6 +314,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-qr-code',
     tooltipKey: 'fieldProps.tooltip.naiveQrCode',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveQrCodeEditor.vue'),
+    bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
       value: 'https://github.com/zeng-alt/formkit-form-builder',
@@ -319,6 +335,7 @@ export const staticElements: ElementDefinition[] = [
     icon: 'i-lucide-gauge',
     tooltipKey: 'fieldProps.tooltip.naiveProgress',
     editor: () => import('@/components/sidebar-right/edits/editors/NaiveProgressEditor.vue'),
+    bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
       props: {

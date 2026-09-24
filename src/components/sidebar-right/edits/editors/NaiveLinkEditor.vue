@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { useFormField } from '../../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../../i18n/context'
-import BindEditor from '../BindEditor.vue'
+import EditorSection from '../common/EditorSection.vue'
 import TextInput from '../common/TextInput.vue'
 import SelectInput from '../common/SelectInput.vue'
-import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
 const { t } = useFormBuilderI18n()
@@ -14,20 +13,21 @@ const linkTarget = createPropsProp<string>('target', '_blank')
 </script>
 
 <template>
-  <BindEditor :events="NO_EVENTS" />
   <TextInput
     :label="t('edits.props.href')"
     placeholder="https://..."
     :value="linkHref"
     @update:value="(v) => (linkHref = v)"
   />
-  <SelectInput
-    :label="t('edits.props.target')"
-    :value="linkTarget"
-    :options="[
-      { label: '_blank', value: '_blank' },
-      { label: '_self', value: '_self' },
-    ]"
-    @update:value="(v) => (linkTarget = v)"
-  />
+  <EditorSection :title="t('edits.sections.appearance')">
+    <SelectInput
+      :label="t('edits.props.target')"
+      :value="linkTarget"
+      :options="[
+        { label: '_blank', value: '_blank' },
+        { label: '_self', value: '_self' },
+      ]"
+      @update:value="(v) => (linkTarget = v)"
+    />
+  </EditorSection>
 </template>

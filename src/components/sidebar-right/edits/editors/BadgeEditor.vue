@@ -3,14 +3,12 @@ import { computed } from 'vue'
 import { NColorPicker } from 'naive-ui'
 import { useFormField } from '../../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../../i18n/context'
-import BindEditor from '../BindEditor.vue'
-import LabelHelpSection from '../common/LabelHelpSection.vue'
+import EditorSection from '../common/EditorSection.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 import NumberInput from '../common/NumberInput.vue'
 import TextInput from '../common/TextInput.vue'
 import EditsLayout from '../common/EditsLayout.vue'
-import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 // 徽标容器（NBadge）：角标展示配置 + label/help 编辑。
 // value 支持文本 / 数字 / 表达式（含 $ 的字符串，如 $count）。
@@ -60,67 +58,69 @@ const badgeTypeOptions = [
 </script>
 
 <template>
-  <BindEditor :events="NO_EVENTS" />
-  <LabelHelpSection />
   <TextInput
     :label="t('edits.props.value')"
     :value="badgeValueText"
     :placeholder="t('edits.props.valuePlaceholder')"
     @update:value="(v) => (badgeValueText = v)"
   />
-  <NumberInput
-    :label="t('edits.props.max')"
-    :value="badgeMax"
-    :placeholder="'99'"
-    @update:value="(v) => (badgeMax = v ?? 99)"
-  />
-  <SelectInput
-    :label="t('edits.props.type')"
-    :value="badgeType"
-    :options="badgeTypeOptions"
-    @update:value="(v) => (badgeType = v)"
-  />
-  <EditsLayout>
-    <label class="text-xs font-medium tracking-wide text-foreground/80 block mb-1">{{
-      t('edits.props.color')
-    }}</label>
-    <n-color-picker
-      size="small"
-      :value="badgeColor || null"
-      :show-alpha="false"
-      @update:value="(v) => (badgeColor = (v as string) ?? '')"
+  <EditorSection :title="t('edits.sections.appearance')">
+    <NumberInput
+      :label="t('edits.props.max')"
+      :value="badgeMax"
+      :placeholder="'99'"
+      @update:value="(v) => (badgeMax = v ?? 99)"
     />
-  </EditsLayout>
-  <SwitchInput
-    :label="t('edits.props.show')"
-    :value="badgeShow"
-    @update:value="(v) => (badgeShow = v)"
-  />
-  <SwitchInput
-    :label="t('edits.props.showZero')"
-    :value="badgeShowZero"
-    @update:value="(v) => (badgeShowZero = v)"
-  />
-  <SwitchInput
-    :label="t('edits.props.dot')"
-    :value="badgeDot"
-    @update:value="(v) => (badgeDot = v)"
-  />
-  <SwitchInput
-    :label="t('edits.props.processing')"
-    :value="badgeProcessing"
-    @update:value="(v) => (badgeProcessing = v)"
-  />
-  <NumberInput
-    :label="t('edits.props.offsetX')"
-    :value="offsetX as number"
-    :placeholder="'0'"
-    @update:value="(v) => (offsetX = v ?? 0)"
-  />
-  <NumberInput
-    :label="t('edits.props.offsetY')"
-    :value="offsetY as number"
-    :placeholder="'0'"
-    @update:value="(v) => (offsetY = v ?? 0)"
-  />
+    <SelectInput
+      :label="t('edits.props.type')"
+      :value="badgeType"
+      :options="badgeTypeOptions"
+      @update:value="(v) => (badgeType = v)"
+    />
+    <EditsLayout>
+      <label class="text-xs font-medium tracking-wide text-foreground/80 block mb-1">{{
+        t('edits.props.color')
+      }}</label>
+      <n-color-picker
+        size="small"
+        :value="badgeColor || null"
+        :show-alpha="false"
+        @update:value="(v) => (badgeColor = (v as string) ?? '')"
+      />
+    </EditsLayout>
+    <NumberInput
+      :label="t('edits.props.offsetX')"
+      :value="offsetX as number"
+      :placeholder="'0'"
+      @update:value="(v) => (offsetX = v ?? 0)"
+    />
+    <NumberInput
+      :label="t('edits.props.offsetY')"
+      :value="offsetY as number"
+      :placeholder="'0'"
+      @update:value="(v) => (offsetY = v ?? 0)"
+    />
+  </EditorSection>
+  <EditorSection :title="t('edits.sections.behavior')">
+    <SwitchInput
+      :label="t('edits.props.show')"
+      :value="badgeShow"
+      @update:value="(v) => (badgeShow = v)"
+    />
+    <SwitchInput
+      :label="t('edits.props.showZero')"
+      :value="badgeShowZero"
+      @update:value="(v) => (badgeShowZero = v)"
+    />
+    <SwitchInput
+      :label="t('edits.props.dot')"
+      :value="badgeDot"
+      @update:value="(v) => (badgeDot = v)"
+    />
+    <SwitchInput
+      :label="t('edits.props.processing')"
+      :value="badgeProcessing"
+      @update:value="(v) => (badgeProcessing = v)"
+    />
+  </EditorSection>
 </template>

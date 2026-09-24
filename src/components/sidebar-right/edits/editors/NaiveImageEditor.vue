@@ -2,14 +2,11 @@
 import { computed } from 'vue'
 import { useFormField } from '../../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../../i18n/context'
-import BindEditor from '../BindEditor.vue'
-import LabelHelpSection from '../common/LabelHelpSection.vue'
+import EditorSection from '../common/EditorSection.vue'
 import NumberInput from '../common/NumberInput.vue'
-import RowSpanSection from '../common/RowSpanSection.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
 import TextInput from '../common/TextInput.vue'
-import { DISPLAY_CLICK_EVENTS } from '@/elements/definitions/bind-events'
 
 const { createPropsProp } = useFormField()
 const { t } = useFormBuilderI18n()
@@ -67,8 +64,6 @@ const lazy = createPropsProp<boolean>('lazy', false)
 </script>
 
 <template>
-  <BindEditor :events="DISPLAY_CLICK_EVENTS" />
-  <LabelHelpSection />
   <SelectInput
     :label="t('edits.image.sizeModeLabel')"
     :value="sizeMode"
@@ -113,9 +108,9 @@ const lazy = createPropsProp<boolean>('lazy', false)
     :value="height"
     @update:value="(v) => (height = v)"
   />
-  <RowSpanSection />
   <!-- fill 模式下高度由占用行数撑开：同一行没有其它更高的字段时，靠上面的
-       minHeight 兜底，这里提示一句，避免用户改了占用行数却不知道为什么高度没变 -->
+       minHeight 兜底，这里提示一句，避免用户改了占用行数却不知道为什么高度没变
+       （占用行数已挪到外层「基础」分组，与列数放在一起） -->
   <div v-if="sizeMode === 'fill'" class="text-[11px] text-muted-foreground -mt-2">
     {{ t('edits.image.fillRowSpanHint') }}
   </div>
@@ -131,26 +126,30 @@ const lazy = createPropsProp<boolean>('lazy', false)
     :value="alt"
     @update:value="(v) => (alt = v)"
   />
-  <SelectInput
-    :label="t('edits.image.objectFitLabel')"
-    :value="objectFit"
-    :options="[
-      { label: 'fill', value: 'fill' },
-      { label: 'contain', value: 'contain' },
-      { label: 'cover', value: 'cover' },
-      { label: 'none', value: 'none' },
-      { label: 'scale-down', value: 'scale-down' },
-    ]"
-    @update:value="(v) => (objectFit = v)"
-  />
-  <SwitchInput
-    :label="t('edits.image.previewDisabledLabel')"
-    :value="previewDisabled"
-    @update:value="(v) => (previewDisabled = v)"
-  />
-  <SwitchInput
-    :label="t('edits.image.lazyLabel')"
-    :value="lazy"
-    @update:value="(v) => (lazy = v)"
-  />
+  <EditorSection :title="t('edits.sections.appearance')">
+    <SelectInput
+      :label="t('edits.image.objectFitLabel')"
+      :value="objectFit"
+      :options="[
+        { label: 'fill', value: 'fill' },
+        { label: 'contain', value: 'contain' },
+        { label: 'cover', value: 'cover' },
+        { label: 'none', value: 'none' },
+        { label: 'scale-down', value: 'scale-down' },
+      ]"
+      @update:value="(v) => (objectFit = v)"
+    />
+  </EditorSection>
+  <EditorSection :title="t('edits.sections.behavior')">
+    <SwitchInput
+      :label="t('edits.image.previewDisabledLabel')"
+      :value="previewDisabled"
+      @update:value="(v) => (previewDisabled = v)"
+    />
+    <SwitchInput
+      :label="t('edits.image.lazyLabel')"
+      :value="lazy"
+      @update:value="(v) => (lazy = v)"
+    />
+  </EditorSection>
 </template>

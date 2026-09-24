@@ -3,8 +3,6 @@ import { computed, ref, watch } from 'vue'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormField } from '../../../../composables/form-fields'
-import BindEditor from '../BindEditor.vue'
-import LabelHelpSection from '../common/LabelHelpSection.vue'
 import EditsLayout from '../common/EditsLayout.vue'
 import TextInput from '../common/TextInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
@@ -16,7 +14,6 @@ import type { DataTableColumn } from '@/components/ui/containers/data-table/type
 import DataTableDataGridModal from '@/components/ui/containers/data-table/DataTableDataGridModal.vue'
 import { NButton, NModal, NRadioButton, NRadioGroup, NSwitch } from 'naive-ui'
 import EditorCollapse from '../common/EditorCollapse.vue'
-import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { t } = useFormBuilderI18n()
 const { createPropsProp, availableFieldNames, selectedField, selectedColumnIndex } = useFormField()
@@ -198,9 +195,6 @@ const searchFieldsCount = computed(() => {
 </script>
 
 <template>
-  <BindEditor :events="NO_EVENTS" />
-  <LabelHelpSection />
-
   <div class="mt-4 mb-2 pt-3 border-t border-border/50 text-xs font-semibold text-foreground">
     {{ t('edits.dataTable.basicGroup') }}
   </div>

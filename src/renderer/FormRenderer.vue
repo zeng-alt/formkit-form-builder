@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { Component, DefineComponent } from 'vue'
-import { computed, provide, ref, watch } from 'vue'
+import { computed, defineComponent, provide, ref, watch } from 'vue'
 import type { FormKitNode, FormKitSchemaFormKit } from '@formkit/core'
 import { createMessage } from '@formkit/core'
 import { FormKit, changeLocale } from '@formkit/vue'
 import FormKitSchemaWrapper from './FormKitSchemaWrapper.vue'
-import { NButton, type ConfigProviderProps } from 'naive-ui'
+import { NButton, useMessage, type ConfigProviderProps, type MessageApi } from 'naive-ui'
 import createFormattedSchema from '@/utils/format-schema'
 import { getPreviewSchemaLibrary } from '@/elements/canvas'
 import { createSchemaProjector } from '@/dsl'
@@ -195,6 +195,18 @@ if (hasOwnConfig) {
 }
 
 const { t } = useFormBuilderI18n()
+
+// B1：提交成功提示（naive-ui message）。n-message-provider 由 BuilderThemeScope
+// 渲染为 Fragment + Teleport（不产生包裹节点），useMessage() 必须在其子组件内调用
+// 才能注入到——这里复用 DataTableContainerPreview.vue 同款的"消息宿主"写法。
+const MessageHost = defineComponent({
+  setup(_, { expose }) {
+    const message = useMessage()
+    expose({ message })
+    return () => null
+  },
+})
+const messageHost = ref<{ message: MessageApi } | null>(null)
 
 const safeClone = <T>(value: T): T => {
   try {
@@ -458,6 +470,39 @@ const validate = async (): Promise<boolean> => {
 
 const loading = ref(false)
 
+// ── B1：表单级设置直接读 definition.settings（与既有的 settings.submit 同一模式），
+//    只在使用 definition 输入通道时生效——裸 schema 通道没有这些设置的来源 ──
+const formSettings = computed(() => props.definition?.settings)
+const resolvedDisabled = computed(() => props.disabled || Boolean(formSettings.value?.disabled))
+const resolvedReadonly = computed(() => Boolean(formSettings.value?.readonly))
+// 禁用 / 只读时隐藏提交与重置按钮（默认操作区；#actions 自定义插槽由使用方自行处理）
+const showActionButtons = computed(() => !resolvedDisabled.value && !resolvedReadonly.value)
+const resolvedShowReset = computed(() => formSettings.value?.showReset !== false)
+
+// 仅允许 http/https 绝对地址或以 / 开头的站内路径，避免 javascript: 等危险协议
+function isSafeRedirectUrl(url: string): boolean {
+  if (!url) return false
+  if (url.startsWith('/')) return true
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+// 提交成功反馈：成功提示 + 成功跳转。放在 handleSubmit 里"未抛错才算成功"的位置调用——
+// settings.submit 自定义逻辑抛错、或后面 emit('submit', ...) 前的流程抛错都不会走到这里。
+function applySubmitSuccess(): void {
+  const settings = formSettings.value
+  const successMessage = settings?.successMessage?.trim()
+  if (successMessage) messageHost.value?.message.success(successMessage)
+  const successRedirect = settings?.successRedirect?.trim()
+  if (successRedirect && isSafeRedirectUrl(successRedirect)) {
+    window.location.href = successRedirect
+  }
+}
+
 // ── 提交：优先执行 settings.submit 自定义逻辑（经 dslToSchema 写入表单节点 props），
 //    再对外触发 submit 事件；异步逻辑期间 loading 置位，驱动操作区按钮 loading 态 ──
 const handleSubmit = async (formData: Record<string, unknown>) => {
@@ -479,15 +524,21 @@ const handleSubmit = async (formData: Record<string, unknown>) => {
       undefined,
       props.http ?? config?.http ?? axios,
     )
+    applySubmitSuccess()
     return
   }
   emit('submit', payload, props.definition?.id, props.definition?.version)
+  applySubmitSuccess()
 }
 
 defineExpose({ submit, reset, validate, loading })
 
-const resolvedSubmitLabel = computed(() => props.submitLabel ?? t('elements.submit.label'))
-const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.label'))
+const resolvedSubmitLabel = computed(
+  () => formSettings.value?.submitText || props.submitLabel || t('elements.submit.label'),
+)
+const resolvedResetLabel = computed(
+  () => formSettings.value?.resetText || props.resetLabel || t('elements.reset.label'),
+)
 </script>
 
 <template>
@@ -501,6 +552,7 @@ const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.
     :inline-theme-disabled="inlineThemeDisabled"
     :preflight-style-disabled="preflightStyleDisabled"
   >
+    <MessageHost ref="messageHost" />
     <div
       v-if="props.schema?.[0]?.name"
       class="flex flex-row items-center justify-center gap-1 px-1 pb-3"
@@ -521,7 +573,7 @@ const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.
       type="form"
       :name="resolvedFormName"
       :actions="false"
-      :disabled="disabled"
+      :disabled="resolvedDisabled"
       :model-value="data"
       @update:model-value="onFormModelValueUpdate"
       @submit="handleSubmit"
@@ -541,10 +593,10 @@ const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.
           :submit="submit"
           :reset="reset"
           :loading="loading"
-          :disabled="disabled"
+          :disabled="resolvedDisabled"
         />
       </template>
-      <template v-else-if="actions">
+      <template v-else-if="actions && showActionButtons">
         <div
           :class="[
             'col-span-12',
@@ -564,13 +616,17 @@ const resolvedResetLabel = computed(() => props.resetLabel ?? t('elements.reset.
             attr-type="submit"
             v-bind="submitAttrs ?? {}"
             :loading="loading"
-            :disabled="disabled"
+            :disabled="resolvedDisabled"
           >
             {{ resolvedSubmitLabel }}
           </NButton>
-          <NButton v-bind="resetAttrs ?? {}" :disabled="disabled" @click="reset">{{
-            resolvedResetLabel
-          }}</NButton>
+          <NButton
+            v-if="resolvedShowReset"
+            v-bind="resetAttrs ?? {}"
+            :disabled="resolvedDisabled"
+            @click="reset"
+            >{{ resolvedResetLabel }}</NButton
+          >
         </div>
       </template>
     </FormKitTyped>

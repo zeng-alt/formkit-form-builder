@@ -65,6 +65,9 @@ export interface ElementCatalogEntry {
   schema: ElementTemplate
   /** 容器元素的数据结构规格（list/card/group/inputGroup/buttonGroup/tabs；字段/静态/纯布局缺省） */
   container?: ContainerSpec
+  /** 右侧面板「事件」分组可绑定的事件 key 列表（取自 elements/definitions/bind-events.ts
+   *  的常量）；缺省或空数组表示该元素不可绑定事件，外层不显示「事件」分组 */
+  bindEvents?: readonly string[]
 }
 
 export interface ElementTypeDef {
@@ -88,6 +91,8 @@ export interface ElementTypeDef {
   editor?: () => Promise<{ default: Component }>
   icon?: string
   tooltipKey?: string
+  /** 见 ElementCatalogEntry.bindEvents，注册时原样透传 */
+  bindEvents?: readonly string[]
 }
 
 const defs = new Map<string, ElementTypeDef>()
@@ -174,6 +179,7 @@ export function elementTypeFromSchema(entry: ElementCatalogEntry): ElementTypeDe
     icon: entry.icon,
     tooltipKey: entry.tooltipKey,
     editor: entry.editor,
+    bindEvents: entry.bindEvents,
     defaults: () => defaultFormNode(entry),
     toSchema: schema.toSchema ?? ((node, ctx) => nodeToSchemaByCategory(node, category, rt, ctx)),
     // 兼容 $formkit === type 与 legacy $cmp 名（如 NaiveTextInput → text）

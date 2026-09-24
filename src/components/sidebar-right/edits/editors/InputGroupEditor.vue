@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import BindEditor from '../BindEditor.vue'
-import LabelHelpSection from '../common/LabelHelpSection.vue'
-import { NO_EVENTS } from '@/elements/definitions/bind-events'
+// inputGroup 无自身专属配置项：名称/列数/标签帮助/逻辑/事件均由外层统一分组渲染。
 </script>
 
 <template>
-  <BindEditor :events="NO_EVENTS" />
-  <LabelHelpSection />
+  <div></div>
 </template>

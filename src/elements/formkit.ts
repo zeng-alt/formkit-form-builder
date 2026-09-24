@@ -28,6 +28,8 @@ import NaiveCascader from '@/components/ui/fields/NaiveCascader.vue'
 import NaiveMention from '@/components/ui/fields/NaiveMention.vue'
 import NaiveAutoComplete from '@/components/ui/fields/NaiveAutoComplete.vue'
 import NaiveRate from '@/components/ui/fields/NaiveRate.vue'
+import RichText from '@/components/ui/fields/RichText.vue'
+import SignaturePad from '@/components/ui/fields/SignaturePad.vue'
 import NaiveSwitch from '@/components/ui/fields/NaiveSwitch.vue'
 import NaiveTreeSelect from '@/components/ui/fields/NaiveTreeSelect.vue'
 import NaiveTransfer from '@/components/ui/fields/NaiveTransfer.vue'
@@ -78,6 +80,8 @@ const formkitBindings: Record<string, FormkitBinding> = {
   naiveMention: { component: NaiveMention, libraryName: 'NaiveMention' },
   naiveAutoComplete: { component: NaiveAutoComplete, libraryName: 'NaiveAutoComplete' },
   naiveRate: { component: NaiveRate, libraryName: 'NaiveRate' },
+  richText: { component: RichText, libraryName: 'RichText' },
+  signature: { component: SignaturePad, libraryName: 'SignaturePad' },
   naiveSwitch: { component: NaiveSwitch, libraryName: 'NaiveSwitch' },
   naiveAvatar: { component: NaiveAvatar, libraryName: 'NaiveAvatar' },
   naiveImage: { component: NaiveImage, libraryName: 'NaiveImage' },

@@ -6,6 +6,7 @@ import { useFormField } from '../../../../composables/form-fields'
 import { parseDynamicSource, useDictionary } from '../../../../composables/use-dictionary'
 import type { DynamicSource } from '../../../../composables/use-dictionary'
 import { useFormBuilderI18n } from '../../../../i18n/context'
+import EditorSection from './EditorSection.vue'
 import EditsLayout from './EditsLayout.vue'
 import JsonTextarea from './JsonTextarea.vue'
 import DictionaryPickerModal from './DictionaryPickerModal.vue'
@@ -301,130 +302,137 @@ const removePairRow = (idx: number) => {
 </script>
 
 <template>
-  <EditsLayout>
-    <label class="text-xs font-medium tracking-wide text-foreground/80 block mb-1">
-      {{ t('edits.optionsSource.title') }}
-    </label>
-    <n-tabs type="segment" size="small" :value="active" @update:value="(v) => switchTab(String(v))">
-      <n-tab-pane
-        v-if="allowedTabs.includes('label')"
-        name="label"
-        :tab="t('edits.optionsSource.tabs.label')"
+  <EditorSection :title="t('edits.sections.options')">
+    <EditsLayout>
+      <label class="text-xs font-medium tracking-wide text-foreground/80 block mb-1">
+        {{ t('edits.optionsSource.title') }}
+      </label>
+      <n-tabs
+        type="segment"
+        size="small"
+        :value="active"
+        @update:value="(v) => switchTab(String(v))"
       >
-        <TagsInput
-          :label="t('edits.optionsSource.labelList')"
-          :placeholder="t('edits.placeholder.addItems')"
-          :value="labels"
-          @update:value="(v) => commitLabel(v)"
-        />
-      </n-tab-pane>
-      <n-tab-pane
-        v-if="allowedTabs.includes('pair')"
-        name="pair"
-        :tab="t('edits.optionsSource.tabs.pair')"
-      >
-        <div class="flex flex-col gap-2">
-          <div v-for="(r, idx) in pairs" :key="idx" class="flex flex-row gap-2 items-center">
-            <n-input
-              size="small"
-              class="flex-1"
-              :placeholder="t('edits.optionsSource.pairLabelPlaceholder')"
-              :value="r.label"
-              @update:value="
-                (v) => {
-                  pairs[idx] = { ...r, label: v }
-                  commitPairs(pairs)
-                }
-              "
-            />
-            <n-input
-              size="small"
-              class="flex-1"
-              :placeholder="t('edits.optionsSource.pairValuePlaceholder')"
-              :value="r.value"
-              @update:value="
-                (v) => {
-                  pairs[idx] = { ...r, value: v }
-                  commitPairs(pairs)
-                }
-              "
-            />
-            <n-button quaternary size="small" @click="removePairRow(idx)" class="!px-2">
-              <span class="i-lucide-trash-2 h-4 w-4"></span>
-            </n-button>
-          </div>
-          <n-button size="small" secondary @click="addPairRow">
-            {{ t('edits.optionsSource.addPairRow') }}
-          </n-button>
-        </div>
-      </n-tab-pane>
-      <n-tab-pane
-        v-if="allowedTabs.includes('json')"
-        name="json"
-        :tab="t('edits.optionsSource.tabs.json')"
-      >
-        <JsonTextarea
-          :label="t('edits.optionsJsonLabel')"
-          placeholder='[{"label":"Option 1","value":"1"}]'
-          :value="jsonDraft"
-          :error="jsonError"
-          @update:value="(v) => commitJson(v)"
-        />
-      </n-tab-pane>
-      <n-tab-pane
-        v-if="allowedTabs.includes('dynamicDict')"
-        name="dynamicDict"
-        :tab="t('edits.optionsSource.tabs.dynamicDict')"
-      >
-        <div class="flex flex-col gap-2">
-          <n-input-group>
-            <n-input
-              size="small"
-              :placeholder="t('edits.optionsSource.dictInputPlaceholder')"
-              :value="dictCode"
-              @update:value="(v) => commitDynamicDict(String(v))"
-            />
-            <n-button size="small" type="primary" secondary @click="pickerShow = true">
-              {{ t('edits.optionsSource.dictBrowse') }}
-            </n-button>
-          </n-input-group>
-          <div v-if="dictLabel" class="text-[11px] text-muted-foreground">
-            {{ dictLabel }}
-          </div>
-          <DictionaryPickerModal
-            :show="pickerShow"
-            @update:show="(v) => (pickerShow = v)"
-            @select="pickDictionary"
+        <n-tab-pane
+          v-if="allowedTabs.includes('label')"
+          name="label"
+          :tab="t('edits.optionsSource.tabs.label')"
+        >
+          <TagsInput
+            :label="t('edits.optionsSource.labelList')"
+            :placeholder="t('edits.placeholder.addItems')"
+            :value="labels"
+            @update:value="(v) => commitLabel(v)"
           />
-        </div>
-      </n-tab-pane>
-      <n-tab-pane
-        v-if="allowedTabs.includes('dynamicTreeDict')"
-        name="dynamicTreeDict"
-        :tab="t('edits.optionsSource.tabs.dynamicTreeDict')"
-      >
-        <div class="flex flex-col gap-2">
-          <n-input-group>
-            <n-input
-              size="small"
-              :placeholder="t('edits.optionsSource.dictInputPlaceholder')"
-              :value="treeDictCode"
-              @update:value="(v) => commitDynamicTreeDict(String(v))"
-            />
-            <n-button size="small" type="primary" secondary @click="treePickerShow = true">
-              {{ t('edits.optionsSource.dictBrowse') }}
+        </n-tab-pane>
+        <n-tab-pane
+          v-if="allowedTabs.includes('pair')"
+          name="pair"
+          :tab="t('edits.optionsSource.tabs.pair')"
+        >
+          <div class="flex flex-col gap-2">
+            <div v-for="(r, idx) in pairs" :key="idx" class="flex flex-row gap-2 items-center">
+              <n-input
+                size="small"
+                class="flex-1"
+                :placeholder="t('edits.optionsSource.pairLabelPlaceholder')"
+                :value="r.label"
+                @update:value="
+                  (v) => {
+                    pairs[idx] = { ...r, label: v }
+                    commitPairs(pairs)
+                  }
+                "
+              />
+              <n-input
+                size="small"
+                class="flex-1"
+                :placeholder="t('edits.optionsSource.pairValuePlaceholder')"
+                :value="r.value"
+                @update:value="
+                  (v) => {
+                    pairs[idx] = { ...r, value: v }
+                    commitPairs(pairs)
+                  }
+                "
+              />
+              <n-button quaternary size="small" @click="removePairRow(idx)" class="!px-2">
+                <span class="i-lucide-trash-2 h-4 w-4"></span>
+              </n-button>
+            </div>
+            <n-button size="small" secondary @click="addPairRow">
+              {{ t('edits.optionsSource.addPairRow') }}
             </n-button>
-          </n-input-group>
-          <div v-if="treeDictLabel" class="text-[11px] text-muted-foreground">
-            {{ treeDictLabel }}
           </div>
-          <TreeDictionaryPickerModal
-            :show="treePickerShow"
-            @update:show="(v) => (treePickerShow = v)"
-            @select="pickTreeDictionary"
+        </n-tab-pane>
+        <n-tab-pane
+          v-if="allowedTabs.includes('json')"
+          name="json"
+          :tab="t('edits.optionsSource.tabs.json')"
+        >
+          <JsonTextarea
+            :label="t('edits.optionsJsonLabel')"
+            placeholder='[{"label":"Option 1","value":"1"}]'
+            :value="jsonDraft"
+            :error="jsonError"
+            @update:value="(v) => commitJson(v)"
           />
-        </div>
-      </n-tab-pane>
-    </n-tabs>
-  </EditsLayout>
+        </n-tab-pane>
+        <n-tab-pane
+          v-if="allowedTabs.includes('dynamicDict')"
+          name="dynamicDict"
+          :tab="t('edits.optionsSource.tabs.dynamicDict')"
+        >
+          <div class="flex flex-col gap-2">
+            <n-input-group>
+              <n-input
+                size="small"
+                :placeholder="t('edits.optionsSource.dictInputPlaceholder')"
+                :value="dictCode"
+                @update:value="(v) => commitDynamicDict(String(v))"
+              />
+              <n-button size="small" type="primary" secondary @click="pickerShow = true">
+                {{ t('edits.optionsSource.dictBrowse') }}
+              </n-button>
+            </n-input-group>
+            <div v-if="dictLabel" class="text-[11px] text-muted-foreground">
+              {{ dictLabel }}
+            </div>
+            <DictionaryPickerModal
+              :show="pickerShow"
+              @update:show="(v) => (pickerShow = v)"
+              @select="pickDictionary"
+            />
+          </div>
+        </n-tab-pane>
+        <n-tab-pane
+          v-if="allowedTabs.includes('dynamicTreeDict')"
+          name="dynamicTreeDict"
+          :tab="t('edits.optionsSource.tabs.dynamicTreeDict')"
+        >
+          <div class="flex flex-col gap-2">
+            <n-input-group>
+              <n-input
+                size="small"
+                :placeholder="t('edits.optionsSource.dictInputPlaceholder')"
+                :value="treeDictCode"
+                @update:value="(v) => commitDynamicTreeDict(String(v))"
+              />
+              <n-button size="small" type="primary" secondary @click="treePickerShow = true">
+                {{ t('edits.optionsSource.dictBrowse') }}
+              </n-button>
+            </n-input-group>
+            <div v-if="treeDictLabel" class="text-[11px] text-muted-foreground">
+              {{ treeDictLabel }}
+            </div>
+            <TreeDictionaryPickerModal
+              :show="treePickerShow"
+              @update:show="(v) => (treePickerShow = v)"
+              @select="pickTreeDictionary"
+            />
+          </div>
+        </n-tab-pane>
+      </n-tabs>
+    </EditsLayout>
+  </EditorSection>
 </template>

@@ -82,6 +82,17 @@ function buildSchema(
       labelPosition: settings.labelAlign === 'left' ? 'left' : 'top',
       labelWidth: settings.labelWidth ?? DEFAULT_LABEL_WIDTH,
       submit: settings.submit,
+      // B1：表单级设置随 schema 带入表单节点 props，供 schemaToDsl 往返读回
+      // （parseFormSettings）——级联渲染本身不依赖这份 schema props，直接读
+      // FormDefinition.settings（见 use-schema-attrs.ts / FormRenderer.vue）
+      size: settings.size,
+      disabled: settings.disabled,
+      readonly: settings.readonly,
+      successMessage: settings.successMessage,
+      successRedirect: settings.successRedirect,
+      showReset: settings.showReset,
+      submitText: settings.submitText,
+      resetText: settings.resetText,
       // id / version 位于 DSL 顶层（非 settings），随 schema 带入表单节点 props，
       // 供 renderer 的 submit 逻辑与字段 bind 代码经 runBindCode 读取
       id: rawForm.id,
@@ -388,6 +399,16 @@ function parseFormSettings(props: unknown): Partial<FormSettings> {
   if (p.labelPosition === 'left' || p.labelPosition === 'top') settings.labelAlign = p.labelPosition
   if (Number.isFinite(Number(p.labelWidth))) settings.labelWidth = Number(p.labelWidth)
   if (typeof p.submit === 'string' && p.submit) settings.submit = p.submit
+  if (p.size === 'small' || p.size === 'medium' || p.size === 'large') settings.size = p.size
+  if (typeof p.disabled === 'boolean') settings.disabled = p.disabled
+  if (typeof p.readonly === 'boolean') settings.readonly = p.readonly
+  if (typeof p.successMessage === 'string' && p.successMessage)
+    settings.successMessage = p.successMessage
+  if (typeof p.successRedirect === 'string' && p.successRedirect)
+    settings.successRedirect = p.successRedirect
+  if (typeof p.showReset === 'boolean') settings.showReset = p.showReset
+  if (typeof p.submitText === 'string' && p.submitText) settings.submitText = p.submitText
+  if (typeof p.resetText === 'string' && p.resetText) settings.resetText = p.resetText
   return settings
 }
 

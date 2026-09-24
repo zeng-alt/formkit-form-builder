@@ -64,3 +64,13 @@ export function useFormDefinition() {
     formMeta,
   }
 }
+
+/** useFormDefinition() 的非抛错版本：子树外（没有 FormBuilder / FormRenderer 提供
+ *  上下文）调用直接返回 null，供一些"能拿到就用、拿不到就按无表单级设置处理"的
+ *  低层渲染工具使用（如 use-schema-attrs.ts 读取表单级 size/disabled/readonly 兜底），
+ *  避免把可选的级联特性写成强依赖，牵连到脱离画布/渲染器上下文的孤立用法。 */
+export function useOptionalFormDefinition(): ReturnType<typeof useFormDefinition> | null {
+  const source = inject(FORM_DEFINITION_KEY, null)
+  if (!source) return null
+  return useFormDefinition()
+}

@@ -15,6 +15,7 @@ import { provideFormBuilderI18n } from '../i18n/context'
 import { provideRuntimeLocale } from '../i18n/runtime-locale'
 import { provideFormBuilderState } from '@/state/create-form-builder-state'
 import { useKeyboardShortcuts } from './composables/use-keyboard-shortcuts'
+import { provideAiPromptFocusRegistry } from './composables/use-ai-prompt-focus'
 import { provideFormDefinition } from '@/composables/use-form-definition'
 import { provideBinderHttp } from '@/composables/use-bind-http'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
@@ -56,6 +57,9 @@ const { formDefinition, setFormDefinition } = state
 // 窄只读上下文：画布内的字段事件绑定 / 数据表格预览等只读消费方，走这条与
 // FormRenderer 共用的接口，不需要拿到完整 FormBuilderState（undo/redo/选中态）。
 provideFormDefinition(formDefinition)
+
+// B3：空画布引导「用 AI 生成」入口聚焦顶栏 AI 输入框，见 use-ai-prompt-focus.ts
+provideAiPromptFocusRegistry()
 
 // H5：键盘快捷键——监听挂在设计器根元素上（模板里的 @keydown），不挂 window，
 // 保证多个设计器实例互不干扰（keydown 会从任意子孙元素冒泡到这个根节点）。
