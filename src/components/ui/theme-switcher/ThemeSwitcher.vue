@@ -22,7 +22,12 @@ const handleSelect = (key: string) => {
 
 <template>
   <n-dropdown trigger="click" :options="options" @select="handleSelect">
-    <n-button secondary circle size="small" class="h-16px w-16px !p-2">
+    <n-button
+      quaternary
+      size="small"
+      aria-label="Theme"
+      class="!h-[36px] !w-[36px] !p-0 !rounded-[10px] border border-solid border-border/70 !bg-card shadow-sm hover:!bg-[#a277ff]/12 active:!scale-95 transition-[transform,background-color] duration-150 dark:border-border/50"
+    >
       <template #icon>
         <div class="relative flex items-center justify-center">
           <span
