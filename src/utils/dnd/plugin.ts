@@ -310,7 +310,9 @@ function moveBetween<T>(data: ParentRecord<T>, state: DragState<T>) {
   const values = data.data.getValues(data.el)
   if (values.length === 0) {
     insertState.draggedOverParent = data as ParentRecord<unknown>
-    addParentClass([data.el], data.data.config.dropZoneClass)
+    // 第三个参数必须为 true：dragover 会连续触发，库的 addClass 发现类名已存在时会把它记成
+    // 「元素自带的私有类」，之后 removeClass 就不再移除它——空画布放下后紫色描边会一直残留
+    addParentClass([data.el], data.data.config.dropZoneClass, true)
     // insertState 是跨画布实例共享的单例，固定为 InsertState<unknown>（不跟随调用方的 T），
     // data 这里按同一约定收窄成 ParentRecord<unknown>，和 insertState.draggedOverParent 的
     // 赋值（上面几行）用的是同一个模式
@@ -383,7 +385,8 @@ function moveOutside<T>(data: ParentRecord<T>, state: DragState<T>) {
         insertState.draggedOverParent.data.config.dropZoneClass,
       )
     }
-    addParentClass([data.el], targetConfig.dropZoneClass)
+    // 同上：重复进入同一个空容器时不能把高亮类记成私有类
+    addParentClass([data.el], targetConfig.dropZoneClass, true)
     insertState.draggedOverParent = data as ParentRecord<unknown>
     const insertPoint = insertState.insertPoint
     if (insertPoint) insertPoint.el.style.display = 'none'

@@ -24,6 +24,11 @@ export default defineConfig({
     }),
     presetRemToPx({ baseFontSize: 16 }),
   ],
+  // 不合并同样声明体的选择器：默认会把 .rounded-xl 和 formkit.theme.ts 里的
+  // [&::-moz-range-track]:rounded-xl 合成一条规则，而浏览器遇到不认识的厂商伪元素
+  // （Chrome 不认 ::-moz-*、Firefox 不认 ::-webkit-*）会丢弃整条规则，
+  // 导致 rounded-xl / rounded-full 等在整个页面失效
+  mergeSelectors: false,
   content: {
     pipeline: {
       // src 下的 .ts/.js 也要扫描（formkit.theme.ts 的主题 class、各组件在 TS 里拼的 class）。

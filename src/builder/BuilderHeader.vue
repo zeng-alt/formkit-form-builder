@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { NButton, NButtonGroup, NTooltip, NPopconfirm, NPopover } from 'naive-ui'
+import { NButton, NTooltip, NPopconfirm, NPopover } from 'naive-ui'
 import { useFormBuilderI18n } from '../i18n/context'
 import BuilderPreview from './BuilderPreview.vue'
 import AiPrompt from '../components/ai-prompt/AiPrompt.vue'
@@ -23,6 +23,13 @@ const clearForm = () => {
 const showPreview = ref(false)
 // B2：顶栏「模板」入口，与空画布引导卡片共用同一个弹窗组件
 const showTemplates = ref(false)
+
+// 顶栏右侧撤销 / 重做 / 历史：与画布浮动工具条同一套图标按钮样式（28px 点击区、紫色悬停）
+// 图标颜色写在图标自身上：naive-ui 的按钮图标容器有自己的颜色变量，按钮上的 text-* 传不进去
+const headerBtnClass =
+  'group !h-[28px] !w-[28px] !p-0 !rounded-[7px] hover:!bg-[#a277ff]/12 active:!scale-95 transition-[transform,background-color] duration-150'
+const headerIconClass =
+  '!h-[16px] !w-[16px] text-muted-foreground group-hover:text-[#a277ff] transition-colors duration-150'
 
 defineSlots<{
   /** 顶栏左侧区（清除 / 预览） */
@@ -104,18 +111,21 @@ defineSlots<{
 
       <div class="flex items-center gap-2 justify-end">
         <slot name="right">
-          <n-button-group class="bg-card shadow-sm rounded-lg border border-border/50">
+          <div
+            class="inline-flex items-center gap-0.5 rounded-[10px] border border-solid border-border/70 bg-card p-[3px] shadow-sm dark:border-border/50"
+          >
             <n-tooltip placement="bottom">
               <template #trigger>
                 <n-button
-                  text
+                  quaternary
                   size="small"
-                  class="h-16px w-16px !p-2"
+                  :class="headerBtnClass"
+                  :aria-label="t('builder.undoTooltip')"
                   :disabled="!canUndo"
                   @click="undo"
                 >
                   <template #icon
-                    ><span class="i-lucide-undo-2 h-16px w-16px dark:text-green-200"></span
+                    ><span :class="['i-lucide-undo-2', headerIconClass]"></span
                   ></template>
                 </n-button>
               </template>
@@ -124,19 +134,21 @@ defineSlots<{
             <n-tooltip placement="bottom">
               <template #trigger>
                 <n-button
-                  text
+                  quaternary
                   size="small"
-                  class="h-16px w-16px !p-2"
+                  :class="headerBtnClass"
+                  :aria-label="t('builder.redoTooltip')"
                   :disabled="!canRedo"
                   @click="redo"
                 >
                   <template #icon
-                    ><span class="i-lucide-redo-2 h-16px w-16px dark:text-green-200"></span
+                    ><span :class="['i-lucide-redo-2', headerIconClass]"></span
                   ></template>
                 </n-button>
               </template>
               {{ t('builder.redoTooltip') }}
             </n-tooltip>
+            <span aria-hidden="true" class="mx-0.5 h-4 w-px bg-border"></span>
             <n-popover
               trigger="click"
               placement="bottom-end"
@@ -148,13 +160,22 @@ defineSlots<{
                 <n-tooltip placement="bottom">
                   <template #trigger>
                     <n-button
-                      text
+                      quaternary
                       size="small"
-                      class="h-16px w-16px !p-2"
+                      :class="[
+                        headerBtnClass,
+                        showHistory ? '!bg-[#a277ff]/12 !text-[#a277ff]' : '',
+                      ]"
                       :aria-label="t('history.entry')"
                     >
                       <template #icon
-                        ><span class="i-lucide-history h-16px w-16px"></span
+                        ><span
+                          :class="[
+                            'i-lucide-history',
+                            headerIconClass,
+                            showHistory ? '!text-[#a277ff]' : '',
+                          ]"
+                        ></span
                       ></template>
                     </n-button>
                   </template>
@@ -163,7 +184,7 @@ defineSlots<{
               </template>
               <HistoryPanel :show="showHistory" />
             </n-popover>
-          </n-button-group>
+          </div>
           <ThemeSwitcher />
         </slot>
       </div>
