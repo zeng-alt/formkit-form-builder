@@ -92,6 +92,105 @@ export function columnsFromChildren(children: SchemaNode[]): DataTableColumn[] {
   })
 }
 
+/** 示例数据的值形态分类：按列来源元素类型（或 render 字符串兜底）归类，
+ *  与 columnKind 分开维护——两者服务的场景不同（columnKind 供只读渲染判断展示形态，
+ *  这里要覆盖到日期/邮箱/链接/电话等更细的文本格式）。类型名以 src/elements 注册表
+ *  里的实际 type 为准（naiveSwitch/naiveRate/naiveDateTime/naiveCascader/naiveTreeSelect）。 */
+type SampleValueKind =
+  | 'switch'
+  | 'rate'
+  | 'color'
+  | 'options'
+  | 'number'
+  | 'date'
+  | 'time'
+  | 'datetime'
+  | 'email'
+  | 'url'
+  | 'phone'
+  | 'text'
+
+function sampleValueKind(type: string): SampleValueKind {
+  if (/switch/i.test(type)) return 'switch'
+  if (/rate/i.test(type)) return 'rate'
+  if (/^color$/i.test(type)) return 'color'
+  if (/(select|radio|checkbox|cascader|tree)/i.test(type)) return 'options'
+  if (/dateTime/i.test(type)) return 'datetime'
+  if (/^date$/i.test(type)) return 'date'
+  if (/^time$/i.test(type)) return 'time'
+  if (/(number|range)/i.test(type)) return 'number'
+  if (/email/i.test(type)) return 'email'
+  if (/^url$/i.test(type)) return 'url'
+  if (/^tel$/i.test(type)) return 'phone'
+  return 'text'
+}
+
+// select/radio/checkbox/cascader/tree 的示例文案：有 options 取第 i 项 label（或字符串
+// 本身），否则回退到 A/B/C。这里不接 i18n（函数需要保持纯——不依赖 t()），中文的
+// “选项 A/B/C”会引入语言分支，直接用字母序列即可，不影响示例数据的展示意图。
+function sampleOptionLabel(element: FieldNode | undefined, i: number): string {
+  const options = (element as unknown as { options?: unknown[] })?.options
+  if (Array.isArray(options) && options.length) {
+    const item = options[i % options.length]
+    if (typeof item === 'string') return item
+    if (item && typeof item === 'object' && typeof (item as any).label === 'string') {
+      return (item as any).label
+    }
+  }
+  return ['A', 'B', 'C'][i % 3]!
+}
+
+const SAMPLE_DATES = ['2026-01-01', '2026-01-02', '2026-01-03']
+const SAMPLE_TIMES = ['09:30', '14:00', '18:45']
+const SAMPLE_NUMBERS = [128, 64, 256]
+const SAMPLE_COLORS = ['#a277ff', '#22c55e', '#f59e0b']
+const SAMPLE_RATES = [3, 4, 5]
+
+function sampleValue(col: DataTableColumn, i: number): unknown {
+  const type = col.element?.type ?? col.render ?? ''
+  switch (sampleValueKind(type)) {
+    case 'switch':
+      return i % 2 === 0
+    case 'rate':
+      return SAMPLE_RATES[i % SAMPLE_RATES.length]
+    case 'color':
+      return SAMPLE_COLORS[i % SAMPLE_COLORS.length]
+    case 'options':
+      return sampleOptionLabel(col.element, i)
+    case 'number':
+      return SAMPLE_NUMBERS[i % SAMPLE_NUMBERS.length]
+    case 'date':
+      return SAMPLE_DATES[i % SAMPLE_DATES.length]
+    case 'time':
+      return SAMPLE_TIMES[i % SAMPLE_TIMES.length]
+    case 'datetime':
+      return `${SAMPLE_DATES[i % SAMPLE_DATES.length]} ${SAMPLE_TIMES[i % SAMPLE_TIMES.length]}`
+    case 'email':
+      return `user${i + 1}@example.com`
+    case 'url':
+      return `https://example.com/${i + 1}`
+    case 'phone':
+      return `138 0000 000${i + 1}`
+    default:
+      return `${col.title} ${i + 1}`
+  }
+}
+
+/** 画布占位示例数据：无真实数据（或远程模式）时按列类型生成 count 行展示用数据，
+ *  纯函数（不读 i18n / 外部状态），供 DataTableContainer 只读渲染使用 */
+export function buildSampleRows(columns: DataTableColumn[], count = 3): Record<string, unknown>[] {
+  const rows: Record<string, unknown>[] = []
+  for (let i = 0; i < count; i++) {
+    const row: Record<string, unknown> = {}
+    for (const col of columns) {
+      if (!col.key) continue
+      row[col.key] = sampleValue(col, i)
+    }
+    rows.push(row)
+  }
+  return rows
+}
+
 /** 归一化远程数据返回：支持数组 / { data, total } / { items, total } / { list, count } */
 export function normalizeRemoteResult(res: unknown): {
   rows: Record<string, unknown>[]

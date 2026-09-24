@@ -10,12 +10,14 @@
 // （findNodeByKey/removeAtPath/insertAfterAtPath）——这些工具本来就支持任意嵌套
 // 深度（容器内部的字段与根级字段用的是同一套 schema 树表示），不需要为"根级"和
 // "容器内"分别写一套逻辑。
-import { findNodeByKey, insertAfterAtPath, removeAtPath } from '@/utils/schema/tree'
+import { findNodeByKey, insertAfterAtPath, removeAtPath, updateAtPath } from '@/utils/schema/tree'
 import { collectSchemaNames, duplicateNode } from '@/utils/dnd/schema'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 import { useFormBuilderI18n } from '@/i18n/context'
+import { getElementTypeBySchema } from '@/elements'
 import type { FormBuilderState } from '@/state/create-form-builder-state'
 import type { FormKitSchemaFormKit } from '@formkit/core'
+import type { DataTableColumn } from '@/components/ui/containers/data-table/types'
 
 // 焦点落在这些元素 / 弹窗里时不响应快捷键，避免打字（改名、输入内容、JS 绑定
 // 代码编辑器等）时被误删/误撤销
@@ -83,6 +85,40 @@ function resolveParentArray(
 // 再走一次注入。
 export function useKeyboardShortcuts(state: FormBuilderState) {
   const { t } = useFormBuilderI18n()
+
+  // 数据表格选中列时优先删该列（列不是树节点，走 props.columns，不走通用的树删除）：
+  // 命中返回 true，未命中（未选中列 / 选中节点不是数据表格）返回 false 交给
+  // deleteSelected 走原逻辑。删除后选中态落到同位置的相邻列，没有列了则清空列选中
+  // （selectedColumnIndex = null）但仍选中该表格。
+  const deleteSelectedColumn = (): boolean => {
+    if (state.selectedTarget.value !== 'field') return false
+    const colIdx = state.selectedColumnIndex.value
+    if (colIdx === null) return false
+    const key = state.selectedKey.value
+    if (!key) return false
+    const schema = state.formSchema.value as SchemaNode[]
+    const found = findNodeByKey(schema, key)
+    if (!found) return false
+    if (getElementTypeBySchema(found.node) !== 'dataTable') return false
+
+    const cols = Array.isArray(found.node.props?.columns)
+      ? [...(found.node.props.columns as DataTableColumn[])]
+      : []
+    if (colIdx < 0 || colIdx >= cols.length) return false
+
+    const nextCols = cols.filter((_, i) => i !== colIdx)
+    const node: SchemaNode = {
+      ...found.node,
+      props: { ...found.node.props, columns: nextCols.length ? nextCols : undefined },
+    }
+    const nextSchema = updateAtPath(schema, found.path, node)
+    state.commitSchemaReconcile(nextSchema as FormKitSchemaFormKit[], {
+      reason: 'delete-column',
+      merge: true,
+    })
+    state.selectedColumnIndex.value = nextCols.length ? Math.min(colIdx, nextCols.length - 1) : null
+    return true
+  }
 
   // 删除当前选中元素（根级或容器内嵌套均可）：删除后选中态回落到同位置的相邻
   // 元素，没有相邻元素时回落到表单设置
@@ -154,6 +190,7 @@ export function useKeyboardShortcuts(state: FormBuilderState) {
 
     if (!mod && (e.key === 'Delete' || e.key === 'Backspace')) {
       e.preventDefault()
+      if (deleteSelectedColumn()) return
       deleteSelected()
       return
     }
