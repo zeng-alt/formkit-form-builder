@@ -1,4 +1,4 @@
-import { computed, ref, unref, watch, type ComputedRef } from 'vue'
+import { computed, ref, toRaw, unref, watch, type ComputedRef } from 'vue'
 import { useDragAndDrop } from '@formkit/drag-and-drop/vue'
 import { parents, setParentValues } from '@formkit/drag-and-drop'
 import { customInsertPlugin } from '@/utils/custom-insert-plugin'
@@ -132,9 +132,14 @@ export function useContainerDragAndDrop<T>(params: {
     })
   })
 
+  // items 是 useDragAndDrop 返回的深层响应式 ref：组件往里追加的新对象（新增列、新增
+  // 搜索字段等）读出来都是 Vue 代理。提交前逐项 toRaw 还原成普通对象——代理一旦进入
+  // 表单定义，开发态深度冻结会冻结代理背后的原始对象，之后经代理读嵌套对象属性（返回
+  // 的是另一个代理）违反 Proxy 不变式直接抛错，整次提交失败（画布本地看得到新列，
+  // 定义里却没有，属性面板按下标也就找不到这一列）。
   const emitUpdate = () => {
     if (syncingFromProps.value) return
-    params.onUpdateModelValue([...items.value])
+    params.onUpdateModelValue(items.value.map((item) => toRaw(item) as T))
   }
 
   return {
