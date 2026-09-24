@@ -8,7 +8,9 @@ import { toCanvasSchemaNode, getCanvasSchemaArray } from '@/utils/canvas-schema'
 import { useSchemaRenderData } from '@/composables/use-schema-render-data'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
 import { useGridSpanResize } from '@/builder/composables/use-grid-span-resize'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
 import CanvasGridItem from './CanvasGridItem.vue'
+import CanvasContextMenu from './CanvasContextMenu.vue'
 
 const props = defineProps<{
   containerRef: Ref<unknown>
@@ -48,6 +50,54 @@ const props = defineProps<{
 }>()
 
 const isDragging = ref(false)
+
+// D1：多选高亮 + D4：画布空白处右键菜单——直接读所属 FormBuilder 实例的选中态，
+// 不需要每个容器组件（card/group/list/...）各自往下传一份 selectedKeys prop
+const builderState = useFormBuilderState()
+const isSelectedKey = (key: string | undefined) =>
+  !!key && (key === props.selectedKey || builderState.selectedKeys.value.includes(key))
+const isSoloSelectedKey = (key: string | undefined) =>
+  !!key && key === props.selectedKey && builderState.selectedKeys.value.length <= 1
+
+// 本容器自身的身份键（根画布没有，为 null）：画布空白处粘贴要落进"这一个容器"，
+// 而不是不管点在哪个容器的空白处都固定粘到根画布末尾。与 utils/dnd/commit.ts 的
+// CONTAINER_KEY_ATTRS 是同一份属性名单（那边不导出，这里按同样的固定集合读一次
+// dataAttrs，不需要引入 DnD 内部模块）。
+const CONTAINER_KEY_ATTRS = [
+  'data-list-key',
+  'data-card-key',
+  'data-input-group-key',
+  'data-button-group-key',
+  'data-badge-key',
+  'data-tabs-key',
+  'data-tabs-pane-key',
+  'data-steps-pane-key',
+  'data-steps-key',
+  'data-group-key',
+  'data-data-table-key',
+  'data-collapse-key',
+] as const
+const ownContainerKey = computed<string | null>(() => {
+  const attrs = props.dataAttrs
+  if (!attrs) return null
+  for (const attr of CONTAINER_KEY_ATTRS) {
+    const v = attrs[attr]
+    if (typeof v === 'string' && v) return v
+  }
+  return null
+})
+
+const blankMenuShow = ref(false)
+const blankMenuPos = ref({ x: 0, y: 0 })
+function onBlankContextMenu(e: MouseEvent) {
+  const target = e.target as HTMLElement | null
+  // 只在真正点在空白处（不是冒泡自某个条目）时触发，条目自己的右键菜单在
+  // CanvasGridItem.vue 里单独处理
+  if (target?.closest('[data-canvas-item]')) return
+  e.preventDefault()
+  blankMenuPos.value = { x: e.clientX, y: e.clientY }
+  blankMenuShow.value = true
+}
 
 const canvasCtx = useCanvasSchemaContext()
 const schemaLibrary = computed(() => canvasCtx?.library)
@@ -283,6 +333,7 @@ const itemKey = (child: FormKitSchemaFormKit, idx: number): string =>
   <div
     :class="['relative w-full flex flex-col flex-1 min-h-0', layout === 'row' ? 'min-w-0' : '']"
     @pointerdown.self="props.onSelectBlank?.()"
+    @contextmenu="onBlankContextMenu"
   >
     <ul
       :ref="props.containerRef"
@@ -315,7 +366,8 @@ const itemKey = (child: FormKitSchemaFormKit, idx: number): string =>
         :item-key="itemKey(child, idx)"
         :child="child"
         :index="idx"
-        :selected="!!child?.__key && child.__key === props.selectedKey"
+        :selected="isSelectedKey(child?.__key)"
+        :solo-selected="isSoloSelectedKey(child?.__key)"
         :resizing="resizingIndex === idx"
         :dragging="isDragging"
         :drag-enabled="dragEnabled"
@@ -407,6 +459,15 @@ const itemKey = (child: FormKitSchemaFormKit, idx: number): string =>
         </div>
       </slot>
     </div>
+
+    <!-- D4：画布空白处右键菜单（粘贴 / 全选根级元素） -->
+    <CanvasContextMenu
+      v-model:show="blankMenuShow"
+      :x="blankMenuPos.x"
+      :y="blankMenuPos.y"
+      :target-keys="[]"
+      :blank-target-key="ownContainerKey"
+    />
   </div>
 </template>
 

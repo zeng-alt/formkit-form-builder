@@ -5,9 +5,14 @@ import FormEditMain from './FormEditMain.vue'
 import { createFieldProps } from '@/elements'
 import { useFormField } from '../../composables/form-fields'
 import { useFormBuilderI18n } from '../../i18n/context'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
 
 const { currentFieldType, selectedIsForm, formName, selectedColumn } = useFormField()
 const { t } = useFormBuilderI18n()
+const { selectedKeys } = useFormBuilderState()
+// 画布多选时顶栏显示批量操作，而不是最后点中的那个元素的类型
+const multiCount = computed(() => selectedKeys.value.length)
+const isMulti = computed(() => multiCount.value > 1)
 const fieldProps = computed(() => createFieldProps(t))
 const currentProp = computed(() =>
   fieldProps.value.find((prop) => prop.name === currentFieldType.value),
@@ -19,18 +24,21 @@ const columnTitle = computed(() => {
 })
 
 const headerTitle = computed(() => {
+  if (isMulti.value) return t('builder.commands.batchHeader')
   if (selectedColumn.value) return t('edits.dataTable.column')
   if (selectedIsForm.value) return t('formSettings.title')
   return currentProp.value?.tooltip ?? ''
 })
 
 const headerSubtitle = computed(() => {
+  if (isMulti.value) return t('builder.commands.batchSelected', { count: multiCount.value })
   if (selectedColumn.value) return columnTitle.value
   if (selectedIsForm.value) return formName.value
   return currentFieldType.value ?? ''
 })
 
 const headerIcon = computed(() => {
+  if (isMulti.value) return 'i-lucide-layers'
   if (selectedColumn.value) return 'i-lucide-columns-3'
   if (selectedIsForm.value) return 'i-lucide-panel-top'
   return currentProp.value?.icon ?? ''

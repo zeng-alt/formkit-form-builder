@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { NButton, NButtonGroup, NTooltip, NPopconfirm } from 'naive-ui'
+import { NButton, NButtonGroup, NTooltip, NPopconfirm, NPopover } from 'naive-ui'
 import { useFormBuilderI18n } from '../i18n/context'
 import BuilderPreview from './BuilderPreview.vue'
 import AiPrompt from '../components/ai-prompt/AiPrompt.vue'
 import ThemeSwitcher from '../components/ui/theme-switcher/ThemeSwitcher.vue'
 import TemplatePickerModal from '@/templates/TemplatePickerModal.vue'
+import HistoryPanel from './HistoryPanel.vue'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormBuilderConfig } from '@/composables/use-config'
 
@@ -13,6 +14,8 @@ const config = useFormBuilderConfig()
 // 所属 FormBuilder 实例状态：undo/redo / 清空提交绑定到各自实例。
 const { canRedo, canUndo, commitSchema, redo, undo } = useFormBuilderState()
 const { t } = useFormBuilderI18n()
+// E2：顶栏「历史」入口，弹出面板列出 historyEntries，点击跳转（state.jumpTo）。
+const showHistory = ref(false)
 
 const clearForm = () => {
   commitSchema([], { reason: 'clear' })
@@ -134,6 +137,32 @@ defineSlots<{
               </template>
               {{ t('builder.redoTooltip') }}
             </n-tooltip>
+            <n-popover
+              trigger="click"
+              placement="bottom-end"
+              :show="showHistory"
+              style="padding: 0"
+              @update:show="(v: boolean) => (showHistory = v)"
+            >
+              <template #trigger>
+                <n-tooltip placement="bottom">
+                  <template #trigger>
+                    <n-button
+                      text
+                      size="small"
+                      class="h-16px w-16px !p-2"
+                      :aria-label="t('history.entry')"
+                    >
+                      <template #icon
+                        ><span class="i-lucide-history h-16px w-16px"></span
+                      ></template>
+                    </n-button>
+                  </template>
+                  {{ t('history.entry') }}
+                </n-tooltip>
+              </template>
+              <HistoryPanel :show="showHistory" />
+            </n-popover>
           </n-button-group>
           <ThemeSwitcher />
         </slot>

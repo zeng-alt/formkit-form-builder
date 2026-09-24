@@ -8,7 +8,9 @@ import CustomAttrsSection from './edits/common/CustomAttrsSection.vue'
 import ExpressionEditor from './edits/ExpressionEditor.vue'
 import IfConditionEditor from './edits/IfConditionEditor.vue'
 import BindEditor from './edits/BindEditor.vue'
+import BatchSelectionPanel from './edits/BatchSelectionPanel.vue'
 import { useFormBuilderI18n } from '../../i18n/context'
+import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { getElementTypeDef } from '@/dsl'
 import { getContainerSpec } from '@/elements/container-spec'
 import FormEditor from './edits/editors/FormEditor.vue'
@@ -16,6 +18,9 @@ import DataTableColumnEditor from './edits/editors/DataTableColumnEditor.vue'
 
 const { hasField, currentFieldType, selectedIsForm, selectedColumn } = useFormField()
 const { t } = useFormBuilderI18n()
+// D1：多选时右侧面板只显示批量操作，不显示单个元素的属性
+const { selectedKeys } = useFormBuilderState()
+const isBatchSelection = computed(() => selectedKeys.value.length > 1)
 
 // 不存值的容器（数据表格、按钮组、徽标）没有可校验的值，不显示校验规则
 const hasValidation = computed(
@@ -42,7 +47,8 @@ const hasEvents = computed(() => bindEvents.value.length > 0)
 <template>
   <div class="p-2">
     <div class="space-y-2 md:space-y-3">
-      <DataTableColumnEditor v-if="selectedColumn" />
+      <BatchSelectionPanel v-if="isBatchSelection" />
+      <DataTableColumnEditor v-else-if="selectedColumn" />
       <FormEditor v-else-if="!hasField || selectedIsForm" />
       <template v-else>
         <EditsSection />
