@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { NDivider } from 'naive-ui'
 import ValidationSection from './validations/ValidationSection.vue'
 import { useFormField } from '../../composables/form-fields'
 import EditsSection from './edits/EditsSection.vue'
 import ExpressionEditor from './edits/ExpressionEditor.vue'
 import IfConditionEditor from './edits/IfConditionEditor.vue'
 import { getElementTypeDef } from '@/dsl'
+import { getContainerSpec } from '@/elements/container-spec'
 import FormEditor from './edits/editors/FormEditor.vue'
 import DataTableColumnEditor from './edits/editors/DataTableColumnEditor.vue'
 
 const { hasField, currentFieldType, selectedIsForm, selectedColumn } = useFormField()
+
+// 不存值的容器（数据表格、按钮组、徽标）没有可校验的值，不显示校验规则
+const hasValidation = computed(
+  () => getContainerSpec(currentFieldType.value ?? undefined)?.dataShape !== 'none',
+)
 
 const isFieldsCategory = computed(() => {
   if (selectedIsForm.value) return false
@@ -29,8 +34,7 @@ const isFieldsCategory = computed(() => {
         <ExpressionEditor v-if="isFieldsCategory" />
         <IfConditionEditor />
         <EditsSection />
-        <n-divider />
-        <ValidationSection />
+        <ValidationSection v-if="hasValidation" />
       </template>
     </div>
   </div>

@@ -14,15 +14,8 @@ import JsCodeEditor from '../common/JsCodeEditor.vue'
 import DataTableColumnList from './DataTableColumnList.vue'
 import type { DataTableColumn } from '@/components/ui/containers/data-table/types'
 import DataTableDataGridModal from '@/components/ui/containers/data-table/DataTableDataGridModal.vue'
-import {
-  NButton,
-  NCollapse,
-  NCollapseItem,
-  NModal,
-  NRadioButton,
-  NRadioGroup,
-  NSwitch,
-} from 'naive-ui'
+import { NButton, NModal, NRadioButton, NRadioGroup, NSwitch } from 'naive-ui'
+import EditorCollapse from '../common/EditorCollapse.vue'
 import { NO_EVENTS } from '@/elements/definitions/bind-events'
 
 const { t } = useFormBuilderI18n()
@@ -392,36 +385,23 @@ const searchFieldsCount = computed(() => {
     {{ t('edits.dataTable.searchFieldsHint', { count: searchFieldsCount }) }}
   </div>
 
-  <n-collapse class="mt-4">
-    <n-collapse-item name="advanced">
-      <template #header>
-        <span class="text-[11px] font-medium text-foreground/80">
-          {{ t('edits.dataTable.advancedGroup') }}
-        </span>
-      </template>
-      <template #arrow="{ collapsed }">
-        <span
-          :class="collapsed ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
-          class="h-3 w-3 text-muted-foreground/70 transition-[transform] duration-150"
-        ></span>
-      </template>
-      <div class="space-y-2 pt-1">
-        <JsonTextarea
-          :label="t('edits.dataTable.columns')"
-          :placeholder="t('edits.dataTable.columnsPlaceholder')"
-          :value="columnsModel"
-          :error="columnsError"
-          @update:value="(v) => (columnsModel = v)"
-        />
-        <JsonTextarea
-          v-if="!remote"
-          :label="t('edits.dataTable.data')"
-          :placeholder="t('edits.dataTable.dataPlaceholder')"
-          :value="dataModel"
-          :error="dataError"
-          @update:value="(v) => (dataModel = v)"
-        />
-      </div>
-    </n-collapse-item>
-  </n-collapse>
+  <EditorCollapse name="advanced" :title="t('edits.dataTable.advancedGroup')">
+    <div class="space-y-2">
+      <JsonTextarea
+        :label="t('edits.dataTable.columns')"
+        :placeholder="t('edits.dataTable.columnsPlaceholder')"
+        :value="columnsModel"
+        :error="columnsError"
+        @update:value="(v) => (columnsModel = v)"
+      />
+      <JsonTextarea
+        v-if="!remote"
+        :label="t('edits.dataTable.data')"
+        :placeholder="t('edits.dataTable.dataPlaceholder')"
+        :value="dataModel"
+        :error="dataError"
+        @update:value="(v) => (dataModel = v)"
+      />
+    </div>
+  </EditorCollapse>
 </template>
