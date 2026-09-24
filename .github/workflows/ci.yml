@@ -56,3 +56,26 @@ jobs:
       # 只跑构建（不含 type-check，因为上面已经单独跑过），验证产物能正常打包
       - name: 构建产物
         run: pnpm build-only
+
+      # e2e 冒烟测试用的 chromium：CI 跑在全新容器里，本机预置的 /opt/pw-browsers
+      # 那份不存在，这里按 @playwright/test 声明的版本正常下载；--with-deps 顺带装好
+      # 系统依赖库，避免容器缺库导致浏览器起不来
+      - name: 安装 Playwright 浏览器
+        run: pnpm exec playwright install --with-deps chromium
+
+      # e2e 冒烟测试：playwright.config.ts 的 webServer 会自己起一个 5299 端口的
+      # vite 实例（CI=true 时不复用已有服务），跑完自动关闭
+      - name: 运行 e2e 冒烟测试
+        run: pnpm test:e2e
+        env:
+          CI: true
+
+      # 失败时把 HTML 报告（含 trace / 截图）传成 artifact，方便下载排查；
+      # 平时不需要上传，只在失败时留证据
+      - name: 上传 Playwright 报告
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

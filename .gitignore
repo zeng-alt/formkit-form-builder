@@ -44,6 +44,12 @@ yarn.lock
 # Vitest
 __screenshots__/
 
+# Playwright（e2e 冒烟测试产物：报告、trace、失败截图）
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # Debug/test scripts
 scripts/
 
