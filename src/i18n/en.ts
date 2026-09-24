@@ -79,6 +79,7 @@ export default {
     // Data table canvas (DataTableContainer) copy
     dataTableCanvas: {
       searchDragHint: 'Drag fields here, or',
+      searchZoneLabel: 'search area',
       addSearchCondition: 'Add search condition',
       addConditionShort: 'Condition',
       columnMoveLeft: 'Move left',
@@ -123,6 +124,7 @@ export default {
       stepsExclusive: 'A step wizard already exists — drop inside a step instead',
       noNestedSteps: "Steps can't be nested inside another step",
       singleChildOnly: 'This container only holds a single element',
+      searchFieldsOnly: 'The search area only accepts fields',
     },
   },
   importExport: {

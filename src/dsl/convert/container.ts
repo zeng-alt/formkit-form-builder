@@ -28,6 +28,8 @@ export const CONTAINER_INTERNAL_PROPS = new Set([
   'badgeKey',
   'tabsKey',
   'stepsKey',
+  'groupKey',
+  'dataTableKey',
   'modelValue',
   'label',
   'title',
