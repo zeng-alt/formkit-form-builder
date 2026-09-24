@@ -52,7 +52,7 @@ const modelValue = computed(() => {
   <div class="w-full rounded-md" :class="bordered ? 'border border-solid border-input' : ''">
     <button
       type="button"
-      class="w-full border-0 bg-transparent p-0 text-left"
+      class="w-full border-0 bg-transparent p-0 text-left text-inherit [font-family:inherit]"
       :class="disableCollapse ? 'cursor-default' : 'cursor-pointer'"
       :disabled="disableCollapse || disabled"
       :aria-expanded="expanded"
