@@ -4,7 +4,7 @@
 // 弹窗现在保存前会用外层 FormKit 表单校验各单元格，不通过则不保存、不关弹窗。
 // 组件内部依赖 useFormDefinition() 的表单定义上下文（真实渲染树里由 FormRenderer
 // provide），这里用一个宿主组件补上，同 data-table-data-grid-modal.test.ts 的做法。
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick } from 'vue'
 import { plugin as formkitPlugin } from '@formkit/vue'
@@ -80,22 +80,21 @@ describe('DataTableContainerPreview：新增数据弹窗保存前校验', () => 
 
     // 不填姓名直接保存：不通过校验，不写入数据；必填提示随之出现（提示文案带字段 label）
     findByText('button', '保存')!.click()
-    await settle()
-    expect(document.body.textContent).toContain('姓名')
+    // 必填提示出现（表头本来就有「姓名」，这里断言提示文案本身）
+    await vi.waitFor(() => expect(document.body.textContent).toContain('不得留空'))
     expect(document.body.textContent).not.toContain('李四')
 
     const nameInput = document.querySelector('input') as HTMLInputElement
     nameInput.value = '李四'
     nameInput.dispatchEvent(new Event('input'))
-    // FormKit node.input() 内部有微任务/防抖提交，等一次真实宏任务
-    await new Promise((r) => setTimeout(r, 30))
-    await settle()
+    // FormKit 的输入有防抖、校验是异步的：等到必填提示消失（值已落到节点并通过校验）
+    // 再保存，不用固定时长——CI 机器慢时固定等待不够
+    await vi.waitFor(() => expect(document.body.textContent).not.toContain('不得留空'))
 
     findByText('button', '保存')!.click()
-    await settle()
 
     // 数据行写入表格（渲染成只读单元格文本）
-    expect(document.body.textContent).toContain('李四')
+    await vi.waitFor(() => expect(document.body.textContent).toContain('李四'))
 
     wrapper.unmount()
   })

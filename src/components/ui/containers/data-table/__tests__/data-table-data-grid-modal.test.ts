@@ -3,7 +3,7 @@
 // n-modal 默认把内容 Teleport 到 document.body，挂载后的交互元素不在 wrapper 的
 // DOM 子树里（同 data-table-add-column.test.ts），这里统一用 document.querySelector
 // 系列直接操作真实 DOM，再用 wrapper.emitted() 校验组件对外发出的事件。
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { plugin as formkitPlugin } from '@formkit/vue'
@@ -182,22 +182,19 @@ describe('DataTableDataGridModal：保存前按列校验', () => {
     await settle()
 
     click('[data-testid="dt-grid-save"]')
-    await settle()
+    // 必填提示出现（表头本来就有「姓名」，这里断言提示文案本身），且没有 emit save
+    await vi.waitFor(() => expect(document.body.textContent).toContain('不得留空'))
     expect(modal.emitted('save')).toBeFalsy()
-    // 必填提示随之出现
-    expect(document.body.textContent).toContain('姓名')
 
     const nameInput = rowEls()[0]!.querySelector('input') as HTMLInputElement
     nameInput.value = '张三'
     nameInput.dispatchEvent(new Event('input'))
-    // FormKit 的 node.input() 内部有微任务/防抖提交，settle() 的 nextTick 不足以等到
-    // 值真正落到 node 上，这里让一次真实的宏任务过去
-    await new Promise((r) => setTimeout(r, 30))
-    await settle()
+    // FormKit 的输入有防抖、校验是异步的：等到必填提示消失（值已落到节点并通过校验）
+    // 再保存，不用固定时长——CI 机器慢时固定等待不够
+    await vi.waitFor(() => expect(document.body.textContent).not.toContain('不得留空'))
 
     click('[data-testid="dt-grid-save"]')
-    await settle()
-    expect(modal.emitted('save')).toBeTruthy()
+    await vi.waitFor(() => expect(modal.emitted('save')).toBeTruthy())
     const rows = modal.emitted('save')![0]![0] as Record<string, unknown>[]
     expect(rows[0]!.name).toBe('张三')
     // 内部用的行标识不进入落盘数据
