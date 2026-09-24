@@ -64,6 +64,23 @@ describe('数据表格画布', () => {
     document.body.innerHTML = ''
   })
 
+  // 空搜索区也必须是可接收拖放的容器：带 data-data-table-key 让拖放提交能找到所属表格，
+  // 否则拖入的字段会从来源处移除却写不进表格
+  it('搜索区为空时也渲染拖放容器，并带所属表格的 key', async () => {
+    const wrapper = mount(BuilderMain, {
+      props: { modelValue: buildDefinition() },
+      global: { plugins: [[formkitPlugin, formkitDefaultConfig]] },
+    })
+    await settle()
+
+    const zone = wrapper.find('[data-testid="data-table-search-zone"]')
+    expect(zone.exists()).toBe(true)
+    expect(zone.attributes('data-data-table-key')).toBe('table1')
+    expect(zone.findAll('[data-canvas-item="true"]')).toHaveLength(0)
+
+    wrapper.unmount()
+  })
+
   it('选中列后按 Backspace：删除该列而不是整个表格', async () => {
     const wrapper = mount(BuilderMain, {
       props: { modelValue: buildDefinition() },

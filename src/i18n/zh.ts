@@ -78,6 +78,7 @@ export default {
     // 数据表格画布（DataTableContainer）文案
     dataTableCanvas: {
       searchDragHint: '拖入字段，或',
+      searchZoneLabel: '搜索区',
       addSearchCondition: '添加搜索条件',
       addConditionShort: '条件',
       columnMoveLeft: '左移',
@@ -121,6 +122,7 @@ export default {
       stepsExclusive: '已有步骤条，请拖入步骤内',
       noNestedSteps: '步骤内不能再放步骤向导',
       singleChildOnly: '该容器只能容纳一个元素',
+      searchFieldsOnly: '搜索区只能放字段',
     },
   },
   importExport: {

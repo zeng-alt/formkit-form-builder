@@ -56,20 +56,31 @@ function normalizeInputGroupChildren(children: FormKitSchemaFormKit[]) {
   return list.map((child) => stripInputGroupOuterClass(child))
 }
 
+// 容器 drop-zone 用来标识所属节点 __key 的属性：提交时按这些属性找出所有容器，把各自
+// 的最新子节点写回对应节点。新增接收画布字段的容器必须在这里登记，否则拖入时字段会
+// 从来源处移除却写不进目标（目标找不到）。
+const CONTAINER_KEY_ATTRS = [
+  'data-list-key',
+  'data-card-key',
+  'data-input-group-key',
+  'data-button-group-key',
+  'data-badge-key',
+  'data-tabs-key',
+  'data-tabs-pane-key',
+  'data-steps-pane-key',
+  'data-steps-key',
+  'data-group-key',
+  'data-data-table-key',
+] as const
+const CONTAINER_KEY_SELECTOR = CONTAINER_KEY_ATTRS.map((a) => `[${a}]`).join(',')
+
 function getContainerKey(el: HTMLElement | null | undefined): string | null {
   if (!el) return null
-  const raw =
-    el.getAttribute('data-list-key') ||
-    el.getAttribute('data-card-key') ||
-    el.getAttribute('data-input-group-key') ||
-    el.getAttribute('data-button-group-key') ||
-    el.getAttribute('data-badge-key') ||
-    el.getAttribute('data-tabs-key') ||
-    el.getAttribute('data-tabs-pane-key') ||
-    el.getAttribute('data-steps-pane-key') ||
-    el.getAttribute('data-steps-key') ||
-    el.getAttribute('data-group-key')
-  return raw && raw.trim() ? raw : null
+  for (const attr of CONTAINER_KEY_ATTRS) {
+    const raw = el.getAttribute(attr)
+    if (raw && raw.trim()) return raw
+  }
+  return null
 }
 
 /** 是否为根 drop-area（画布根，steps 向导仅允许落在这里） */
@@ -551,11 +562,7 @@ export function handleEnd(
   if (rootEl === targetParent.el && targetNextValues) rootValues = targetNextValues
 
   const listMap = new Map<string, SchemaNode[]>()
-  const listEls = Array.from(
-    rootEl.querySelectorAll<HTMLElement>(
-      '[data-list-key],[data-card-key],[data-input-group-key],[data-button-group-key],[data-badge-key],[data-tabs-key],[data-tabs-pane-key],[data-steps-key],[data-steps-pane-key],[data-group-key]',
-    ),
-  )
+  const listEls = Array.from(rootEl.querySelectorAll<HTMLElement>(CONTAINER_KEY_SELECTOR))
   for (const el of listEls) {
     const key = getContainerKey(el)
     if (!key) continue

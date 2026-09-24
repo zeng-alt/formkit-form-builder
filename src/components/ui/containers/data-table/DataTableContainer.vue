@@ -6,7 +6,7 @@ import { useFormBuilderI18n } from '@/i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useContainerDragAndDrop } from '@/builder/composables/use-container-drag-and-drop'
 import { useCanvasSchemaContext } from '@/builder/composables/canvas-schema-context'
-import { createDefaultFormElements, getElementTypeBySchema } from '@/elements'
+import { createDefaultFormElements, getElementDefinition, getElementTypeBySchema } from '@/elements'
 import { columnIcon, createColumn, duplicateColumn } from './column-factory'
 import { buildSampleRows, columnsFromChildren, toPageSize, toRowKey } from './utils'
 import DataTableCellRenderer from './DataTableCellRenderer.vue'
@@ -74,10 +74,19 @@ function commitSearch(value: FormKitSchemaFormKit[]) {
   }
 }
 
+// 搜索条件只能是字段元素（与字段选择器列出的类型一致）：容器、静态文本、按钮等拒收
+const isFieldNode = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') return false
+  const type = getElementTypeBySchema(value as FormKitSchemaFormKit)
+  return !!type && getElementDefinition(type)?.category === 'field'
+}
+
 const dndSearch = useContainerDragAndDrop<FormKitSchemaFormKit>({
   modelValue: searchItems,
   onUpdateModelValue: commitSearch,
-  containerLabel: () => t('elements.dataTable.name'),
+  accepts: isFieldNode,
+  containerLabel: () => t('builder.dataTableCanvas.searchZoneLabel'),
+  describeRejection: () => t('dnd.reason.searchFieldsOnly'),
 })
 
 // 追加一个搜索字段到 children（复用调色板默认字段 schema）
@@ -139,9 +148,18 @@ function patchColumns(next: DataTableColumn[]) {
   canvasCtx.updateNodePropsByKey(k, { columns: next.length ? next : undefined })
 }
 
+// 列区与画布字段同属一个拖放组：只接受列对象（只在表头内部排序），画布字段 / 调色板
+// 元素（带 $formkit / $cmp / $el 的 schema 节点）拖到表头上时拒收，避免被当成列写进 columns
+const isColumnValue = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') return false
+  const v = value as Record<string, unknown>
+  return typeof v.key === 'string' && !('$formkit' in v) && !('$cmp' in v) && !('$el' in v)
+}
+
 const dndColumns = useContainerDragAndDrop<DataTableColumn>({
   modelValue: columnItems,
   onUpdateModelValue: patchColumns,
+  accepts: isColumnValue,
 })
 
 const childColumns = computed(() => dndColumns.items.value)
@@ -379,14 +397,22 @@ const bottomLabel = computed(() => {
 
     <!-- 搜索区（容器 children）：拖入字段即搜索条件 -->
     <div class="border-b border-border/50 px-3 py-2">
-      <div v-if="searchItems.length" class="flex items-start gap-2">
+      <!-- 拖放容器始终渲染（空状态也要能接住拖入的字段）；空时本身显示为虚线提示条 -->
+      <div class="flex items-start gap-2">
         <div
           :ref="dndSearch.containerRef"
+          data-testid="data-table-search-zone"
+          :data-data-table-key="props.dataTableKey"
+          @dragover.capture="dndSearch.setNestedParentOnRoot(true)"
+          @dragend.capture="dndSearch.setNestedParentOnRoot(false)"
+          @drop="dndSearch.setNestedParentOnRoot(false)"
           :class="[
             'flex-1 min-w-0 items-center gap-2',
-            searchExpanded
-              ? 'flex flex-wrap'
-              : 'flex flex-nowrap overflow-x-auto thin-scrollbar pb-1',
+            searchItems.length === 0
+              ? 'flex justify-center min-h-[32px] rounded-md border border-dashed border-border/60'
+              : searchExpanded
+                ? 'flex flex-wrap'
+                : 'flex flex-nowrap overflow-x-auto thin-scrollbar pb-1',
           ]"
         >
           <div
@@ -424,8 +450,34 @@ const bottomLabel = computed(() => {
             </n-button>
           </div>
 
+          <!-- 空状态提示：非数据子元素（不带 data-canvas-item），放在条件之后 -->
+          <div
+            v-if="searchItems.length === 0"
+            class="flex items-center gap-1.5 text-[11px] text-muted-foreground"
+          >
+            <span>{{ t('builder.dataTableCanvas.searchDragHint') }}</span>
+            <n-popover
+              trigger="click"
+              placement="bottom"
+              :show="showSearchPicker"
+              @update:show="(v) => (showSearchPicker = v)"
+            >
+              <template #trigger>
+                <button
+                  type="button"
+                  class="flex items-center gap-1 text-[#a277ff] hover:underline border-0 bg-transparent p-0 cursor-pointer"
+                >
+                  <span class="i-lucide-plus h-3 w-3"></span>
+                  {{ t('builder.dataTableCanvas.addSearchCondition') }}
+                </button>
+              </template>
+              <DataTableFieldPicker @pick="onPickSearchField" />
+            </n-popover>
+          </div>
+
           <!-- 表格（本组件整体）悬停时才显示的「+ 条件」幽灵按钮，追加在条件末尾 -->
           <n-popover
+            v-else
             trigger="click"
             placement="bottom-start"
             :show="showSearchPicker"
@@ -445,7 +497,7 @@ const bottomLabel = computed(() => {
         </div>
 
         <!-- 与运行时一致：重置（默认）在前、搜索（主按钮）在后；画布上仅展示 -->
-        <div class="flex items-center gap-1 shrink-0">
+        <div v-if="searchItems.length" class="flex items-center gap-1 shrink-0">
           <n-button size="small">
             <template #icon><span class="i-lucide-rotate-ccw h-3.5 w-3.5"></span></template>
             {{ t('builder.dataTableReset') }}
@@ -473,30 +525,6 @@ const bottomLabel = computed(() => {
             {{ searchExpanded ? t('builder.dataTableCollapse') : t('builder.dataTableExpand') }}
           </n-button>
         </div>
-      </div>
-
-      <div
-        v-else
-        class="min-h-[28px] w-full rounded-md border border-dashed border-border/60 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground"
-      >
-        <span>{{ t('builder.dataTableCanvas.searchDragHint') }}</span>
-        <n-popover
-          trigger="click"
-          placement="bottom"
-          :show="showSearchPicker"
-          @update:show="(v) => (showSearchPicker = v)"
-        >
-          <template #trigger>
-            <button
-              type="button"
-              class="flex items-center gap-1 text-[#a277ff] hover:underline border-0 bg-transparent p-0 cursor-pointer"
-            >
-              <span class="i-lucide-plus h-3 w-3"></span>
-              {{ t('builder.dataTableCanvas.addSearchCondition') }}
-            </button>
-          </template>
-          <DataTableFieldPicker @pick="onPickSearchField" />
-        </n-popover>
       </div>
     </div>
 
