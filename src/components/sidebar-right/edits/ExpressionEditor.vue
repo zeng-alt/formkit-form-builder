@@ -5,15 +5,11 @@ import { useFormField } from '../../../composables/form-fields'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormBuilderI18n } from '../../../i18n/context'
 import ExprEditModal from './common/ExprEditModal.vue'
+import { isUnparsedExpr, parseExprString } from '@/dsl'
 
 const { selectedIndex, selectedKey, elementEditTarget } = useFormBuilderState()
-const {
-  availableFields,
-  useExpressionValue,
-  valueExpression,
-  fieldValue,
-  fieldName,
-} = useFormField()
+const { availableFields, useExpressionValue, valueExpression, fieldValue, fieldName } =
+  useFormField()
 const { t } = useFormBuilderI18n()
 
 // 表达式编辑器不提示字段自身（自引用会死循环）
@@ -73,6 +69,12 @@ function handleSave(value: string) {
   valueExpression.value = value
   modalOpen.value = false
 }
+
+// 内置语法解析不了的表达式运行时算不出结果（静默失败），在面板上直接提示
+const unparsed = computed(() => {
+  const text = expressionDraft.value.trim()
+  return text !== '' && text !== '$' && isUnparsedExpr(parseExprString(text))
+})
 </script>
 
 <template>
@@ -95,6 +97,12 @@ function handleSave(value: string) {
       <n-button size="tiny" @click="openModal">
         <span class="i-lucide-pencil h-3.5 w-3.5" />
       </n-button>
+    </div>
+    <div
+      v-if="isExpression && unparsed"
+      class="text-[11px] leading-snug text-red-500 dark:text-red-400"
+    >
+      {{ t('expression.parseError') }}
     </div>
 
     <ExprEditModal

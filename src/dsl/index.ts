@@ -24,6 +24,7 @@ export {
   LOCALE_TIME_ZONES,
 } from './expr-env'
 export { exprToJs } from './compile'
+export { exprToSource, isUnparsedExpr } from './expr-source'
 export { EXPR_HELPER_PREFIX, EXPR_SCHEMA_HELPERS } from './expr-schema-helpers'
 export { evalExpr } from './eval'
 export { parseExprString } from './convert'

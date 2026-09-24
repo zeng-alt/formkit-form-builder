@@ -158,10 +158,14 @@ export default {
     useExpressionValue: '使用表达式值',
     placeholder: '例如：$my_variable + 1',
     variablesNotFound: '未找到变量：{vars}',
+    parseError:
+      '无法解析这个表达式，运行时不会计算。字段写成 $字段名，字符串用英文或中文引号包裹，例如：$name + "先生"',
   },
   condition: {
     useIf: '条件渲染（if）',
     placeholder: '例如：$other == "yes" && $age >= 18',
+    parseWarning:
+      '内置语法无法解析这个条件，将原样交给 FormKit 求值；如果不是 FormKit 写法，请检查字段名、引号和括号',
   },
   ai: {
     tooltip: 'AI 助手',
