@@ -32,9 +32,31 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return false
 }
 
-// 画布条目里 FormKit 字段的预览控件（不含标了 data-canvas-edit 的画布内编辑框）
-function isCanvasPreviewControl(target: EventTarget | null): boolean {
+// 真正接收文字输入的元素：Backspace/Delete/Ctrl+Z 在里面有原生含义（删字、撤销输入），
+// 不能被快捷键抢走
+const NON_TEXT_INPUT_TYPES = new Set([
+  'checkbox',
+  'radio',
+  'button',
+  'submit',
+  'reset',
+  'range',
+  'color',
+  'file',
+  'image',
+])
+function isTextEntry(target: HTMLElement): boolean {
+  if (target.isContentEditable || target.tagName === 'TEXTAREA') return true
+  if (target instanceof HTMLInputElement) return !NON_TEXT_INPUT_TYPES.has(target.type)
+  return false
+}
+
+// 画布条目里 FormKit 字段的非文本预览控件（复选框、单选、滑块等；不含标了
+// data-canvas-edit 的画布内编辑框）：这些控件对 Backspace/Delete 没有原生用途，
+// 焦点停在上面时快捷键照常生效
+function isCanvasNonTextControl(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
+  if (isTextEntry(target)) return false
   if (target.closest('[data-canvas-edit]')) return false
   return !!target.closest('[data-canvas-item] .formkit-outer')
 }
@@ -125,15 +147,10 @@ export function useKeyboardShortcuts(state: FormBuilderState) {
 
   const onKeydown = (e: KeyboardEvent) => {
     const mod = e.ctrlKey || e.metaKey
-    if (isEditableTarget(e.target)) {
-      // 画布上的字段是预览控件，在里面打字不会保存到定义里——正常情况下点选字段时
-      // CanvasGridItem.vue 的 focusin 兜底会把焦点收回条目自己身上，不会停留在这些
-      // 控件里；这里的 Backspace/Delete 同等处理只是双重兜底（焦点因为某些边缘场景
-      // 仍留在控件里时也能删掉）。标了 data-canvas-edit 的画布内编辑框（静态文本内联
-      // 编辑、标签页/步骤改名）是真实的文本编辑，照常排除，Ctrl/Cmd 组合键正常放行。
-      if (!isCanvasPreviewControl(e.target)) return
-      if (!mod && e.key !== 'Delete' && e.key !== 'Backspace') return
-    }
+    // 画布字段控件可以正常交互：焦点在文本输入框里时按键交给输入框本身（删字、撤销
+    // 输入）；要删除元素，点字段标签或条目空白处选中（焦点落在条目上）再按
+    // Backspace/Delete。复选框、滑块等非文本控件没有删字的用途，快捷键照常生效。
+    if (isEditableTarget(e.target) && !isCanvasNonTextControl(e.target)) return
 
     if (!mod && (e.key === 'Delete' || e.key === 'Backspace')) {
       e.preventDefault()

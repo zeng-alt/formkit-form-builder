@@ -88,26 +88,23 @@ const itemStyle = () => {
   return { gridColumn: props.gridColumn, gridRow: props.gridRow }
 }
 
-// ═══ J1：Mac 上 delete 键删不掉元素 ═════════════════════════════════════════════
-// 画布里的字段是"预览控件"（FormKit 渲染出来的真实 <input>/<select>/... ），点它的
-// 标签或输入框选中字段时，浏览器会把焦点交给这些控件——但预览控件里打字根本不会
-// 保存进表单定义，让焦点停留在里面没有意义，还会导致快捷键处理器把 Backspace 让给
-// 控件本身（Mac 的 delete 键发出的正是 Backspace），选中字段后按 delete 没反应。
-// 这里在条目自己的 focusin 上兜底：只要焦点落进了本条目内的 FormKit 预览控件（且不是
-// data-canvas-edit 标记的画布内真实编辑框，比如标签页改名、静态文本内联编辑），
-// 就把焦点收回条目自己身上（tabindex="0"）——快捷键处理器据此正常响应 Backspace/Delete。
-// 嵌套容器（比如 card 里的字段）时，focusin 会从内到外冒泡到每一层 <li data-canvas-item>；
-// 只有目标离得最近的那个条目（closest 命中的就是自己）才处理，外层条目原样放行，
-// 不会抢走本该属于最内层被选中条目的焦点。
+// ═══ 点字段标签选中后按 delete 能删除 ═══════════════════════════════════════════
+// 画布里的字段控件保持可交互（能输入、下拉、切换标签页等）。点 FormKit 字段标签时，
+// 浏览器的默认行为是把焦点/点击转交给 for 关联的控件（文本框获得焦点、复选框被切换），
+// 焦点落进文本框后 Backspace（Mac 的 delete 键）就只会删字、删不掉元素。这里只拦截
+// "字段标签"这一处的默认转交：焦点留在条目自己身上（tabindex="0"），快捷键处理器据此
+// 响应 Backspace/Delete；直接点控件本身照常交互。
+// 嵌套容器（card 里的字段）时 click 从内到外冒泡到每一层 <li data-canvas-item>，只有
+// 标签离得最近的那个条目（closest 命中自己）才处理。
 const liRef = ref<HTMLLIElement | null>(null)
-function onFocusin(e: FocusEvent) {
+function onLabelClick(e: MouseEvent) {
   const target = e.target
   const li = liRef.value
   if (!li || !(target instanceof HTMLElement)) return
-  if (target === li) return
-  if (target.closest('[data-canvas-item]') !== li) return
-  if (target.closest('[data-canvas-edit]')) return
-  if (!target.closest('.formkit-outer')) return
+  const label = target.closest('.formkit-label')
+  if (!label || label.closest('[data-canvas-item]') !== li) return
+  if (label.closest('[data-canvas-edit]')) return
+  e.preventDefault()
   li.focus({ preventScroll: true })
 }
 </script>
@@ -133,7 +130,7 @@ function onFocusin(e: FocusEvent) {
     @pointerdown.stop="props.onSelect(child, index)"
     @keydown.enter.stop.prevent="props.onSelect(child, index)"
     @keydown.space.stop.prevent="props.onSelect(child, index)"
-    @focusin="onFocusin"
+    @click="onLabelClick"
   >
     <!-- L6：放下后的高亮闪烁——纯装饰覆盖层，独立于 selected 状态之外重放一次
          canvas-item-select-pop 动画；:key 用计数强制重新挂载，复用 pop 放在 li

@@ -38,6 +38,25 @@ import { stopEdgeAutoScroll, updateEdgeAutoScroll } from './auto-scroll'
 
 let documentController: AbortController | undefined
 
+// 拖动结束（放下 / Esc 取消 / 拖出窗口释放）时的统一清理：解绑 dragStarted 时挂到
+// document 上的监听、收起插入徽标与悬停浮层、停止边缘自动滚动。
+// 注意 @formkit/drag-and-drop 只在全局 state 上广播 'dragEnded'（handleEnd 末尾的
+// state.emit），从不在单个 parent 的 parentData 上触发——挂在 parentData.on('dragEnded')
+// 上永远不会执行，浮层会残留在最后一次悬停的容器上、document 监听也会每拖一次多一份。
+// 全局 emitter 每注册一次就多一个回调，所以用模块级标记保证只注册一次。
+let dragEndedCleanupRegistered = false
+function registerDragEndedCleanup() {
+  if (dragEndedCleanupRegistered) return
+  dragEndedCleanupRegistered = true
+  state.on('dragEnded', () => {
+    documentController?.abort()
+    documentController = undefined
+    hideInsertBadge()
+    clearHoverFeedback()
+    stopEdgeAutoScroll()
+  })
+}
+
 // Safari 在高频 moveBetween 时容易抖动，这里做简单节流
 const throttle = (fn: (...args: any[]) => void) => {
   const delay = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ? 100 : 0
@@ -473,21 +492,14 @@ export function customInsertPlugin<T>(insertConfig: InsertConfig<T>, deps: DndCo
         }
 
         parentData.on('dragStarted', () => {
+          documentController?.abort()
           documentController = addEvents(document, {
             dragover: throttle(checkPosition),
             pointermove: throttle(checkPosition),
           })
         })
 
-        parentData.on('dragEnded', () => {
-          documentController?.abort()
-          // L1/L2/L3/L4：拖动结束或取消（Esc / 拖出窗口后释放）时统一清理浮层与自动滚动，
-          // 与已有的 insertPoint/dropZoneClass 清理（commit.ts 的 abortDrop/handleEnd）
-          // 是同一次 'dragEnded' 广播触发的，不需要再额外挂一次监听
-          hideInsertBadge()
-          clearHoverFeedback()
-          stopEdgeAutoScroll()
-        })
+        registerDragEndedCleanup()
 
         parentData.config = insertParentConfig
 
