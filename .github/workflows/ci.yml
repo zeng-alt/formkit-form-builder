@@ -57,6 +57,11 @@ jobs:
       - name: 构建产物
         run: pnpm build-only
 
+      # 体积守护：设计器首屏 / 渲染入口首屏不能混入 CodeMirror / 拖拽库 / axios，
+      # 且各自的 gzip 体积不超预算（见 build-tools/check-bundle.mjs）
+      - name: 检查产物体积
+        run: pnpm check:bundle
+
       # e2e 冒烟测试用的 chromium：CI 跑在全新容器里，本机预置的 /opt/pw-browsers
       # 那份不存在，这里按 @playwright/test 声明的版本正常下载；--with-deps 顺带装好
       # 系统依赖库，避免容器缺库导致浏览器起不来

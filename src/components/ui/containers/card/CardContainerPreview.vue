@@ -65,7 +65,12 @@ const showHeader = computed(() => Boolean(title.value || helpText.value))
       </div>
     </template>
     <div class="w-full grid grid-cols-12 gap-x-4 gap-y-2">
-      <FormKitSchema v-if="modelValue.length" :schema="modelValue" :library="schemaLibrary" :data="schemaRenderData" />
+      <FormKitSchema
+        v-if="modelValue.length"
+        :schema="modelValue"
+        :library="schemaLibrary"
+        :data="schemaRenderData"
+      />
       <div v-else class="col-span-12 flex min-h-[120px] items-center justify-center">
         <n-empty :description="t('builder.listDropHere')" />
       </div>

@@ -39,11 +39,18 @@ describe('naive-ui 组件显式导入', () => {
       [...src.matchAll(/import\s*\{([^}]*)\}\s*from\s*'naive-ui'/g)].flatMap((m) =>
         m[1]!
           .split(',')
-          .map((x) => x.trim().split(/\s+as\s+/).pop()!)
+          .map(
+            (x) =>
+              x
+                .trim()
+                .split(/\s+as\s+/)
+                .pop()!,
+          )
           .filter(Boolean),
       ),
     )
-    for (const name of used) if (!imported.has(name)) missing.push(`${file}: <${name}> 未从 naive-ui 导入`)
+    for (const name of used)
+      if (!imported.has(name)) missing.push(`${file}: <${name}> 未从 naive-ui 导入`)
   }
 
   it('解析器健全性：至少扫描到一定数量的 naive-ui 组件用法', () => {

@@ -72,7 +72,9 @@ export function useBadgeSupPosition(opts: {
     }
     const layoutTop = layoutTopRelativeTo(child, badge)
     const top =
-      layoutTop !== null ? layoutTop : child.getBoundingClientRect().top - badge.getBoundingClientRect().top
+      layoutTop !== null
+        ? layoutTop
+        : child.getBoundingClientRect().top - badge.getBoundingClientRect().top
     supLeft.value = Number.isFinite(left) && left > 0 ? `${left}px` : undefined
     supTop.value = Number.isFinite(top) && top > 0 ? `${top}px` : undefined
   }

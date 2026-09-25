@@ -12,6 +12,11 @@ import { describe, it, expect } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createFormBuilderState, BUILDER_STATE_KEY } from '@/state/create-form-builder-state'
+// 副作用导入：注册右侧属性面板的编辑器组件（见 elements/definitions/editor-bindings.ts）。
+// 真实应用里这一步由 builder/containers/index.ts 在设计器启动时完成，这里直接挂载
+// FormEditMain 而不经过那条路径，需要自己触发一次注册，否则 getFieldEditorComponent
+// 拿不到编辑器、hasLabelHelp 恒为 false。
+import '@/elements/definitions/editor-bindings'
 import FormEditMain from '../FormEditMain.vue'
 import NameInput from '../edits/common/NameInput.vue'
 import LabelHelpSection from '../edits/common/LabelHelpSection.vue'
@@ -20,9 +25,14 @@ import type { FieldNode, FormNode } from '@/types/dsl'
 
 // 各元素编辑器经 defineAsyncComponent 懒加载（见 elements/registry.ts 的
 // getFieldEditorComponent），挂载后要等异步组件真正解析完，断言/卸载才准确，
-// 也避免测试环境在 import 还没落地时被提前回收报「环境已卸载」的悬空错误。
+// 也避免测试环境在 import 还没落地时被提前回收报「环境已卸载」的悬空错误——
+// 编辑器自身的 import（如 TextLikeEditor.vue 引用的 NaiveBasicSection.vue）在测试
+// 环境里要经过真实的模块转换，只 flush 微任务队列的 nextTick 不够可靠，额外让出
+// 一次事件循环，让这些嵌套 import 有机会在本文件的测试环境被回收前先落地。
 const settle = async () => {
   for (let i = 0; i < 5; i++) await nextTick()
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  await nextTick()
 }
 
 async function mountWithField(field: FormNode) {

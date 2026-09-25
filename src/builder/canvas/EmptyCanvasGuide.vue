@@ -4,18 +4,25 @@
 // 事件穿透到下层真正的 drop 目标 <ul>——引导卡片区域因此仍是可放置区，拖入元素后
 // items 不再是空数组，这层覆盖直接消失）。卡片本身继承这个 none，只在两个可点击
 // 入口上单独打开 pointer-events-auto，不影响拖放穿透。
-import { ref } from 'vue'
+import { defineAsyncComponent, ref } from 'vue'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { useFormBuilderConfig } from '@/composables/use-config'
 import { useAiPromptFocusRegistry } from '../composables/use-ai-prompt-focus'
-import TemplatePickerModal from '@/templates/TemplatePickerModal.vue'
 
 const { t } = useFormBuilderI18n()
 const config = useFormBuilderConfig()
 const focusRegistry = useAiPromptFocusRegistry()
 
+// 空画布是新建设计器的默认状态，这张引导卡片几乎总会立即挂载：模板弹窗懒加载，
+// 且直到用户真的点了「使用模板」才挂载组件本身，否则设计器一打开就会拉取这个 chunk。
+const TemplatePickerModal = defineAsyncComponent(
+  () => import('@/templates/TemplatePickerModal.vue'),
+)
+
 const showTemplates = ref(false)
+const templatesEverOpened = ref(false)
 function openTemplates() {
+  templatesEverOpened.value = true
   showTemplates.value = true
 }
 function focusAi() {
@@ -94,7 +101,7 @@ function focusAi() {
     </div>
 
     <div class="pointer-events-auto">
-      <TemplatePickerModal v-model:show="showTemplates" />
+      <TemplatePickerModal v-if="templatesEverOpened" v-model:show="showTemplates" />
     </div>
   </div>
 </template>

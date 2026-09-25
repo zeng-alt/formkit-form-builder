@@ -1,23 +1,16 @@
-import type { Component } from 'vue'
 import type { ElementDefinition } from '../types'
 import { NO_EVENTS, BUTTON_EVENTS } from './bind-events'
 
 // 纯数据目录：不 import 任何 .vue。FormKit 组件绑定在 elements/formkit.ts（按 type 索引）。
-// 按钮类配置已展平进 props。
+// 按钮类配置已展平进 props。右侧属性面板的编辑器组件（.editor）不在这里声明，见
+// elements/definitions/editor-bindings.ts 顶部的说明。
 
 // 标题类静态元素（naiveH1 ~ naiveH6 共用 NaiveTypographyHeader 组件绑定）
-// editor 用静态 import() 便于库构建时内联进单一产物
-const heading = (
-  depth: number,
-  icon: string,
-  tooltipKey: string,
-  editor: () => Promise<{ default: Component }>,
-): ElementDefinition => ({
+const heading = (depth: number, icon: string, tooltipKey: string): ElementDefinition => ({
   type: `naiveH${depth}`,
   category: 'static',
   icon,
   tooltipKey,
-  editor,
   bindEvents: NO_EVENTS,
   schema: {
     renderAs: 'cmp',
@@ -33,7 +26,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-send-horizontal',
     tooltipKey: 'fieldProps.tooltip.submit',
-    editor: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
     bindEvents: BUTTON_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -51,7 +43,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-rotate-ccw',
     tooltipKey: 'fieldProps.tooltip.reset',
-    editor: () => import('@/components/sidebar-right/edits/editors/SubmitEditor.vue'),
     bindEvents: BUTTON_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -69,7 +60,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-square-mouse-pointer',
     tooltipKey: 'fieldProps.tooltip.naiveButton',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveButtonEditor.vue'),
     bindEvents: BUTTON_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -99,7 +89,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-letter-text',
     tooltipKey: 'fieldProps.tooltip.naiveText',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveTextEditor.vue'),
     bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -122,7 +111,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-letter-text',
     tooltipKey: 'fieldProps.tooltip.naiveP',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveParagraphEditor.vue'),
     bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -141,7 +129,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-link-2',
     tooltipKey: 'fieldProps.tooltip.naiveA',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveLinkEditor.vue'),
     bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -159,7 +146,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-letter-text',
     tooltipKey: 'fieldProps.tooltip.naiveBlockquote',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveBlockquoteEditor.vue'),
     bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -170,48 +156,17 @@ export const staticElements: ElementDefinition[] = [
       descriptionKey: 'elements.naiveBlockquote.description',
     },
   },
-  heading(
-    1,
-    'i-lucide-heading-1',
-    'fieldProps.tooltip.naiveH1',
-    () => import('@/components/sidebar-right/edits/editors/NaiveH1Editor.vue'),
-  ),
-  heading(
-    2,
-    'i-lucide-heading-2',
-    'fieldProps.tooltip.naiveH2',
-    () => import('@/components/sidebar-right/edits/editors/NaiveH2Editor.vue'),
-  ),
-  heading(
-    3,
-    'i-lucide-heading-3',
-    'fieldProps.tooltip.naiveH3',
-    () => import('@/components/sidebar-right/edits/editors/NaiveH3Editor.vue'),
-  ),
-  heading(
-    4,
-    'i-lucide-heading-4',
-    'fieldProps.tooltip.naiveH4',
-    () => import('@/components/sidebar-right/edits/editors/NaiveH4Editor.vue'),
-  ),
-  heading(
-    5,
-    'i-lucide-heading-5',
-    'fieldProps.tooltip.naiveH5',
-    () => import('@/components/sidebar-right/edits/editors/NaiveH5Editor.vue'),
-  ),
-  heading(
-    6,
-    'i-lucide-heading-6',
-    'fieldProps.tooltip.naiveH6',
-    () => import('@/components/sidebar-right/edits/editors/NaiveH6Editor.vue'),
-  ),
+  heading(1, 'i-lucide-heading-1', 'fieldProps.tooltip.naiveH1'),
+  heading(2, 'i-lucide-heading-2', 'fieldProps.tooltip.naiveH2'),
+  heading(3, 'i-lucide-heading-3', 'fieldProps.tooltip.naiveH3'),
+  heading(4, 'i-lucide-heading-4', 'fieldProps.tooltip.naiveH4'),
+  heading(5, 'i-lucide-heading-5', 'fieldProps.tooltip.naiveH5'),
+  heading(6, 'i-lucide-heading-6', 'fieldProps.tooltip.naiveH6'),
   {
     type: 'naiveUl',
     category: 'static',
     icon: 'i-lucide-list',
     tooltipKey: 'fieldProps.tooltip.naiveUl',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveUlEditor.vue'),
     bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -225,7 +180,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-list',
     tooltipKey: 'fieldProps.tooltip.naiveOl',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveOlEditor.vue'),
     bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -239,7 +193,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-list',
     tooltipKey: 'fieldProps.tooltip.naiveLi',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveLiEditor.vue'),
     bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -253,7 +206,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-sliders-horizontal',
     tooltipKey: 'fieldProps.tooltip.naiveDivider',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveDividerEditor.vue'),
     bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -272,7 +224,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-triangle-alert',
     tooltipKey: 'fieldProps.tooltip.naiveAlert',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveAlertEditor.vue'),
     bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -294,7 +245,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-arrow-up-to-line',
     tooltipKey: 'fieldProps.tooltip.naiveBackTop',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveBackTopEditor.vue'),
     bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -313,7 +263,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-qr-code',
     tooltipKey: 'fieldProps.tooltip.naiveQrCode',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveQrCodeEditor.vue'),
     bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',
@@ -334,7 +283,6 @@ export const staticElements: ElementDefinition[] = [
     category: 'static',
     icon: 'i-lucide-gauge',
     tooltipKey: 'fieldProps.tooltip.naiveProgress',
-    editor: () => import('@/components/sidebar-right/edits/editors/NaiveProgressEditor.vue'),
     bindEvents: NO_EVENTS,
     schema: {
       renderAs: 'cmp',

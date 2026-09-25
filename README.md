@@ -50,6 +50,32 @@ The ESM entry automatically loads styles — no manual import needed. Only requi
 import '@zeng-alt/formkit-form-builder/builder.css'
 ```
 
+## Renderer-Only Entry (form-filling pages)
+
+If a page only needs to render a saved `FormDefinition` into a fillable, submittable form — no drag-and-drop canvas, no left/right property panels — use the runtime-only subpath `@zeng-alt/formkit-form-builder/renderer` instead:
+
+```ts
+import {
+  FormRenderer,
+  formkitConfig,
+  registerElement,
+  dslToSchema,
+  useFormBuilderConfig,
+} from '@zeng-alt/formkit-form-builder/renderer'
+import type { FormDefinition } from '@zeng-alt/formkit-form-builder/renderer'
+```
+
+Styling still comes from the same `@zeng-alt/formkit-form-builder/builder.css` (no separate CSS file needed). This entry only exports what a form-filling page needs: `FormRenderer`, `formkitConfig`, `FormBuilderPlugin`, `registerElement`/`registerElements`, `buildFormkitInputs`/`buildElementSchemaLibrary`/`getElementCmpName`, the DSL conversion utilities (`dslToSchema`/`dslToOutputSchema`/`schemaToDsl`/`toPortableDefinition`/`setExprLocale`, etc.), the config composables, and their types — it excludes the designer (canvas, left/right panels), the drag-and-drop library `@formkit/drag-and-drop`, and the CodeMirror code editors. See `playground/renderer-only.html` for a working example.
+
+Measured bundle size (`pnpm build-only` output, gzip):
+
+| Artifact | First-screen static dependency total (gzip) |
+| --- | --- |
+| Full entry `.` (designer + renderer) | 172.2KB |
+| Renderer entry `./renderer` | **79.1KB** |
+
+For form-filling-only pages, switching to `/renderer` saves roughly 90KB (gzip) of designer-only code.
+
 ## Quick Start
 
 ### 1) Install and Register FormKit
@@ -217,6 +243,11 @@ import {
 `BuilderProvider`, exported for naming preference only — both pairs are the same component.
 `setExprLocale` / `resolveTimeZoneForLocale` / `LOCALE_TIME_ZONES` are also exported (see
 "i18n Overrides" below).
+
+> Only need to render forms, not design them? `@zeng-alt/formkit-form-builder/renderer` exports
+> the subset of the above needed for that (`FormRenderer`, `formkitConfig`, `FormBuilderPlugin`,
+> `registerElement`/`registerElements`, the DSL utilities, the config composables) without the
+> designer or its CodeMirror / drag-and-drop dependencies — see "Renderer-Only Entry" above.
 
 `useFormBuilderState()` only works inside a `FormBuilder` / `FormRenderer` subtree (including
 one set up via `provideFormBuilderState()`); calling it outside one throws instead of silently

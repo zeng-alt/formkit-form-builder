@@ -24,7 +24,10 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /** 按缓存路径重新读取当前值：只缓存"去哪儿找"，不缓存值本身，取到的永远是当前值 */
-function readAtPath(root: Record<string, unknown>, path: PathKey[]): { hit: boolean; value: unknown } {
+function readAtPath(
+  root: Record<string, unknown>,
+  path: PathKey[],
+): { hit: boolean; value: unknown } {
   let cur: unknown = root
   for (const key of path) {
     if (Array.isArray(cur) && typeof key === 'number') {

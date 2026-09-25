@@ -116,6 +116,19 @@ export function getElementTypeDefs(): ElementTypeDef[] {
   return Array.from(defs.values())
 }
 
+/** 设计器专属：把右侧属性面板的编辑器组件（可能依赖 CodeMirror 等设计态专属依赖）
+ *  按 type 补进已注册的元素定义。只应由 elements/definitions/editor-bindings.ts 在
+ *  被设计器引入时调用——渲染入口不引入那个文件，这些组件就不会进入它的依赖图，
+ *  UMD 单文件产物也不会把它们强制内联进去（见该文件顶部说明）。 */
+export function setElementEditors(
+  editors: Record<string, () => Promise<{ default: Component }>>,
+): void {
+  for (const [type, loader] of Object.entries(editors)) {
+    const def = defs.get(type)
+    if (def) def.editor = loader
+  }
+}
+
 // ─── legacy $cmp 别名（$cmp = type 统一前的旧 schema 兼容）─────────────────────
 // 旧版本内置元素以 Naive* 组件名作为 $cmp；统一为 type 后仍需识别旧数据。
 // 本表只保留"组件已不存在、无法从 formkitBindings 派生"的历史名；

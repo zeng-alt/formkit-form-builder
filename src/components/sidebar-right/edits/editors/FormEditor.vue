@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 import { NButton, NModal, NTag } from 'naive-ui'
 import { useFormBuilderI18n } from '../../../../i18n/context'
 import { useFormField } from '../../../../composables/form-fields'
@@ -8,7 +8,10 @@ import EditorSection from '../common/EditorSection.vue'
 import TextInput from '../common/TextInput.vue'
 import SelectInput from '../common/SelectInput.vue'
 import SwitchInput from '../common/SwitchInput.vue'
-import JsCodeEditor from '../common/JsCodeEditor.vue'
+
+// 说明同 BindEditor.vue：CodeMirror 懒加载，下面 n-modal 的默认插槽本就只在
+// 首次打开时才挂载
+const JsCodeEditor = defineAsyncComponent(() => import('../common/JsCodeEditor.vue'))
 
 const { t } = useFormBuilderI18n()
 const {

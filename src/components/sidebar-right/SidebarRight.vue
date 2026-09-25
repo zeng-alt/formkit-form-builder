@@ -1,11 +1,24 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { NLayoutSider, NScrollbar } from 'naive-ui'
 import FormEditMain from './FormEditMain.vue'
 import { createFieldProps } from '@/elements'
 import { useFormField } from '../../composables/form-fields'
 import { useFormBuilderI18n } from '../../i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
+import { preloadModule, schedulePreload } from '@/utils/idle-preload'
+
+// 右侧面板是设计器唯一常驻挂载点：空闲时提前拉取表达式/JS 代码编辑器所在的
+// CodeMirror chunk（见 ExpressionEditor.vue / IfConditionEditor.vue / BindEditor.vue /
+// FormEditor.vue 的懒加载说明），命中缓存后用户第一次点开编辑器不用等网络。
+let cancelPreload: (() => void) | null = null
+onMounted(() => {
+  cancelPreload = schedulePreload(() => {
+    preloadModule(() => import('./edits/common/ExprEditModal.vue'))
+    preloadModule(() => import('./edits/common/JsCodeEditor.vue'))
+  })
+})
+onBeforeUnmount(() => cancelPreload?.())
 
 const { currentFieldType, selectedIsForm, formName, selectedColumn } = useFormField()
 const { t } = useFormBuilderI18n()

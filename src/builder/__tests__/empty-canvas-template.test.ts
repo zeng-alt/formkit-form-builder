@@ -7,7 +7,7 @@
 //   （唯一）子节点被模板内容替换；
 // - 非空画布点击模板会先弹出「替换当前表单」二次确认，取消不改变表单，确认后才应用；
 // - 应用走 commitFormDefinition（可撤销）：应用后 canUndo 为 true。
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { plugin as formkitPlugin } from '@formkit/vue'
@@ -19,6 +19,22 @@ import type { FieldNode, FormDefinition } from '@/types/dsl'
 
 const settle = async () => {
   for (let i = 0; i < 5; i++) await nextTick()
+}
+
+/** TemplatePickerModal 经 defineAsyncComponent 懒加载（见 BuilderHeader.vue /
+ *  EmptyCanvasGuide.vue 的懒加载说明）：动态 import() 在测试环境里要经过一次真实的
+ *  模块转换，耗时不固定，只 flush 微任务队列的 nextTick（settle）不够可靠，
+ *  这里改为轮询等待模板卡片真正出现，而不是猜一个固定的宏任务延迟。 */
+async function waitForTemplateCard(): Promise<void> {
+  await vi.waitFor(
+    () => {
+      if (!document.body.querySelector('button[aria-label="用户注册"]')) {
+        throw new Error('模板弹窗尚未加载完成')
+      }
+    },
+    { timeout: 2000, interval: 10 },
+  )
+  await settle()
 }
 
 function emptyDefinition(): FormDefinition {
@@ -128,7 +144,7 @@ describe('B2：从空画布引导应用模板', () => {
     expect(state.canUndo.value).toBe(false)
 
     await wrapper.find('button[aria-label="模板"]').trigger('click')
-    await settle()
+    await waitForTemplateCard()
 
     // 弹窗内的模板卡片（用户注册）渲染在 document.body（NModal 默认 teleport 到 body）
     expect(document.body.textContent).toContain('用户注册')
@@ -157,7 +173,7 @@ describe('B2：从空画布引导应用模板', () => {
     const originalDef = state.formDefinition.value
 
     await wrapper.find('button[aria-label="模板"]').trigger('click')
-    await settle()
+    await waitForTemplateCard()
 
     const userRegCard = document.body.querySelector('button[aria-label="用户注册"]')
     userRegCard!.dispatchEvent(new MouseEvent('click', { bubbles: true }))

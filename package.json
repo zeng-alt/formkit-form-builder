@@ -22,7 +22,9 @@
   "type": "module",
   "packageManager": "pnpm@10.33.0",
   "sideEffects": [
-    "**/*.css"
+    "**/*.css",
+    "./src/elements/canvas-designer.ts",
+    "./src/elements/definitions/editor-bindings.ts"
   ],
   "main": "./dist/builder.umd.js",
   "module": "./dist/builder.es.js",
@@ -33,6 +35,11 @@
       "import": "./dist/builder.es.js",
       "require": "./dist/builder.umd.js"
     },
+    "./renderer": {
+      "types": "./dist/renderer.d.ts",
+      "import": "./dist/renderer.es.js",
+      "require": "./dist/renderer.umd.js"
+    },
     "./builder.css": "./dist/builder.css"
   },
   "publishConfig": {
@@ -42,7 +49,7 @@
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
-    "build-only": "vite build",
+    "build-only": "vite build && vite build --mode umd-index && vite build --mode umd-renderer && node build-tools/clean-umd-css.mjs",
     "type-check": "vue-tsc --build",
     "lint": "run-s lint:oxlint lint:eslint",
     "lint:oxlint": "oxlint . --fix",
@@ -51,6 +58,7 @@
     "lint:ci:oxlint": "oxlint .",
     "lint:ci:eslint": "eslint .",
     "knip": "knip",
+    "check:bundle": "node build-tools/check-bundle.mjs",
     "format": "oxfmt src/",
     "test": "vitest run",
     "test:watch": "vitest",

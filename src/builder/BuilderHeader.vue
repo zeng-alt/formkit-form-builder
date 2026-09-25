@@ -1,16 +1,27 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 import { NButton, NTooltip, NPopconfirm, NPopover } from 'naive-ui'
 import { useFormBuilderI18n } from '../i18n/context'
-import BuilderPreview from './BuilderPreview.vue'
-import AiPrompt from '../components/ai-prompt/AiPrompt.vue'
 import ThemeSwitcher from '../components/ui/theme-switcher/ThemeSwitcher.vue'
-import TemplatePickerModal from '@/templates/TemplatePickerModal.vue'
-import HistoryPanel from './HistoryPanel.vue'
-import IssuesPanel from './IssuesPanel.vue'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormBuilderConfig } from '@/composables/use-config'
 import { lintDefinition } from '@/dsl/lint'
+
+// 顶栏这几个都是"打开之后才需要"的弹窗/面板/组件，懒加载让它们各自的依赖（含
+// AiPrompt 拉取的模板文案、TemplatePickerModal 引用的内置模板数据等）不进设计器
+// 首屏 chunk。HistoryPanel / IssuesPanel 放在 n-popover 默认插槽里，History/Issues
+// 面板本就用 n-popover 默认的 displayDirective="if"（首次展开才挂载默认插槽内容），
+// 这里改成异步组件后自然只在首次展开时才拉取对应 chunk，不需要额外状态。
+// BuilderPreview / TemplatePickerModal 是以组件标签直接使用（不是塞进某个弹窗的
+// 默认插槽），异步引用本身不会自动延迟到"首次点开"，需要配合下面的 everOpened
+// 系列 ref 在首次点击时才挂载。
+const BuilderPreview = defineAsyncComponent(() => import('./BuilderPreview.vue'))
+const AiPrompt = defineAsyncComponent(() => import('../components/ai-prompt/AiPrompt.vue'))
+const TemplatePickerModal = defineAsyncComponent(
+  () => import('@/templates/TemplatePickerModal.vue'),
+)
+const HistoryPanel = defineAsyncComponent(() => import('./HistoryPanel.vue'))
+const IssuesPanel = defineAsyncComponent(() => import('./IssuesPanel.vue'))
 
 const config = useFormBuilderConfig()
 // 所属 FormBuilder 实例状态：undo/redo / 清空提交绑定到各自实例。
@@ -38,8 +49,10 @@ const clearForm = () => {
   commitSchema([], { reason: 'clear' })
 }
 const showPreview = ref(false)
+const previewEverOpened = ref(false)
 // B2：顶栏「模板」入口，与空画布引导卡片共用同一个弹窗组件
 const showTemplates = ref(false)
+const templatesEverOpened = ref(false)
 
 // 顶栏右侧撤销 / 重做 / 历史：与画布浮动工具条同一套图标按钮样式（28px 点击区、紫色悬停）
 // 图标颜色写在图标自身上：naive-ui 的按钮图标容器有自己的颜色变量，按钮上的 text-* 传不进去
@@ -86,7 +99,12 @@ defineSlots<{
                 text
                 circle
                 size="small"
-                @click="showPreview = true"
+                @click="
+                  () => {
+                    previewEverOpened = true
+                    showPreview = true
+                  }
+                "
                 class="h-7 w-7 !p-2"
               >
                 <template #icon><span class="i-lucide-eye h-16px w-16px"></span></template>
@@ -94,7 +112,7 @@ defineSlots<{
             </template>
             {{ t('builder.previewForm') }}
           </n-tooltip>
-          <BuilderPreview v-model:show="showPreview" />
+          <BuilderPreview v-if="previewEverOpened" v-model:show="showPreview" />
 
           <n-tooltip>
             <template #trigger>
@@ -104,7 +122,12 @@ defineSlots<{
                 circle
                 size="small"
                 :aria-label="t('templates.entry')"
-                @click="showTemplates = true"
+                @click="
+                  () => {
+                    templatesEverOpened = true
+                    showTemplates = true
+                  }
+                "
                 class="h-7 w-7 !p-2"
               >
                 <template #icon
@@ -114,7 +137,7 @@ defineSlots<{
             </template>
             {{ t('templates.entry') }}
           </n-tooltip>
-          <TemplatePickerModal v-model:show="showTemplates" />
+          <TemplatePickerModal v-if="templatesEverOpened" v-model:show="showTemplates" />
         </slot>
       </div>
 
