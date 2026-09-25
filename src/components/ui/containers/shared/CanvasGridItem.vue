@@ -243,11 +243,14 @@ function onMoreClick(e: MouseEvent) {
     </button>
     <div :class="['flex gap-1.5 p-1 w-full pb-2', isFillImage ? 'flex-col h-full' : '']">
       <div class="flex-1 w-full min-w-0">
+        <!-- key 必须用条目的稳定身份，不能用下标：在前面插入 / 粘贴 / 删除元素会让后面所有条目的
+             下标变化，下标 key 会把它们的 FormKit 字段整个卸载重建（白白重渲染，还会和 FormKitSchema
+             已排队的强制更新撞车，在已卸载的实例上渲染而抛出 insertBefore of null） -->
         <FormKitSchema
           :schema="renderSchema(child) as unknown as FormKitSchemaFormKit[]"
           :library="schemaLibrary"
           :data="schemaRenderData"
-          :key="`container-child-${index}`"
+          :key="itemKey"
         />
       </div>
     </div>

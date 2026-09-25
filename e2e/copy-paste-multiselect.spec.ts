@@ -24,18 +24,23 @@ test('Ctrl+C/Ctrl+V 复制出一个元素；Shift+点击多选后右侧显示批
 
   await expect(page.locator('[data-canvas-item="true"]')).toHaveCount(2)
 
+  // 给后面的字段 b 的 FormKit 外层元素打个标记：粘贴插在 a 之后，b 只是下标后移，
+  // 它的字段不应该被卸载重建（曾因画布条目内 FormKitSchema 用下标做 key 而整个重建，
+  // 复制后立刻粘贴时偶发 insertBefore of null 的页面错误）
+  await canvasItem(page, 'b')
+    .locator('.formkit-outer')
+    .first()
+    .evaluate((el) => ((el as HTMLElement).dataset.e2eMark = 'kept'))
+
   // 点在条目角落而不是内部 FormKit 输入框：点进输入框会让焦点落在 <input> 上，
   // use-keyboard-shortcuts.ts 的 isEditableTarget() 判定为"正在打字"，Ctrl+C/V
   // 会被放行给输入框本身而不是触发画布命令层
   await selectCanvasItem(page, 'a')
+  // 复制后立刻粘贴，中间不等待：这正是之前偶发页面错误的操作节奏
   await page.keyboard.press('Control+c')
-  // 复制紧接着立刻粘贴，偶发会在控制台抛出真实的页面错误（Vue 在 autoAnimate 的
-  // outer 节点上做 DOM patch 时 insertBefore 的参照节点已经是 null）——这是已知
-  // 的产品缺陷（见任务报告），不是这条用例本身的时序问题；这里的等待是刻意避开它，
-  // 好让这条用例稳定验证"复制粘贴能成功"，不是常规的时序等待。
-  await page.waitForTimeout(400)
   await page.keyboard.press('Control+v')
   await expect(page.locator('[data-canvas-item="true"]')).toHaveCount(3)
+  await expect(canvasItem(page, 'b').locator('.formkit-outer[data-e2e-mark="kept"]')).toHaveCount(1)
 
   await selectCanvasItem(page, 'a')
   await canvasItem(page, 'b').click({ position: { x: 4, y: 4 }, modifiers: ['Shift'] })
