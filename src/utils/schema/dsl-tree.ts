@@ -28,7 +28,8 @@ export function findDslNodeByKey(nodes: FormNode[], key: string): DslPathNode | 
     if (children.length) {
       const found = findDslNodeByKey(children, key)
       // 保留内层递归返回的真正父节点；仅在直接子层命中时（parent 为 null）才用当前节点补位
-      if (found) return { node: found.node, parent: found.parent ?? node, rootIndex: i, index: found.index }
+      if (found)
+        return { node: found.node, parent: found.parent ?? node, rootIndex: i, index: found.index }
     }
   }
   return null

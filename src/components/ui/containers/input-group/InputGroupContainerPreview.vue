@@ -40,7 +40,12 @@ const modelValue = computed(() => {
       <div v-if="title" class="text-12px font-bold">{{ title }}</div>
     </div>
     <n-input-group class="w-full">
-      <FormKitSchema v-if="modelValue.length" :schema="modelValue" :library="schemaLibrary" :data="schemaRenderData" />
+      <FormKitSchema
+        v-if="modelValue.length"
+        :schema="modelValue"
+        :library="schemaLibrary"
+        :data="schemaRenderData"
+      />
 
       <div v-else class="flex w-full items-center justify-center">
         <n-empty :description="t('builder.listDropHere')" />

@@ -15,7 +15,11 @@ import ButtonGroupEditor from '../edits/editors/ButtonGroupEditor.vue'
 import { getElementTypeDef } from '@/dsl'
 import type { FieldNode, FormNode } from '@/types/dsl'
 
-function mountWithState(state: ReturnType<typeof createFormBuilderState>, Comp: object, props = {}) {
+function mountWithState(
+  state: ReturnType<typeof createFormBuilderState>,
+  Comp: object,
+  props = {},
+) {
   const Host = defineComponent({
     setup() {
       return () => h(Comp as never, props)

@@ -1,6 +1,7 @@
-import axios, { type AxiosInstance } from 'axios'
+import type { AxiosInstance } from 'axios'
 import type { FormKitNode } from '@formkit/core'
 import { BIND_EVENT_KEYS } from '@/dsl/events'
+import { builtinHttp } from '@/composables/use-bind-http'
 
 type BindJs = { __js: string }
 
@@ -13,7 +14,8 @@ interface FormMeta {
 
 function extractCode(v: unknown): string | undefined {
   if (typeof v === 'string') return v
-  if (v && typeof v === 'object' && typeof (v as BindJs).__js === 'string') return (v as BindJs).__js
+  if (v && typeof v === 'object' && typeof (v as BindJs).__js === 'string')
+    return (v as BindJs).__js
   return undefined
 }
 
@@ -97,6 +99,6 @@ ${code}
     attrs,
     ctx,
     extra,
-    axiosInstance ?? axios,
+    axiosInstance ?? builtinHttp,
   )
 }

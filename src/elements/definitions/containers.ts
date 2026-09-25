@@ -29,7 +29,6 @@ export const containerElements: ElementDefinition[] = [
     category: 'container',
     icon: 'i-lucide-group',
     tooltipKey: 'fieldProps.tooltip.group',
-    editor: () => import('@/components/sidebar-right/edits/editors/GroupEditor.vue'),
     bindEvents: NO_EVENTS,
     container: getContainerSpec('group') ?? undefined,
     schema: {
@@ -44,7 +43,6 @@ export const containerElements: ElementDefinition[] = [
     category: 'container',
     icon: 'i-lucide-list-tree',
     tooltipKey: 'fieldProps.tooltip.list',
-    editor: () => import('@/components/sidebar-right/edits/editors/ListEditor.vue'),
     bindEvents: NO_EVENTS,
     container: getContainerSpec('list') ?? undefined,
     schema: {
@@ -80,7 +78,6 @@ export const containerElements: ElementDefinition[] = [
     category: 'container',
     icon: 'i-lucide-align-horizontal-justify-start',
     tooltipKey: 'fieldProps.tooltip.inputGroup',
-    editor: () => import('@/components/sidebar-right/edits/editors/InputGroupEditor.vue'),
     bindEvents: NO_EVENTS,
     container: getContainerSpec('inputGroup') ?? undefined,
     schema: {
@@ -96,7 +93,6 @@ export const containerElements: ElementDefinition[] = [
     category: 'container',
     icon: 'i-lucide-rectangle-horizontal',
     tooltipKey: 'fieldProps.tooltip.buttonGroup',
-    editor: () => import('@/components/sidebar-right/edits/editors/ButtonGroupEditor.vue'),
     bindEvents: NO_EVENTS,
     container: getContainerSpec('buttonGroup') ?? undefined,
     schema: {
@@ -115,7 +111,6 @@ export const containerElements: ElementDefinition[] = [
     category: 'layout',
     icon: 'i-lucide-credit-card',
     tooltipKey: 'fieldProps.tooltip.card',
-    editor: () => import('@/components/sidebar-right/edits/editors/CardEditor.vue'),
     bindEvents: NO_EVENTS,
     container: getContainerSpec('card') ?? undefined,
     schema: {
@@ -136,7 +131,6 @@ export const containerElements: ElementDefinition[] = [
     category: 'container',
     icon: 'i-lucide-badge',
     tooltipKey: 'fieldProps.tooltip.badge',
-    editor: () => import('@/components/sidebar-right/edits/editors/BadgeEditor.vue'),
     bindEvents: NO_EVENTS,
     container: getContainerSpec('badge') ?? undefined,
     schema: {
@@ -159,7 +153,6 @@ export const containerElements: ElementDefinition[] = [
     category: 'layout',
     icon: 'i-lucide-panel-top',
     tooltipKey: 'fieldProps.tooltip.tabs',
-    editor: () => import('@/components/sidebar-right/edits/editors/TabsEditor.vue'),
     bindEvents: NO_EVENTS,
     container: getContainerSpec('tabs') ?? undefined,
     schema: {
@@ -177,7 +170,6 @@ export const containerElements: ElementDefinition[] = [
     category: 'layout',
     icon: 'i-lucide-list-ordered',
     tooltipKey: 'fieldProps.tooltip.steps',
-    editor: () => import('@/components/sidebar-right/edits/editors/StepsEditor.vue'),
     bindEvents: NO_EVENTS,
     container: getContainerSpec('steps') ?? undefined,
     schema: {
@@ -193,7 +185,6 @@ export const containerElements: ElementDefinition[] = [
     category: 'container',
     icon: 'i-lucide-table-2',
     tooltipKey: 'fieldProps.tooltip.dataTable',
-    editor: () => import('@/components/sidebar-right/edits/editors/DataTableEditor.vue'),
     bindEvents: NO_EVENTS,
     container: getContainerSpec('dataTable') ?? undefined,
     schema: {
@@ -219,7 +210,6 @@ export const containerElements: ElementDefinition[] = [
     category: 'container',
     icon: 'i-lucide-list-collapse',
     tooltipKey: 'fieldProps.tooltip.collapse',
-    editor: () => import('@/components/sidebar-right/edits/editors/CollapseEditor.vue'),
     bindEvents: NO_EVENTS,
     container: getContainerSpec('collapse') ?? undefined,
     schema: {

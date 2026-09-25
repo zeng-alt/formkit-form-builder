@@ -16,7 +16,9 @@ const { config, props } = useSchemaAttrs(context, { omit: ['progressType'] })
 
 const progressType = computed<'line' | 'circle' | 'dashboard' | 'multiple-circle'>(() => {
   const raw = config.progressType
-  return typeof raw === 'string' && raw ? (raw as 'line' | 'circle' | 'dashboard' | 'multiple-circle') : 'line'
+  return typeof raw === 'string' && raw
+    ? (raw as 'line' | 'circle' | 'dashboard' | 'multiple-circle')
+    : 'line'
 })
 
 const percentage = computed(() => {

@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { defineAsyncComponent, ref } from 'vue'
 import { NButton, NButtonGroup, NTooltip, NPopselect } from 'naive-ui'
 import { useFormBuilderI18n } from '@/i18n/context'
 import { useRuntimeLocale } from '@/i18n/runtime-locale'
-import ImportExportModal from '../ImportExportModal.vue'
+
+// 导入导出弹窗打开后才需要，懒加载 + 首次点开才挂载（组件标签直接使用，不是塞进
+// 某个弹窗默认插槽，需要自己控制挂载时机，理由同 BuilderHeader.vue）
+const ImportExportModal = defineAsyncComponent(() => import('../ImportExportModal.vue'))
 
 const { t } = useFormBuilderI18n()
 const { setLocale, locale, availableLocales } = useRuntimeLocale()
 const showImportExportModal = ref(false)
+const importExportEverOpened = ref(false)
 </script>
 
 <template>
@@ -18,7 +22,12 @@ const showImportExportModal = ref(false)
         <n-tooltip placement="left">
           <template #trigger>
             <n-button
-              @click="showImportExportModal = true"
+              @click="
+                () => {
+                  importExportEverOpened = true
+                  showImportExportModal = true
+                }
+              "
               size="small"
               :aria-label="t('builder.importExportSchema')"
               class="w-8 h-8"
@@ -41,6 +50,6 @@ const showImportExportModal = ref(false)
       </n-button-group>
     </div>
 
-    <ImportExportModal v-model:show="showImportExportModal" />
+    <ImportExportModal v-if="importExportEverOpened" v-model:show="showImportExportModal" />
   </div>
 </template>

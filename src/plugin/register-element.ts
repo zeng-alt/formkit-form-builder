@@ -80,4 +80,3 @@ export function registerElements(inputs: RegisterElementInput[] | undefined): vo
     registerElement({ ...input, overwrite: true })
   }
 }
-

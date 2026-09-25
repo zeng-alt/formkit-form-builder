@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { NSwitch, NButton, NInput } from 'naive-ui'
 import { useFormField } from '../../../composables/form-fields'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormBuilderI18n } from '../../../i18n/context'
-import ExprEditModal from './common/ExprEditModal.vue'
 import { isUnparsedExpr, parseExprString } from '@/dsl'
+
+// 表达式编辑弹窗依赖 CodeMirror（体积较大），懒加载 + 首次点开铅笔按钮才挂载，
+// 避免设计器首屏 chunk 携带 CodeMirror（这里直接以组件标签使用，不像 n-modal
+// 默认插槽那样天然只在首次显示时才渲染，需要自己用 everOpened 控制挂载时机）。
+const ExprEditModal = defineAsyncComponent(() => import('./common/ExprEditModal.vue'))
 
 const { selectedIndex, selectedKey, elementEditTarget } = useFormBuilderState()
 const { availableFields, useExpressionValue, valueExpression, fieldValue, fieldName } =
@@ -20,6 +24,8 @@ const completionFields = computed(() =>
 const isExpression = ref(false)
 const expressionDraft = ref('')
 const modalOpen = ref(false)
+// 首次打开前不挂载 ExprEditModal（见上面 defineAsyncComponent 的说明）
+const everOpened = ref(false)
 
 // 选中 token：数据表格列元素等非树节点编辑时随 elementEditTarget 变化（切换列需重新同步）
 const selectionToken = computed(
@@ -61,6 +67,7 @@ const handleSwitchChange = (val: boolean) => {
 }
 
 function openModal() {
+  everOpened.value = true
   modalOpen.value = true
 }
 
@@ -106,6 +113,7 @@ const unparsed = computed(() => {
     </div>
 
     <ExprEditModal
+      v-if="everOpened"
       :show="modalOpen"
       :model-value="expressionDraft"
       :field-names="completionFields"

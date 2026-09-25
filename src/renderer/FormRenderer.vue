@@ -22,9 +22,8 @@ import { registerElements } from '@/plugin/register-element'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 import { provideFormDefinition } from '@/composables/use-form-definition'
 import { runBindCode } from '@/utils/bind-runtime'
-import { provideBinderHttp } from '@/composables/use-bind-http'
+import { provideBinderHttp, builtinHttp } from '@/composables/use-bind-http'
 import { createSchemaRenderData, PREVIEW_FORM_DATA_KEY } from '@/composables/use-schema-render-data'
-import axios from 'axios'
 import type { AxiosInstance } from 'axios'
 import { useExprRun } from '@/expression/runtime'
 import type { SchemaNode } from '@/utils/schema/types'
@@ -522,7 +521,7 @@ const handleSubmit = async (formData: Record<string, unknown>) => {
         name: props.definition?.name,
       },
       undefined,
-      props.http ?? config?.http ?? axios,
+      props.http ?? config?.http ?? builtinHttp,
     )
     applySubmitSuccess()
     return

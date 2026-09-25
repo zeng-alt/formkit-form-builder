@@ -55,13 +55,28 @@ describe('国际化文案', () => {
     expect(used.size).toBeGreaterThan(300)
     const missing = [...used]
       .filter(([k]) => !ZH.has(k) || !EN.has(k))
-      .map(([k, f]) => `${k}（${f}）缺失：${[!ZH.has(k) && 'zh', !EN.has(k) && 'en'].filter(Boolean).join(' / ')}`)
+      .map(
+        ([k, f]) =>
+          `${k}（${f}）缺失：${[!ZH.has(k) && 'zh', !EN.has(k) && 'en'].filter(Boolean).join(' / ')}`,
+      )
     expect(missing).toEqual([])
   })
 
   it('日期选择器类型的动态键 edits.pickerType.* 在中英文案里都存在', () => {
     // 与 DateLikeEditor.vue / DateTimeEditor.vue 中的取值列表保持一致
-    const values = ['date', 'datetime', 'daterange', 'datetimerange', 'month', 'monthrange', 'year', 'yearrange', 'quarter', 'quarterrange', 'week']
+    const values = [
+      'date',
+      'datetime',
+      'daterange',
+      'datetimerange',
+      'month',
+      'monthrange',
+      'year',
+      'yearrange',
+      'quarter',
+      'quarterrange',
+      'week',
+    ]
     for (const file of ['DateLikeEditor.vue', 'DateTimeEditor.vue']) {
       const src = fs.readFileSync(`src/components/sidebar-right/edits/editors/${file}`, 'utf8')
       for (const v of values) expect(src, `${file} 的取值列表与本测试不一致`).toContain(`'${v}'`)

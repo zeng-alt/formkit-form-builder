@@ -1,5 +1,6 @@
 import { defineConfig, presetAttributify, presetWind3, presetIcons } from 'unocss'
 import presetRemToPx from '@unocss/preset-rem-to-px'
+import { fileURLToPath } from 'node:url'
 // 图标集显式声明为 collections、以动态 import 惰性加载 icons.json，而不是依赖
 // @unocss/preset-icons 的默认 node loader：后者在 VS Code 终端（设置了 VSCODE_CWD）
 // 下会被跳过，导致全部图标加载失败。显式声明在任何环境下都能稳定加载。
@@ -30,6 +31,15 @@ export default defineConfig({
   // 导致 rounded-xl / rounded-full 等在整个页面失效
   mergeSelectors: false,
   content: {
+    // 开发服务器启动时就扫描全部源码生成 CSS：设计器的弹窗 / 面板 / 编辑器都是懒加载 chunk，
+    // 只靠 pipeline 的话要等 chunk 第一次加载时才发现里面的新类名，UnoCSS 会发一次 /__uno.css
+    // 热更新——FormKit 在开发构建里给每个字段都挂了 vite:afterUpdate 监听（强制重渲染，卸载后也不
+    // 移除），这次热更新会让已卸载的字段重新渲染而抛出 insertBefore of null；懒加载组件首次出现时
+    // 也会先闪一下无样式。生产构建不受影响（import.meta.hot 不存在）。
+    filesystem: [
+      `${fileURLToPath(new URL('./src', import.meta.url))}/**/*.{vue,ts}`,
+      `!${fileURLToPath(new URL('./src', import.meta.url))}/**/__tests__/**`,
+    ],
     pipeline: {
       // src 下的 .ts/.js 也要扫描（formkit.theme.ts 的主题 class、各组件在 TS 里拼的 class）。
       // 用正则匹配绝对路径而不是相对 glob：开发服务器的 root 是 playground/（见 vite.config），

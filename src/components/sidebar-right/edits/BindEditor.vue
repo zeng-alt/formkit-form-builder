@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 import { NButton, NCard, NDivider, NModal, NTag } from 'naive-ui'
 import { useFormField } from '../../../composables/form-fields'
 import { useFormBuilderI18n } from '../../../i18n/context'
 import { FORM_EVENTS } from '../../../types/dsl'
 import { bindKeyOf } from '../../../dsl/events'
 import SwitchInput from './common/SwitchInput.vue'
-import JsCodeEditor from './common/JsCodeEditor.vue'
+
+// JsCodeEditor 依赖 CodeMirror（体积较大），懒加载：下面的 n-modal 用默认的
+// displayDirective="if"，其默认插槽内容本就只在首次打开时才挂载，这里不需要
+// 再额外加一层 v-if 控制。
+const JsCodeEditor = defineAsyncComponent(() => import('./common/JsCodeEditor.vue'))
 
 type EventDef = {
   key: string
@@ -122,7 +126,11 @@ function setEventEnabled(key: string, enabled: boolean) {
     bindObj.value = next
     return
   }
-  if (existing && typeof existing === 'object' && typeof (existing as { __js?: unknown }).__js === 'string') {
+  if (
+    existing &&
+    typeof existing === 'object' &&
+    typeof (existing as { __js?: unknown }).__js === 'string'
+  ) {
     next[key] = (existing as { __js: string }).__js
     bindObj.value = next
     return

@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { NButton, NInput, NSwitch } from 'naive-ui'
 import { useFormBuilderI18n } from '../../../i18n/context'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
 import { useFormField } from '../../../composables/form-fields'
-import ExprEditModal from './common/ExprEditModal.vue'
 import { isUnparsedExpr, parseExprString } from '@/dsl'
+
+// 说明同 ExpressionEditor.vue：CodeMirror 懒加载 + 首次打开才挂载
+const ExprEditModal = defineAsyncComponent(() => import('./common/ExprEditModal.vue'))
 
 // 泛化：目标键决定读写哪个条件表达式（visibleIf/requiredIf/disabledIf/readonlyIf），
 // 内部开关 + 只读输入框 + 铅笔打开 ExprEditModal、解析失败提示这套交互四个键完全复用；
@@ -48,6 +50,7 @@ const titleText = computed(() => t(props.titleKey ?? 'condition.useIf'))
 const enabled = ref(false)
 const draft = ref('')
 const modalOpen = ref(false)
+const everOpened = ref(false)
 
 // 选中 token：数据表格列元素等非树节点编辑时随 elementEditTarget 变化（切换列需重新同步）
 const selectionToken = computed(
@@ -77,6 +80,7 @@ const handleSwitchChange = (val: boolean) => {
 }
 
 function openModal() {
+  everOpened.value = true
   modalOpen.value = true
 }
 
@@ -120,6 +124,7 @@ const unparsed = computed(() => {
     </div>
 
     <ExprEditModal
+      v-if="everOpened"
       :show="modalOpen"
       :model-value="draft"
       :field-names="availableFields"

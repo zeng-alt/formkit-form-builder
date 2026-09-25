@@ -5,12 +5,7 @@
 // 用深冻结的输入：ESM 默认严格模式，任何原地写都会直接抛 TypeError，比事后比对快照
 // 更能精确定位到"哪一步写了输入"。
 import { describe, it, expect } from 'vitest'
-import {
-  findNodeByKey,
-  updateAtPath,
-  removeAtPath,
-  insertAfterAtPath,
-} from '../tree'
+import { findNodeByKey, updateAtPath, removeAtPath, insertAfterAtPath } from '../tree'
 import type { SchemaNode } from '../types'
 
 function deepFreeze<T>(value: T): T {

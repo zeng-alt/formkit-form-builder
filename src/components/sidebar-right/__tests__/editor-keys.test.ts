@@ -73,23 +73,20 @@ function parseTypeComponent(): Record<string, string> {
   return typeComp
 }
 
-// ─── 类型 → 编辑器：解析 src/elements/definitions/*.ts ──────────────────────────
-// 依赖约定：同一个元素定义对象字面量里，`type: '<type>',` 与
-// `editor: () => import('<path>.vue')` 同时出现（顺序不限，用非贪婪 [\s\S]*? 跨行匹配）。
-// 注意：用工厂函数生成的定义（如 naiveH1~H6 的 `type: \`naiveH${depth}\`` 模板字符串）
-// 不会被这条正则命中，会被静默跳过——与人工审计脚本的原行为一致，健全性断言里已经
-// 把这批已知会跳过的类型算进下限的余量。
+// ─── 类型 → 编辑器：解析 src/elements/definitions/editor-bindings.ts ────────────
+// 依赖约定：右侧属性面板的编辑器组件不再内联写在 elements/definitions/{fields,
+// containers,static}.ts 的元素定义对象里（渲染入口也要用这些定义，内联的
+// `editor: () => import(...)` 会被 UMD 单文件产物强制内联，把编辑器 UI 和它们的
+// CodeMirror 依赖一起带进渲染入口，见 dsl/registry.ts 的 setElementEditors 与
+// elements/definitions/editor-bindings.ts 顶部说明）。这些编辑器绑定集中放在
+// editor-bindings.ts 里，形如 `  <type>: () => import('<path>.vue'),` 的扁平映射。
 function parseTypeEditor(): Record<string, string> {
-  const dir = abs('src/elements/definitions')
+  const src = read(abs('src/elements/definitions/editor-bindings.ts'))
   const typeEditor: Record<string, string> = {}
-  for (const f of fs.readdirSync(dir)) {
-    if (!f.endsWith('.ts')) continue
-    const src = read(path.join(dir, f))
-    for (const m of src.matchAll(/type: '(\w+)',[\s\S]*?editor: \(\) => import\('([^']+)'\)/g)) {
-      const [, type, filePath] = m
-      if (!type || !filePath) continue
-      typeEditor[type] ??= resolveAlias(filePath)
-    }
+  for (const m of src.matchAll(/^\s*(\w+): \(\) => import\('([^']+)'\),?\s*$/gm)) {
+    const [, type, filePath] = m
+    if (!type || !filePath) continue
+    typeEditor[type] ??= resolveAlias(filePath)
   }
   return typeEditor
 }

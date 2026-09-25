@@ -50,6 +50,32 @@ ESM 入口会自动加载样式，无需手动引入。仅在使用 UMD / script
 import '@zeng-alt/formkit-form-builder/builder.css'
 ```
 
+## 渲染入口（只填写表单的页面）
+
+如果你的页面只需要把已保存的 `FormDefinition` 渲染成可填写、可提交的表单——不需要拖拽画布、不需要左右侧属性面板——可以改用只含运行时渲染能力的子路径 `@zeng-alt/formkit-form-builder/renderer`：
+
+```ts
+import {
+  FormRenderer,
+  formkitConfig,
+  registerElement,
+  dslToSchema,
+  useFormBuilderConfig,
+} from '@zeng-alt/formkit-form-builder/renderer'
+import type { FormDefinition } from '@zeng-alt/formkit-form-builder/renderer'
+```
+
+样式仍然用同一份 `@zeng-alt/formkit-form-builder/builder.css`（不需要单独引入其他 CSS）。这个入口导出的是「填写表单的页面用得到的」那部分 API：`FormRenderer`、`formkitConfig`、`FormBuilderPlugin`、`registerElement`/`registerElements`、`buildFormkitInputs`/`buildElementSchemaLibrary`/`getElementCmpName`、DSL 转换工具（`dslToSchema`/`dslToOutputSchema`/`schemaToDsl`/`toPortableDefinition`/`setExprLocale` 等）、配置相关的 composable，以及对应的类型——不包含设计器（画布、左右侧面板）、拖拽库 `@formkit/drag-and-drop`、CodeMirror 代码编辑器。示例见 `playground/renderer-only.html`。
+
+实测体积（`pnpm build-only` 产物，gzip）：
+
+| 产物 | 首屏静态依赖合计（gzip） |
+| --- | --- |
+| 完整入口 `.`（设计器 + 渲染器） | 172.2KB |
+| 渲染入口 `./renderer` | **79.1KB** |
+
+对只填表单的页面来说，改用 `/renderer` 能少加载约 90KB（gzip）的设计器专属代码。
+
 ## 快速开始
 
 ### 1) 安装并注册 FormKit
@@ -215,6 +241,11 @@ import {
 `FormKitFormBuilder`、`FormBuilderProvider` 分别是 `FormBuilder`、`BuilderProvider` 的别名导出，
 仅为命名习惯提供，两组各自完全等价。`setExprLocale` / `resolveTimeZoneForLocale` /
 `LOCALE_TIME_ZONES` 也一并导出（见下文「i18n 覆写」）。
+
+> 只需要渲染表单、不需要设计器？`@zeng-alt/formkit-form-builder/renderer` 导出上面这份清单里
+> 「填写表单用得到」的那部分（`FormRenderer`、`formkitConfig`、`FormBuilderPlugin`、
+> `registerElement`/`registerElements`、DSL 转换工具、配置相关的 composable），不含设计器本身
+> 及其 CodeMirror / 拖拽库依赖——见上文「渲染入口」一节。
 
 `useFormBuilderState()` 只能在 `FormBuilder` / `FormRenderer` 子树内调用（含手动
 `provideFormBuilderState()` 的子树）；子树外调用会直接抛错，不再回落到某个全局共享实例。

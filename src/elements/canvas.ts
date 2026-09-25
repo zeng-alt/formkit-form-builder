@@ -13,24 +13,18 @@ import { getContainerSpec, type ContainerSpec } from './container-spec'
 import { applyGroupDisabled, getColSpan, stripInputGroupOuterClass } from '@/utils/dnd/grid'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 
-import ListContainer from '@/components/ui/containers/list/ListContainer.vue'
+// 这里只静态引入"预览版"容器组件（渲染入口 / FormRenderer 需要）。画布版容器组件
+// （ListContainer 等）依赖 @formkit/drag-and-drop，只有设计器需要，拆到
+// elements/canvas-designer.ts 单独引入，避免渲染入口通过这个文件把拖拽库带进去
+// （见 registerCanvasContainerComponents 与该文件顶部说明）。
 import ListContainerPreview from '@/components/ui/containers/list/ListContainerPreview.vue'
-import CardContainer from '@/components/ui/containers/card/CardContainer.vue'
 import CardContainerPreview from '@/components/ui/containers/card/CardContainerPreview.vue'
-import InputGroupContainer from '@/components/ui/containers/input-group/InputGroupContainer.vue'
 import InputGroupContainerPreview from '@/components/ui/containers/input-group/InputGroupContainerPreview.vue'
-import ButtonGroupContainer from '@/components/ui/containers/button-group/ButtonGroupContainer.vue'
 import ButtonGroupContainerPreview from '@/components/ui/containers/button-group/ButtonGroupContainerPreview.vue'
-import BadgeContainer from '@/components/ui/containers/badge/BadgeContainer.vue'
 import BadgeContainerPreview from '@/components/ui/containers/badge/BadgeContainerPreview.vue'
-import TabsContainer from '@/components/ui/containers/tabs/TabsContainer.vue'
 import TabsContainerPreview from '@/components/ui/containers/tabs/TabsContainerPreview.vue'
-import StepsContainer from '@/components/ui/containers/steps/StepsContainer.vue'
 import StepsContainerPreview from '@/components/ui/containers/steps/StepsContainerPreview.vue'
-import GroupContainer from '@/components/ui/containers/group/GroupContainer.vue'
-import DataTableContainer from '@/components/ui/containers/data-table/DataTableContainer.vue'
 import DataTableContainerPreview from '@/components/ui/containers/data-table/DataTableContainerPreview.vue'
-import CollapseContainer from '@/components/ui/containers/collapse/CollapseContainer.vue'
 import CollapseContainerPreview from '@/components/ui/containers/collapse/CollapseContainerPreview.vue'
 
 registerBuiltinElementTypes()
@@ -175,11 +169,13 @@ function decorateButtonGroupChildren(
 
 // ─── 注册表 ────────────────────────────────────────────────────────────────────
 
+// 注意：内置条目先不填 canvas 字段（画布组件依赖 @formkit/drag-and-drop，由
+// elements/canvas-designer.ts 通过下面的 registerCanvasContainerComponents 补上，
+// 只有设计器实际引入那个文件时才会发生）。
 const defs: ContainerDefinition[] = [
   {
     id: 'list',
     match: (n) => isContainerOf(n, 'list'),
-    canvas: { libraryKey: 'list', component: ListContainer },
     preview: { libraryKey: 'list', component: ListContainerPreview },
     normalize: (n) => normalizeContainer(n, 'list', specOf('list')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'list', specOf('list')),
@@ -187,7 +183,6 @@ const defs: ContainerDefinition[] = [
   {
     id: 'card',
     match: (n) => isContainerOf(n, 'card'),
-    canvas: { libraryKey: 'card', component: CardContainer },
     preview: { libraryKey: 'card', component: CardContainerPreview },
     normalize: (n) => normalizeContainer(n, 'card', specOf('card')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'card', specOf('card')),
@@ -195,7 +190,6 @@ const defs: ContainerDefinition[] = [
   {
     id: 'inputGroup',
     match: (n) => isContainerOf(n, 'inputGroup'),
-    canvas: { libraryKey: 'inputGroup', component: InputGroupContainer },
     preview: { libraryKey: 'inputGroup', component: InputGroupContainerPreview },
     normalize: (n) => normalizeContainer(n, 'inputGroup', specOf('inputGroup')),
     formatPreview: (n, ctx) =>
@@ -206,7 +200,6 @@ const defs: ContainerDefinition[] = [
   {
     id: 'buttonGroup',
     match: (n) => isContainerOf(n, 'buttonGroup'),
-    canvas: { libraryKey: 'buttonGroup', component: ButtonGroupContainer },
     preview: { libraryKey: 'buttonGroup', component: ButtonGroupContainerPreview },
     normalize: (n) => normalizeContainer(n, 'buttonGroup', specOf('buttonGroup')),
     formatPreview: (n, ctx) =>
@@ -217,7 +210,6 @@ const defs: ContainerDefinition[] = [
   {
     id: 'badge',
     match: (n) => isContainerOf(n, 'badge'),
-    canvas: { libraryKey: 'badge', component: BadgeContainer },
     preview: { libraryKey: 'badge', component: BadgeContainerPreview },
     normalize: (n) => normalizeContainer(n, 'badge', specOf('badge')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'badge', specOf('badge')),
@@ -225,7 +217,6 @@ const defs: ContainerDefinition[] = [
   {
     id: 'tabs',
     match: (n) => isContainerOf(n, 'tabs'),
-    canvas: { libraryKey: 'tabs', component: TabsContainer },
     preview: { libraryKey: 'tabs', component: TabsContainerPreview },
     normalize: (n) => normalizeContainer(n, 'tabs', specOf('tabs')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'tabs', specOf('tabs')),
@@ -233,7 +224,6 @@ const defs: ContainerDefinition[] = [
   {
     id: 'steps',
     match: (n) => isContainerOf(n, 'steps'),
-    canvas: { libraryKey: 'steps', component: StepsContainer },
     preview: { libraryKey: 'steps', component: StepsContainerPreview },
     normalize: (n) => normalizeContainer(n, 'steps', specOf('steps')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'steps', specOf('steps')),
@@ -241,14 +231,14 @@ const defs: ContainerDefinition[] = [
   {
     id: 'group',
     match: (n) => isContainerOf(n, 'group'),
-    canvas: { libraryKey: 'group', component: GroupContainer },
+    // group 没有独立预览组件：渲染入口走下面 formatPreview 的 primitive==='group'
+    // 分支，还原成原生 $formkit:group，不需要任何组件
     normalize: (n) => normalizeContainer(n, 'group', specOf('group')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'group', specOf('group')),
   },
   {
     id: 'dataTable',
     match: (n) => isContainerOf(n, 'dataTable'),
-    canvas: { libraryKey: 'dataTable', component: DataTableContainer },
     preview: { libraryKey: 'dataTable', component: DataTableContainerPreview },
     normalize: (n) => normalizeContainer(n, 'dataTable', specOf('dataTable')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'dataTable', specOf('dataTable')),
@@ -256,12 +246,21 @@ const defs: ContainerDefinition[] = [
   {
     id: 'collapse',
     match: (n) => isContainerOf(n, 'collapse'),
-    canvas: { libraryKey: 'collapse', component: CollapseContainer },
     preview: { libraryKey: 'collapse', component: CollapseContainerPreview },
     normalize: (n) => normalizeContainer(n, 'collapse', specOf('collapse')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'collapse', specOf('collapse')),
   },
 ]
+
+/** 设计器专属：把画布容器组件（依赖 @formkit/drag-and-drop）按 id 补进上面已声明的
+ *  内置容器定义。只应由 elements/canvas-designer.ts 在被设计器引入时调用一次——
+ *  渲染入口不引入那个文件，因此这些组件不会进入它的静态依赖图。 */
+export function registerCanvasContainerComponents(components: Record<string, Component>): void {
+  for (const def of defs) {
+    const component = components[def.id]
+    if (component) def.canvas = { libraryKey: def.id, component }
+  }
+}
 
 function getContainerDefinition(node: unknown): ContainerDefinition | null {
   for (const def of defs) {

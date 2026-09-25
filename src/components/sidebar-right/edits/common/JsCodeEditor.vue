@@ -147,10 +147,7 @@ watch(
 
 <template>
   <div class="w-full space-y-1.5">
-    <div
-      v-if="quickVars && quickVars.length"
-      class="flex flex-wrap items-center gap-1 px-0.5"
-    >
+    <div v-if="quickVars && quickVars.length" class="flex flex-wrap items-center gap-1 px-0.5">
       <span class="text-[10px] text-muted-foreground mr-0.5 shrink-0">
         {{ quickVarsLabel }}
       </span>
