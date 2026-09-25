@@ -51,6 +51,12 @@ export type { ElementDefinition, ElementCategory, ElementPaletteProp } from './e
 export { formkitConfig } from './formkit.config'
 export { buildFormkitInputs, buildElementSchemaLibrary, getElementCmpName } from './elements'
 
+// 字段/容器按需加载：日期/数据表格/级联等重型组件默认懒加载（见
+// elements/component-loader.ts），FormRenderer 内部已经会在渲染前自动预取；
+// 这里额外导出给自定义渲染管线——想在展示表单前提前把即将用到的类型取到缓存里
+// （避免用户看到加载态），可以自行 collectElementTypes(definition) 后调用它。
+export { preloadElementComponents, collectElementTypes } from './elements/component-loader'
+
 // 一键接入插件：app.use(FormBuilderPlugin, { config })。install 只做 FormKit 装配 +
 // 元素注册 + 全局配置，不依赖设计器，渲染专用页面同样可以用它简化接入。
 export { FormBuilderPlugin } from './plugin/form-builder-plugin'

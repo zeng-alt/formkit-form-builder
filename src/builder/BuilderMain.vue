@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { NLayout, type ConfigProviderProps } from 'naive-ui'
 import type { BuilderTheme } from '@/types/theme'
 import { changeLocale } from '@formkit/vue'
@@ -20,6 +20,12 @@ import { provideFormDefinition } from '@/composables/use-form-definition'
 import { provideBinderHttp } from '@/composables/use-bind-http'
 import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 import type { FormDefinition } from '@/types/dsl'
+import { schedulePreload } from '@/utils/idle-preload'
+import {
+  collectElementTypes,
+  getAllLazyElementTypes,
+  preloadElementComponents,
+} from '@/elements/component-loader'
 
 defineSlots<{
   /** 整个顶栏（含默认内容） */
@@ -60,6 +66,17 @@ provideFormDefinition(formDefinition)
 
 // B3：空画布引导「用 AI 生成」入口聚焦顶栏 AI 输入框，见 use-ai-prompt-focus.ts
 provideAiPromptFocusRegistry()
+
+// X：字段/容器按需加载组件预热——当前画布已经在用的类型立即加载（不等空闲，避免
+// 切换到这些字段/预览时用户等待），其余全部按需类型放到浏览器空闲时间预加载
+// （画布随时可能切到任意类型，见 utils/idle-preload.ts）。
+onMounted(() => {
+  void preloadElementComponents(collectElementTypes(formDefinition.value))
+  const cancelIdlePreload = schedulePreload(() => {
+    void preloadElementComponents(getAllLazyElementTypes())
+  })
+  onUnmounted(cancelIdlePreload)
+})
 
 // H5：键盘快捷键——监听挂在设计器根元素上（模板里的 @keydown），不挂 window，
 // 保证多个设计器实例互不干扰（keydown 会从任意子孙元素冒泡到这个根节点）。

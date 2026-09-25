@@ -22,7 +22,11 @@ import path from 'node:path'
 import zlib from 'node:zlib'
 import { fileURLToPath } from 'node:url'
 
-const DIST = fileURLToPath(new URL('../dist', import.meta.url))
+// CHECK_BUNDLE_DIST：调试/对照用（比如指向 scratchpad 里的临时构建产物），不传时
+// 就是仓库默认的 dist/，验收以默认路径为准。
+const DIST = process.env.CHECK_BUNDLE_DIST
+  ? path.resolve(process.env.CHECK_BUNDLE_DIST)
+  : fileURLToPath(new URL('../dist', import.meta.url))
 
 // 静态 import 语句：`import ... from '...'` / `import '...'`，不含 import( 动态调用。
 // Rollup/rolldown 产物里的静态 import 总是独立成行、位于文件顶部，这条正则按行匹配。
@@ -70,6 +74,22 @@ function sourceMapMentionsPackage(jsFile, packageName) {
   return (map.sources ?? []).some((s) => needle.test(s))
 }
 
+/** 同上，但匹配仓库内某个源文件路径（用于揪出按需加载组件——本该走 import() 单独
+ *  成 chunk，却被静态依赖链带进了首屏）。sourcePathSuffix 是相对仓库根目录的路径，
+ *  如 "src/components/ui/fields/NaiveDatePicker.vue"。 */
+function sourceMapMentionsSourceFile(jsFile, sourcePathSuffix) {
+  const mapFile = `${jsFile}.map`
+  if (!existsSync(mapFile)) return false
+  let map
+  try {
+    map = JSON.parse(readFileSync(mapFile, 'utf8'))
+  } catch {
+    return false
+  }
+  const needle = new RegExp(`${sourcePathSuffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)
+  return (map.sources ?? []).some((s) => needle.test(s))
+}
+
 function gzipSize(file) {
   return zlib.gzipSync(readFileSync(file)).length
 }
@@ -79,14 +99,15 @@ function fmtKB(bytes) {
 }
 
 // ─── 体积预算：实测值 + 10% 余量（见报告里的实测体积表，构建输出会打印当前实测值）──
-// 主入口（设计器首屏，ES）：gzip 实测 172.2KB（176364 字节）→ 上限 190KB
-// renderer 入口（渲染首屏，ES）：gzip 实测 79.1KB（80950 字节）→ 上限 87KB
+// 字段/容器按需加载后的实测值（原预算：设计器 190KB / renderer 87KB）：
+// 主入口（设计器首屏，ES）：gzip 实测 167.2KB → 上限 184KB
+// renderer 入口（渲染首屏，ES）：gzip 实测 70.3KB → 上限 78KB
 const BUDGETS = {
-  designer: 190 * 1024,
-  renderer: 87 * 1024,
+  designer: 184 * 1024,
+  renderer: 78 * 1024,
 }
 
-function checkEntry(name, entryFile, forbiddenPackages, budgetBytes) {
+function checkEntry(name, entryFile, forbiddenPackages, budgetBytes, forbiddenSourceFiles = []) {
   const problems = []
   if (!existsSync(entryFile)) {
     problems.push(`找不到入口产物：${path.relative(DIST, entryFile)}（先跑 pnpm build-only）`)
@@ -107,6 +128,18 @@ function checkEntry(name, entryFile, forbiddenPackages, budgetBytes) {
     const hitFile = files.find((f) => sourceMapMentionsPackage(f, pkg))
     if (hitFile) {
       problems.push(`${name} 首屏静态依赖里混入了 "${pkg}" 的代码：${path.relative(DIST, hitFile)}`)
+    }
+  }
+
+  // 2.5) 按需加载组件（日期/数据表格/级联/上传等，见 elements/component-loader.ts）
+  // 本该只通过 import() 单独成 chunk；如果首屏静态依赖链里出现了它们的源文件，
+  // 说明哪里又把它们改成了静态 import，按需加载失效。
+  for (const src of forbiddenSourceFiles) {
+    const hitFile = files.find((f) => sourceMapMentionsSourceFile(f, src))
+    if (hitFile) {
+      problems.push(
+        `${name} 首屏静态依赖里混入了按需加载组件 "${src}"：${path.relative(DIST, hitFile)}`,
+      )
     }
   }
 
@@ -139,11 +172,22 @@ const designer = checkEntry(
   ['axios'],
   BUDGETS.designer,
 )
+// X：字段/容器按需加载——渲染入口首屏静态闭包里不能出现这几个按需组件的源文件
+// （日期/数据表格/级联/上传，规格里点名要求至少检查的四个；完整清单见
+// elements/component-loader.ts）。
+const FORBIDDEN_LAZY_SOURCE_FILES = [
+  'src/components/ui/fields/NaiveDatePicker.vue',
+  'src/components/ui/containers/data-table/DataTableContainerPreview.vue',
+  'src/components/ui/fields/NaiveCascader.vue',
+  'src/components/ui/fields/NaiveUpload.vue',
+]
+
 const renderer = checkEntry(
   '渲染入口 renderer.es.js',
   path.join(DIST, 'renderer.es.js'),
   ['@formkit/drag-and-drop', 'axios'],
   BUDGETS.renderer,
+  FORBIDDEN_LAZY_SOURCE_FILES,
 )
 
 const allProblems = [...designer.problems, ...renderer.problems]

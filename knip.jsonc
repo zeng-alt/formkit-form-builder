@@ -3,14 +3,15 @@
   // 库有两个公共入口：src/index.ts（设计器+渲染器）与 src/renderer-entry.ts
   // （只含运行时渲染能力，对外导入路径 @zeng-alt/formkit-form-builder/renderer）。
   // 两者都只在 vite.config.ts 的 build.lib.entry 里以对象字面量引用，knip 的 vite
-  // 插件探测不到，需显式列出；playground/api-demo.ts、playground/renderer-only.ts
-  // 分别由 api-demo.html、renderer-only.html 的 <script src> 引用，同样探测不到
+  // 插件探测不到，需显式列出；playground/api-demo.ts、playground/renderer-only.ts、
+  // playground/renderer-only-date.ts 分别由同名 .html 的 <script src> 引用，同样探测不到
   "entry": [
     "src/index.ts",
     "src/renderer-entry.ts",
     "playground/api-demo.ts",
     "playground/renderer-only.ts",
-    "src/**/__tests__/**/*.test.ts"
+    "playground/renderer-only-date.ts",
+    "src/**/__tests__/**/*.test.ts",
   ],
   "project": ["src/**/*.{ts,vue}", "playground/**/*.{ts,vue}"],
   // dist/ 不存在时（CI 里 knip 在构建前运行）knip 会提示"Remove from ignore"，
@@ -19,5 +20,5 @@
   // import { OnCleanup } from '@vue/reactivity' 会被误报为未声明依赖
   "ignore": ["dist/**"],
   // uno.css 是 UnoCSS vite 插件提供的虚拟模块，不是 npm 包
-  "ignoreDependencies": ["uno.css"]
+  "ignoreDependencies": ["uno.css"],
 }

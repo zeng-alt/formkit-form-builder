@@ -9,6 +9,7 @@ import { useFormBuilderI18n } from '../../i18n/context'
 import { customInsertPlugin } from '../../utils/custom-insert-plugin'
 import { createPaletteDragImage } from '../../utils/dnd/drag-image'
 import { useFormBuilderState } from '@/state/create-form-builder-state'
+import { preloadElementComponents } from '@/elements/component-loader'
 import { findNodeByKey, updateAtPath } from '@/utils/schema/tree'
 import { schemaChildren, type SchemaNode } from '@/utils/schema/types'
 import { collectSchemaNames, duplicateNode } from '@/utils/dnd/schema'
@@ -54,7 +55,11 @@ const dragConfig = {
     data.e.dataTransfer?.setDragImage(el, 16, 16)
     // F：拖拽开始那一刻就是本库唯一"确定拖了谁"的时机（放下是否成功交给
     // NavMain 那边监听 formDefinition 变化来确认，见该文件的说明）
-    emit('drag-start', getTypeName(value))
+    const typeName = getTypeName(value)
+    emit('drag-start', typeName)
+    // X：刚拖出来就是"马上要用到这个类型"的强信号，不等空闲预加载，立即预取
+    // （按需加载类型才会真的发起 import，其余类型直接跳过，见 component-loader.ts）
+    void preloadElementComponents([typeName])
     return el
   },
   insertConfig: {

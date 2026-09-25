@@ -786,6 +786,8 @@ export default {
     common: {
       help: '这是帮助文本',
       selectPlaceholder: '请选择...',
+      // X：按需加载的字段/容器组件加载失败时的占位文案（不能让整个表单崩掉）
+      loadError: '组件加载失败',
     },
     text: {
       name: '文本',

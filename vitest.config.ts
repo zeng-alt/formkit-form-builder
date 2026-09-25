@@ -25,5 +25,8 @@ export default defineConfig({
     // （挂载组件的渲染集成测试）在文件顶部用 `// @vitest-environment happy-dom`
     // docblock 按文件声明——vitest 5 原生支持这个机制，无需 environmentMatchGlobs。
     environment: 'node',
+    // 按需加载字段/容器组件（elements/component-loader.ts）预热，避免真实的动态
+    // import 让既有渲染集成测试的 nextTick 断言变得不稳定，见该文件顶部注释。
+    setupFiles: ['src/test-setup/preload-lazy-elements.ts'],
   },
 })

@@ -28,6 +28,12 @@ import type { AxiosInstance } from 'axios'
 import { useExprRun } from '@/expression/runtime'
 import type { SchemaNode } from '@/utils/schema/types'
 import { DEFAULT_LABEL_WIDTH, formLabelLayoutClass, formLabelWidthStyle } from '@/utils/form-layout'
+import {
+  collectElementTypesFromSchema,
+  hasLazyLoader,
+  isTypeLoaded,
+  preloadElementComponents,
+} from '@/elements/component-loader'
 
 type ModelValue = Record<string, unknown>
 
@@ -383,6 +389,44 @@ const topLevelSchemaItems = computed(() => {
   })
 })
 
+// ── X：字段/容器按需加载组件，渲染前先预取，避免可见的加载态（闪烁/跳动）──
+// sourceSchema 是转换前的原始 schema（$formkit/$cmp + 未格式化的 children），与
+// dslToSchema 互为逆运算，schemaNodeToDslNode 能正确识别每个节点的类型（含容器 /
+// 数据表格列）；resolvedSchema 是给 FormKitSchema 用的格式化结果，容器子节点已经
+// 挪进 props.modelValue 并包了外框，不适合再拿去反解类型。
+// contentReady 初值即时算出（watch 的 immediate 回调在 setup 阶段同步执行）：当前
+// 用到的类型如果都已经加载过（isTypeLoaded 命中缓存），直接为 true，不产生等待；
+// 只有真正出现了没加载过的类型才会先置 false、等 preloadElementComponents 完成后
+// 再翻回 true——对应"已加载过的类型不能再有等待，只有新类型才需要等"。
+const requiredLazyTypes = computed<string[]>(() =>
+  collectElementTypesFromSchema(sourceSchema.value).filter(hasLazyLoader),
+)
+const contentReady = ref(false)
+watch(
+  requiredLazyTypes,
+  (types) => {
+    const pending = types.filter((t) => !isTypeLoaded(t))
+    if (pending.length === 0) {
+      contentReady.value = true
+      return
+    }
+    contentReady.value = false
+    void preloadElementComponents(pending).then(() => {
+      contentReady.value = true
+    })
+  },
+  { immediate: true },
+)
+
+// 加载期间的骨架占位：按顶层节点原始 outerClass（col-span-N）保留栅格宽度，避免
+// 内容到位前后整页跳动；只是一个高度固定的浅色块，不引入额外组件依赖。
+const topLevelSkeletonItems = computed(() =>
+  topLevelSchemaItems.value.map((item, index) => ({
+    key: item.key,
+    outerClass: (schemaBody.value[index] as SchemaNode | undefined)?.outerClass || 'col-span-12',
+  })),
+)
+
 // 注入当前表单数据（dataTable 远程数据 JS 代码通过 form 读取当前值；容器组件的
 // 嵌套 FormKitSchema 也用它拼出各自的 schemaRenderData，见 useSchemaRenderData）
 provide(PREVIEW_FORM_DATA_KEY, data)
@@ -579,13 +623,22 @@ const resolvedResetLabel = computed(
       :form-class="resolvedFormClass"
       :style="formLabelWidthStyle(resolvedLabelWidth)"
     >
-      <FormKitSchemaWrapper
-        v-for="item in topLevelSchemaItems"
-        :key="item.key"
-        :schema="item.schemaArr"
-        :data="schemaRenderData"
-        :library="schemaLibrary"
-      />
+      <template v-if="contentReady">
+        <FormKitSchemaWrapper
+          v-for="item in topLevelSchemaItems"
+          :key="item.key"
+          :schema="item.schemaArr"
+          :data="schemaRenderData"
+          :library="schemaLibrary"
+        />
+      </template>
+      <template v-else>
+        <div
+          v-for="s in topLevelSkeletonItems"
+          :key="s.key"
+          :class="[s.outerClass, 'h-9 rounded bg-primary/5 animate-pulse']"
+        ></div>
+      </template>
       <template v-if="$slots.actions">
         <slot
           name="actions"

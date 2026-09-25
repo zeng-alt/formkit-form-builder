@@ -834,6 +834,7 @@ export default {
     common: {
       help: 'This is help text',
       selectPlaceholder: 'Select...',
+      loadError: 'Component failed to load',
     },
     text: {
       name: 'Text',

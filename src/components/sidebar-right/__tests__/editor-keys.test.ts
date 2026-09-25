@@ -54,7 +54,49 @@ const isPseudoProp = (key: string) =>
 
 // ─── 类型 → 渲染组件：解析 src/elements/formkit.ts 的绑定表 ─────────────────────
 // 依赖约定：`import Xxx from '<path>.vue'` + `type: { component: Xxx, ... }`
-// （对象字面量整行，形如 `  color: { component: NaiveColorPicker, ... },`）
+// （对象字面量整行，形如 `  color: { component: NaiveColorPicker, ... },`）。
+// X：按需加载的类型（日期/数据表格列表编辑器等）不再直接 import 组件，而是写成
+// `type: { component: createLazyComponent('type'), ... }`（见 elements/formkit.ts
+// 顶部说明），底层组件文件改从 elements/component-loader.ts 的加载器表按类型查。
+// 大部分类型按"用途相近"分组合并成一个 chunk（elements/lazy-groups/*.ts 的桶文件，
+// 见 component-loader.ts 顶部说明），加载器写成
+// `type: () => xFamily().then((m) => ({ default: m.Xxx }))`；少数体积大、用途独立的
+// 类型（富文本/签名）仍是 `type: () => import('<path>.vue')` 直接引用。
+function parseLazyLoaderFiles(): Record<string, string> {
+  const src = read(abs('src/elements/component-loader.ts'))
+  const map: Record<string, string> = {}
+  // 直接引用（未分组）
+  for (const m of src.matchAll(/^\s*(\w+): \(\) => import\('([^']+\.vue)'\),?\s*$/gm)) {
+    const [, type, filePath] = m
+    if (!type || !filePath) continue
+    map[type] = resolveAlias(filePath)
+  }
+  // 分组桶文件：先从每个 lazy-groups/*.ts 建 "组件标识符 → 文件路径"
+  const groupDir = abs('src/elements/lazy-groups')
+  const identifierToFile: Record<string, string> = {}
+  if (fs.existsSync(groupDir)) {
+    for (const name of fs.readdirSync(groupDir)) {
+      if (!name.endsWith('.ts')) continue
+      const groupSrc = read(path.join(groupDir, name))
+      for (const m of groupSrc.matchAll(/export \{ default as (\w+) \} from '([^']+\.vue)'/g)) {
+        const [, identifier, filePath] = m
+        if (!identifier || !filePath) continue
+        identifierToFile[identifier] = resolveAlias(filePath)
+      }
+    }
+  }
+  // 再解析 component-loader.ts 里 `type: () => xFamily().then((m) => ({ default: m.Xxx }))`
+  for (const m of src.matchAll(
+    /^\s*(\w+): \(\) => \w+\(\)\.then\(\(m\) => \(\{ default: m\.(\w+) \}\)\),?\s*$/gm,
+  )) {
+    const [, type, identifier] = m
+    if (!type || !identifier) continue
+    const file = identifierToFile[identifier]
+    if (file) map[type] = file
+  }
+  return map
+}
+
 function parseTypeComponent(): Record<string, string> {
   const src = read(abs('src/elements/formkit.ts'))
   const importOf: Record<string, string> = {}
@@ -68,6 +110,13 @@ function parseTypeComponent(): Record<string, string> {
     const [, type, comp] = m
     if (!type || !comp) continue
     const file = importOf[comp]
+    if (file) typeComp[type] = file
+  }
+  const lazyFile = parseLazyLoaderFiles()
+  for (const m of src.matchAll(/^\s*(\w+): \{\s*component: createLazyComponent\('(\w+)'\)/gm)) {
+    const [, type, lazyType] = m
+    if (!type || !lazyType) continue
+    const file = lazyFile[lazyType]
     if (file) typeComp[type] = file
   }
   return typeComp

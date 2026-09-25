@@ -71,10 +71,12 @@ Measured bundle size (`pnpm build-only` output, gzip):
 
 | Artifact | First-screen static dependency total (gzip) |
 | --- | --- |
-| Full entry `.` (designer + renderer) | 172.2KB |
-| Renderer entry `./renderer` | **79.1KB** |
+| Full entry `.` (designer + renderer) | 167.2KB |
+| Renderer entry `./renderer` | **70.3KB** |
 
-For form-filling-only pages, switching to `/renderer` saves roughly 90KB (gzip) of designer-only code.
+For form-filling-only pages, switching to `/renderer` saves roughly 97KB (gzip) of designer-only code.
+
+Heavier field/container components (date/time/file/color, cascader/tree-select/transfer/mention/autocomplete/rate, rich text/signature, slider/avatar/image, qr-code/progress/alert/back-to-top, and the data-table preview) are loaded on demand instead of being bundled eagerly — a form that only uses plain fields (text/select/checkbox/...) never downloads them at all. In a consuming app that only fills in text-like fields, this cuts the naive-ui portion of the page's first-screen JS from ~732KB to well under 300KB (gzip total first-screen JS drops from ~422KB to ~280KB); see the task report for the full before/after breakdown.
 
 ## Quick Start
 
