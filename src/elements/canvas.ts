@@ -24,8 +24,10 @@ import ButtonGroupContainerPreview from '@/components/ui/containers/button-group
 import BadgeContainerPreview from '@/components/ui/containers/badge/BadgeContainerPreview.vue'
 import TabsContainerPreview from '@/components/ui/containers/tabs/TabsContainerPreview.vue'
 import StepsContainerPreview from '@/components/ui/containers/steps/StepsContainerPreview.vue'
-import DataTableContainerPreview from '@/components/ui/containers/data-table/DataTableContainerPreview.vue'
 import CollapseContainerPreview from '@/components/ui/containers/collapse/CollapseContainerPreview.vue'
+// 数据表格预览组件（NDataTable + 分页）体积较大且非每表单必用，改为按需加载
+// （见 elements/component-loader.ts），不在这里静态 import。
+import { createLazyComponent } from './component-loader'
 
 registerBuiltinElementTypes()
 
@@ -239,7 +241,7 @@ const defs: ContainerDefinition[] = [
   {
     id: 'dataTable',
     match: (n) => isContainerOf(n, 'dataTable'),
-    preview: { libraryKey: 'dataTable', component: DataTableContainerPreview },
+    preview: { libraryKey: 'dataTable', component: createLazyComponent('dataTable')! },
     normalize: (n) => normalizeContainer(n, 'dataTable', specOf('dataTable')),
     formatPreview: (n, ctx) => formatContainer(n, ctx, 'dataTable', specOf('dataTable')),
   },

@@ -17,22 +17,7 @@ import NaiveNumberInput from '@/components/ui/fields/NaiveNumberInput.vue'
 import NaiveSelect from '@/components/ui/fields/NaiveSelect.vue'
 import NaiveCheckboxGroup from '@/components/ui/fields/NaiveCheckboxGroup.vue'
 import NaiveRadioGroup from '@/components/ui/fields/NaiveRadioGroup.vue'
-import NaiveSlider from '@/components/ui/fields/NaiveSlider.vue'
-import NaiveDatePicker from '@/components/ui/fields/NaiveDatePicker.vue'
-import NaiveTimePicker from '@/components/ui/fields/NaiveTimePicker.vue'
-import NaiveUpload from '@/components/ui/fields/NaiveUpload.vue'
-import NaiveColorPicker from '@/components/ui/fields/NaiveColorPicker.vue'
-import NaiveAvatar from '@/components/ui/fields/NaiveAvatar.vue'
-import NaiveImage from '@/components/ui/fields/NaiveImage.vue'
-import NaiveCascader from '@/components/ui/fields/NaiveCascader.vue'
-import NaiveMention from '@/components/ui/fields/NaiveMention.vue'
-import NaiveAutoComplete from '@/components/ui/fields/NaiveAutoComplete.vue'
-import NaiveRate from '@/components/ui/fields/NaiveRate.vue'
-import RichText from '@/components/ui/fields/RichText.vue'
-import SignaturePad from '@/components/ui/fields/SignaturePad.vue'
 import NaiveSwitch from '@/components/ui/fields/NaiveSwitch.vue'
-import NaiveTreeSelect from '@/components/ui/fields/NaiveTreeSelect.vue'
-import NaiveTransfer from '@/components/ui/fields/NaiveTransfer.vue'
 import CustomButton from '@/components/ui/fields/CustomButton.vue'
 import NaiveTypographyText from '@/components/ui/structure/NaiveTypographyText.vue'
 import NaiveTypographyP from '@/components/ui/structure/NaiveTypographyP.vue'
@@ -43,10 +28,10 @@ import NaiveTypographyUl from '@/components/ui/structure/NaiveTypographyUl.vue'
 import NaiveTypographyOl from '@/components/ui/structure/NaiveTypographyOl.vue'
 import NaiveTypographyLi from '@/components/ui/structure/NaiveTypographyLi.vue'
 import NaiveDivider from '@/components/ui/structure/NaiveDivider.vue'
-import NaiveAlert from '@/components/ui/structure/NaiveAlert.vue'
-import NaiveBackTop from '@/components/ui/structure/NaiveBackTop.vue'
-import NaiveQrCode from '@/components/ui/structure/NaiveQrCode.vue'
-import NaiveProgress from '@/components/ui/structure/NaiveProgress.vue'
+// 日期/时间/文件/颜色/级联/树选择/穿梭框/提及/自动完成/评分/富文本/签名/滑块/头像/
+// 图片、以及二维码/进度条/提示/返回顶部这些体积较大或非每表单必用的组件改为按需加载
+// （见 elements/component-loader.ts），不在这里静态 import，避免它们进首屏静态依赖。
+import { createLazyComponent } from './component-loader'
 
 registerBuiltinElementTypes()
 
@@ -65,26 +50,35 @@ const formkitBindings: Record<string, FormkitBinding> = {
   number: { component: NaiveNumberInput, libraryName: 'NaiveNumberInput' },
   url: { component: NaiveTextInput, libraryName: 'NaiveUrlInput' },
   checkbox: { component: NaiveCheckboxGroup, libraryName: 'NaiveCheckboxGroup' },
-  color: { component: NaiveColorPicker, libraryName: 'NaiveColorPicker' },
-  date: { component: NaiveDatePicker, libraryName: 'NaiveDatePicker' },
-  time: { component: NaiveTimePicker, libraryName: 'NaiveTimePicker' },
-  naiveDateTime: { component: NaiveDatePicker, libraryName: 'NaiveDateTimePicker' },
-  file: { component: NaiveUpload, libraryName: 'NaiveUpload' },
+  color: { component: createLazyComponent('color')!, libraryName: 'NaiveColorPicker' },
+  date: { component: createLazyComponent('date')!, libraryName: 'NaiveDatePicker' },
+  time: { component: createLazyComponent('time')!, libraryName: 'NaiveTimePicker' },
+  naiveDateTime: {
+    component: createLazyComponent('naiveDateTime')!,
+    libraryName: 'NaiveDateTimePicker',
+  },
+  file: { component: createLazyComponent('file')!, libraryName: 'NaiveUpload' },
   password: { component: NaiveTextInput, libraryName: 'NaivePasswordInput' },
   radio: { component: NaiveRadioGroup, libraryName: 'NaiveRadioGroup' },
-  range: { component: NaiveSlider, libraryName: 'NaiveSlider' },
+  range: { component: createLazyComponent('range')!, libraryName: 'NaiveSlider' },
   select: { component: NaiveSelect, libraryName: 'NaiveSelect' },
-  naiveCascader: { component: NaiveCascader, libraryName: 'NaiveCascader' },
-  naiveTreeSelect: { component: NaiveTreeSelect, libraryName: 'NaiveTreeSelect' },
-  naiveTransfer: { component: NaiveTransfer, libraryName: 'NaiveTransfer' },
-  naiveMention: { component: NaiveMention, libraryName: 'NaiveMention' },
-  naiveAutoComplete: { component: NaiveAutoComplete, libraryName: 'NaiveAutoComplete' },
-  naiveRate: { component: NaiveRate, libraryName: 'NaiveRate' },
-  richText: { component: RichText, libraryName: 'RichText' },
-  signature: { component: SignaturePad, libraryName: 'SignaturePad' },
+  naiveCascader: { component: createLazyComponent('naiveCascader')!, libraryName: 'NaiveCascader' },
+  naiveTreeSelect: {
+    component: createLazyComponent('naiveTreeSelect')!,
+    libraryName: 'NaiveTreeSelect',
+  },
+  naiveTransfer: { component: createLazyComponent('naiveTransfer')!, libraryName: 'NaiveTransfer' },
+  naiveMention: { component: createLazyComponent('naiveMention')!, libraryName: 'NaiveMention' },
+  naiveAutoComplete: {
+    component: createLazyComponent('naiveAutoComplete')!,
+    libraryName: 'NaiveAutoComplete',
+  },
+  naiveRate: { component: createLazyComponent('naiveRate')!, libraryName: 'NaiveRate' },
+  richText: { component: createLazyComponent('richText')!, libraryName: 'RichText' },
+  signature: { component: createLazyComponent('signature')!, libraryName: 'SignaturePad' },
   naiveSwitch: { component: NaiveSwitch, libraryName: 'NaiveSwitch' },
-  naiveAvatar: { component: NaiveAvatar, libraryName: 'NaiveAvatar' },
-  naiveImage: { component: NaiveImage, libraryName: 'NaiveImage' },
+  naiveAvatar: { component: createLazyComponent('naiveAvatar')!, libraryName: 'NaiveAvatar' },
+  naiveImage: { component: createLazyComponent('naiveImage')!, libraryName: 'NaiveImage' },
   tel: { component: NaiveTextInput, libraryName: 'NaiveTelInput' },
 
   // ─── 静态展示 ──────────────────────────────────────────────────────────────────
@@ -108,10 +102,10 @@ const formkitBindings: Record<string, FormkitBinding> = {
   naiveOl: { component: NaiveTypographyOl, libraryName: 'NaiveTypographyOl' },
   naiveLi: { component: NaiveTypographyLi, libraryName: 'NaiveTypographyLi' },
   naiveDivider: { component: NaiveDivider, libraryName: 'NaiveDivider' },
-  naiveAlert: { component: NaiveAlert, libraryName: 'NaiveAlert' },
-  naiveBackTop: { component: NaiveBackTop, libraryName: 'NaiveBackTop' },
-  naiveQrCode: { component: NaiveQrCode, libraryName: 'NaiveQrCode' },
-  naiveProgress: { component: NaiveProgress, libraryName: 'NaiveProgress' },
+  naiveAlert: { component: createLazyComponent('naiveAlert')!, libraryName: 'NaiveAlert' },
+  naiveBackTop: { component: createLazyComponent('naiveBackTop')!, libraryName: 'NaiveBackTop' },
+  naiveQrCode: { component: createLazyComponent('naiveQrCode')!, libraryName: 'NaiveQrCode' },
+  naiveProgress: { component: createLazyComponent('naiveProgress')!, libraryName: 'NaiveProgress' },
 }
 
 // legacy $cmp 别名单一来源：由 formkitBindings 派生注入 DSL 注册表（识别旧 Naive* 数据）

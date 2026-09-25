@@ -42,6 +42,11 @@ export type { RegisterElementInput } from './plugin/register-element'
 export { formkitConfig } from './formkit.config'
 export { buildFormkitInputs, buildElementSchemaLibrary, getElementCmpName } from './elements'
 
+// 字段/容器按需加载：日期/数据表格/级联等重型组件默认懒加载（见
+// elements/component-loader.ts），FormRenderer/设计器内部已经会自动预取；
+// 这里额外导出给自定义渲染管线复用同一套预取能力。
+export { preloadElementComponents, collectElementTypes } from './elements/component-loader'
+
 export { FormBuilder, BuilderProvider }
 export { BuilderPreview }
 // 独立预览组件：传入 formDefinition，左侧渲染表单、右侧实时展示表单数据

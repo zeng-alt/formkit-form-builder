@@ -1,11 +1,16 @@
 import { computed, inject, provide, watch, type ComputedRef, type InjectionKey } from 'vue'
-import { darkTheme, lightTheme, type GlobalTheme } from 'naive-ui'
+import type { GlobalTheme } from 'naive-ui'
 import { useColorMode, usePreferredDark } from '@vueuse/core'
 import type { BuilderTheme } from '@/types/theme'
+import { builderDarkTheme } from '@/theme/dark-theme'
 
 interface BuilderThemeContext {
-  /** 当前生效的 naive-ui 主题（随 colorMode / 系统偏好） */
-  activeTheme: ComputedRef<GlobalTheme>
+  /**
+   * 当前生效的 naive-ui 主题（随 colorMode / 系统偏好）。
+   * naive-ui 的默认主题就是亮色，亮色场景传 null 给 NConfigProvider 即可，
+   * 不需要专门的 lightTheme 对象（避免引入它静态 import 的全部组件亮色主题）。
+   */
+  activeTheme: ComputedRef<GlobalTheme | null>
   /** 强制切换主题（'light' | 'dark'），与 ThemeSwitcher / theme prop 共用同一 colorMode */
   setTheme: (theme: BuilderTheme) => void
 }
@@ -22,10 +27,10 @@ export function createBuilderThemeContext(
 ): BuilderThemeContext {
   const colorMode = useColorMode()
   const preferredDark = usePreferredDark()
-  const activeTheme = computed<GlobalTheme>(() =>
+  const activeTheme = computed<GlobalTheme | null>(() =>
     colorMode.value === 'dark' || (colorMode.value === 'auto' && preferredDark.value)
-      ? darkTheme
-      : lightTheme,
+      ? builderDarkTheme
+      : null,
   )
   const setTheme = (theme: BuilderTheme) => {
     colorMode.value = theme

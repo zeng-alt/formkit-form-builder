@@ -73,6 +73,22 @@ const peerExternalPattern = new RegExp(
 )
 const isPeerDependency = (id: string) => peerExternalPattern.test(id)
 
+// naive-ui 的 ColorPicker / Image / QrCode 暗色主题没有从包顶层导出（见
+// src/theme/dark-theme.ts 顶部注释），只能从子路径深度 import。ES 产物按惯例把
+// naive-ui 整体外部化没问题——使用方自己的构建工具能按同样的子路径解析到它们装的
+// naive-ui；但 UMD 单文件产物运行时只有 naive-ui 顶层导出对应的一个全局变量，没有
+// 这三个子路径的全局变量可外部化。umd-index / umd-renderer 两个模式下用下面的
+// naiveUiDeepStyleAlias 把这三个子路径顶替成 build-tools/naive-deep-theme-shim.ts
+// （从已外部化的 darkTheme 顶层导出取字段），见该 shim 文件顶部注释。
+const NAIVE_UI_DEEP_STYLE_PATHS = [
+  'naive-ui/es/color-picker/styles',
+  'naive-ui/es/image/styles',
+  'naive-ui/es/qr-code/styles',
+]
+const naiveUiDeepStyleAlias = Object.fromEntries(
+  NAIVE_UI_DEEP_STYLE_PATHS.map((p) => [p, src('build-tools/naive-deep-theme-shim.ts')]),
+)
+
 const ENTRIES = {
   index: src('src/index.ts'),
   renderer: src('src/renderer-entry.ts'),
@@ -114,6 +130,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
         // 更具体的 /renderer 子路径别名必须排在前面，否则会先命中不带子路径的那条
         '@zeng-alt/formkit-form-builder/renderer': src('src/renderer-entry.ts'),
         '@zeng-alt/formkit-form-builder': src('src/index.ts'),
+        // 只在 UMD 两个模式下生效，见 naiveUiDeepStyleAlias 定义处的注释
+        ...(pass === 'es' ? undefined : naiveUiDeepStyleAlias),
       },
     },
     build: isBuild
@@ -162,7 +180,11 @@ export default defineConfig(({ command, mode }): UserConfig => {
             // 注意 @formkit/drag-and-drop 不在其列、有意继续内联打包：它只是纯拖拽
             // 工具函数，不持有跨实例共享的注册表，内联没有上述危害，还能省得使用者
             // 多装一个包（渲染入口不引用它所在的画布代码，因此也不会内联进 renderer 产物）。
-            external: isPeerDependency,
+            // Rollup 在调用任何 resolveId 插件（含下面 resolve.alias）之前就先决定
+            // external，所以这三个子路径要在这里单独排除，跳过外部化，才能让
+            // resolve.alias 把它们顶替成 build-tools/naive-deep-theme-shim.ts。
+            external: (id: string) =>
+              isPeerDependency(id) && (pass === 'es' || !NAIVE_UI_DEEP_STYLE_PATHS.includes(id)),
             output: {
               exports: 'named',
               globals: PEER_GLOBALS,
