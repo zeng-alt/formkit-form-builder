@@ -12,11 +12,9 @@ const chromiumExecutablePath = process.env.PW_CHROMIUM_PATH
 
 export default defineConfig({
   testDir: 'e2e',
-  // 只有 8 条用例，总耗时本来就很短；改成单 worker 顺序跑，换来的是排除"多个
-  // Chromium 实例抢 CPU 拖慢渲染/事件循环"这个变量——快捷键/拖拽这类时序敏感的
-  // 用例在并发跑时明显更容易撞上偶发的时序窗口（例如复制紧接着粘贴那条用例，
-  // 见 copy-paste-multiselect.spec.ts 的注释），单 worker 顺序跑更稳定、也更贴近
-  // 真实用户单标签页操作时的资源环境。
+  // 只有 8 条用例，总耗时本来就很短；单 worker 顺序跑，排除"多个 Chromium 实例抢 CPU
+  // 拖慢渲染 / 事件循环"这个变量，拖拽、快捷键这类时序敏感的用例更稳定，也更贴近真实
+  // 用户单标签页操作时的资源环境。
   workers: 1,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
