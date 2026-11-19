@@ -8,7 +8,8 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    # Playwright 1.56.1 支持 Ubuntu 24.04，避免 ubuntu-latest 升级后浏览器安装失败
+    runs-on: ubuntu-24.04
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
