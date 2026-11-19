@@ -7,6 +7,7 @@ import vueJsx from '@vitejs/plugin-vue-jsx'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import UnoCSS from 'unocss/vite'
 import dts from 'vite-plugin-dts'
+import { DiagnosticCategory } from 'typescript'
 
 // 两套产物：
 //   1) 设计器 + 渲染器合一的传统单文件产物：builder.es.js（保留代码分割）+
@@ -118,8 +119,14 @@ export default defineConfig(({ command, mode }): UserConfig => {
             tsconfigPath: src('tsconfig.build.json'),
             // 把每个入口各自的 .d.ts 打包成一个文件（index.d.ts / renderer.d.ts，
             // 后者对应 renderer-entry.ts，文件名取自 lib.entry 的 key 而非源文件名）
-            rollupTypes: true,
+            bundleTypes: true,
+            processor: 'vue',
             cleanVueFileName: true,
+            afterDiagnostic(diagnostics) {
+              if (diagnostics.some((diagnostic) => diagnostic.category === DiagnosticCategory.Error)) {
+                throw new Error('Type declaration generation failed; see diagnostics above.')
+              }
+            },
           })
         : undefined,
     ].filter(Boolean),

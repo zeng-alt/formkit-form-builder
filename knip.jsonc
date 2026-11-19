@@ -19,6 +19,6 @@
   // dist/index.d.ts 会被当成入口扫描，其中来自 Vue 自身 $watch 签名的
   // import { OnCleanup } from '@vue/reactivity' 会被误报为未声明依赖
   "ignore": ["dist/**"],
-  // uno.css 是 UnoCSS vite 插件提供的虚拟模块，不是 npm 包
-  "ignoreDependencies": ["uno.css"],
+  // uno.css 是 UnoCSS 虚拟模块；@vue/language-core 由声明插件的 Vue processor 动态加载
+  "ignoreDependencies": ["uno.css", "@vue/language-core"],
 }

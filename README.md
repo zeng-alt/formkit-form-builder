@@ -6,6 +6,12 @@ A visual FormKit Schema designer based on Vue 3 + FormKit (left sidebar / center
 
 Core concept: The designer outputs a **versioned DSL (`FormDefinition`)** rather than raw schema. The `FormRenderer` (internally using `dslToSchema` conversion) renders it into a FormKit form. The DSL body is a JSON-safe structure that can be directly deserialized by backends (e.g., Java); `key` (canvas DnD identity) and `meta.rawSchema` (fallback for unregistered types) are frontend-only fields — strip them with `toPortableDefinition` before persisting (see "DSL & Conversion" below).
 
+## Upgrading from 1.x
+
+Version 2.0 removes the deprecated `FormSchemaRenderer` name (use `FormRenderer`) and unused renderer-engine type exports. Remove the ineffective `FormSettings.layout`, `columns`, and `fullWidth` properties, and use `top` or `left` for `labelAlign`. Calls to `useFormBuilderState()` now require a designer context; use `useOptionalFormBuilderState()` when that context may be absent. Install the FormKit peer dependencies listed below.
+
+See the [2.0.0 changelog and migration notes](./CHANGELOG.md) before upgrading.
+
 ## Feature Overview
 
 - **Elements**: three categories — field / container / static (full catalog in `src/elements/definitions/*`) — covering common inputs plus rich text, a signature pad, a collapsible panel, and a data table, among others.

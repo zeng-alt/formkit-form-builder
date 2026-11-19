@@ -10,6 +10,10 @@ import { provideBinderHttp } from '../composables/use-bind-http'
 import BuilderThemeScope from '../theme/BuilderThemeScope.vue'
 import type { BuilderTheme } from '@/types/theme'
 
+defineSlots<{
+  default?: () => unknown
+}>()
+
 /**
  * 全局配置提供者：作为唯一的 n-config-provider（主题）来源。
  * 主题 + 其余 ConfigProviderProps（themeOverrides / breakpoints 等）在此统一控制，

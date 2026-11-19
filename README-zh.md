@@ -6,6 +6,12 @@
 
 核心概念：设计器产出的是**版本化 DSL（`FormDefinition`）**而非裸 schema，通过 `FormRenderer`（内部 `dslToSchema` 转换）渲染成 FormKit 表单。DSL 主体是 JSON-safe 的结构，后端（如 Java）可直接反序列化；其中 `key`（画布 DnD 身份）与 `meta.rawSchema`（未注册类型兜底）是前端专用字段，持久化前建议先用 `toPortableDefinition` 剥离（见下文「DSL 与转换」）。
 
+## 从 1.x 升级
+
+2.0 移除了已废弃的 `FormSchemaRenderer` 名称（改用 `FormRenderer`）和未使用的渲染引擎类型导出。请移除 `FormSettings` 中从未生效的 `layout`、`columns`、`fullWidth` 属性，`labelAlign` 只使用 `top` 或 `left`。`useFormBuilderState()` 现在要求位于设计器上下文内；上下文可能不存在时改用 `useOptionalFormBuilderState()`。同时安装下文列出的 FormKit peer 依赖。
+
+升级前请阅读 [2.0.0 更新日志与迁移说明](./CHANGELOG.md)。
+
 ## 功能一览
 
 - **元素**：字段 / 容器 / 静态三大类（完整清单见 `src/elements/definitions/*`），除常见输入控件外还包含富文本、签名板、折叠面板、数据表格等。
