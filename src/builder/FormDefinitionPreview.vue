@@ -1,47 +1,49 @@
 <template>
-  <n-modal
-    v-model:show="isOpen"
-    preset="card"
-    class="max-h-[90vh] flex flex-col overflow-hidden sm:max-w-[800px]"
-    :title="title"
-    size="small"
-    :content-style="{
-      display: 'flex',
-      flexDirection: 'column',
-      flex: 1,
-      minHeight: 0,
-      overflow: 'hidden',
-    }"
-  >
-    <n-scrollbar>
-      <div class="flex gap-4 p-4">
-        <div class="min-w-0 flex-1">
-          <FormRenderer
-            ref="rendererRef"
-            :definition="formDefinition"
-            v-model="data"
-            :actions="actions"
-            :form-class="formClass"
-            :interactive-containers="interactiveContainers"
-            :disabled="disabled"
-            @submit="handleSubmit"
-          />
+  <BuilderThemeScope>
+    <n-modal
+      v-model:show="isOpen"
+      preset="card"
+      class="max-h-[90vh] flex flex-col overflow-hidden sm:max-w-[800px]"
+      :title="title"
+      size="small"
+      :content-style="{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minHeight: 0,
+        overflow: 'hidden',
+      }"
+    >
+      <n-scrollbar>
+        <div class="flex gap-4 p-4">
+          <div class="min-w-0 flex-1">
+            <FormRenderer
+              ref="rendererRef"
+              :definition="formDefinition"
+              v-model="data"
+              :actions="actions"
+              :form-class="formClass"
+              :interactive-containers="interactiveContainers"
+              :disabled="disabled"
+              @submit="handleSubmit"
+            />
+          </div>
+          <div
+            v-if="showDataPanel"
+            class="shrink-0 overflow-auto border border-border/50 rounded-lg bg-muted/30 p-3"
+            :style="{ width: dataPanelWidth }"
+          >
+            <h3 class="text-[11px] font-medium mb-2 text-foreground/80">
+              {{ t('builder.formDataTitle') }}
+            </h3>
+            <pre class="text-[11px] whitespace-pre-wrap break-all text-muted-foreground">{{
+              prettyData
+            }}</pre>
+          </div>
         </div>
-        <div
-          v-if="showDataPanel"
-          class="shrink-0 overflow-auto border border-border/50 rounded-lg bg-muted/30 p-3"
-          :style="{ width: dataPanelWidth }"
-        >
-          <h3 class="text-[11px] font-medium mb-2 text-foreground/80">
-            {{ t('builder.formDataTitle') }}
-          </h3>
-          <pre class="text-[11px] whitespace-pre-wrap break-all text-muted-foreground">{{
-            prettyData
-          }}</pre>
-        </div>
-      </div>
-    </n-scrollbar>
-  </n-modal>
+      </n-scrollbar>
+    </n-modal>
+  </BuilderThemeScope>
 </template>
 
 <script setup lang="ts">
@@ -50,6 +52,7 @@ import { NModal, NScrollbar } from 'naive-ui'
 import type { FormDefinition } from '@/types/dsl'
 import { useFormBuilderI18n } from '@/i18n/context'
 import FormRenderer from '@/renderer/FormRenderer.vue'
+import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 
 const { t } = useFormBuilderI18n()
 

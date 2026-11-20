@@ -1,6 +1,6 @@
 {
   "name": "@zeng-alt/formkit-form-builder",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "A visual FormKit schema builder for Vue 3",
   "keywords": [
     "drag-and-drop",
@@ -63,7 +63,7 @@
     "format": "oxfmt src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "pnpm build-only && playwright test"
   },
   "dependencies": {
     "@formkit/drag-and-drop": "^0.5.3",

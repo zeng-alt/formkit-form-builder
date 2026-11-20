@@ -52,7 +52,7 @@ function insertAtCursor(name: string) {
   view.focus()
 }
 
-const colorMode = useColorMode()
+const colorMode = useColorMode({ storageKey: 'formkit-builder-color-scheme', onChanged: () => {} })
 const preferredDark = usePreferredDark()
 // 与全局主题同源：ThemeSwitcher / theme prop 切换时编辑器随动
 const isDark = computed(

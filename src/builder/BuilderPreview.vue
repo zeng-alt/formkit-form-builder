@@ -1,56 +1,58 @@
 <template>
-  <n-modal
-    v-model:show="isOpen"
-    preset="card"
-    :class="[
-      'max-h-[90vh] flex flex-col overflow-hidden',
-      resolvedView === 'desktop' ? 'sm:max-w-[800px]' : '',
-      resolvedView === 'tablet' ? 'sm:max-w-[768px]' : '',
-      resolvedView === 'mobile' ? 'sm:max-w-[375px]' : '',
-    ]"
-    :content-style="{
-      display: 'flex',
-      flexDirection: 'column',
-      flex: 1,
-      minHeight: 0,
-      overflow: 'hidden',
-    }"
-    :title="resolvedTitle"
-    size="small"
-  >
-    <template #header-extra>
-      <div class="text-[11px] text-muted-foreground">
-        {{ resolvedDescription }}
-      </div>
-    </template>
-    <n-scrollbar style="max-height: 600px">
-      <div class="py-4 px-3">
-        <FormRenderer
-          ref="rendererRef"
-          :schema="schemaSnapshot"
-          v-model="data"
-          :actions="props.actions"
-          :form-class="props.formClass"
-          :form-name="formName"
-          :label-position="formLabelPosition"
-          :label-width="formLabelWidth"
-          :interactive-containers="props.interactiveContainers"
-          :disabled="props.disabled"
-          @submit="handleSubmit"
-        />
-        <div
-          v-if="props.showDataPanel"
-          class="mt-4 p-3 bg-muted/30 rounded border border-border/50"
-        >
-          <h3 class="text-[11px] font-medium mb-2 text-foreground/80">
-            {{ t('builder.formDataTitle') }}
-          </h3>
-
-          <pre class="text-[11px] text-muted-foreground">{{ prettyData }}</pre>
+  <BuilderThemeScope>
+    <n-modal
+      v-model:show="isOpen"
+      preset="card"
+      :class="[
+        'max-h-[90vh] flex flex-col overflow-hidden',
+        resolvedView === 'desktop' ? 'sm:max-w-[800px]' : '',
+        resolvedView === 'tablet' ? 'sm:max-w-[768px]' : '',
+        resolvedView === 'mobile' ? 'sm:max-w-[375px]' : '',
+      ]"
+      :content-style="{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minHeight: 0,
+        overflow: 'hidden',
+      }"
+      :title="resolvedTitle"
+      size="small"
+    >
+      <template #header-extra>
+        <div class="text-[11px] text-muted-foreground">
+          {{ resolvedDescription }}
         </div>
-      </div>
-    </n-scrollbar>
-  </n-modal>
+      </template>
+      <n-scrollbar style="max-height: 600px">
+        <div class="py-4 px-3">
+          <FormRenderer
+            ref="rendererRef"
+            :schema="schemaSnapshot"
+            v-model="data"
+            :actions="props.actions"
+            :form-class="props.formClass"
+            :form-name="formName"
+            :label-position="formLabelPosition"
+            :label-width="formLabelWidth"
+            :interactive-containers="props.interactiveContainers"
+            :disabled="props.disabled"
+            @submit="handleSubmit"
+          />
+          <div
+            v-if="props.showDataPanel"
+            class="mt-4 p-3 bg-muted/30 rounded border border-border/50"
+          >
+            <h3 class="text-[11px] font-medium mb-2 text-foreground/80">
+              {{ t('builder.formDataTitle') }}
+            </h3>
+
+            <pre class="text-[11px] text-muted-foreground">{{ prettyData }}</pre>
+          </div>
+        </div>
+      </n-scrollbar>
+    </n-modal>
+  </BuilderThemeScope>
 </template>
 
 <script setup lang="ts">
@@ -61,6 +63,7 @@ import type { FormKitSchemaFormKit } from '@formkit/core'
 import { useFormBuilderI18n } from '@/i18n/context'
 import type { CanvasView } from '@/state/canvas-ui'
 import FormRenderer from '@/renderer/FormRenderer.vue'
+import BuilderThemeScope from '@/theme/BuilderThemeScope.vue'
 import { useOptionalFormBuilderState } from '@/state/create-form-builder-state'
 import { DEFAULT_LABEL_WIDTH } from '@/utils/form-layout'
 

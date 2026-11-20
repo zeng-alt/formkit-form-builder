@@ -23,7 +23,7 @@ import {
  * 没有任何地方挂载过它要求的 <Toaster/>）。
  * 外层已有 BuilderProvider（主题由它统一控制）时直接继承、不重复渲染；
  * 独立使用（无 Provider）时自建主题上下文并兜底渲染 n-config-provider。
- * abstract 使其不产生额外 DOM 包裹节点，保证栅格布局 / h-screen 不受影响；
+ * 作用域节点使用 display: contents，不改变栅格布局。
  * n-notification-provider / n-message-provider 本身渲染为 Fragment + Teleport，
  * 同样不产生包裹节点。
  */
@@ -47,6 +47,10 @@ const inherited = useBuilderTheme()
 const themeCtx = inherited ?? createBuilderThemeContext(() => props.theme)
 if (!inherited) provideBuilderTheme(themeCtx)
 
+const scopeClass = computed(() =>
+  themeCtx.activeTheme.value ? 'formkit-builder-scope dark' : 'formkit-builder-scope',
+)
+
 const scopeConfig = computed(() => ({
   themeOverrides: props.themeOverrides,
   breakpoints: props.breakpoints,
@@ -61,15 +65,16 @@ const scopeConfig = computed(() => ({
     v-if="!inherited"
     abstract
     :theme="themeCtx.activeTheme.value"
+    :namespace="scopeClass"
     :locale="props.locale"
     :date-locale="props.dateLocale"
     v-bind="scopeConfig"
   >
-    <n-notification-provider>
-      <n-message-provider>
-        <slot />
+    <n-notification-provider :container-class="scopeClass">
+      <n-message-provider :container-class="scopeClass">
+        <div :class="scopeClass" style="display: contents"><slot /></div>
       </n-message-provider>
     </n-notification-provider>
   </n-config-provider>
-  <slot v-else />
+  <div v-else :class="scopeClass" style="display: contents"><slot /></div>
 </template>

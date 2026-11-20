@@ -1,7 +1,7 @@
 import { fileURLToPath, URL } from 'node:url'
 import { readFileSync } from 'node:fs'
 
-import { defineConfig, type UserConfig } from 'vite'
+import { defineConfig, type Plugin, type UserConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import vueDevTools from 'vite-plugin-vue-devtools'
@@ -111,6 +111,26 @@ export default defineConfig(({ command, mode }): UserConfig => {
     // 不走它，依赖它的组件在测试里会渲染成未知元素——测到的就不是真实行为。
     plugins: [
       UnoCSS(),
+      isBuild && ({
+        name: 'scope-builder-css',
+        enforce: 'post' as const,
+        generateBundle: {
+          order: 'post' as const,
+          handler(_options, bundle) {
+            for (const asset of Object.values(bundle)) {
+              if (asset.type !== 'asset' || !asset.fileName.endsWith('.css')) continue
+              let css = String(asset.source)
+              const names = [...css.matchAll(/@keyframes\s+([\w-]+)/g)].map((match) => match[1])
+              for (const name of names) {
+                const pattern = new RegExp(`(?<![\\w-])${name}(?![\\w-])`, 'g')
+                css = css.replace(/(@keyframes\s+|animation(?:-name)?\s*:\s*)([^;}]+)/g,
+                  (_match, prefix: string, value: string) => prefix + value.replace(pattern, `formkit-${name}`))
+              }
+              asset.source = `@scope (.formkit-builder-scope){${css}}`
+            }
+          },
+        },
+      } satisfies Plugin),
       vue(),
       vueJsx(),
       vueDevTools(),

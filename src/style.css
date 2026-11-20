@@ -1,9 +1,9 @@
-﻿/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
    LIGHT ÔÇö Naive UI style
    Pure white surfaces, #18a058 green primary,
    #2080f0 info-blue accent, neutral grays.
    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
-:root {
+.formkit-builder-scope {
   --background: oklch(1 0 0); /* #ffffff */
   --foreground: oklch(0.2 0.005 264); /* #1f2937-ish, near-black */
   --card: oklch(1 0 0); /* white card */
@@ -61,7 +61,7 @@
    keyword orange #cc7832, string green #6a8759,
    foreground #a9b7c6.
    ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
-.dark {
+.formkit-builder-scope.dark {
   --background: oklch(0.22 0.005 264); /* #2b2b2b */
   --foreground: oklch(0.73 0.03 220); /* #a9b7c6 */
 
@@ -120,10 +120,6 @@
   outline-color: color-mix(in srgb, var(--ring) 50%, transparent);
 }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-}
 
 .sidebar-scrollbar {
   --n-scrollbar-width: 8px !important;

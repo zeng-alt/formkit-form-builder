@@ -476,7 +476,7 @@ export function useCanvasCommands(state: FormBuilderState): CanvasCommands {
     useFallbackToast = true
   }
   // 颜色模式只在真走兜底 toast 时才需要，正常路径（拿到真注入）不必多订阅这两个 ref
-  const colorMode = useFallbackToast ? useColorMode() : null
+  const colorMode = useFallbackToast ? useColorMode({ storageKey: 'formkit-builder-color-scheme', onChanged: () => {} }) : null
   const preferredDark = useFallbackToast ? usePreferredDark() : null
 
   const notify = (message: string) => {

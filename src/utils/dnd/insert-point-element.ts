@@ -3,7 +3,7 @@
 export function createDefaultInsertPointElement() {
   const div = document.createElement('div')
   div.setAttribute('data-insert-bg', '#a277ff')
-  div.classList.add('dnd-insert-point')
+  div.classList.add('formkit-builder-scope', 'dnd-insert-point')
   Object.assign(div.style, {
     backgroundColor: '#a277ff',
     opacity: '0.9',

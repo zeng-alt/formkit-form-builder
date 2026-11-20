@@ -8,9 +8,13 @@
 // dragstart 处理完的下一个宏任务把返回的元素移除（initDrag 里的
 // setTimeout(() => dragImage?.remove())），这里不需要自己收尾。
 // 颜色用 CSS 变量（--card/--foreground）而不是写死的浅色，跟随亮暗主题——
-// 应用的 dark 类挂在 <html> 上（vueuse useColorMode 默认策略），body 的后代都能读到。
+// 拖拽影像挂在 body，需继承设计器作用域的亮暗主题。
 export function createPaletteDragImage(icon: string | undefined, label: string): HTMLElement {
   const el = document.createElement('div')
+  const scope = document.querySelector('.formkit-builder-scope')
+  el.className = scope?.classList.contains('dark')
+    ? 'formkit-builder-scope dark'
+    : 'formkit-builder-scope'
   Object.assign(el.style, {
     position: 'fixed',
     top: '-9999px',

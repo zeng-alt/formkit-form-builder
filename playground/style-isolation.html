@@ -1,0 +1,6 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Style isolation</title></head><body>
+  <div id="host" class="mt-4">Host</div><div class="formkit-builder-scope"><div id="inside" class="mt-4">Builder</div></div><div id="app"></div>
+  <style>body { background: rgb(1, 2, 3); } .mt-4 { margin-top: 4px; }</style>
+  <script type="module" src="/src/style-isolation.js"></script>
+</body></html>

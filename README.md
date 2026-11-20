@@ -71,6 +71,8 @@ import {
 import type { FormDefinition } from '@zeng-alt/formkit-form-builder/renderer'
 ```
 
+The stylesheet uses CSS `@scope` to isolate the builder from the host page; use a browser that supports `@scope`.
+
 Styling still comes from the same `@zeng-alt/formkit-form-builder/builder.css` (no separate CSS file needed). This entry only exports what a form-filling page needs: `FormRenderer`, `formkitConfig`, `FormBuilderPlugin`, `registerElement`/`registerElements`, `buildFormkitInputs`/`buildElementSchemaLibrary`/`getElementCmpName`, the DSL conversion utilities (`dslToSchema`/`dslToOutputSchema`/`schemaToDsl`/`toPortableDefinition`/`setExprLocale`, etc.), the config composables, and their types — it excludes the designer (canvas, left/right panels), the drag-and-drop library `@formkit/drag-and-drop`, and the CodeMirror code editors. See `playground/renderer-only.html` for a working example.
 
 Measured bundle size (`pnpm build-only` output, gzip):

@@ -25,7 +25,7 @@ const BUILDER_THEME_KEY: InjectionKey<BuilderThemeContext> = Symbol('FormBuilder
 export function createBuilderThemeContext(
   explicitTheme?: () => BuilderTheme | undefined,
 ): BuilderThemeContext {
-  const colorMode = useColorMode()
+  const colorMode = useColorMode({ storageKey: 'formkit-builder-color-scheme', onChanged: () => {} })
   const preferredDark = usePreferredDark()
   const activeTheme = computed<GlobalTheme | null>(() =>
     colorMode.value === 'dark' || (colorMode.value === 'auto' && preferredDark.value)

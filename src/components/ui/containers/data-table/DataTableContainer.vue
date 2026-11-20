@@ -729,7 +729,7 @@ const bottomLabel = computed(() => {
     <Teleport to="body">
       <div
         v-if="resizeBubble"
-        class="fixed z-[9999] pointer-events-none rounded bg-[#a277ff] px-1.5 py-0.5 text-[11px] font-medium text-white shadow"
+        class="formkit-builder-scope fixed z-[9999] pointer-events-none rounded bg-[#a277ff] px-1.5 py-0.5 text-[11px] font-medium text-white shadow"
         :style="{ left: `${resizeBubble.x + 12}px`, top: `${resizeBubble.y - 24}px` }"
       >
         {{ resizeBubble.width }}px

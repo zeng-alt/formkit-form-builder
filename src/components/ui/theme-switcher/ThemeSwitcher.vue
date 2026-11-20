@@ -5,7 +5,8 @@ import { useColorMode } from '@vueuse/core'
 type ColorMode = 'light' | 'dark' | 'auto'
 
 const colorModeOptions = {
-  disableTransition: false,
+  storageKey: 'formkit-builder-color-scheme',
+  onChanged: () => {},
 }
 const mode = useColorMode(colorModeOptions)
 

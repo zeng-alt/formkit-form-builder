@@ -53,7 +53,7 @@ const emit = defineEmits<{
 
 const { t } = useFormBuilderI18n()
 
-const colorMode = useColorMode()
+const colorMode = useColorMode({ storageKey: 'formkit-builder-color-scheme', onChanged: () => {} })
 const preferredDark = usePreferredDark()
 const isDark = computed(
   () => colorMode.value === 'dark' || (colorMode.value === 'auto' && preferredDark.value),

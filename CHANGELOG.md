@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.2 — 2026-11-21
+
+- Scope designer and renderer styles, theme changes, and teleported overlays to the form builder so they do not alter the host application.
+
 ## 2.0.0 — 2026-11-19
 
 This release includes the changes since npm version 1.4.0. It requires migration for consumers of the removed APIs below.
